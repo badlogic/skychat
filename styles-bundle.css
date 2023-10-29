@@ -631,6 +631,26 @@ i > svg {
   top: 0px;
 }
 
+.bottom-0 {
+  bottom: 0px;
+}
+
+.bottom-\[-2em\] {
+  bottom: -2em;
+}
+
+.bottom-\[2em\] {
+  bottom: 2em;
+}
+
+.top-\[3em\] {
+  top: 3em;
+}
+
+.top-\[4em\] {
+  top: 4em;
+}
+
 .isolate {
   isolation: isolate;
 }
@@ -763,6 +783,10 @@ i > svg {
   height: 1.2em;
 }
 
+.h-\[16px\] {
+  height: 16px;
+}
+
 .h-\[2em\] {
   height: 2em;
 }
@@ -771,24 +795,12 @@ i > svg {
   height: 32px;
 }
 
-.h-\[500px\] {
-  height: 500px;
-}
-
-.h-\[6em\] {
-  height: 6em;
-}
-
 .h-full {
   height: 100%;
 }
 
 .\!max-h-full {
   max-height: 100% !important;
-}
-
-.max-h-\[500px\] {
-  max-height: 500px;
 }
 
 .max-h-\[70vh\] {
@@ -807,6 +819,14 @@ i > svg {
   width: 1.2em;
 }
 
+.w-\[16px\] {
+  width: 16px;
+}
+
+.w-\[280px\] {
+  width: 280px;
+}
+
 .w-\[2em\] {
   width: 2em;
 }
@@ -817,10 +837,6 @@ i > svg {
 
 .w-\[350px\] {
   width: 350px;
-}
-
-.w-\[6em\] {
-  width: 6em;
 }
 
 .w-\[80\%\] {
@@ -883,6 +899,10 @@ i > svg {
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+.resize-none {
+  resize: none;
 }
 
 .resize {
@@ -1021,6 +1041,10 @@ i > svg {
   border-color: rgb(85 85 85 / var(--tw-border-opacity));
 }
 
+.border-gray\/30 {
+  border-color: rgb(85 85 85 / 0.3);
+}
+
 .border-gray\/50 {
   border-color: rgb(85 85 85 / 0.5);
 }
@@ -1084,8 +1108,16 @@ i > svg {
   padding: 0.5rem;
 }
 
+.p-3 {
+  padding: 0.75rem;
+}
+
 .p-4 {
   padding: 1rem;
+}
+
+.p-5 {
+  padding: 1.25rem;
 }
 
 .px-2 {
@@ -1292,6 +1324,15 @@ i > svg {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-backdrop-filter;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
+}
+
+.disabled\:bg-gray:disabled {
+  --tw-bg-opacity: 1;
+  background-color: rgb(85 85 85 / var(--tw-bg-opacity));
+}
+
+.disabled\:opacity-75:disabled {
+  opacity: 0.75;
 }
 
 :is(.dark .dark\:bg-black) {

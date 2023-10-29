@@ -4,6 +4,32 @@ import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 import { globalStyles } from "./styles";
 import { map } from "lit-html/directives/map.js";
 
+export function getDateString(inputDateTime: Date): string {
+    const hours = inputDateTime.getHours();
+    const minutes = inputDateTime.getMinutes();
+    const seconds = inputDateTime.getSeconds();
+
+    const paddedMinutes = String(minutes).padStart(2, "0");
+    const paddedSeconds = String(seconds).padStart(2, "0");
+
+    const year = inputDateTime.getFullYear();
+    const month = new String(inputDateTime.getMonth() + 1).padStart(2, "0");
+    const day = new String(inputDateTime.getDay() + 1).padStart(2, "0");
+
+    return hours + ":" + paddedMinutes + ":" + paddedSeconds + (getDaysDifference(inputDateTime) > 0 ? ` ${year}-${month}-${day}` : "");
+}
+
+export function getDaysDifference(inputDateTime: Date) {
+    const currentDate = new Date();
+
+    const timeDifference = currentDate.getTime() - inputDateTime.getTime();
+    const seconds = Math.floor(timeDifference / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    return days;
+}
+
 export function getTimeDifferenceString(inputDate: string): string {
     const currentDate = new Date();
     const inputDateTime = new Date(inputDate);
@@ -215,6 +241,9 @@ export class ThemeToggle extends LitElement {
     @state()
     theme = "dark";
 
+    @property()
+    absolute = true;
+
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
@@ -240,7 +269,10 @@ export class ThemeToggle extends LitElement {
         const moonIcon = icon(moonIconSvg);
         const sunIcon = icon(sunIconSvg);
 
-        return html`<button class="absolute top-0 right-0 p-4 fill-primary" @click=${this.toggleTheme}>
+        return html`<button
+            class="${this.absolute == true ? "absolute top-0 right-0 p-4 fill-primary" : "p4 fill-primary"}"
+            @click=${this.toggleTheme}
+        >
             ${this.theme == "dark" ? moonIcon : sunIcon}
         </button>`;
     }

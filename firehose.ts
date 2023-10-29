@@ -4,103 +4,34 @@ import { decode as cborDecode } from "@ipld/dag-cbor";
 export { ComAtprotoSyncSubscribeRepos } from "@atproto/api";
 import { AtpBaseClient } from "@atproto/api";
 import { decodeMultiple } from "cbor-x";
+import { cborToLexRecord, readCar } from "@atproto/repo";
 
-export class EventStreamError extends Error {
-    constructor(error: string, message?: string) {
-        super(message ? `${error}: ${message}` : error);
-    }
-}
-
-export type SubscribeReposMessage =
-    | ComAtprotoSyncSubscribeRepos.Commit
-    | ComAtprotoSyncSubscribeRepos.Handle
-    | ComAtprotoSyncSubscribeRepos.Info
-    | ComAtprotoSyncSubscribeRepos.Migrate
-    | ComAtprotoSyncSubscribeRepos.Tombstone;
-
-export interface SubscribeRepoOptions {
-    decodeRepoOps?: boolean;
-    filter?: RepoOpsFilterFunc;
-}
-
-export type RepoOpsFilterFunc = (message: ComAtprotoSyncSubscribeRepos.Commit, repoOp: ComAtprotoSyncSubscribeRepos.RepoOp) => boolean;
-
-export const subscribeRepos = (onMessage: (message: any) => void, onClose: () => void) => {
-    return new XrpcEventStreamClient("bsky.social", "com.atproto.sync.subscribeRepos", decoder({ decodeRepoOps: true }), onMessage, onClose);
-};
-
-const decoder = (options: SubscribeRepoOptions) => {
-    return async (client: XrpcEventStreamClient, message: any) => {
-        if (message["$type"] == "com.atproto.sync.subscribeRepos#commit") {
-            await decodeOps(message, options.filter);
-            return message;
-        } else {
-            return undefined;
-        }
-    };
-};
-
-const decodeOps = async (message: ComAtprotoSyncSubscribeRepos.Commit, filter: RepoOpsFilterFunc | undefined): Promise<void> => {
-    for (const op of message.ops) {
-        if (filter && !filter(message, op)) {
-            continue;
-        }
-        if (op.action == "create" || op.action == "update") {
-            const cr = await CarReader.fromBytes(message.blocks);
-            if (op.cid) {
-                const blocks = cr._blocks.map((block) => cborDecode(block.bytes)) as any[];
-                const payloads = [];
-                for (const block of blocks) {
-                    if (block["$type"]) {
-                        payloads.push(block);
-                    }
-                }
-                op.payloads = payloads;
-            }
-        }
-    }
-};
-
-export type Decoder = (client: XrpcEventStreamClient, message: unknown) => Promise<ComAtprotoSyncSubscribeRepos.Commit | undefined>;
-
-export type Like = {
-    $type: "app.bsky.feed.like";
-    createdAt: string;
-    subject: {
-        cid: string;
-        uri: string;
-    };
-};
-
-export type Follow = {
-    $type: "app.bsky.graph.follow";
-};
-
-export type Repost = {
-    $type: "app.bsky.feed.repost";
+export const startEventStream = (onPost: (post: Post) => void, onClose: () => void) => {
+    return new BskyEventStream(onPost, onClose);
 };
 
 export type Post = {
-    $type: "app.bsky.feed.post";
+    rkey: string;
+    authorDid: string;
+    text: string;
+    createdAt: string | number;
 };
 
-export class XrpcEventStreamClient {
-    serviceUri: string;
-    nsid: string;
-    decoder: Decoder;
+export class BskyEventStream {
+    serviceUri = "bsky.social";
+    nsid = "com.atproto.sync.subscribeRepos";
     closed: boolean = false;
 
     protected ws: WebSocket;
     protected baseClient = new AtpBaseClient();
 
-    constructor(serviceUri: string, nsid: string, decoder: Decoder, private onMessage: (message: any) => void, private onClose: () => void) {
-        this.serviceUri = serviceUri;
-        this.nsid = nsid;
-        this.decoder = decoder;
+    constructor(private onPost: (post: Post) => void, private onClose: () => void) {
+        this.serviceUri = "bsky.social";
+        this.nsid = "com.atproto.sync.subscribeRepos";
         this.ws = new WebSocket(`wss://${this.serviceUri}/xrpc/${this.nsid}`);
         this.ws.binaryType = "arraybuffer";
         this.ws.onmessage = (ev) => this.handleMessage(ev.data);
-        this.ws.onerror = (ev) => this.handleError("on error");
+        this.ws.onerror = (ev) => this.handleError("Error");
         this.ws.onclose = (ev) => this.handleClose(ev.code, ev.reason);
     }
 
@@ -108,42 +39,52 @@ export class XrpcEventStreamClient {
         this.ws.close(code, reason);
     }
 
+    async decode(message: any) {
+        if (message["$type"] == "com.atproto.sync.subscribeRepos#commit") {
+            for (const op of message.ops) {
+                if (op.action == "create" || op.action == "update") {
+                    const cr = await CarReader.fromBytes(message.blocks);
+                    if (op.cid) {
+                        const blocks = cr._blocks.map((block) => cborDecode(block.bytes)) as any[];
+                        if (blocks.length < 2) continue;
+                        const payload = blocks[blocks.length - 2];
+                        if (payload["$type"] != "app.bsky.feed.post") continue;
+                        const payloadDid = blocks[blocks.length - 1];
+                        if (!payloadDid["did"]) continue;
+
+                        op.post = {
+                            authorDid: payloadDid["did"],
+                            rkey: op.path.split("/")[1],
+                            ...payload,
+                        } as Post;
+                    }
+                }
+            }
+            return message;
+        } else {
+            return undefined;
+        }
+    }
+
     private async handleMessage(data: ArrayBuffer) {
         const [header, payload] = decodeMultiple(new Uint8Array(data)) as any;
         if (header["op"] == 1) {
-            // regular message
             const t = header["t"];
-            if (t) {
-                const lexUri = this.nsid;
+            if (t && t == "#commit") {
                 const message = {
                     $type: `${this.nsid}${t}`,
                     ...payload,
                 };
-                const decoded = await this.decoder(this, message);
+                const decoded = await this.decode(message);
                 if (!decoded) return;
-                const follows: Follow[] = [];
-                const likes: Like[] = [];
-                const resposts: any[] = [];
-                const posts: any[] = [];
+
                 for (const op of decoded.ops) {
-                    const payloads: any = op.payloads;
-                    if (!payloads) continue;
-                    for (const payload of payloads) {
-                        if (payload["$type"] == "app.bsky.feed.like") {
-                            likes.push(payload);
-                        } else if (payload["$type"] == "app.bsky.graph.follow") {
-                            follows.push(payload);
-                        } else {
-                            console.log(payload);
-                        }
-                    }
-                }
-                if (decoded.payload) {
-                    this.onMessage(decoded.payload);
+                    const post: Post = op.post;
+                    if (!post) continue;
+                    this.onPost(post);
                 }
             }
         } else {
-            // error message
             this.handleError(header["error"], header["message"]);
         }
     }
