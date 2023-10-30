@@ -1,13 +1,14 @@
 import { LitElement, TemplateResult, html, nothing, svg } from "lit";
 import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 import { customElement, query, state } from "lit/decorators.js";
-import { BskyAuthor, BskyPost, BskyRecord, getAccount, processText } from "./bsky";
+import { BskyAuthor, BskyPost, BskyRecord, getAccount, getPost, processText } from "./bsky";
 import { globalStyles } from "./styles";
 // @ts-ignore
 import logoSvg from "./logo.svg";
 import { contentLoader, dom, getDateString, renderCard, renderGallery } from "./utils";
-import { BskyAgent } from "@atproto/api";
+import { BskyAgent, RichText } from "@atproto/api";
 import { Post, startEventStream } from "./firehose";
+import { heartIcon, reblogIcon, replyIcon } from "./icons";
 
 @customElement("skychat-app")
 class App extends LitElement {
@@ -45,7 +46,7 @@ class App extends LitElement {
         super();
         this.account = localStorage.getItem("a");
         this.password = localStorage.getItem("p");
-        this.hashtag = "imzentrum";
+        this.hashtag = null;
     }
 
     protected createRenderRoot(): Element | ShadowRoot {
@@ -86,6 +87,7 @@ class App extends LitElement {
                     rkey: initialPost.tid.split("/")[1],
                     createdAt: initialPost.post.createdAt / 1000000,
                     text: initialPost.post.text as string,
+                    cid: initialPost.cid,
                 } as Post);
             }
             this.initialPosts = this.initialPosts.sort((a, b) => (b.createdAt as number) - (a.createdAt as number)).reverse();
@@ -100,9 +102,51 @@ class App extends LitElement {
         this.requestUpdate();
     }
 
+    askedReuse = false;
     render() {
         if (this.isLive) {
-            return this.renderLive();
+            const baseKey = this.account + "|" + this.hashtag!;
+            if (localStorage.getItem(baseKey + "|root") && !this.askedReuse) {
+                const root = localStorage.getItem(baseKey + "|root");
+                const rootUrl = `https://bsky.app/profile/${this.account}/post/${root?.replace("at://", "").split("/")[2]}`;
+                return html`<div class="w-full max-w-[590px] mx-auto h-full flex flex-col">
+                    <div class="flex p-2 items-center border-b border-gray/50">
+                        <a class="text-sm flex align-center justify-center text-primary font-bold text-center" href="/"
+                            ><i class="w-[16px] h-[16px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
+                        >
+                        <span class="flex-grow text-center">${this.hashtag}</span>
+                        <theme-toggle absolute="false"></theme-toggle>
+                    </div>
+                    <p class="text-center mt-4">
+                        You have an <a href="${rootUrl}" target="_blank" class="text-primary">existing thread</a> for ${this.hashtag}
+                    </p>
+                    <p class="text-center mt-4">Do you want to add new posts to the existing thread, or start a new thread?</p>
+                    <div class="flex flex-col mx-auto gap-4 mt-4">
+                        <button
+                            class="px-4 py-2 rounded bg-primary text-white"
+                            @click=${() => {
+                                this.askedReuse = true;
+                                this.requestUpdate();
+                            }}
+                        >
+                            Use existing thread
+                        </button>
+                        <button
+                            class="px-4 py-2 rounded bg-primary text-white"
+                            @click=${() => {
+                                this.askedReuse = true;
+                                localStorage.removeItem(baseKey + "|root");
+                                localStorage.removeItem(baseKey + "|reply");
+                                this.requestUpdate();
+                            }}
+                        >
+                            Start new thread
+                        </button>
+                    </div>
+                </div>`;
+            } else {
+                return this.renderLive();
+            }
         }
 
         let content: TemplateResult | HTMLElement = html``;
@@ -110,7 +154,7 @@ class App extends LitElement {
             content = html` <p class="text-center">Connecting</p>
                 <div class="align-top">${contentLoader}</div>`;
         } else {
-            content = html` <p class="text-center">A chat-like interface for #hashtag live events on BlueSky</p>
+            content = html` <p class="text-center mx-auto w-[280px]">Explore & create hashtag threads on BlueSky</p>
                 <div class="mx-auto flex flex-col gap-4 mt-4 w-[280px]">
                     <input
                         id="hashtag"
@@ -118,8 +162,7 @@ class App extends LitElement {
                         placeholder="Hashtag, e.g. #imzentrum"
                         value=${this.hashtag || nothing}
                     />
-                    <p>You can optionally log in with your BlueSky account to like/repost other user's posts and write your own posts</p>
-                    <p>Your login credentials will only be stored locally on your device.</p>
+                    <p>Optionally log-in with your BlueSky account to create your own thread</p>
                     <input
                         id="account"
                         class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
@@ -134,6 +177,7 @@ class App extends LitElement {
                         value=${this.password || nothing}
                     />
                     <label><input id="save" type="checkbox" checked="true" /> Remember me</label>
+                    <p class="text-xs mt-0 pt-0">Your credentials will only be stored on your device.</p>
                     <button class="align-center rounded bg-primary text-white px-4 py-2" @click=${this.goLive}>Go live!</button>
                 </div>
                 ${this.error
@@ -193,64 +237,121 @@ class App extends LitElement {
             localStorage.setItem("p", this.password);
         }
 
+        if (this.saveElement?.checked == false) {
+            localStorage.removeItem("a");
+            localStorage.removeItem("p");
+        }
+
         this.load();
     }
 
     renderLive() {
-        const liveDom = dom(html`<div class="w-full h-full flex flex-col">
-            <div class="flex p-2 items-center border border-b border-gray/50">
+        const liveDom = dom(html`<div class="w-full max-w-[590px] mx-auto h-full flex flex-col">
+            <div class="flex p-2 items-center border-b border-gray/50">
                 <a class="text-sm flex align-center justify-center text-primary font-bold text-center" href="/"
                     ><i class="w-[16px] h-[16px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
                 >
                 <span class="flex-grow text-center">${this.hashtag}</span>
                 <theme-toggle absolute="false"></theme-toggle>
             </div>
-            <div id="posts" class="flex-grow overflow-auto"></div>
-            <div class="flex flex-col">
-                <span id="count" class="text-xs text-primary pl-2"></span>
-                <div class="flex">
-                    <textarea
-                        id="message"
-                        class="flex-grow resize-none outline-none text-black px-2"
-                        placeholder="Your next post message goes here..."
-                    ></textarea>
-                    <button id="sendPost" class="bg-primary text-white px-4 disabled:bg-gray">Post</button>
-                </div>
-            </div>
-            <div id="catchup" class="w-full hidden absolute top-[3em] flex items-center">
+            <div id="catchup" class="w-full max-w-[590px] hidden absolute top-[3em] flex items-center">
                 <button
                     @click=${() => {
                         userScrolled = false;
                         catchup.classList.add("hidden");
                         lastPostHtml?.scrollIntoView();
                     }}
-                    class="mx-auto rounded bg-primary px-2 py-1 text-sm"
+                    class="mx-auto rounded bg-primary px-2 py-1 text-sm text-white"
                 >
                     ↓ Catch up ↓
                 </button>
             </div>
+            <div id="posts" class="flex-grow overflow-auto"></div>
+            ${this.account
+                ? html`
+                      <div class="flex mx-auto w-full">
+                          <div class="flex flex-col flex-grow">
+                              <textarea
+                                  id="message"
+                                  class="resize-none outline-none bg-transparent px-2 pt-2 border-t border-gray/50"
+                                  placeholder="Add a post to your thread about ${this.hashtag!}. The hashtag will be added automatically."
+                              ></textarea>
+                              <span id="count" class="text-end text-xs pr-2 pb-2"></span>
+                          </div>
+                          <button id="sendPost" class="bg-primary text-white px-4 disabled:bg-primary/70 disabled:text-white/70">Post</button>
+                      </div>
+                  `
+                : nothing}
         </div>`)[0];
 
-        const totalCount = 300 - (1 + this.hashtag!.length);
+        if (this.bskyClient) {
+            const totalCount = 300 - (1 + this.hashtag!.length);
+            const count = liveDom.querySelector("#count")! as HTMLSpanElement;
+            count.innerText = "0/" + totalCount;
+            const message = liveDom.querySelector("#message")! as HTMLTextAreaElement;
+            const sendPost = liveDom.querySelector("#sendPost")! as HTMLInputElement;
+
+            message.addEventListener("input", () => {
+                message.style.height = "auto";
+                message.style.height = message.scrollHeight + "px";
+                const text = message.value.trim();
+                if (text.length == 0 || text.length > totalCount) {
+                    sendPost.disabled = true;
+                    count.classList.add("text-red");
+                } else {
+                    sendPost.disabled = false;
+                    count.classList.remove("text-red");
+                }
+                count.innerText = text.length + "/" + totalCount;
+            });
+
+            sendPost.disabled = true;
+            sendPost.addEventListener("click", async () => {
+                try {
+                    message.disabled = true;
+                    sendPost.disabled = true;
+                    const richText = new RichText({ text: message.value + " " + this.hashtag! });
+                    try {
+                        await richText.detectFacets(this.bskyClient!);
+                    } catch (e) {
+                        // may explode if handles can't be resolved
+                    }
+                    const baseKey = this.account + "|" + this.hashtag!;
+                    const prevRoot = localStorage.getItem(baseKey + "|root") ? JSON.parse(localStorage.getItem(baseKey + "|root")!) : undefined;
+                    const prevReply = localStorage.getItem(baseKey + "|reply") ? JSON.parse(localStorage.getItem(baseKey + "|reply")!) : undefined;
+                    let record = {
+                        $type: "app.bsky.feed.post",
+                        text: richText.text,
+                        facets: richText.facets,
+                        createdAt: new Date().toISOString(),
+                    } as any;
+                    if (prevRoot) {
+                        record = {
+                            ...record,
+                            reply: {
+                                root: prevRoot,
+                                parent: prevReply ?? prevRoot,
+                            },
+                        };
+                    }
+                    const response = await this.bskyClient?.post(record);
+                    if (!prevRoot) localStorage.setItem(baseKey + "|root", JSON.stringify(response));
+                    localStorage.setItem(baseKey + "|reply", JSON.stringify(response));
+                    message.value = "";
+                    count.innerText = "0/" + totalCount;
+                    sendPost.disabled = true;
+                } catch (e) {
+                    alert("Couldn't publish post!");
+                } finally {
+                    message.disabled = false;
+                    sendPost.disabled = false;
+                }
+            });
+        }
+
         const posts = liveDom.querySelector("#posts")!;
         const catchup = liveDom.querySelector("#catchup")!;
-        const count = liveDom.querySelector("#count")! as HTMLSpanElement;
-        count.innerText = "0/" + totalCount;
-        const message = liveDom.querySelector("#message")! as HTMLTextAreaElement;
-        const sendPost = liveDom.querySelector("#sendPost")! as HTMLInputElement;
-        sendPost.disabled = true;
-        message.addEventListener("input", function () {
-            message.style.height = "auto"; // Reset the height to auto
-            message.style.height = message.scrollHeight + "px"; // Set the height based on content
-            if (message.value.trim().length == 0) {
-                sendPost.disabled = true;
-            } else {
-                sendPost.disabled = false;
-            }
-        });
-
         let lastPostHtml: HTMLElement | undefined;
-
         let userScrolled = false;
         let lastScrollTop = posts.scrollTop;
         posts.addEventListener("scroll", (ev) => {
@@ -270,7 +371,7 @@ class App extends LitElement {
                 if (!post.text.toLowerCase().includes(this.hashtag!.toLowerCase())) return;
                 const author = this.authorCache[post.authorDid] ?? (await getAccount(post.authorDid));
                 this.authorCache[post.authorDid] = author;
-                const postHtml = dom(this.recordPartial(author, post.rkey, post))[0];
+                const postHtml = this.recordPartial(author, post.rkey, post);
                 posts?.append(postHtml);
                 lastPostHtml = postHtml;
                 if (!userScrolled) postHtml.scrollIntoView({ behavior: "smooth" });
@@ -300,7 +401,7 @@ class App extends LitElement {
     defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
     recordPartial(author: BskyAuthor, rkey: string, record: BskyRecord, isQuote = false) {
-        return html`<div class="border border-b border-gray/30 p-4">
+        const recordDom = dom(html`<div class="border-b border-gray/30 p-4">
             <div class="flex items-center gap-2">
                 <a class="flex items-center gap-2" href="https://bsky.app/profile/${author.handle ?? author.did}" target="_blank">
                     ${author.avatar ? html`<img class="w-[2em] h-[2em] rounded-full" src="${author.avatar}" />` : this.defaultAvatar}
@@ -311,7 +412,74 @@ class App extends LitElement {
                 >
             </div>
             <div class="${isQuote ? "italic" : ""} mt-1">${unsafeHTML(processText(record))}</div>
-        </div>`;
+            ${this.bskyClient
+                ? html`<div class="flex items-center gap-4 mt-1">
+                      <a href="https://bsky.app/profile/${author.did}/post/${rkey}" target="_blank"
+                          ><i class="icon min-w-[1.25em] min-h-[1.25em] fill-black dark:fill-white/50">${replyIcon}</i></a
+                      >
+                      <i id="repost" class="icon min-w-[1.25em] min-h-[1.25em] fill-black dark:fill-white/50">${reblogIcon}</i>
+                      <i id="like" class="icon min-w-[1.25em] min-h-[1.25em] fill-black dark:fill-white/50">${heartIcon}</i>
+                  </div>`
+                : nothing}
+        </div>`)[0];
+        const reblog = recordDom.querySelector("#repost");
+        let postCoords: { cid: string; uri: string } | undefined = undefined;
+        let reblogged = false;
+        let reblogUri: string | undefined = undefined;
+        reblog?.addEventListener("click", async () => {
+            if (!postCoords) {
+                const response = await getPost(author.did, rkey);
+                if (response instanceof Error) {
+                    alert("Couldn't repost post");
+                    return;
+                }
+                postCoords = response;
+            }
+            reblogged = !reblogged;
+            if (reblogged) {
+                reblog.classList.remove("fill-black");
+                reblog.classList.remove("dark:fill-white/50");
+                reblog.classList.add("fill-primary");
+                reblog.classList.add("dark:fill-primary");
+                const response = await this.bskyClient!.repost(postCoords.uri, postCoords.cid);
+                reblogUri = response.uri;
+            } else {
+                reblog.classList.add("fill-black");
+                reblog.classList.add("dark:fill-white/50");
+                reblog.classList.remove("fill-primary");
+                reblog.classList.remove("dark:fill-primary");
+                if (reblogUri) this.bskyClient?.deleteRepost(reblogUri);
+                reblogUri = undefined;
+            }
+        });
+        const like = recordDom.querySelector("#like");
+        let liked = false;
+        let likeUri: string | undefined = undefined;
+        like?.addEventListener("click", async () => {
+            if (!postCoords) {
+                const response = await getPost(author.did, rkey);
+                if (response instanceof Error) {
+                    alert("Couldn't like post");
+                    return;
+                }
+                postCoords = response;
+            }
+            liked = !liked;
+            if (liked) {
+                like.classList.remove("fill-black");
+                like.classList.remove("dark:fill-white/50");
+                like.classList.add("fill-primary");
+                like.classList.add("dark:fill-primary");
+                likeUri = (await this.bskyClient!.like(postCoords.uri, postCoords.cid)).uri;
+            } else {
+                like.classList.add("fill-black");
+                like.classList.add("dark:fill-white/50");
+                like.classList.remove("fill-primary");
+                like.classList.remove("dark:fill-primary");
+                if (likeUri) this.bskyClient?.deleteLike(likeUri);
+            }
+        });
+        return recordDom;
     }
 
     postPartial(post: BskyPost): HTMLElement {

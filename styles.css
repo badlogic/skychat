@@ -15,3 +15,17 @@
         @apply w-full h-full;
     }
 }
+
+@layer icon {
+    i.icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        @apply w-[1em] h-[1em] border-white fill-primary;
+        cursor: pointer;
+    }
+
+    i.icon > svg {
+        @apply w-full h-full;
+    }
+}

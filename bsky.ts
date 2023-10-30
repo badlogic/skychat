@@ -108,6 +108,24 @@ export async function getAccount(handle: string): Promise<BskyAuthor | Error> {
     }
 }
 
+export async function getPost(authorDid: string, rkey: string): Promise<{ uri: string; cid: string } | Error> {
+    try {
+        const response = await agent.rpc.get("com.atproto.repo.getRecord", {
+            params: {
+                repo: authorDid,
+                collection: "app.bsky.feed.post",
+                rkey,
+            },
+        });
+        if (!response.success) {
+            return new Error("Couldn't get post");
+        }
+        return response.data as any;
+    } catch (e) {
+        return new Error("Couldn't get post");
+    }
+}
+
 export async function getPosts(author: BskyAuthor, numDays: number = 30): Promise<BskyPost[] | Error> {
     const posts: BskyPost[] = [];
     try {
