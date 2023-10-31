@@ -1,20 +1,12 @@
-import { ComAtprotoSyncSubscribeRepos, FollowRecord } from "@atproto/api";
 import { CarReader } from "@ipld/car/reader";
 import { decode as cborDecode } from "@ipld/dag-cbor";
 export { ComAtprotoSyncSubscribeRepos } from "@atproto/api";
 import { AtpBaseClient } from "@atproto/api";
 import { decodeMultiple } from "cbor-x";
-import { cborToLexRecord, readCar } from "@atproto/repo";
+import { Post } from "./bsky";
 
 export const startEventStream = (onPost: (post: Post) => void, onClose: () => void) => {
     return new BskyEventStream(onPost, onClose);
-};
-
-export type Post = {
-    rkey: string;
-    authorDid: string;
-    text: string;
-    createdAt: string | number;
 };
 
 export class BskyEventStream {

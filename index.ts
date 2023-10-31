@@ -1,14 +1,17 @@
-import { LitElement, TemplateResult, html, nothing, svg } from "lit";
-import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
-import { customElement, query, state } from "lit/decorators.js";
-import { BskyAuthor, BskyPost, BskyRecord, getAccount, getPost, processText } from "./bsky";
+import { LitElement, PropertyValueMap, TemplateResult, html, nothing, svg } from "lit";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
+import { customElement, property, query, state } from "lit/decorators.js";
+import { AuthorCache, BskyAuthor, BskyPost, BskyRecord, Post, PostSearch, getAccount, getPost, processText } from "./bsky";
 import { globalStyles } from "./styles";
 // @ts-ignore
 import logoSvg from "./logo.svg";
 import { contentLoader, dom, getDateString, renderCard, renderGallery } from "./utils";
 import { BskyAgent, RichText } from "@atproto/api";
-import { Post, startEventStream } from "./firehose";
+import { startEventStream } from "./firehose";
 import { heartIcon, reblogIcon, replyIcon } from "./icons";
+
+const authorCache = new AuthorCache();
+const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
 @customElement("skychat-app")
 class App extends LitElement {
@@ -39,14 +42,14 @@ class App extends LitElement {
     password: string | null;
     hashtag: string | null;
     bskyClient?: BskyAgent;
+    postSearch?: PostSearch;
     initialPosts: Post[] = [];
-    authorCache: Record<string, BskyAuthor> = {};
 
     constructor() {
         super();
         this.account = localStorage.getItem("a");
         this.password = localStorage.getItem("p");
-        this.hashtag = null;
+        this.hashtag = new URL(location.href).searchParams.get("hashtag") ?? null;
     }
 
     protected createRenderRoot(): Element | ShadowRoot {
@@ -55,6 +58,7 @@ class App extends LitElement {
 
     async load() {
         this.isLoading = true;
+        if (!this.hashtag) return;
         if (this.account && this.password) {
             this.bskyClient = new BskyAgent({ service: "https://bsky.social" });
             try {
@@ -69,36 +73,19 @@ class App extends LitElement {
                 return;
             }
         }
-
-        try {
-            const response = await fetch(`https://search.bsky.social/search/posts?q=${encodeURIComponent(this.hashtag!)}`);
-            if (response.status != 200) {
-                throw Error();
-            }
-            const initialPosts: any[] = await response.json();
-            for (const initialPost of initialPosts) {
-                if (!this.authorCache[initialPost.user.did]) {
-                    const author = await getAccount(initialPost.user.did);
-                    if (author instanceof Error) continue;
-                    this.authorCache[initialPost.user.did] = author;
-                }
-                this.initialPosts.push({
-                    authorDid: initialPost.user.did,
-                    rkey: initialPost.tid.split("/")[1],
-                    createdAt: initialPost.post.createdAt / 1000000,
-                    text: initialPost.post.text as string,
-                    cid: initialPost.cid,
-                } as Post);
-            }
-            this.initialPosts = this.initialPosts.sort((a, b) => (b.createdAt as number) - (a.createdAt as number)).reverse();
-        } catch (e) {
-            this.error = `Couldn't fetch posts for hashtag ${this.hashtag}`;
+        this.postSearch = new PostSearch(this.hashtag.replace("#", ""));
+        const oldPosts = await this.postSearch.next();
+        if (oldPosts instanceof Error) {
+            this.error = `Couldn't load old posts for hashtag ${this.hashtag}`;
             this.isLoading = false;
             return;
         }
-
+        this.initialPosts = oldPosts;
         this.isLoading = false;
         this.isLive = true;
+        const url = new URL(location.href);
+        url.searchParams.set("hashtag", this.hashtag);
+        history.replaceState(null, "", url.toString());
         this.requestUpdate();
     }
 
@@ -246,15 +233,51 @@ class App extends LitElement {
     }
 
     renderLive() {
-        const liveDom = dom(html`<div class="w-full max-w-[590px] mx-auto h-full flex flex-col">
-            <div class="flex p-2 items-center border-b border-gray/50">
-                <a class="text-sm flex align-center justify-center text-primary font-bold text-center" href="/"
-                    ><i class="w-[16px] h-[16px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
-                >
-                <span class="flex-grow text-center">${this.hashtag}</span>
-                <theme-toggle absolute="false"></theme-toggle>
+        const loadOlderPosts = async () => {
+            const posts = liveDom.querySelector("#posts")!;
+            const load = posts.querySelector("#loadOlderPosts")! as HTMLElement;
+            const olderPosts = await this.postSearch!.next();
+            if (olderPosts instanceof Error || olderPosts.length == 0) {
+                load.innerText = "No more older posts";
+                return;
+            }
+            let first: HTMLElement | undefined;
+            for (const post of olderPosts) {
+                const postHtml = dom(html`<post-view .bskyClient=${this.bskyClient} .post=${post}></post-view>`)[0];
+                if (!first) first = postHtml;
+                posts.insertBefore(postHtml, load);
+            }
+            if (first) {
+                load.remove();
+                posts.insertBefore(load, first);
+                load.scrollIntoView({ behavior: "smooth", inline: "nearest" });
+            }
+        };
+
+        const liveDom = dom(html`<main class="w-full h-full overflow-auto">
+            <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
+                <div class="flex p-2 items-center bg-white dark:bg-black border-b border-gray/50 sticky top-0">
+                    <a class="text-sm flex align-center justify-center text-primary font-bold text-center" href="/"
+                        ><i class="w-[16px] h-[16px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
+                    >
+                    <span class="flex-grow text-center text-primary">${this.hashtag}</span>
+                    <theme-toggle absolute="false"></theme-toggle>
+                </div>
+                <div id="posts" class="flex-grow">
+                    <button id="loadOlderPosts" @click=${loadOlderPosts} class="w-full text-center p-4 text-primary">
+                        Load older posts for ${this.hashtag}
+                    </button>
+                </div>
+                ${this.account
+                    ? html`<post-editor
+                          class="sticky bottom-0"
+                          .account=${this.account}
+                          .bskyClient=${this.bskyClient}
+                          .hashtag=${this.hashtag}
+                      ></post-editor> `
+                    : nothing}
             </div>
-            <div id="catchup" class="w-full max-w-[590px] hidden absolute top-[3em] flex items-center">
+            <div id="catchup" class="w-full hidden absolute flex items-center">
                 <button
                     @click=${() => {
                         userScrolled = false;
@@ -266,251 +289,312 @@ class App extends LitElement {
                     ↓ Catch up ↓
                 </button>
             </div>
-            <div id="posts" class="flex-grow overflow-auto"></div>
-            ${this.account
-                ? html`
-                      <div class="flex mx-auto w-full">
-                          <div class="flex flex-col flex-grow">
-                              <textarea
-                                  id="message"
-                                  class="resize-none outline-none bg-transparent px-2 pt-2 border-t border-gray/50"
-                                  placeholder="Add a post to your thread about ${this.hashtag!}. The hashtag will be added automatically."
-                              ></textarea>
-                              <span id="count" class="text-end text-xs pr-2 pb-2"></span>
-                          </div>
-                          <button id="sendPost" class="bg-primary text-white px-4 disabled:bg-primary/70 disabled:text-white/70">Post</button>
-                      </div>
-                  `
-                : nothing}
-        </div>`)[0];
+        </main>`)[0];
 
-        if (this.bskyClient) {
-            const totalCount = 300 - (1 + this.hashtag!.length);
-            const count = liveDom.querySelector("#count")! as HTMLSpanElement;
-            count.innerText = "0/" + totalCount;
-            const message = liveDom.querySelector("#message")! as HTMLTextAreaElement;
-            const sendPost = liveDom.querySelector("#sendPost")! as HTMLInputElement;
-
-            message.addEventListener("input", () => {
-                message.style.height = "auto";
-                message.style.height = message.scrollHeight + "px";
-                const text = message.value.trim();
-                if (text.length == 0 || text.length > totalCount) {
-                    sendPost.disabled = true;
-                    count.classList.add("text-red");
-                } else {
-                    sendPost.disabled = false;
-                    count.classList.remove("text-red");
-                }
-                count.innerText = text.length + "/" + totalCount;
-            });
-
-            sendPost.disabled = true;
-            sendPost.addEventListener("click", async () => {
-                try {
-                    message.disabled = true;
-                    sendPost.disabled = true;
-                    const richText = new RichText({ text: message.value + " " + this.hashtag! });
-                    try {
-                        await richText.detectFacets(this.bskyClient!);
-                    } catch (e) {
-                        // may explode if handles can't be resolved
-                    }
-                    const baseKey = this.account + "|" + this.hashtag!;
-                    const prevRoot = localStorage.getItem(baseKey + "|root") ? JSON.parse(localStorage.getItem(baseKey + "|root")!) : undefined;
-                    const prevReply = localStorage.getItem(baseKey + "|reply") ? JSON.parse(localStorage.getItem(baseKey + "|reply")!) : undefined;
-                    let record = {
-                        $type: "app.bsky.feed.post",
-                        text: richText.text,
-                        facets: richText.facets,
-                        createdAt: new Date().toISOString(),
-                    } as any;
-                    if (prevRoot) {
-                        record = {
-                            ...record,
-                            reply: {
-                                root: prevRoot,
-                                parent: prevReply ?? prevRoot,
-                            },
-                        };
-                    }
-                    const response = await this.bskyClient?.post(record);
-                    if (!prevRoot) localStorage.setItem(baseKey + "|root", JSON.stringify(response));
-                    localStorage.setItem(baseKey + "|reply", JSON.stringify(response));
-                    message.value = "";
-                    count.innerText = "0/" + totalCount;
-                    sendPost.disabled = true;
-                } catch (e) {
-                    alert("Couldn't publish post!");
-                } finally {
-                    message.disabled = false;
-                    sendPost.disabled = false;
-                }
-            });
-        }
-
-        const posts = liveDom.querySelector("#posts")!;
-        const catchup = liveDom.querySelector("#catchup")!;
+        const catchup = liveDom.querySelector("#catchup")! as HTMLElement;
+        const editor = liveDom.querySelector("post-editor")! as HTMLElement;
         let lastPostHtml: HTMLElement | undefined;
         let userScrolled = false;
-        let lastScrollTop = posts.scrollTop;
-        posts.addEventListener("scroll", (ev) => {
-            if (lastScrollTop > posts.scrollTop) {
+        const scrollElement = liveDom;
+        let lastScrollTop = scrollElement.scrollTop;
+        let updateCatchupBottom = false;
+        scrollElement.addEventListener("scroll", (ev) => {
+            if (lastScrollTop > scrollElement.scrollTop) {
                 userScrolled = true;
                 catchup.classList.remove("hidden");
+                updateCatchupBottom = true;
+                const update = () => {
+                    catchup.style.bottom = editor.clientHeight + 16 + "px";
+                    if (updateCatchupBottom) requestAnimationFrame(update);
+                };
+                update();
             }
-            if (posts.scrollHeight - posts.scrollTop === posts.clientHeight) {
+            if (scrollElement.scrollHeight - scrollElement.scrollTop < scrollElement.clientHeight * 1.05) {
                 userScrolled = false;
                 catchup.classList.add("hidden");
+                updateCatchupBottom = false;
             }
-            lastScrollTop = posts.scrollTop;
+            lastScrollTop = scrollElement.scrollTop;
         });
 
-        const renderPost = async (post: Post) => {
+        const renderPost = (post: Post) => {
             try {
-                if (!post.text.toLowerCase().includes(this.hashtag!.toLowerCase())) return;
-                const author = this.authorCache[post.authorDid] ?? (await getAccount(post.authorDid));
-                this.authorCache[post.authorDid] = author;
-                const postHtml = this.recordPartial(author, post.rkey, post);
+                const posts = liveDom.querySelector("#posts")!;
+                if (!post.text.toLowerCase().includes(this.hashtag!.replace("#", "").toLowerCase())) return;
+                const postHtml = dom(html`<post-view .bskyClient=${this.bskyClient} .post=${post}></post-view>`)[0];
                 posts?.append(postHtml);
                 lastPostHtml = postHtml;
-                if (!userScrolled) postHtml.scrollIntoView({ behavior: "smooth" });
+                if (!userScrolled) {
+                    requestAnimationFrame(() => (scrollElement.scrollTop = scrollElement.scrollHeight));
+                }
             } catch (e) {
                 console.error(e);
             }
         };
 
-        (async () => {
-            for (const post of this.initialPosts) {
-                await renderPost(post);
+        const ps = [...this.initialPosts];
+        const next = () => {
+            const post = ps.shift();
+            if (post) {
+                renderPost(post);
+                setTimeout(() => next(), Math.random() * 50);
             }
+        };
+        next();
 
-            const stream = startEventStream(
-                async (post) => {
-                    renderPost(post);
-                },
-                () => {
-                    this.error = `Error, failed to load more posts for hashtag ${this.hashtag}`;
-                }
-            );
-        })();
+        const stream = startEventStream(
+            async (post) => {
+                renderPost(post);
+            },
+            () => {
+                this.error = `Error, failed to load more posts for hashtag ${this.hashtag}`;
+            }
+        );
 
         return liveDom;
     }
+}
 
-    defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
+@customElement("post-editor")
+export class PostEditor extends LitElement {
+    static styles = [globalStyles];
 
-    recordPartial(author: BskyAuthor, rkey: string, record: BskyRecord, isQuote = false) {
-        const recordDom = dom(html`<div class="border-b border-gray/30 p-4">
-            <div class="flex items-center gap-2">
-                <a class="flex items-center gap-2" href="https://bsky.app/profile/${author.handle ?? author.did}" target="_blank">
-                    ${author.avatar ? html`<img class="w-[2em] h-[2em] rounded-full" src="${author.avatar}" />` : this.defaultAvatar}
-                    <span class="text-primary">${author.displayName ?? author.handle}</span>
-                </a>
-                <a class="text-xs text-primary/75" href="https://bsky.app/profile/${author.did}/post/${rkey}" target="_blank"
-                    >${getDateString(new Date(record.createdAt))}</a
-                >
-            </div>
-            <div class="${isQuote ? "italic" : ""} mt-1">${unsafeHTML(processText(record))}</div>
-            ${this.bskyClient
-                ? html`<div class="flex items-center gap-4 mt-1">
-                      <a href="https://bsky.app/profile/${author.did}/post/${rkey}" target="_blank"
-                          ><i class="icon min-w-[1.25em] min-h-[1.25em] fill-black dark:fill-white/50">${replyIcon}</i></a
-                      >
-                      <i id="repost" class="icon min-w-[1.25em] min-h-[1.25em] fill-black dark:fill-white/50">${reblogIcon}</i>
-                      <i id="like" class="icon min-w-[1.25em] min-h-[1.25em] fill-black dark:fill-white/50">${heartIcon}</i>
-                  </div>`
-                : nothing}
-        </div>`)[0];
-        const reblog = recordDom.querySelector("#repost");
-        let postCoords: { cid: string; uri: string } | undefined = undefined;
-        let reblogged = false;
-        let reblogUri: string | undefined = undefined;
-        reblog?.addEventListener("click", async () => {
-            if (!postCoords) {
-                const response = await getPost(author.did, rkey);
-                if (response instanceof Error) {
-                    alert("Couldn't repost post");
-                    return;
-                }
-                postCoords = response;
-            }
-            reblogged = !reblogged;
-            if (reblogged) {
-                reblog.classList.remove("fill-black");
-                reblog.classList.remove("dark:fill-white/50");
-                reblog.classList.add("fill-primary");
-                reblog.classList.add("dark:fill-primary");
-                const response = await this.bskyClient!.repost(postCoords.uri, postCoords.cid);
-                reblogUri = response.uri;
-            } else {
-                reblog.classList.add("fill-black");
-                reblog.classList.add("dark:fill-white/50");
-                reblog.classList.remove("fill-primary");
-                reblog.classList.remove("dark:fill-primary");
-                if (reblogUri) this.bskyClient?.deleteRepost(reblogUri);
-                reblogUri = undefined;
-            }
-        });
-        const like = recordDom.querySelector("#like");
-        let liked = false;
-        let likeUri: string | undefined = undefined;
-        like?.addEventListener("click", async () => {
-            if (!postCoords) {
-                const response = await getPost(author.did, rkey);
-                if (response instanceof Error) {
-                    alert("Couldn't like post");
-                    return;
-                }
-                postCoords = response;
-            }
-            liked = !liked;
-            if (liked) {
-                like.classList.remove("fill-black");
-                like.classList.remove("dark:fill-white/50");
-                like.classList.add("fill-primary");
-                like.classList.add("dark:fill-primary");
-                likeUri = (await this.bskyClient!.like(postCoords.uri, postCoords.cid)).uri;
-            } else {
-                like.classList.add("fill-black");
-                like.classList.add("dark:fill-white/50");
-                like.classList.remove("fill-primary");
-                like.classList.remove("dark:fill-primary");
-                if (likeUri) this.bskyClient?.deleteLike(likeUri);
-            }
-        });
-        return recordDom;
+    @property()
+    bskyClient?: BskyAgent;
+
+    @property()
+    account?: string;
+
+    @property()
+    hashtag?: string;
+
+    @state()
+    count = 0;
+
+    @state()
+    canPost = false;
+
+    @query("#message")
+    messageElement?: HTMLTextAreaElement;
+
+    message: string = "";
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
     }
 
-    postPartial(post: BskyPost): HTMLElement {
-        let images = post.embed?.images ? renderGallery(post.embed.images) : undefined;
-        if (!images) images = post.embed?.media?.images ? renderGallery(post.embed.media.images) : undefined;
-        let card = post.embed?.external ? renderCard(post.embed.external) : undefined;
-
-        let quotedPost = post.embed?.record;
-        if (quotedPost && quotedPost?.$type != "app.bsky.embed.record#viewRecord") quotedPost = quotedPost.record;
-        const quotedPostAuthor = quotedPost?.author;
-        const quotedPostUri = quotedPost?.uri;
-        const quotedPostValue = quotedPost?.value;
-        let quotedPostImages = quotedPost?.embeds[0]?.images ? renderGallery(quotedPost.embeds[0].images) : undefined;
-        if (!quotedPostImages) quotedPostImages = quotedPost?.embeds[0]?.media?.images ? renderGallery(quotedPost.embeds[0].media.images) : undefined;
-        let quotedPostCard = quotedPost?.embeds[0]?.external ? renderCard(quotedPost.embeds[0].external) : undefined;
-
-        const postDom = dom(html`<div>
-            <div class="flex flex-col py-4 post min-w-[280px] border-b border-gray/50">
-                ${this.recordPartial(post.author, post.uri, post.record)} ${images ? html`<div class="mt-2">${images}</div>` : nothing}
-                ${quotedPost
-                    ? html`<div class="border border-gray/50 rounded p-4 mt-2">
-                          ${this.recordPartial(quotedPostAuthor!, quotedPostUri!, quotedPostValue!, true)}
-                          ${quotedPostImages ? html`<div class="mt-2">${quotedPostImages}</div>` : nothing}
-                          ${quotedPostCard ? quotedPostCard : nothing}
-                      </div>`
-                    : nothing}
-                ${card ? card : nothing}
-                <div class="flex gap-2 font-bold mt-4 text-primary"><span>${post.repostCount} reposts</span><span>${post.likeCount} likes</span></div>
+    render() {
+        const totalCount = 300 - (1 + this.hashtag!.length);
+        return html` <div class="flex mx-auto w-full bg-white dark:bg-black rounded border border-gray/20">
+            <div class="flex flex-col flex-grow">
+                <textarea
+                    id="message"
+                    @input=${this.input}
+                    class="resize-none outline-none bg-transparent dark:text-white px-2 pt-2"
+                    placeholder="Add a post to your thread about ${this.hashtag!}. The hashtag will be added automatically."
+                ></textarea>
+                <div class="flex gap-4 items-right">
+                    <span
+                        class="bg-transparent dark:text-gray ml-auto text-end text-xs flex items-center ${this.count > totalCount
+                            ? "text-red dark:text-red"
+                            : ""}"
+                        >${this.count}/${totalCount}</span
+                    >
+                    <button
+                        @click=${this.sendPost}
+                        class="bg-primary text-white px-4 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
+                        ?disabled=${!this.canPost}
+                    >
+                        Post
+                    </button>
+                </div>
             </div>
-        </div>`)[0];
+        </div>`;
+    }
 
-        return postDom;
+    input(ev: InputEvent) {
+        const message = ev.target as HTMLTextAreaElement;
+        this.count = message.value.trim().length;
+        const totalCount = 300 - (1 + this.hashtag!.length);
+        this.canPost = this.count > 0 && this.count <= totalCount;
+        message.style.height = "auto";
+        message.style.height = message.scrollHeight + "px";
+        this.message = message.value.trim();
+    }
+
+    async sendPost() {
+        try {
+            this.canPost = false;
+            this.messageElement!.disabled = true;
+            this.requestUpdate();
+            const richText = new RichText({ text: this.message + " " + this.hashtag! });
+            try {
+                await richText.detectFacets(this.bskyClient!);
+            } catch (e) {
+                // may explode if handles can't be resolved
+            }
+            const baseKey = this.account + "|" + this.hashtag!;
+            const prevRoot = localStorage.getItem(baseKey + "|root") ? JSON.parse(localStorage.getItem(baseKey + "|root")!) : undefined;
+            const prevReply = localStorage.getItem(baseKey + "|reply") ? JSON.parse(localStorage.getItem(baseKey + "|reply")!) : undefined;
+            let record = {
+                $type: "app.bsky.feed.post",
+                text: richText.text,
+                facets: richText.facets,
+                createdAt: new Date().toISOString(),
+            } as any;
+            if (prevRoot) {
+                record = {
+                    ...record,
+                    reply: {
+                        root: prevRoot,
+                        parent: prevReply ?? prevRoot,
+                    },
+                };
+            }
+            const response = await this.bskyClient?.post(record);
+            if (!prevRoot) localStorage.setItem(baseKey + "|root", JSON.stringify(response));
+            localStorage.setItem(baseKey + "|reply", JSON.stringify(response));
+            this.messageElement!.value = "";
+            this.count = 0;
+            this.messageElement!.style.height = "auto";
+            this.messageElement!.style.height = this.messageElement!.scrollHeight + "px";
+        } catch (e) {
+            alert("Couldn't publish post!");
+        } finally {
+            this.canPost = this.count > 0;
+            this.messageElement!.disabled = false;
+        }
+    }
+}
+
+@customElement("post-view")
+export class PostView extends LitElement {
+    static styles = [globalStyles];
+
+    @property()
+    bskyClient?: BskyAgent;
+
+    @property()
+    post?: Post;
+
+    @state()
+    author?: BskyAuthor;
+
+    protected update(changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        super.update(changedProperties);
+        if (changedProperties.has("post") && this.post) {
+            const post = this.post;
+            (async () => {
+                const author = await authorCache.get(post.authorDid);
+                if (author instanceof Error) {
+                    this.author = {
+                        did: post.authorDid,
+                        displayName: "unknown",
+                        followersCount: 0,
+                        followsCount: 0,
+                    };
+                } else {
+                    this.author = author;
+                }
+                this.postRef = undefined;
+                this.requestUpdate();
+            })();
+        }
+    }
+
+    render() {
+        if (!this.post || !this.author) {
+            return html`<div class="border-t border-gray/30 px-4 py-2">
+                ${contentLoader}
+                </div>
+            </div>`;
+        }
+
+        const post = this.post;
+        const author = this.author;
+        const postUrl = `https://bsky.app/profile/${author.did}/post/${post.rkey}`;
+        return html`<div class="border-t border-gray/30 px-4 py-2">
+            <div class="flex items-center gap-2">
+                <a class="flex items-center gap-2" href="https://bsky.app/profile/${author.handle ?? author.did}" target="_blank">
+                    ${author.avatar ? html`<img class="w-[2em] h-[2em] rounded-full" src="${author.avatar}" />` : defaultAvatar}
+                    <span class="text-primary">${author.displayName ?? author.handle}</span>
+                </a>
+                <a class="ml-auto text-xs text-primary/75" href="${postUrl}" target="_blank">${getDateString(new Date(post.createdAt))}</a>
+            </div>
+            <div class="mt-1">${unsafeHTML(processText(post))}</div>
+            ${this.bskyClient
+                ? html`<div class="flex items-center gap-4 mt-1">
+                      <a href="${postUrl}" target="_blank"><i class="icon w-[1.2em] h-[1.2em] fill-gray dark:fill-white/50">${replyIcon}</i></a>
+                      <icon-toggle @change=${this.toggleRepost}>${reblogIcon}</icon-toggle>
+                      <icon-toggle @change=${this.toggleLike}>${heartIcon}</icon-toggle>
+                  </div>`
+                : nothing}
+        </div>`;
+    }
+
+    postRef: { cid: string; uri: string } | undefined;
+    async getPostRef(post: Post) {
+        if (this.postRef) return this.postRef;
+        const response = await getPost(post.authorDid, post.rkey);
+        if (response instanceof Error) {
+            alert("Couldn't repost post");
+            return undefined;
+        }
+        this.postRef = response;
+        return this.postRef;
+    }
+
+    repostUri: string | undefined;
+    async toggleRepost(ev: CustomEvent) {
+        if (!this.post) return;
+        const postRef = await this.getPostRef(this.post);
+        if (!postRef) return;
+        if (ev.detail.value) {
+            const response = await this.bskyClient!.repost(postRef.uri, postRef.cid);
+            this.repostUri = response.uri;
+        } else {
+            if (this.repostUri) this.bskyClient?.deleteRepost(this.repostUri);
+            this.repostUri = undefined;
+        }
+    }
+
+    likeUri: string | undefined;
+    async toggleLike(ev: CustomEvent) {
+        if (!this.post) return;
+        const postRef = await this.getPostRef(this.post);
+        if (!postRef) return;
+        if (ev.detail.value) {
+            this.likeUri = (await this.bskyClient!.like(postRef.uri, postRef.cid)).uri;
+        } else {
+            if (this.likeUri) this.bskyClient?.deleteLike(this.likeUri);
+            this.likeUri = undefined;
+        }
+    }
+}
+
+@customElement("icon-toggle")
+export class IconToggle extends LitElement {
+    static styles = [globalStyles];
+
+    @property()
+    value = false;
+
+    render() {
+        return html`<i
+            class="icon w-[1.2em] h-[1.2em] ${this.value ? "fill-primary dark:fill-primary" : "fill-gray dark:fill-white/50"}"
+            @click=${this.toggle}
+            ><slot></slot
+        ></i>`;
+    }
+
+    toggle() {
+        this.value = !this.value;
+        this.dispatchEvent(
+            new CustomEvent("change", {
+                detail: {
+                    value: this.value,
+                },
+            })
+        );
     }
 }

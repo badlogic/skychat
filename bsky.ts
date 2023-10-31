@@ -1,11 +1,16 @@
 // @ts-ignore
 import { Agent } from "@intrnl/bluesky-client/agent";
-// @ts-ignore
-import type { DID } from "@intrnl/bluesky-client/atp-schema";
 import { RichText } from "@atproto/api";
 import { isWithinLastNumDays } from "./utils";
 
 const agent = new Agent({ serviceUri: "https://api.bsky.app" });
+
+export type Post = {
+    rkey: string;
+    authorDid: string;
+    text: string;
+    createdAt: string | number;
+};
 
 export type BskyAuthor = {
     did: string;
@@ -224,4 +229,51 @@ function applyFacets(record: BskyRecord) {
 
 export function processText(record: BskyRecord) {
     return replaceHandles(applyFacets(record)).trim().replaceAll("\n", "<br/>");
+}
+
+export class AuthorCache {
+    private readonly cache = new Map<string, Promise<BskyAuthor | Error>>();
+
+    async get(did: string) {
+        if (this.cache.has(did)) return this.cache.get(did)!;
+        this.cache.set(did, getAccount(did));
+        return this.cache.get(did)!;
+    }
+
+    async getAll(posts: Post[]) {
+        const promises: Promise<BskyAuthor | Error>[] = [];
+        for (const post of posts) {
+            promises.push(this.get(post.authorDid));
+        }
+        return await Promise.all(promises);
+    }
+}
+
+export class PostSearch {
+    offset = 0;
+    constructor(public readonly query: string) {}
+
+    async next() {
+        try {
+            const response = await fetch(`https://search.bsky.social/search/posts?q=${encodeURIComponent(this.query)}&offset=${this.offset}`);
+            if (response.status != 200) {
+                return Error(`Couldn't load posts for query ${this.query}, offset ${this.offset}`);
+            }
+            const rawPosts = await response.json();
+            const posts: Post[] = [];
+            for (const rawPost of rawPosts) {
+                posts.push({
+                    authorDid: rawPost.user.did,
+                    rkey: rawPost.tid.split("/")[1],
+                    createdAt: rawPost.post.createdAt / 1000000,
+                    text: rawPost.post.text as string,
+                    cid: rawPost.cid,
+                } as Post);
+            }
+            this.offset += rawPosts.length;
+            return posts.sort((a, b) => (b.createdAt as number) - (a.createdAt as number)).reverse();
+        } catch (e) {
+            return Error(`Couldn't load posts for query ${this.query}, offset ${this.offset}`);
+        }
+    }
 }

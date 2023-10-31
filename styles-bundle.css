@@ -639,10 +639,6 @@ i > svg {
   top: 0px;
 }
 
-.top-\[3em\] {
-  top: 3em;
-}
-
 .isolate {
   isolation: isolate;
 }
@@ -807,8 +803,8 @@ i > svg {
   max-height: 70vh;
 }
 
-.min-h-\[1\.25em\] {
-  min-height: 1.25em;
+.min-h-full {
+  min-height: 100%;
 }
 
 .\!w-\[240px\] {
@@ -855,20 +851,16 @@ i > svg {
   width: 100%;
 }
 
-.min-w-\[1\.25em\] {
-  min-width: 1.25em;
-}
-
-.min-w-\[280px\] {
-  min-width: 280px;
-}
-
 .max-w-\[300px\] {
   max-width: 300px;
 }
 
 .max-w-\[590px\] {
   max-width: 590px;
+}
+
+.max-w-\[600px\] {
+  max-width: 600px;
 }
 
 .max-w-\[728px\] {
@@ -935,6 +927,10 @@ i > svg {
 
 .flex-col {
   flex-direction: column;
+}
+
+.items-end {
+  align-items: flex-end;
 }
 
 .items-center {
@@ -1057,6 +1053,10 @@ i > svg {
   border-color: rgb(85 85 85 / var(--tw-border-opacity));
 }
 
+.border-gray\/20 {
+  border-color: rgb(85 85 85 / 0.2);
+}
+
 .border-gray\/30 {
   border-color: rgb(85 85 85 / 0.3);
 }
@@ -1113,6 +1113,10 @@ i > svg {
 
 .fill-black {
   fill: #000000;
+}
+
+.fill-gray {
+  fill: #555555;
 }
 
 .fill-primary {
@@ -1394,8 +1398,8 @@ i > svg {
   }
 }
 
-.disabled\:bg-primary\/70:disabled {
-  background-color: rgb(204 125 36 / 0.7);
+.disabled\:bg-gray\/70:disabled {
+  background-color: rgb(85 85 85 / 0.7);
 }
 
 .disabled\:text-white\/70:disabled {
@@ -1418,6 +1422,16 @@ i > svg {
 
 :is(.dark .dark\:fill-white\/50) {
   fill: rgb(255 255 255 / 0.5);
+}
+
+:is(.dark .dark\:text-gray) {
+  --tw-text-opacity: 1;
+  color: rgb(85 85 85 / var(--tw-text-opacity));
+}
+
+:is(.dark .dark\:text-red) {
+  --tw-text-opacity: 1;
+  color: rgb(204 0 0 / var(--tw-text-opacity));
 }
 
 :is(.dark .dark\:text-white) {

@@ -14,9 +14,15 @@ export function getDateString(inputDateTime: Date): string {
 
     const year = inputDateTime.getFullYear();
     const month = new String(inputDateTime.getMonth() + 1).padStart(2, "0");
-    const day = new String(inputDateTime.getDay() + 1).padStart(2, "0");
+    const day = new String(inputDateTime.getDate()).padStart(2, "0");
 
-    return hours + ":" + paddedMinutes + ":" + paddedSeconds + (getDaysDifference(inputDateTime) > 0 ? ` ${year}-${month}-${day}` : "");
+    const currDate = new Date();
+    const printYear =
+        currDate.getFullYear() != inputDateTime.getFullYear() ||
+        currDate.getMonth() != inputDateTime.getMonth() ||
+        currDate.getDay() != inputDateTime.getDay();
+
+    return hours + ":" + paddedMinutes + ":" + paddedSeconds + (printYear ? ` ${year}-${month}-${day}` : "");
 }
 
 export function getDaysDifference(inputDateTime: Date) {
