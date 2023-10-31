@@ -10,6 +10,12 @@ import { BskyAgent, RichText } from "@atproto/api";
 import { startEventStream } from "./firehose";
 import { heartIcon, reblogIcon, replyIcon } from "./icons";
 
+const icons = {
+    reblog: reblogIcon,
+    reply: replyIcon,
+    heart: heartIcon,
+};
+
 const authorCache = new AuthorCache();
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -149,7 +155,7 @@ class App extends LitElement {
                         placeholder="Hashtag, e.g. #imzentrum"
                         value=${this.hashtag || nothing}
                     />
-                    <p>Optionally log-in with your BlueSky account to create your own thread</p>
+                    <p>Join the discussion by logging in and create your own thread for the hashtag.</p>
                     <input
                         id="account"
                         class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
@@ -260,7 +266,7 @@ class App extends LitElement {
                     <a class="text-sm flex align-center justify-center text-primary font-bold text-center" href="/"
                         ><i class="w-[16px] h-[16px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
                     >
-                    <span class="flex-grow text-center text-primary">${this.hashtag}</span>
+                    <span class="flex-grow text-primary font-bold pl-2"> > ${this.hashtag}</span>
                     <theme-toggle absolute="false"></theme-toggle>
                 </div>
                 <div id="posts" class="flex-grow">
@@ -385,7 +391,7 @@ export class PostEditor extends LitElement {
 
     render() {
         const totalCount = 300 - (1 + this.hashtag!.length);
-        return html` <div class="flex mx-auto w-full bg-white dark:bg-black rounded border border-gray/20">
+        return html` <div class="flex mx-auto w-full bg-white dark:bg-black rounded border border-gray/50">
             <div class="flex flex-col flex-grow">
                 <textarea
                     id="message"
@@ -402,7 +408,7 @@ export class PostEditor extends LitElement {
                     >
                     <button
                         @click=${this.sendPost}
-                        class="bg-primary text-white px-4 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
+                        class="bg-primary text-white px-4 py-1 rounded-tl-lg disabled:bg-gray/70 disabled:text-white/70"
                         ?disabled=${!this.canPost}
                     >
                         Post
@@ -525,8 +531,8 @@ export class PostView extends LitElement {
             ${this.bskyClient
                 ? html`<div class="flex items-center gap-4 mt-1">
                       <a href="${postUrl}" target="_blank"><i class="icon w-[1.2em] h-[1.2em] fill-gray dark:fill-white/50">${replyIcon}</i></a>
-                      <icon-toggle @change=${this.toggleRepost}>${reblogIcon}</icon-toggle>
-                      <icon-toggle @change=${this.toggleLike}>${heartIcon}</icon-toggle>
+                      <icon-toggle @change=${this.toggleRepost} icon="reblog"></icon-toggle>
+                      <icon-toggle @change=${this.toggleLike} icon="heart"></icon-toggle>
                   </div>`
                 : nothing}
         </div>`;
@@ -579,12 +585,19 @@ export class IconToggle extends LitElement {
     @property()
     value = false;
 
+    @property()
+    icon?: string;
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
     render() {
         return html`<i
             class="icon w-[1.2em] h-[1.2em] ${this.value ? "fill-primary dark:fill-primary" : "fill-gray dark:fill-white/50"}"
             @click=${this.toggle}
-            ><slot></slot
-        ></i>`;
+            >${icons[this.icon as "reblog" | "heart"] ?? ""}</i
+        >`;
     }
 
     toggle() {

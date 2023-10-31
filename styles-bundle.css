@@ -1012,6 +1012,10 @@ i > svg {
   border-bottom-right-radius: 0.25rem;
 }
 
+.rounded-tl-lg {
+  border-top-left-radius: 0.5rem;
+}
+
 .border {
   border-width: 1px;
 }
@@ -1051,10 +1055,6 @@ i > svg {
 .border-gray {
   --tw-border-opacity: 1;
   border-color: rgb(85 85 85 / var(--tw-border-opacity));
-}
-
-.border-gray\/20 {
-  border-color: rgb(85 85 85 / 0.2);
 }
 
 .border-gray\/30 {
