@@ -703,6 +703,10 @@ i > svg {
   margin-left: auto;
 }
 
+.mr-2 {
+  margin-right: 0.5rem;
+}
+
 .mt-0 {
   margin-top: 0px;
 }
@@ -725,6 +729,13 @@ i > svg {
 
 .mt-8 {
   margin-top: 2rem;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .block {
@@ -775,6 +786,14 @@ i > svg {
   height: 1.2em;
 }
 
+.h-\[1\.5em\] {
+  height: 1.5em;
+}
+
+.h-\[100dvh\] {
+  height: 100dvh;
+}
+
 .h-\[16px\] {
   height: 16px;
 }
@@ -799,16 +818,16 @@ i > svg {
   max-height: 100% !important;
 }
 
-.max-h-\[70vh\] {
-  max-height: 70vh;
+.max-h-\[1em\] {
+  max-height: 1em;
+}
+
+.max-h-\[30svh\] {
+  max-height: 30svh;
 }
 
 .min-h-full {
   min-height: 100%;
-}
-
-.\!w-\[240px\] {
-  width: 240px !important;
 }
 
 .w-10 {
@@ -817,6 +836,14 @@ i > svg {
 
 .w-\[1\.2em\] {
   width: 1.2em;
+}
+
+.w-\[1\.5em\] {
+  width: 1.5em;
+}
+
+.w-\[100px\] {
+  width: 100px;
 }
 
 .w-\[16px\] {
@@ -839,16 +866,16 @@ i > svg {
   width: 32px;
 }
 
-.w-\[350px\] {
-  width: 350px;
-}
-
 .w-\[80\%\] {
   width: 80%;
 }
 
 .w-full {
   width: 100%;
+}
+
+.max-w-\[1em\] {
+  max-width: 1em;
 }
 
 .max-w-\[300px\] {
@@ -945,6 +972,10 @@ i > svg {
   justify-content: space-between;
 }
 
+.gap-1 {
+  gap: 0.25rem;
+}
+
 .gap-2 {
   gap: 0.5rem;
 }
@@ -987,6 +1018,10 @@ i > svg {
 
 .text-ellipsis {
   text-overflow: ellipsis;
+}
+
+.break-words {
+  overflow-wrap: break-word;
 }
 
 .rounded {
@@ -1398,6 +1433,16 @@ i > svg {
   }
 }
 
+.hover\:bg-primary:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(204 125 36 / var(--tw-bg-opacity));
+}
+
+.hover\:text-white:hover {
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity));
+}
+
 .disabled\:bg-gray\/70:disabled {
   background-color: rgb(85 85 85 / 0.7);
 }
@@ -1429,6 +1474,11 @@ i > svg {
   color: rgb(85 85 85 / var(--tw-text-opacity));
 }
 
+:is(.dark .dark\:text-primary) {
+  --tw-text-opacity: 1;
+  color: rgb(204 125 36 / var(--tw-text-opacity));
+}
+
 :is(.dark .dark\:text-red) {
   --tw-text-opacity: 1;
   color: rgb(204 0 0 / var(--tw-text-opacity));
@@ -1437,4 +1487,8 @@ i > svg {
 :is(.dark .dark\:text-white) {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity));
+}
+
+:is(.dark .dark\:text-white\/50) {
+  color: rgb(255 255 255 / 0.5);
 }

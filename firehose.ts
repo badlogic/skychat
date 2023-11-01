@@ -1,11 +1,18 @@
+import { AtpBaseClient } from "@atproto/api";
 import { CarReader } from "@ipld/car/reader";
 import { decode as cborDecode } from "@ipld/dag-cbor";
-export { ComAtprotoSyncSubscribeRepos } from "@atproto/api";
-import { AtpBaseClient } from "@atproto/api";
 import { decodeMultiple } from "cbor-x";
-import { Post } from "./bsky";
+export { ComAtprotoSyncSubscribeRepos } from "@atproto/api";
 
-export const startEventStream = (onPost: (post: Post) => void, onClose: () => void) => {
+export type FirehosePost = {
+    uri: string;
+    authorDid: string;
+    rkey: string;
+    text: string;
+    createdAt: string;
+};
+
+export const startEventStream = (onPost: (post: FirehosePost) => void, onClose: () => void) => {
     return new BskyEventStream(onPost, onClose);
 };
 
@@ -17,7 +24,7 @@ export class BskyEventStream {
     protected ws: WebSocket;
     protected baseClient = new AtpBaseClient();
 
-    constructor(private onPost: (post: Post) => void, private onClose: () => void) {
+    constructor(private onPost: (post: FirehosePost) => void, private onClose: () => void) {
         this.serviceUri = "bsky.social";
         this.nsid = "com.atproto.sync.subscribeRepos";
         this.ws = new WebSocket(`wss://${this.serviceUri}/xrpc/${this.nsid}`);
@@ -45,10 +52,11 @@ export class BskyEventStream {
                         if (!payloadDid["did"]) continue;
 
                         op.post = {
+                            uri: `at://${payloadDid["did"]}/app.bsky.feed.post/${op.path.split("/")[1]}`,
                             authorDid: payloadDid["did"],
                             rkey: op.path.split("/")[1],
                             ...payload,
-                        } as Post;
+                        } as FirehosePost;
                     }
                 }
             }
@@ -71,7 +79,7 @@ export class BskyEventStream {
                 if (!decoded) return;
 
                 for (const op of decoded.ops) {
-                    const post: Post = op.post;
+                    const post: FirehosePost = op.post;
                     if (!post) continue;
                     this.onPost(post);
                 }
