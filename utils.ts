@@ -38,7 +38,7 @@ export class Popup extends LitElement {
         return html`<div class="relative">
             <div @click=${() => (this.show = !this.show)} class="rounded bg-black text-white p-1 text-xs">${this.buttonText}</div>
             ${this.show
-                ? html`<div @click=${() => (this.show = !this.show)} class="absolute bg-black text-white p-4 rounded border border-gray/50">
+                ? html`<div @click=${() => (this.show = !this.show)} class="absolute bg-black text-white p-4 rounded border border-gray/50 z-[100]">
                       <slot></slot>
                   </div>`
                 : nothing}
@@ -177,4 +177,189 @@ export function replaceSpecialChars(inputString: string): string {
     const pattern = /[,!?(){}[\]<>;:'"\/\\|&^*%$#@~_+=-]/g;
     const result = inputString.replace(pattern, " ");
     return result;
+}
+
+import { heartIcon, imageIcon, reblogIcon, replyIcon, shieldIcon } from "./icons";
+const icons = {
+    reblog: reblogIcon,
+    reply: replyIcon,
+    heart: heartIcon,
+    image: imageIcon,
+    shield: shieldIcon,
+};
+
+@customElement("icon-toggle")
+export class IconToggle extends LitElement {
+    static styles = [globalStyles];
+
+    @property()
+    value = false;
+
+    @property()
+    icon?: string;
+
+    render() {
+        return html` <div
+            class="h-full w-full flex items-center cursor-pointer gap-1 ${this.value
+                ? "text-primary dark:text-primary"
+                : "text-gray dark:text-white/50"}"
+            @click=${this.toggle}
+        >
+            <i class="icon w-6 h-6 ${this.value ? "fill-primary dark:fill-primary" : "fill-gray dark:fill-white/50"}"
+                >${icons[this.icon as "reblog" | "heart" | "shield"] ?? ""}</i
+            ><slot></slot>
+        </div>`;
+    }
+
+    toggle() {
+        this.value = !this.value;
+        this.dispatchEvent(
+            new CustomEvent("change", {
+                detail: {
+                    value: this.value,
+                },
+            })
+        );
+    }
+}
+
+export type ImageInfo = {
+    alt: string;
+    dataUri: string;
+    data: Uint8Array;
+    mimeType: string;
+};
+
+function uint8ArrayToBase64(uint8Array: Uint8Array): string {
+    let binary = "";
+    uint8Array.forEach((byte) => {
+        binary += String.fromCharCode(byte);
+    });
+    return btoa(binary);
+}
+
+export async function downloadImage(url: string): Promise<ImageInfo | Error> {
+    try {
+        const response = await fetch(url);
+        if (response.ok) {
+            const arrayBuffer = await response.arrayBuffer();
+            const data = new Uint8Array(arrayBuffer);
+            let mimeType = "image/png";
+            if (response.headers.get("Content-Type")?.startsWith("image")) mimeType = response.headers.get("Content-Type")!;
+            const dataUri = `data:${mimeType};base64,${uint8ArrayToBase64(data)}`;
+            return { alt: "", dataUri, mimeType, data };
+        } else {
+            return new Error("Failed to download image:" + response.status + ", " + response.statusText);
+        }
+    } catch (error) {
+        return new Error("Failed to downlaod image");
+    }
+}
+
+export async function loadImageFiles(imageFiles: FileList): Promise<ImageInfo[]> {
+    const convertedDataArray: ImageInfo[] = [];
+
+    async function readFile(file: File) {
+        return new Promise<{ dataUri: string; mimeType: string }>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                if (event.target && event.target.result) resolve({ dataUri: event.target.result as string, mimeType: file.type });
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        if (!file) continue;
+        const { dataUri, mimeType } = await readFile(file);
+        const base64Data = dataUri.split(",")[1];
+        const uint8Array = new Uint8Array(
+            atob(base64Data)
+                .split("")
+                .map((char) => char.charCodeAt(0))
+        );
+
+        convertedDataArray.push({ alt: "", dataUri, data: uint8Array, mimeType });
+    }
+
+    return convertedDataArray;
+}
+
+export async function downscaleImage(imageData: ImageInfo, targetSizeInBytes = 960000): Promise<ImageInfo | Error> {
+    const quality = imageData.mimeType === "image/jpeg" ? 0.7 : 1;
+    const mimeType = imageData.mimeType === "image/jpeg" ? "image/jpeg" : "image/png";
+    const maxIterations = 10;
+
+    let finalData: Uint8Array = imageData.data;
+    let finalDataUri: string = imageData.dataUri;
+
+    if (targetSizeInBytes > imageData.data.length) return imageData;
+
+    const img = new Image();
+    img.src = imageData.dataUri;
+    await new Promise((imgLoadResolve) => {
+        img.onload = imgLoadResolve;
+    });
+
+    let lower = 0;
+    let upper = 1;
+
+    for (let i = 0; i < maxIterations; i++) {
+        const middle = (lower + upper) / 2;
+        let newWidth = img.width * middle;
+        let newHeight = img.height * middle;
+
+        const canvas = document.createElement("canvas");
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+            return new Error("Canvas context is not supported.");
+        }
+
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+        let scaledDataUri = canvas.toDataURL(mimeType, 1);
+
+        let scaledData = new Uint8Array(
+            atob(scaledDataUri.split(",")[1])
+                .split("")
+                .map((char) => char.charCodeAt(0))
+        );
+
+        if (scaledData.length > targetSizeInBytes) {
+            upper = middle;
+        } else {
+            lower = middle;
+            finalData = scaledData;
+            finalDataUri = scaledDataUri;
+        }
+    }
+
+    return { alt: imageData.alt, dataUri: finalDataUri, data: finalData, mimeType };
+}
+
+export function onVisibleOnce(target: Element, callback: () => void) {
+    let callbackTriggered = false;
+
+    const observer = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    callbackTriggered = true;
+                    callback();
+                    observer.unobserve(entry.target);
+                }
+            });
+        },
+        {
+            root: null,
+            rootMargin: "200px",
+            threshold: 0.01,
+        }
+    );
+    observer.observe(target);
 }

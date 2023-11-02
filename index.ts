@@ -5,6 +5,8 @@ import {
     AppBskyEmbedRecordWithMedia,
     AppBskyFeedDefs,
     AppBskyFeedPost,
+    AppBskyRichtextFacet,
+    BlobRef,
     BskyAgent,
     RichText,
 } from "@atproto/api";
@@ -13,19 +15,14 @@ import { LitElement, TemplateResult, html, nothing, svg } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { PostSearch, processText } from "./bsky";
+import { PostSearch, extractLinkCard, processText } from "./bsky";
 import { startEventStream } from "./firehose";
-import { heartIcon, reblogIcon, replyIcon } from "./icons";
 import { globalStyles } from "./styles";
-import { contentLoader, dom, getDateString } from "./utils";
+import { IconToggle, ImageInfo, contentLoader, dom, downloadImage, downscaleImage, getDateString, loadImageFiles, onVisibleOnce } from "./utils";
 // @ts-ignore
 import logoSvg from "./logo.svg";
-
-const icons = {
-    reblog: reblogIcon,
-    reply: replyIcon,
-    heart: heartIcon,
-};
+import { bookmarkIcon, closeIcon, deleteIcon, editIcon, imageIcon, replyIcon, shieldIcon } from "./icons";
+import { SelfLabels } from "@atproto/api/dist/client/types/com/atproto/label/defs";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -106,7 +103,9 @@ class App extends LitElement {
             this.isLoading = false;
             return;
         }
-        this.initialPosts = oldPosts;
+        this.initialPosts = oldPosts.filter(
+            (post) => AppBskyFeedPost.isRecord(post.record) && post.record.text.toLowerCase().includes(this.hashtag!.replace("#", "").toLowerCase())
+        );
         this.isLoading = false;
         this.isLive = true;
         const url = new URL(location.href);
@@ -256,12 +255,17 @@ class App extends LitElement {
     }
 
     renderLive() {
+        let loadingOlder = false;
         const loadOlderPosts = async () => {
+            if (loadingOlder) return;
+            loadingOlder = true;
             const posts = liveDom.querySelector("#posts")!;
             const load = posts.querySelector("#loadOlderPosts")! as HTMLElement;
             const olderPosts = await this.postSearch!.next();
             if (olderPosts instanceof Error || olderPosts.length == 0) {
-                load.innerText = "No more older posts";
+                load.innerText = "No older posts";
+                load.classList.remove("animate-pulse");
+                loadingOlder = false;
                 return;
             }
             let first: HTMLElement | undefined;
@@ -273,16 +277,29 @@ class App extends LitElement {
                 last = postHtml;
             }
 
-            if (first && last) {
-                last.scrollIntoView();
-                liveDom.scrollTop -= load.clientHeight;
-                posts.insertBefore(load, first);
+            if (first) {
+                const f = first;
+                const l = last;
+                const initialScrollHeight = liveDom.scrollHeight;
+                const adjustScroll = () => {
+                    if (liveDom.scrollHeight != initialScrollHeight) {
+                        load.remove();
+                        posts.insertBefore(load, f);
+                        liveDom.scrollTop = liveDom.scrollHeight - initialScrollHeight - load.clientHeight;
+                        loadingOlder = false;
+                    } else {
+                        requestAnimationFrame(adjustScroll);
+                    }
+                };
+                adjustScroll();
             }
+
+            onVisibleOnce(load! as HTMLElement, () => loadOlderPosts());
         };
 
         const liveDom = dom(html`<main class="w-full h-full overflow-auto">
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
-                <div class="flex p-2 items-center bg-white dark:bg-black border-b border-gray/50 sticky top-0">
+                <div class="flex p-2 items-center bg-white dark:bg-black border-b border-gray/50 sticky top-0 z-[100]">
                     <a class="flex items-center text-primary font-bold text-center" href="/"
                         ><i class="flex justify-center w-[16px] h-[16px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i
                         ><span class="ml-2">Skychat</span></a
@@ -298,8 +315,8 @@ class App extends LitElement {
                     <theme-toggle class="ml-2" absolute="false"></theme-toggle>
                 </div>
                 <div id="posts" class="flex-grow">
-                    <button id="loadOlderPosts" @click=${loadOlderPosts} class="w-full text-center p-4">
-                        Load older posts for <span class="text-primary">${this.hashtag}</span>
+                    <button id="loadOlderPosts" @click=${loadOlderPosts} class="w-full text-center p-4 animate-pulse">
+                        Loading older posts for <span class="text-primary">${this.hashtag}</span>
                     </button>
                 </div>
                 ${this.account
@@ -326,6 +343,9 @@ class App extends LitElement {
                 </button>
             </div>
         </main>`)[0];
+
+        const olderPosts = liveDom.querySelector("#loadOlderPosts")! as HTMLElement;
+        onVisibleOnce(olderPosts! as HTMLElement, () => loadOlderPosts());
 
         const catchup = liveDom.querySelector("#catchup")! as HTMLElement;
         const editor = liveDom.querySelector("post-editor") as HTMLElement;
@@ -429,13 +449,27 @@ export class PostEditor extends LitElement {
     canPost = false;
 
     @state()
-    suggestions?: ProfileViewBasic[];
+    isSending = false;
+
+    @state()
+    handleSuggestions?: ProfileViewBasic[];
     insert?: { start: number; end: number };
+
+    @state()
+    cardSuggestions?: AppBskyRichtextFacet.Link[];
+
+    @state()
+    embed?: AppBskyFeedPost.Record["embed"];
+
+    @state()
+    imagesToUpload: { alt: string; dataUri: string; data: Uint8Array; mimeType: string }[] = [];
 
     @query("#message")
     messageElement?: HTMLTextAreaElement;
 
     message: string = "";
+
+    sensitive = false;
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
@@ -459,52 +493,210 @@ export class PostEditor extends LitElement {
             if (!this.insert) return;
             this.messageElement.value = replaceSubstring(this.messageElement.value, this.insert.start, this.insert.end, handle);
             this.message = this.messageElement?.value;
-            this.suggestions = [];
+            this.handleSuggestions = [];
             this.insert = undefined;
         };
 
-        return html` <div class="flex mx-auto w-full bg-white dark:bg-black rounded border border-gray/50">
-            <div class="flex flex-col flex-grow">
-                ${this.suggestions
-                    ? html`<div class="flex flex-col border border-gray/50">
-                          ${map(
-                              this.suggestions,
-                              (suggestion) => html` <button
-                                  @click=${() => insertSuggestion(suggestion.handle)}
-                                  class="flex items-center gap-2 p-2 border-bottom border-gray/50 hover:bg-primary hover:text-white"
-                              >
-                                  ${suggestion.avatar
-                                      ? html`<img class="w-[1.5em] h-[1.5em] rounded-full" src="${suggestion.avatar}" />`
-                                      : html`<i class="icon w-[1.5em] h-[1.5em]">${defaultAvatar}</i>`}
-                                  <span>${suggestion.displayName ?? suggestion.handle}</span>
-                                  <span class="ml-auto text-gray text-sm">${suggestion.displayName ? suggestion.handle : ""}</span>
-                              </button>`
-                          )}
-                      </div>`
-                    : nothing}
+        return html` <div class="flex max-w-[600px] bg-white dark:bg-black rounded border-t border-l border-r border-gray/50">
+            <div class="flex max-w-full flex-col flex-grow relative">
+                ${
+                    this.handleSuggestions
+                        ? html`<div
+                              class="flex flex-col bg-white dark:bg-black border border-gray/50 absolute"
+                              style="top: calc(${this.handleSuggestions.length} * -2.5em);"
+                          >
+                              ${map(
+                                  this.handleSuggestions,
+                                  (suggestion) => html` <button
+                                      @click=${() => insertSuggestion(suggestion.handle)}
+                                      class="flex items-center gap-2 p-2 border-bottom border-gray/50 hover:bg-primary hover:text-white"
+                                  >
+                                      ${suggestion.avatar
+                                          ? html`<img class="w-[1.5em] h-[1.5em] rounded-full" src="${suggestion.avatar}" />`
+                                          : html`<i class="icon w-[1.5em] h-[1.5em]">${defaultAvatar}</i>`}
+                                      <span>${suggestion.displayName ?? suggestion.handle}</span>
+                                      <span class="ml-auto text-gray text-sm">${suggestion.displayName ? suggestion.handle : ""}</span>
+                                  </button>`
+                              )}
+                          </div>`
+                        : nothing
+                }
+                ${this.isSending ? html`<div class="p-2 text-sm animate-pulse">Sending post</div>` : nothing}
                 <textarea
                     id="message"
                     @input=${this.input}
-                    class="resize-none outline-none bg-transparent dark:text-white px-2 pt-2"
+                    class="resize-none outline-none bg-transparent dark:text-white disabled:text-gray dark:disabled:text-gray p-2 whitespace-normal"
                     placeholder="Add a post to your thread about ${this.hashtag!}. The hashtag will be added automatically."
+                    ?disabled=${this.isSending}
                 ></textarea>
-                <div class="flex gap-4 items-right">
+                ${
+                    !this.embed && this.imagesToUpload.length == 0 && (this.cardSuggestions?.length ?? 0 > 0)
+                        ? html`<div class="flex flex-col my-2 mx-2 gap-2">
+                              ${map(
+                                  this.cardSuggestions,
+                                  (card) =>
+                                      html`<button
+                                          @click=${() => this.addLinkCard(card)}
+                                          class="border border-gray/50 rounded py-1 px-4 flex gap-2"
+                                          ?disabled=${this.isSending}
+                                      >
+                                          <div class="min-w-[70px]">Add card</div>
+                                          <div class="text-left truncate text-blue-500">${card.uri}</div>
+                                      </button>`
+                              )}
+                          </div>`
+                        : nothing
+                }
+                ${
+                    AppBskyEmbedExternal.isMain(this.embed)
+                        ? html`<div class="flex relative px-2">
+                              <div class="w-full">${renderEmbed(this.embed, false)}</div>
+                              <button
+                                  class="absolute right-4 top-4 z-[100]"
+                                  @click=${() => {
+                                      this.embed = undefined;
+                                      this.checkCanPost();
+                                  }}
+                                  ?disabled=${this.isSending}
+                              >
+                                  <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
+                              </button>
+                          </div>`
+                        : nothing
+                }
+                ${
+                    this.imagesToUpload.length > 0
+                        ? html`<div class="flex mx-2">
+                              ${map(
+                                  this.imagesToUpload,
+                                  (image) => html`<div class="w-1/4 relative">
+                                      <img src="${image.dataUri}" class="px-1 w-full h-[100px] object-cover" /><button
+                                          class="absolute right-2 top-2 z-[100] bg-black rounded-full p-1"
+                                          @click=${() => {
+                                              this.imagesToUpload = this.imagesToUpload.filter((other) => image != other);
+                                              this.checkCanPost();
+                                          }}
+                                          ?disabled=${this.isSending}
+                                      >
+                                          <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
+                                      </button>
+                                      <button
+                                          class="absolute left-2 top-2 z-[100] bg-black rounded-full p-1"
+                                          @click=${() => {
+                                              document.body.append(dom(html`<image-editor .image=${image}></image-editor>`)[0]);
+                                          }}
+                                          ?disabled=${this.isSending}
+                                      >
+                                          <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${editIcon}</i>
+                                      </button>
+                                  </div>`
+                              )}
+                          </div>`
+                        : nothing
+                }
+                <div class="flex items-right">
+                    <button class="p-2 disabled:fill-gray" @click=${this.addImage} ?disabled=${this.embed || this.isSending}>
+                        <i class="icon w-6 h-6 ${this.embed || this.isSending ? "fill-gray/50" : ""}">${imageIcon}</i>
+                    </button>
+                    ${
+                        this.imagesToUpload.length > 0
+                            ? html`<icon-toggle @change=${(ev: CustomEvent) => (this.sensitive = ev.detail.value)} icon="shield"></icon-toggle>`
+                            : nothing
+                    }
+                    </button>
                     <span
-                        class="bg-transparent dark:text-gray ml-auto text-end text-xs flex items-center ${this.count > totalCount
-                            ? "text-red dark:text-red"
-                            : ""}"
+                        class="ml-auto bg-transparent dark:text-gray text-end text-xs flex items-center ${
+                            this.count > totalCount ? "text-red dark:text-red" : ""
+                        }"
                         >${this.count}/${totalCount}</span
                     >
                     <button
                         @click=${this.sendPost}
-                        class="bg-primary text-white px-4 py-1 rounded-tl-lg disabled:bg-gray/70 disabled:text-white/70"
-                        ?disabled=${!this.canPost}
+                        class="ml-2 bg-primary text-white my-2 mr-2 px-2 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
+                        ?disabled=${!this.canPost || this.isSending}
                     >
                         Post
                     </button>
                 </div>
             </div>
         </div>`;
+    }
+
+    checkCanPost() {
+        const totalCount = 300 - (1 + this.hashtag!.length);
+        this.canPost = (this.count > 0 && this.count <= totalCount) || this.imagesToUpload.length > 0 || this.embed != undefined;
+    }
+
+    async addImage() {
+        if (this.imagesToUpload.length == 4) {
+            alert("You can only upload 4 images per post");
+            return;
+        }
+        const input = dom(html`<input type="file" id="file" accept=".jpg, .jpeg, .png" class="hidden" multiple />`)[0] as HTMLInputElement;
+        document.body.append(input);
+        input.addEventListener("change", async () => {
+            if (!input.files || input.files.length == 0) return;
+            const files = input.files;
+            if (this.imagesToUpload.length + (files?.length ?? 0) > 4) {
+                alert("You can only upload 4 images per post");
+                return;
+            }
+            const images = await loadImageFiles(files);
+            this.imagesToUpload = [...this.imagesToUpload, ...images];
+            input.remove();
+        });
+        input.click();
+        this.canPost = true;
+    }
+
+    async addLinkCard(card: AppBskyRichtextFacet.Link) {
+        if (!this.bskyClient) return;
+        let cardEmbed: AppBskyEmbedExternal.Main = {
+            $type: "app.bsky.embed.external",
+            external: {
+                uri: card.uri,
+                title: "",
+                description: "",
+            },
+        };
+        this.embed = cardEmbed;
+        const linkCard = await extractLinkCard(card.uri);
+        if (linkCard instanceof Error) return;
+        let imageBlob: BlobRef | undefined;
+        if (linkCard.image && linkCard.image.length > 0) {
+            const originalImageData = await downloadImage(linkCard.image);
+            if (originalImageData instanceof Error) {
+                console.error(originalImageData);
+            } else {
+                const imageData = await downscaleImage(originalImageData);
+                if (imageData instanceof Error) console.error(imageData);
+                else {
+                    try {
+                        const response = await this.bskyClient.com.atproto.repo.uploadBlob(imageData.data, {
+                            headers: { "Content-Type": imageData.mimeType },
+                            encoding: "",
+                        });
+                        if (response.success) {
+                            imageBlob = response.data.blob;
+                        }
+                    } catch (e) {
+                        linkCard.image = "";
+                    }
+                }
+            }
+        }
+        cardEmbed = {
+            $type: "app.bsky.embed.external",
+            external: {
+                uri: card.uri,
+                title: linkCard.title,
+                description: linkCard.description,
+                thumb: imageBlob,
+                image: linkCard.image,
+            } as AppBskyEmbedExternal.External,
+        };
+        this.embed = cardEmbed;
+        this.canPost = true;
     }
 
     isInHandle(text: string, cursorPosition: number, found: (match: string, start: number, end: number) => void, notFound: () => void) {
@@ -537,8 +729,7 @@ export class PostEditor extends LitElement {
     input(ev: InputEvent) {
         const message = ev.target as HTMLTextAreaElement;
         this.count = message.value.length;
-        const totalCount = 300 - (1 + this.hashtag!.length);
-        this.canPost = this.count > 0 && this.count <= totalCount;
+        this.checkCanPost();
         message.style.height = "auto";
         message.style.height = message.scrollHeight + "px";
 
@@ -552,23 +743,39 @@ export class PostEditor extends LitElement {
                     q: match,
                 });
                 if (!response?.success) return;
-                console.log(response.data.actors);
-                this.suggestions = response.data.actors;
+                this.handleSuggestions = response.data.actors;
                 this.insert = { start, end };
             },
             () => {
                 console.log("Not in handle");
-                this.suggestions = [];
+                this.handleSuggestions = [];
                 this.insert = undefined;
             }
         );
         this.message = message.value;
+
+        const rt = new RichText({ text: message.value });
+        rt.detectFacetsWithoutResolution();
+        if (rt.facets) {
+            const cardSuggestions: AppBskyRichtextFacet.Link[] = [];
+            for (const facet of rt.facets) {
+                for (const feature of facet.features) {
+                    if (AppBskyRichtextFacet.isLink(feature)) {
+                        cardSuggestions.push(feature);
+                    }
+                }
+            }
+            this.cardSuggestions = cardSuggestions.length > 0 ? cardSuggestions : undefined;
+        } else {
+            this.cardSuggestions = undefined;
+        }
     }
 
     async sendPost() {
+        if (!this.bskyClient) return;
         try {
+            this.isSending = true;
             this.canPost = false;
-            this.messageElement!.disabled = true;
             this.requestUpdate();
             const richText = new RichText({ text: this.message + " " + this.hashtag! });
             try {
@@ -576,15 +783,43 @@ export class PostEditor extends LitElement {
             } catch (e) {
                 // may explode if handles can't be resolved
             }
-            const baseKey = this.account + "|" + this.hashtag!;
-            const prevRoot = localStorage.getItem(baseKey + "|root") ? JSON.parse(localStorage.getItem(baseKey + "|root")!) : undefined;
-            const prevReply = localStorage.getItem(baseKey + "|reply") ? JSON.parse(localStorage.getItem(baseKey + "|reply")!) : undefined;
-            let record = {
+
+            const imagesEmbed: AppBskyEmbedImages.Main = {
+                $type: "app.bsky.embed.images",
+                images: [],
+            };
+            for (const image of this.imagesToUpload) {
+                const start = performance.now();
+                const data = await downscaleImage(image);
+                if (data instanceof Error) throw data;
+                console.log(
+                    "Downscaling image took: " + (performance.now() - start) / 1000 + ", old: " + image.data.length + ", new: " + data.data.length
+                );
+                const response = await this.bskyClient.com.atproto.repo.uploadBlob(data.data, {
+                    headers: { "Content-Type": image.mimeType },
+                    encoding: "",
+                });
+                if (response.success) {
+                    imagesEmbed.images.push({ alt: image.alt, image: response.data.blob });
+                } else {
+                    throw new Error();
+                }
+            }
+            const labels: SelfLabels | undefined = this.sensitive
+                ? { $type: "com.atproto.label.defs#selfLabels", values: [{ val: "porn" }] }
+                : undefined;
+            let record: AppBskyFeedPost.Record = {
                 $type: "app.bsky.feed.post",
                 text: richText.text,
                 facets: richText.facets,
                 createdAt: new Date().toISOString(),
-            } as any;
+                embed: this.embed ?? (imagesEmbed.images.length > 0 ? imagesEmbed : undefined),
+                labels,
+            };
+
+            const baseKey = this.account + "|" + this.hashtag!;
+            const prevRoot = localStorage.getItem(baseKey + "|root") ? JSON.parse(localStorage.getItem(baseKey + "|root")!) : undefined;
+            const prevReply = localStorage.getItem(baseKey + "|reply") ? JSON.parse(localStorage.getItem(baseKey + "|reply")!) : undefined;
             if (prevRoot) {
                 record = {
                     ...record,
@@ -594,26 +829,32 @@ export class PostEditor extends LitElement {
                     },
                 };
             }
-            const response = await this.bskyClient?.post(record);
+            const response = await this.bskyClient.post(record);
             if (!prevRoot) localStorage.setItem(baseKey + "|root", JSON.stringify(response));
             localStorage.setItem(baseKey + "|reply", JSON.stringify(response));
             this.messageElement!.value = "";
             this.count = 0;
             this.messageElement!.style.height = "auto";
             this.messageElement!.style.height = this.messageElement!.scrollHeight + "px";
+            this.embed = undefined;
+            this.cardSuggestions = undefined;
+            this.handleSuggestions = undefined;
+            this.imagesToUpload.length = 0;
         } catch (e) {
+            console.error(e);
             alert("Couldn't publish post!");
         } finally {
-            this.canPost = this.count > 0;
-            this.messageElement!.disabled = false;
+            this.canPost = true;
+            this.isSending = false;
         }
     }
 }
 
-function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal) {
-    return html`<a class="border rounded border-gray/50 flex mb-2" target="_blank" href="${cardEmbed.uri}">
-        ${cardEmbed.thumb ? html`<img src="${cardEmbed.thumb}" class="w-[100px]" />` : nothing}
-        <div class="flex flex-col p-2">
+function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External) {
+    const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
+    return html`<a class="w-full border rounded border-gray/50 flex mb-2" target="_blank" href="${cardEmbed.uri}">
+        ${thumb ? html`<img src="${thumb}" class="w-[100px] object-contain" />` : nothing}
+        <div class="flex flex-col p-2 w-full">
             <span class="text-gray text-xs">${new URL(cardEmbed.uri).host}</span>
             <span class="font-bold text-sm">${cardEmbed.title}</span>
             <div class="text-sm line-clamp-2">${cardEmbed.description}</div>
@@ -621,10 +862,31 @@ function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal) {
     </a>`;
 }
 
-function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[]) {
+function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensitive: boolean) {
+    const unblur = (target: HTMLElement) => {
+        if (sensitive) target.classList.toggle("blur-lg");
+    };
+
     return html`<div class="flex flex-col gap-2 items-center mb-2">
         ${map(images, (image) => {
-            return html`<img src="${image.thumb}" class="max-h-[30svh] rounded" />`;
+            return html`<div class="relative">
+                <img
+                    src="${image.thumb}"
+                    @click="${(ev: Event) => unblur(ev.target as HTMLElement)}"
+                    alt="${image.alt}"
+                    class="max-h-[40svh] rounded ${sensitive ? "blur-lg" : ""}"
+                />
+                ${image.alt && image.alt.length > 0
+                    ? html`<button
+                          @click=${() => {
+                              document.body.append(dom(html`<alt-text alt=${image.alt}></alt-text>`)[0]);
+                          }}
+                          class="absolute bottom-2 left-2 rounded bg-black text-white p-1 text-xs"
+                      >
+                          ALT
+                      </button>`
+                    : nothing}
+            </div>`;
         })}
     </div>`;
 }
@@ -637,23 +899,32 @@ function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
     const author = recordEmbed.record.author;
     const postUrl = `https://bsky.app/profile/${author.did}/post/${rkey}`;
     const embeds = recordEmbed.record.embeds && recordEmbed.record.embeds.length > 0 ? recordEmbed.record.embeds[0] : undefined;
-    return html`<div class="border border-gray/50 rounded p-2 mb-2">${renderRecord(postUrl, author, record, embeds, true)}</div>`;
+    const sensitive = recordEmbed.record.labels?.some((label) => ["porn", "nudity", "sexual"].includes(label.val)) ?? false;
+    return html`<div class="border border-gray/50 rounded p-2 mb-2">${renderRecord(postUrl, author, record, embeds, true, sensitive)}</div>`;
 }
 function renderRecordWithMediaEmbed(recordWithMediaEmbed: AppBskyEmbedRecordWithMedia.View) {
     return nothing;
+}
+
+function renderEmbed(embed: AppBskyFeedDefs.PostView["embed"] | AppBskyFeedPost.Record["embed"], sensitive: boolean) {
+    const cardEmbed = AppBskyEmbedExternal.isView(embed) || AppBskyEmbedExternal.isMain(embed) ? embed.external : undefined;
+    const imagesEmbed = AppBskyEmbedImages.isView(embed) ? embed.images : undefined;
+    const recordEmbed = AppBskyEmbedRecord.isView(embed) ? embed : undefined;
+    const recordWithMediaEmbed = AppBskyEmbedRecordWithMedia.isView(embed) ? embed : undefined;
+    return html`<div class="mt-2">
+        ${cardEmbed ? renderCardEmbed(cardEmbed) : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive) : nothing}
+        ${recordEmbed ? renderRecordEmbed(recordEmbed) : nothing} ${recordWithMediaEmbed ? renderRecordWithMediaEmbed(recordWithMediaEmbed) : nothing}
+    </div>`;
 }
 
 function renderRecord(
     postUrl: string,
     author: ProfileViewBasic | ProfileViewDetailed,
     record: AppBskyFeedPost.Record,
-    embed?: AppBskyFeedDefs.PostView["embed"],
-    smallAvatar = false
+    embed: AppBskyFeedDefs.PostView["embed"] | undefined,
+    smallAvatar: boolean,
+    sensitive: boolean
 ): TemplateResult {
-    const cardEmbed = AppBskyEmbedExternal.isView(embed) ? embed.external : undefined;
-    const imagesEmbed = AppBskyEmbedImages.isView(embed) ? embed.images : undefined;
-    const recordEmbed = AppBskyEmbedRecord.isView(embed) ? embed : undefined;
-    const recordWithMediaEmbed = AppBskyEmbedRecordWithMedia.isView(embed) ? embed : undefined;
     return html` <div class="flex items-center gap-2">
             <a class="flex items-center gap-2" href="https://bsky.app/profile/${author.handle ?? author.did}" target="_blank">
                 ${author.avatar
@@ -664,8 +935,7 @@ function renderRecord(
             <a class="ml-auto text-xs text-primary/75" href="${postUrl}" target="_blank">${getDateString(new Date(record.createdAt))}</a>
         </div>
         <div class="mt-1 break-words">${unsafeHTML(processText(record))}</div>
-        ${cardEmbed ? renderCardEmbed(cardEmbed) : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed) : nothing}
-        ${recordEmbed ? renderRecordEmbed(recordEmbed) : nothing} ${recordWithMediaEmbed ? renderRecordWithMediaEmbed(recordWithMediaEmbed) : nothing}`;
+        ${embed ? renderEmbed(embed, sensitive) : nothing}`;
 }
 
 @customElement("post-view")
@@ -690,7 +960,14 @@ export class PostViewElement extends LitElement {
         const author = this.post.author;
         const postUrl = `https://bsky.app/profile/${author.did}/post/${rkey}`;
         return html`<div class="border-t border-gray/30 px-4 py-2">
-            ${renderRecord(postUrl, author, this.post.record, this.post.embed)}
+            ${renderRecord(
+                postUrl,
+                author,
+                this.post.record,
+                this.post.embed,
+                false,
+                this.post.labels?.some((label) => ["porn", "sexual", "nudity"].includes(label.val)) ?? false
+            )}
             <div class="flex items-center gap-4 mt-1">
                 <a href="${postUrl}" target="_blank" class="flex items-center cursor-pointer gap-1"
                     ><i class="icon w-[1.2em] h-[1.2em] fill-gray dark:fill-white/50">${replyIcon}</i
@@ -760,35 +1037,70 @@ export class PostViewElement extends LitElement {
     }
 }
 
-@customElement("icon-toggle")
-export class IconToggle extends LitElement {
+@customElement("image-editor")
+export class ImageEditor extends LitElement {
     static styles = [globalStyles];
 
     @property()
-    value = false;
+    image?: ImageInfo;
 
-    @property()
-    icon?: string;
-
-    render() {
-        return html` <div
-            class="flex items-center cursor-pointer gap-1 ${this.value ? "text-primary dark:text-primary" : "text-gray dark:text-white/50"}"
-            @click=${this.toggle}
-        >
-            <i class="icon w-[1.2em] h-[1.2em] ${this.value ? "fill-primary dark:fill-primary" : "fill-gray dark:fill-white/50"}"
-                >${icons[this.icon as "reblog" | "heart"] ?? ""}</i
-            ><slot></slot>
-        </div>`;
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
     }
 
-    toggle() {
-        this.value = !this.value;
-        this.dispatchEvent(
-            new CustomEvent("change", {
-                detail: {
-                    value: this.value,
-                },
-            })
-        );
+    render() {
+        const dataUri = this.image ? this.image.dataUri : "";
+        const alt = this.image ? this.image.alt : "";
+        return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black">
+            <div class="mx-auto max-w-[600px] h-full flex flex-col p-4 gap-2">
+                <div class="flex items-center">
+                    <h1 class="text-lg text-primary font-bold">Edit image</h1>
+                    <button
+                        @click=${() => this.remove()}
+                        class="ml-auto bg-primary text-white px-2 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
+                    >
+                        Save
+                    </button>
+                </div>
+                <img src="${dataUri}" class="object-contain max-h-[75svh]" />
+                <textarea
+                    id="message"
+                    @input=${(ev: Event) => {
+                        if (this.image) {
+                            this.image.alt = (ev.target as HTMLInputElement)!.value;
+                        }
+                    }}
+                    class="flex-1 resize-none outline-none bg-transparent dark:text-white disabled:text-gray dark:disabled:text-gray px-2 pt-2 whitespace-normal"
+                    placeholder="Add alt text to your image"
+                >
+${alt}</textarea
+                >
+            </div>
+        </div>`;
+    }
+}
+
+@customElement("alt-text")
+export class AltText extends LitElement {
+    static styles = [globalStyles];
+
+    @property()
+    alt?: string;
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    render() {
+        const alt = this.alt ? this.alt : "";
+        return html`<div @click=${() => this.remove()} class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black">
+            <div class="mx-auto max-w-[600px] h-full flex flex-col p-4 gap-2">
+                <div class="flex items-center">
+                    <h1 class="text-lg text-primary font-bold">Alt text</h1>
+                    <button class="ml-auto bg-primary text-white px-2 py-1 rounded disabled:bg-gray/70 disabled:text-white/70">Close</button>
+                </div>
+                <div class="overflow-auto flex-1 whitespace-pre-wrap">${alt}</div>
+            </div>
+        </div>`;
     }
 }

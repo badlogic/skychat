@@ -1,4 +1,5 @@
 import { AppBskyFeedDefs, AppBskyFeedPost, BskyAgent, RichText } from "@atproto/api";
+import { Link } from "@atproto/api/dist/client/types/app/bsky/richtext/facet";
 
 function replaceHandles(text: string): string {
     const handleRegex = /@([\p{L}_.-]+)/gu;
@@ -81,5 +82,27 @@ export class PostSearch {
         } catch (e) {
             return Error(`Couldn't load posts for query ${this.query}, offset ${this.offset}`);
         }
+    }
+}
+
+export type LinkCard = {
+    error: string;
+    likely_type: string;
+    url: string;
+    title: string;
+    description: string;
+    image: string;
+};
+
+export async function extractLinkCard(url: string): Promise<LinkCard | Error> {
+    try {
+        const resp = await fetch("https://cardyb.bsky.app/v1/extract?url=" + encodeURIComponent(url));
+        if (resp.ok) {
+            return (await resp.json()) as LinkCard;
+        }
+        throw Error();
+    } catch (e) {
+        if (e instanceof Error) return e;
+        return new Error("Couldn't get link card info from url " + url);
     }
 }

@@ -22,6 +22,12 @@ import checkmarkIconSvg from "remixicon/icons/System/check-line.svg";
 import githubIconSvg from "remixicon/icons/Logos/github-line.svg";
 // @ts-ignore
 import heartIconSvg from "remixicon/icons/Health & Medical/heart-line.svg";
+// @ts-ignore
+import editIconSvg from "remixicon/icons/Design/edit-line.svg";
+// @ts-ignore
+import deleteIconSvg from "remixicon/icons/System/delete-bin-line.svg";
+// @ts-ignore
+import shieldIconSvg from "remixicon/icons/System/shield-keyhole-line.svg";
 
 import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 
@@ -37,3 +43,6 @@ export const imageIcon = unsafeHTML(imageIconSvg);
 export const checkmarkIcon = unsafeHTML(checkmarkIconSvg);
 export const githubIcon = unsafeHTML(githubIconSvg);
 export const heartIcon = unsafeHTML(heartIconSvg);
+export const editIcon = unsafeHTML(editIconSvg);
+export const deleteIcon = unsafeHTML(deleteIconSvg);
+export const shieldIcon = unsafeHTML(shieldIconSvg);
