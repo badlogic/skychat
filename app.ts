@@ -199,7 +199,7 @@ class App extends LitElement {
                 <div class="align-top">${contentLoader}</div>`;
         } else {
             content = html`
-                <p class="text-center mx-auto w-[280px]">Explore & create hashtag threads live on BlueSky</p>
+                <p class="text-center mx-auto w-[280px]">Explore & create hashtag threads in real-time on BlueSky</p>
                 <div class="mx-auto flex flex-col gap-4 mt-4 w-[280px]">
                     <input
                         id="hashtag"
