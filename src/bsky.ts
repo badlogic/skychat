@@ -106,3 +106,20 @@ export async function extractLinkCard(url: string): Promise<LinkCard | Error> {
         return new Error("Couldn't get link card info from url " + url);
     }
 }
+
+export async function loadPosts(bskyClient: BskyAgent, uris: string[], posts: Map<string, AppBskyFeedDefs.PostView>): Promise<undefined | Error> {
+    while (uris.length > 0) {
+        const block = uris.splice(0, 25).filter((uri) => !posts.has(uri));
+        if (block.length == 0) continue;
+        const postsResponse = await bskyClient.app.bsky.feed.getPosts({
+            uris: block,
+        });
+        if (!postsResponse.success) {
+            return Error(`Couldn't load posts`);
+        }
+        for (const post of postsResponse.data.posts) {
+            posts.set(post.uri, post);
+        }
+    }
+    return undefined;
+}

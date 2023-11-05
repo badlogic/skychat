@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-    content: ["*.{html,ts,css}"],
+    content: ["src/**/*.{html,ts,css}", "html/**/*.{html,ts,css}"],
     darkMode: "class",
     theme: {
         extend: {
@@ -15,5 +15,5 @@ module.exports = {
             },
         },
     },
-    plugins: [],
+    plugins: [require("tailwindcss-animated")],
 };

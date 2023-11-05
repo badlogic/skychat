@@ -5,11 +5,11 @@
   "scripts": {
     "prepare": "husky install",
     "format": "npx prettier --write .",
-    "clean": "rimraf build",
-    "build:css": "npx tailwindcss -i styles.css -o styles-bundle.css",
+    "clean": "rimraf html/build",
+    "build:css": "npx tailwindcss -i html/styles.css -o html/build/styles-bundle.css",
     "build:site": "node ./esbuild.site.mjs",
     "build:server": "node ./esbuild.server.mjs",
-    "dev": "concurrently \"PORT=3333 node --watch build/server.js\" \"npx live-server . --cors --watch . --no-browser\" \"npm run build:site -- --watch\" \"npm run build:css -- --watch\" \"npm run build:server -- --watch\"",
+    "dev": "concurrently \"PORT=3333 node --watch build/server.js\" \"npx live-server html --cors --watch . --no-browser\" \"npm run build:site -- --watch\" \"npm run build:css -- --watch\" \"npm run build:server -- --watch\"",
     "build": "npm run build:css && npm run build:site && npm run build:server",
     "server": "PORT=3333 node --max_old_space_size=8192 --trace-warnings build/server.js"
   },
@@ -34,7 +34,8 @@
     "express": "^4.18.2",
     "husky": "^8.0.3",
     "lit": "^2.8.0",
-    "remixicon": "^3.5.0"
+    "remixicon": "^3.5.0",
+    "tailwindcss-animated": "^1.0.1"
   },
   "devDependencies": {
     "@types/compression": "^1.7.3",

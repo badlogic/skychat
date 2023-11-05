@@ -1,7 +1,6 @@
-import { LitElement, TemplateResult, html, nothing, render } from "lit";
-import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
-import { customElement, property, state } from "lit/decorators.js";
-import { globalStyles } from "./styles";
+import { AppBskyActorDefs, BskyAgent } from "@atproto/api";
+import { TemplateResult, html, render, svg } from "lit";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
 
 export function getDateString(inputDateTime: Date): string {
     const hours = inputDateTime.getHours();
@@ -24,28 +23,6 @@ export function getDateString(inputDateTime: Date): string {
     return hours + ":" + paddedMinutes + ":" + paddedSeconds + (printYear ? ` ${year}-${month}-${day}` : "");
 }
 
-@customElement("popup-overlay")
-export class Popup extends LitElement {
-    static styles = globalStyles;
-
-    @property()
-    buttonText = "Click me";
-
-    @property()
-    show = false;
-
-    protected render(): TemplateResult {
-        return html`<div class="relative">
-            <div @click=${() => (this.show = !this.show)} class="rounded bg-black text-white p-1 text-xs">${this.buttonText}</div>
-            ${this.show
-                ? html`<div @click=${() => (this.show = !this.show)} class="absolute bg-black text-white p-4 rounded border border-gray/50 z-[100]">
-                      <slot></slot>
-                  </div>`
-                : nothing}
-        </div> `;
-    }
-}
-
 export function dom(template: TemplateResult, container?: HTMLElement | DocumentFragment): HTMLElement[] {
     if (container) {
         render(template, container);
@@ -61,6 +38,8 @@ export function dom(template: TemplateResult, container?: HTMLElement | Document
     return children as HTMLElement[];
 }
 
+export const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
+
 export const contentLoader = html`<div class="flex space-x-4 animate-pulse w-[80%] max-w-[300px] m-auto py-4">
     <div class="rounded-full bg-gray/50 dark:bg-gray h-10 w-10"></div>
     <div class="flex-1 space-y-6 py-1">
@@ -75,64 +54,45 @@ export const contentLoader = html`<div class="flex space-x-4 animate-pulse w-[80
     </div>
 </div>`;
 
-// @ts-ignore
-import sunIconSvg from "remixicon/icons/Weather/sun-line.svg";
-// @ts-ignore
-import moonIconSvg from "remixicon/icons/Weather/moon-line.svg";
-
-function icon(svg: string) {
-    return html`<i class="flex w-[1.2em] h-[1.2em] border-white fill-primary">${unsafeHTML(svg)}</i>`;
-}
-
-@customElement("theme-toggle")
-export class ThemeToggle extends LitElement {
-    static style = [globalStyles];
-
-    @state()
-    theme = "dark";
-
-    @property()
-    absolute = true;
-
-    protected createRenderRoot(): Element | ShadowRoot {
-        return this;
-    }
-
-    connectedCallback(): void {
-        super.connectedCallback();
-        this.theme = localStorage.getItem("theme") ?? "dark";
-        this.setTheme(this.theme);
-    }
-
-    setTheme(theme: string) {
-        localStorage.setItem("theme", theme);
-        if (theme == "dark") document.documentElement.classList.add("dark");
-        else document.documentElement.classList.remove("dark");
-    }
-
-    toggleTheme() {
-        this.theme = this.theme == "dark" ? "light" : "dark";
-        this.setTheme(this.theme);
-    }
-
-    render() {
-        const moonIcon = icon(moonIconSvg);
-        const sunIcon = icon(sunIconSvg);
-
-        return html`<button
-            class="${this.absolute == true ? "absolute top-0 right-0 p-4 fill-primary" : "flex items-center p4 fill-primary"}"
-            @click=${this.toggleTheme}
-        >
-            ${this.theme == "dark" ? moonIcon : sunIcon}
-        </button>`;
-    }
-}
 export function isWithinLastNumDays(dateString: string, numDays: number): boolean {
     const currentDate = new Date();
     const targetDate = new Date(dateString);
     const timeDifference = currentDate.getTime() - targetDate.getTime();
     const daysDifference = timeDifference / (1000 * 60 * 60 * 24);
     return daysDifference <= numDays;
+}
+
+export function getTimeDifference(utcTimestamp: number): string {
+    const now = Date.now();
+    const timeDifference = now - utcTimestamp;
+
+    const seconds = Math.floor(timeDifference / 1000);
+    if (seconds < 60) {
+        return seconds + "s";
+    }
+
+    const minutes = Math.floor(timeDifference / (1000 * 60));
+    if (minutes < 60) {
+        return minutes + "m";
+    }
+
+    const hours = Math.floor(timeDifference / (1000 * 60 * 60));
+    if (hours < 24) {
+        return hours + "h";
+    }
+
+    const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    if (days < 30) {
+        return days + "d";
+    }
+
+    const months = Math.floor(timeDifference / (1000 * 60 * 60 * 24 * 30));
+    if (months < 12) {
+        return months + "mo";
+    }
+
+    const years = Math.floor(timeDifference / (1000 * 60 * 60 * 24 * 365));
+    return years + "y";
 }
 
 export function getYearMonthDate(dateString: string): string {
@@ -177,50 +137,6 @@ export function replaceSpecialChars(inputString: string): string {
     const pattern = /[,!?(){}[\]<>;:'"\/\\|&^*%$#@~_+=-]/g;
     const result = inputString.replace(pattern, " ");
     return result;
-}
-
-import { heartIcon, imageIcon, reblogIcon, replyIcon, shieldIcon } from "./icons";
-const icons = {
-    reblog: reblogIcon,
-    reply: replyIcon,
-    heart: heartIcon,
-    image: imageIcon,
-    shield: shieldIcon,
-};
-
-@customElement("icon-toggle")
-export class IconToggle extends LitElement {
-    static styles = [globalStyles];
-
-    @property()
-    value = false;
-
-    @property()
-    icon?: string;
-
-    render() {
-        return html` <div
-            class="h-full w-full flex items-center cursor-pointer gap-1 ${this.value
-                ? "text-primary dark:text-primary"
-                : "text-gray dark:text-white/50"}"
-            @click=${this.toggle}
-        >
-            <i class="icon w-4 h-4 ${this.value ? "fill-primary dark:fill-primary" : "fill-gray"}"
-                >${icons[this.icon as "reblog" | "heart" | "shield"] ?? ""}</i
-            ><slot></slot>
-        </div>`;
-    }
-
-    toggle() {
-        this.value = !this.value;
-        this.dispatchEvent(
-            new CustomEvent("change", {
-                detail: {
-                    value: this.value,
-                },
-            })
-        );
-    }
 }
 
 export type ImageInfo = {
@@ -363,4 +279,51 @@ export function onVisibleOnce(target: Element, callback: () => void) {
         }
     );
     observer.observe(target);
+}
+
+export async function login(account?: string, password?: string) {
+    if (!account || !password) return new BskyAgent({ service: "https://api.bsky.app" });
+    const bskyClient = new BskyAgent({ service: "https://bsky.social" });
+    try {
+        const response = await bskyClient.login({
+            identifier: account,
+            password,
+        });
+        if (!response.success) throw new Error();
+        const profileResponse = await bskyClient.app.bsky.actor.getProfile({ actor: account });
+        if (!profileResponse.success) {
+            throw new Error();
+        }
+        localStorage.setItem("profile", JSON.stringify(profileResponse.data));
+        localStorage.setItem("a", account);
+        localStorage.setItem("p", password);
+        return bskyClient;
+    } catch (e) {
+        return new Error("Couldn't log-in with your BlueSky credentials.");
+    }
+}
+
+export function logout() {
+    localStorage.removeItem("profile");
+    localStorage.removeItem("a");
+    localStorage.removeItem("p");
+}
+
+export function hasHashtag(text: string, hashtag: string) {
+    const tokens = text.split(/[ \t\n\r.,;!?'"]+/);
+    for (const token of tokens) {
+        if (token.toLowerCase() === hashtag.toLowerCase()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+export function renderAuthor(author: AppBskyActorDefs.ProfileView, smallAvatar = false) {
+    return html`<a class="flex items-center gap-2" href="https://bsky.app/profile/${author.handle ?? author.did}" target="_blank">
+        ${author.avatar
+            ? html`<img class="${smallAvatar ? "w-[1em] h-[1em]" : "w-[2em] h-[2em]"} rounded-full" src="${author.avatar}" />`
+            : defaultAvatar}
+        <span class="${smallAvatar ? "text-sm" : ""} line-clamp-1 hover:underline">${author.displayName ?? author.handle}</span>
+    </a>`;
 }

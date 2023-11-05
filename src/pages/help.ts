@@ -1,15 +1,16 @@
 import { LitElement, html } from "lit";
-import { globalStyles } from "./styles";
 import { customElement } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 // @ts-ignore
-import logoSvg from "./logo.svg";
-import { dom } from "./utils";
+import logoSvg from "../../html/logo.svg";
+import { dom } from "../utils";
 import { map } from "lit/directives/map.js";
 
 @customElement("skychat-help")
 class Help extends LitElement {
-    static styles = [globalStyles];
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
 
     render() {
         const helpDom = dom(html`<main class="flex flex-col justify-between m-auto max-w-[500px] px-4 h-full leading-5">
@@ -104,27 +105,29 @@ class Help extends LitElement {
 
                 <h2>Add a link card to your post</h2>
                 <img src="img/card1.png" />
-                <img src="img/card2.png" />
                 <p>Enter a link to your post text, then click "Add card". A link card for the link will be generated and added to your post.</p>
                 <p>You can remove the link from your post text once the link card has been generated.</p>
+
+                <img src="img/card2.png" />
+
                 <p>Click the garbage bin button to remove the link card from the post</p>
 
                 <h2>Quote a post</h2>
                 <img src="img/quote1.png" />
-                <img src="img/quote2.png" />
                 <p>
                     Click the quote button on the post you want to quote. Finish composing your post by adding text, images or a link card, then click
                     "Post". The post will be added to the bottom of your thread for the hashtag.
                 </p>
+                <img src="img/quote2.png" />
                 <p>Click the garbage bin button to remove the quote from the post</p>
 
                 <h2>Reply to a post</h2>
                 <img src="img/reply1.png" />
-                <img src="img/reply2.png" />
                 <p>
                     Click the reply button on the post you want to reply to. Finish composing your post by adding text, images or a link card, then
                     click "Post". The post will be added as a reply to the other user's thread.
                 </p>
+                <img src="img/reply2.png" />
                 <p>Click the garbage bin button to stop replying to the other user's post.</p>
 
                 <h2>Repost and like a post</h2>

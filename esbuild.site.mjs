@@ -6,11 +6,11 @@ let watch = process.argv.length >= 3 && process.argv[2] == "--watch";
 
 const config = {
     entryPoints: {
-        index: "app.ts",
+        app: "src/pages/index.ts",
     },
     bundle: true,
     sourcemap: true,
-    outdir: "build/",
+    outdir: "html/build/",
     loader: {
         ".ttf": "dataurl",
         ".woff": "dataurl",

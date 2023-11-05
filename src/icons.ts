@@ -19,6 +19,8 @@ import reblogIconSvg from "remixicon/icons/Media/repeat-line.svg";
 // @ts-ignore
 import imageIconSvg from "remixicon/icons/Media/image-line.svg";
 // @ts-ignore
+import bellIconSvg from "remixicon/icons/Media/notification-line.svg";
+// @ts-ignore
 import checkmarkIconSvg from "remixicon/icons/System/check-line.svg";
 // @ts-ignore
 import githubIconSvg from "remixicon/icons/Logos/github-line.svg";
@@ -30,8 +32,13 @@ import editIconSvg from "remixicon/icons/Design/edit-line.svg";
 import deleteIconSvg from "remixicon/icons/System/delete-bin-line.svg";
 // @ts-ignore
 import shieldIconSvg from "remixicon/icons/System/shield-keyhole-line.svg";
+// @ts-ignore
+import atIconSvg from "remixicon/icons/Business/at-line.svg";
+// @ts-ignore
+import followIconSvg from "remixicon/icons/User & Faces/user-follow-line.svg";
 
 import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
+import { html } from "lit";
 
 export const settingsIcon = unsafeHTML(settingsIconSvg);
 export const bookmarkIcon = unsafeHTML(bookmarkIconSvg);
@@ -42,6 +49,7 @@ export const replyIcon = unsafeHTML(replyIconSvg);
 export const starIcon = unsafeHTML(starIconSvg);
 export const reblogIcon = unsafeHTML(reblogIconSvg);
 export const imageIcon = unsafeHTML(imageIconSvg);
+export const bellIcon = unsafeHTML(bellIconSvg);
 export const checkmarkIcon = unsafeHTML(checkmarkIconSvg);
 export const githubIcon = unsafeHTML(githubIconSvg);
 export const heartIcon = unsafeHTML(heartIconSvg);
@@ -49,3 +57,9 @@ export const editIcon = unsafeHTML(editIconSvg);
 export const deleteIcon = unsafeHTML(deleteIconSvg);
 export const shieldIcon = unsafeHTML(shieldIconSvg);
 export const quoteIcon = unsafeHTML(quoteIconSvg);
+export const atIcon = unsafeHTML(atIconSvg);
+export const followIcon = unsafeHTML(followIconSvg);
+
+export function icon(svg: string) {
+    return html`<i class="flex w-[1.2em] h-[1.2em] border-white fill-primary">${unsafeHTML(svg)}</i>`;
+}
