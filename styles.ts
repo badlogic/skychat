@@ -1,7 +1,6 @@
 import { unsafeCSS } from "lit";
 
-import "./styles-bundle.css";
 // @ts-ignore
-import globalCssTxt from "./styles-bundle.css.txt";
+import globalCssTxt from "./styles-bundle.css";
 
 export const globalStyles = [unsafeCSS(globalCssTxt)];

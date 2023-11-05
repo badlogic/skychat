@@ -687,6 +687,14 @@ i > svg {
   z-index: 100;
 }
 
+.z-\[200\] {
+  z-index: 200;
+}
+
+.z-\[50\] {
+  z-index: 50;
+}
+
 .col-span-1 {
   grid-column: span 1 / span 1;
 }
@@ -755,6 +763,10 @@ i > svg {
 
 .ml-auto {
   margin-left: auto;
+}
+
+.mr-1 {
+  margin-right: 0.25rem;
 }
 
 .mr-2 {
@@ -899,6 +911,14 @@ i > svg {
   max-height: 100% !important;
 }
 
+.max-h-\[10em\] {
+  max-height: 10em;
+}
+
+.max-h-\[11\.5em\] {
+  max-height: 11.5em;
+}
+
 .max-h-\[1em\] {
   max-height: 1em;
 }
@@ -989,6 +1009,10 @@ i > svg {
 
 .min-w-\[70px\] {
   min-width: 70px;
+}
+
+.max-w-\[100vw\] {
+  max-width: 100vw;
 }
 
 .max-w-\[1em\] {
@@ -1165,6 +1189,10 @@ i > svg {
   white-space: normal;
 }
 
+.whitespace-nowrap {
+  white-space: nowrap;
+}
+
 .whitespace-pre {
   white-space: pre;
 }
@@ -1236,6 +1264,10 @@ i > svg {
   border-top-width: 1px;
 }
 
+.border-dashed {
+  border-style: dashed;
+}
+
 .border-dotted {
   border-style: dotted;
 }
@@ -1247,10 +1279,6 @@ i > svg {
 .border-gray {
   --tw-border-opacity: 1;
   border-color: rgb(85 85 85 / var(--tw-border-opacity));
-}
-
-.border-gray\/30 {
-  border-color: rgb(85 85 85 / 0.3);
 }
 
 .border-gray\/50 {
@@ -1309,10 +1337,6 @@ i > svg {
 
 .fill-gray {
   fill: #555555;
-}
-
-.fill-gray\/50 {
-  fill: rgb(85 85 85 / 0.5);
 }
 
 .fill-primary {
@@ -1388,6 +1412,10 @@ i > svg {
   padding-bottom: 1rem;
 }
 
+.pb-1 {
+  padding-bottom: 0.25rem;
+}
+
 .pb-2 {
   padding-bottom: 0.5rem;
 }
@@ -1422,6 +1450,10 @@ i > svg {
 
 .text-center {
   text-align: center;
+}
+
+.text-right {
+  text-align: right;
 }
 
 .text-end {
@@ -1504,10 +1536,6 @@ i > svg {
 .text-primary {
   --tw-text-opacity: 1;
   color: rgb(204 125 36 / var(--tw-text-opacity));
-}
-
-.text-primary\/75 {
-  color: rgb(204 125 36 / 0.75);
 }
 
 .text-red {
@@ -1632,6 +1660,10 @@ i > svg {
   color: rgb(255 255 255 / var(--tw-text-opacity));
 }
 
+.hover\:underline:hover {
+  text-decoration-line: underline;
+}
+
 .disabled\:bg-gray\/70:disabled {
   background-color: rgb(85 85 85 / 0.7);
 }
@@ -1694,4 +1726,10 @@ i > svg {
 :is(.dark .dark\:disabled\:text-gray:disabled) {
   --tw-text-opacity: 1;
   color: rgb(85 85 85 / var(--tw-text-opacity));
+}
+
+@media (display-mode: standalone) {
+  .pwa\:h-\[100svh\] {
+    height: 100svh;
+  }
 }

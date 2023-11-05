@@ -14,6 +14,42 @@
     i > svg {
         @apply w-full h-full;
     }
+
+    h1 {
+        @apply text-primary font-bold text-xl;
+    }
+
+    h2 {
+        @apply text-primary font-bold text-lg;
+    }
+
+    h3 {
+        @apply text-primary font-bold;
+    }
+}
+
+@layer components {
+    .help > img {
+        @apply border border-gray rounded max-h-[40svh] mx-auto mt-2 mb-2;
+    }
+
+    .help h1 {
+        @apply text-center;
+    }
+
+    .help h1,
+    .help h2,
+    .help h3 {
+        @apply mt-6;
+    }
+
+    .help > p {
+        @apply mt-2;
+    }
+
+    .help a {
+        @apply text-primary;
+    }
 }
 
 @layer icon {

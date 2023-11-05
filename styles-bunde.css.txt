@@ -449,28 +449,6 @@ i > svg {
   width: 100%;
 }
 
-h1 {
-  font-size: 1.25rem;
-  line-height: 1.75rem;
-  font-weight: 700;
-  --tw-text-opacity: 1;
-  color: rgb(204 125 36 / var(--tw-text-opacity));
-}
-
-h2 {
-  font-size: 1.125rem;
-  line-height: 1.75rem;
-  font-weight: 700;
-  --tw-text-opacity: 1;
-  color: rgb(204 125 36 / var(--tw-text-opacity));
-}
-
-h3 {
-  font-weight: 700;
-  --tw-text-opacity: 1;
-  color: rgb(204 125 36 / var(--tw-text-opacity));
-}
-
 *, ::before, ::after {
   --tw-border-spacing-x: 0;
   --tw-border-spacing-y: 0;
@@ -603,37 +581,6 @@ h3 {
   .container {
     max-width: 1536px;
   }
-}
-
-.help > img {
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-  max-height: 40svh;
-  border-radius: 0.25rem;
-  border-width: 1px;
-  --tw-border-opacity: 1;
-  border-color: rgb(85 85 85 / var(--tw-border-opacity));
-}
-
-.help h1 {
-  text-align: center;
-}
-
-.help h1,
-    .help h2,
-    .help h3 {
-  margin-top: 1.5rem;
-}
-
-.help > p {
-  margin-top: 0.5rem;
-}
-
-.help a {
-  --tw-text-opacity: 1;
-  color: rgb(204 125 36 / var(--tw-text-opacity));
 }
 
 .sr-only {
@@ -1092,10 +1039,6 @@ h3 {
   max-width: 300px;
 }
 
-.max-w-\[500px\] {
-  max-width: 500px;
-}
-
 .max-w-\[590px\] {
   max-width: 590px;
 }
@@ -1212,10 +1155,6 @@ h3 {
 
 .gap-2 {
   gap: 0.5rem;
-}
-
-.gap-3 {
-  gap: 0.75rem;
 }
 
 .gap-4 {

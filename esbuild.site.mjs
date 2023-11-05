@@ -6,7 +6,7 @@ let watch = process.argv.length >= 3 && process.argv[2] == "--watch";
 
 const config = {
     entryPoints: {
-        index: "index.ts",
+        index: "app.ts",
     },
     bundle: true,
     sourcemap: true,
@@ -18,6 +18,7 @@ const config = {
         ".eot": "dataurl",
         ".html": "text",
         ".svg": "text",
+        ".css": "text",
     },
     logLevel: "info",
     minify: !watch,

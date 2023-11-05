@@ -11,20 +11,41 @@ import {
     RichText,
 } from "@atproto/api";
 import { ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { LitElement, TemplateResult, html, nothing, svg } from "lit";
+import { LitElement, PropertyValueMap, TemplateResult, css, html, nothing, svg } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { PostSearch, extractLinkCard, processText } from "./bsky";
-import { startEventStream } from "./firehose";
+import { FirehosePost, startEventStream } from "./firehose";
 import { globalStyles } from "./styles";
-import { IconToggle, ImageInfo, contentLoader, dom, downloadImage, downscaleImage, getDateString, loadImageFiles, onVisibleOnce } from "./utils";
+import {
+    IconToggle,
+    ImageInfo,
+    contentLoader,
+    dom,
+    downloadImage,
+    downscaleImage,
+    getDateString,
+    loadImageFile,
+    loadImageFiles,
+    onVisibleOnce,
+} from "./utils";
 // @ts-ignore
 import logoSvg from "./logo.svg";
-import { bookmarkIcon, closeIcon, deleteIcon, editIcon, imageIcon, replyIcon, shieldIcon } from "./icons";
+import { bookmarkIcon, closeIcon, deleteIcon, editIcon, imageIcon, quoteIcon, replyIcon, shieldIcon } from "./icons";
 import { SelfLabels } from "@atproto/api/dist/client/types/com/atproto/label/defs";
+import { CloseableElement, escapeGuard, navigationGuard } from "./guards";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
+const profileCache: Record<string, ProfileViewDetailed> = {};
+async function cacheProfile(bskyClient: BskyAgent, did: string) {
+    if (!profileCache[did]) {
+        const profile = await bskyClient.app.bsky.actor.getProfile({ actor: did });
+        if (profile?.success) {
+            profileCache[did] = profile.data;
+        }
+    }
+}
 
 @customElement("skychat-app")
 class App extends LitElement {
@@ -69,6 +90,10 @@ class App extends LitElement {
         return this;
     }
 
+    protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        if (this.hashtag) this.load();
+    }
+
     async load() {
         this.isLoading = true;
         if (!this.hashtag) return;
@@ -84,8 +109,6 @@ class App extends LitElement {
                 if (!profileResponse.success) {
                     throw new Error();
                 }
-                localStorage.setItem("a", this.account);
-                localStorage.setItem("p", this.password);
                 localStorage.setItem("profile", JSON.stringify(profileResponse.data));
                 this.accountProfile = profileResponse.data;
             } catch (e) {
@@ -104,14 +127,16 @@ class App extends LitElement {
             return;
         }
         this.initialPosts = oldPosts.filter(
-            (post) => AppBskyFeedPost.isRecord(post.record) && post.record.text.toLowerCase().includes(this.hashtag!.replace("#", "").toLowerCase())
+            (post) => AppBskyFeedPost.isRecord(post.record) && post.record.text.toLowerCase().includes(this.hashtag!.toLowerCase())
         );
+        for (const post of this.initialPosts) {
+            if (!AppBskyFeedPost.isRecord(post.record)) continue;
+            if (!post.record.reply) continue;
+            const did = post.record.reply.parent.uri.replace("at://", "").split("/")[0];
+            await cacheProfile(this.bskyClient, did);
+        }
         this.isLoading = false;
         this.isLive = true;
-        const url = new URL(location.href);
-        url.searchParams.set("hashtag", this.hashtag);
-        history.replaceState(null, "", url.toString());
-        this.requestUpdate();
     }
 
     render() {
@@ -121,12 +146,20 @@ class App extends LitElement {
                 const root = localStorage.getItem(baseKey + "|root");
                 const rootUrl = `https://bsky.app/profile/${this.account}/post/${root?.replace("at://", "").split("/")[2]}`;
                 return html`<div class="w-full max-w-[590px] mx-auto h-full flex flex-col">
-                    <div class="flex p-2 items-center border-b border-gray/50">
-                        <a class="text-sm flex align-center justify-center text-primary font-bold text-center" href="/"
-                            ><i class="w-[16px] h-[16px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
+                    <div class="flex p-2 items-center bg-white dark:bg-black sticky top-0 z-[100]">
+                        <a class="flex items-center text-primary font-bold text-center" href="/"
+                            ><i class="flex justify-center w-[16px] h-[16px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i
+                            ><span class="ml-2">Skychat</span></a
                         >
-                        <span class="flex-grow text-center">${this.hashtag}</span>
-                        <theme-toggle absolute="false"></theme-toggle>
+                        <span class="flex-grow text-primary font-bold pl-2"> > ${this.hashtag}</span>
+                        ${this.accountProfile
+                            ? this.accountProfile.avatar
+                                ? html`<button @click=${this.logout}>
+                                      <img class="max-w-[1em] max-h-[1em] rounded-full" src="${this.accountProfile.avatar}" />
+                                  </button>`
+                                : html`<i class="icon w-[1.2em] h-[1.2em]">${defaultAvatar}</i>`
+                            : nothing}
+                        <theme-toggle class="ml-2" absolute="false"></theme-toggle>
                     </div>
                     <p class="text-center mt-4">
                         You have an <a href="${rootUrl}" target="_blank" class="text-primary">existing thread</a> for ${this.hashtag}
@@ -165,7 +198,8 @@ class App extends LitElement {
             content = html` <p class="text-center">Connecting</p>
                 <div class="align-top">${contentLoader}</div>`;
         } else {
-            content = html` <p class="text-center mx-auto w-[280px]">Explore & create hashtag threads on BlueSky</p>
+            content = html`
+                <p class="text-center mx-auto w-[280px]">Explore & create hashtag threads live on BlueSky</p>
                 <div class="mx-auto flex flex-col gap-4 mt-4 w-[280px]">
                     <input
                         id="hashtag"
@@ -181,7 +215,11 @@ class App extends LitElement {
                                   : html`<i class="icon w-[1.2em] h-[1.2em]">${defaultAvatar}</i>`}
                               ${this.accountProfile.displayName}
                           </p>`
-                        : html` <p>Join the discussion by logging in and create your own thread for the hashtag.</p>
+                        : html`
+                              <p class="text-center">
+                                  Want to post and reply to other posts? Enter your username and an
+                                  <a class="text-primary" href="https://bsky.app/settings/app-passwords">app password</a> below. (optional)
+                              </p>
                               <input
                                   id="account"
                                   class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
@@ -195,13 +233,19 @@ class App extends LitElement {
                                   placeholder="App password"
                                   value=${this.password || nothing}
                               />
-                              <p class="text-xs mt-0 pt-0">Your credentials will only be stored on your device.</p>`}
+                          `}
                     <button class="align-center rounded bg-primary text-white px-4 py-2" @click=${this.goLive}>Go live!</button>
+                    ${!this.accountProfile
+                        ? html`<p class="text-xs mt-0 pt-0 text-center">Your credentials will only be stored on your device.</p>`
+                        : nothing}
                     ${this.accountProfile ? html`<button class="text-sm text-primary" @click=${this.logout}>Log out</button>` : nothing}
                 </div>
                 ${this.error
                     ? html`<div class="mx-auto mt-8 max-w-[300px] border border-gray bg-gray text-white p-4 rounded text-center">${this.error}</div>`
-                    : nothing}`;
+                    : nothing}
+                <a class="text-xl text-primary text-center font-bold mt-16" href="help.html">How does it work?</a>
+                <a class="text-xl text-primary text-center font-bold mt-8" href="trending.html">Trending hashtags</a>
+            `;
         }
 
         return html` <main class="flex flex-col justify-between m-auto max-w-[728px] px-4 h-full leading-5">
@@ -250,8 +294,13 @@ class App extends LitElement {
             this.account = null;
             this.password = null;
         }
-
-        this.load();
+        if (this.account && this.password) {
+            localStorage.setItem("a", this.account);
+            localStorage.setItem("p", this.password);
+        }
+        const url = new URL(location.href);
+        url.searchParams.set("hashtag", this.hashtag);
+        location.href = url.toString();
     }
 
     renderLive() {
@@ -270,8 +319,9 @@ class App extends LitElement {
             }
             let first: HTMLElement | undefined;
             let last: HTMLElement | undefined;
+            const editor = liveDom.querySelector("post-editor");
             for (const post of olderPosts) {
-                const postHtml = dom(html`<post-view .bskyClient=${this.bskyClient} .post=${post}></post-view>`)[0];
+                const postHtml = dom(html`<post-view .bskyClient=${this.bskyClient} .post=${post} .postEditor=${editor}></post-view>`)[0];
                 posts.insertBefore(postHtml, load);
                 if (!first) first = postHtml;
                 last = postHtml;
@@ -299,7 +349,7 @@ class App extends LitElement {
 
         const liveDom = dom(html`<main class="w-full h-full overflow-auto">
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
-                <div class="flex p-2 items-center bg-white dark:bg-black border-b border-gray/50 sticky top-0 z-[100]">
+                <div class="flex p-2 items-center bg-white dark:bg-black sticky top-0 z-[100]">
                     <a class="flex items-center text-primary font-bold text-center" href="/"
                         ><i class="flex justify-center w-[16px] h-[16px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i
                         ><span class="ml-2">Skychat</span></a
@@ -315,9 +365,9 @@ class App extends LitElement {
                     <theme-toggle class="ml-2" absolute="false"></theme-toggle>
                 </div>
                 <div id="posts" class="flex-grow">
-                    <button id="loadOlderPosts" @click=${loadOlderPosts} class="w-full text-center p-4 animate-pulse">
+                    <div id="loadOlderPosts" class="w-full text-center p-4 animate-pulse">
                         Loading older posts for <span class="text-primary">${this.hashtag}</span>
-                    </button>
+                    </div>
                 </div>
                 ${this.account
                     ? html`
@@ -330,7 +380,7 @@ class App extends LitElement {
                       `
                     : nothing}
             </div>
-            <div id="catchup" class="w-full hidden fixed flex items-center">
+            <div id="catchup" class="w-full hidden fixed flex items-center z-[50]">
                 <button
                     @click=${() => {
                         userScrolled = false;
@@ -386,35 +436,65 @@ class App extends LitElement {
         const renderPost = (post: AppBskyFeedDefs.PostView) => {
             try {
                 if (!AppBskyFeedPost.isRecord(post.record)) return;
-                const postHtml = dom(html`<post-view .bskyClient=${this.bskyClient} .post=${post}></post-view>`)[0];
+                const postHtml = dom(html`<post-view .bskyClient=${this.bskyClient} .post=${post} .postEditor=${editor}></post-view>`)[0];
                 liveDom.querySelector("#posts")!.append(postHtml);
             } catch (e) {
                 console.error(e);
             }
         };
 
+        const hasHashtag = (text: string, hashtag: string): boolean => {
+            const tokens = text.split(/[ \t\n\r.,;!?'"]+/);
+            for (const token of tokens) {
+                if (token.toLowerCase() === hashtag.toLowerCase()) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
         for (const post of this.initialPosts) {
-            renderPost(post);
+            if (AppBskyFeedPost.isRecord(post.record) && hasHashtag(post.record.text, this.hashtag!)) renderPost(post);
         }
 
         // FIXME need a queue, so posts get inserted in the order they arrived in.
-        const stream = startEventStream(
-            async (post) => {
-                try {
-                    if (!post.text.toLowerCase().includes(this.hashtag!.replace("#", "").toLowerCase())) return;
-                    const response = await this.bskyClient!.getPosts({
-                        uris: [post.uri],
-                    });
-                    if (!response.success) throw Error(`Couldn't get post for ${post.uri}`);
-                    renderPost(response.data.posts[0]);
-                } catch (e) {
-                    console.error(e);
+        const postHandler = async (firehosePost: FirehosePost) => {
+            try {
+                if (!hasHashtag(firehosePost.text, this.hashtag!)) return;
+                const response = await this.bskyClient!.getPosts({
+                    uris: [firehosePost.uri],
+                });
+                if (!response.success) throw Error(`Couldn't get post for ${firehosePost.uri}`);
+                const post = response.data.posts[0];
+                if (AppBskyFeedPost.isRecord(post.record)) {
+                    if (post.record.reply) {
+                        const did = post.record.reply.parent.uri.replace("at://", "").split("/")[0];
+                        await cacheProfile(this.bskyClient!, did);
+                    }
                 }
-            },
-            () => {
-                this.error = `Error, failed to load more posts for hashtag ${this.hashtag}`;
+                renderPost(post);
+            } catch (e) {
+                console.error(e);
             }
-        );
+        };
+        let first = true;
+        const reconnectHandler = async () => {
+            console.log("Reconnecting");
+            if (!first && !liveDom.querySelector(".reconnect")) {
+                liveDom
+                    .querySelector("#posts")!
+                    .appendChild(
+                        dom(
+                            html`<div id="loadOlderPosts" class="reconnect w-full text-center p-4 border-t border-gray/50">
+                                Reconnected. Some posts may be missing above.
+                            </div>`
+                        )[0]
+                    );
+            }
+            first = false;
+            startEventStream(postHandler, reconnectHandler);
+        };
+        reconnectHandler();
 
         return liveDom;
     }
@@ -459,7 +539,13 @@ export class PostEditor extends LitElement {
     cardSuggestions?: AppBskyRichtextFacet.Link[];
 
     @state()
-    embed?: AppBskyFeedPost.Record["embed"];
+    embed?: AppBskyEmbedExternal.Main;
+
+    @state()
+    private quote?: AppBskyFeedDefs.PostView;
+
+    @state()
+    private replyTo?: AppBskyFeedDefs.PostView;
 
     @state()
     imagesToUpload: { alt: string; dataUri: string; data: Uint8Array; mimeType: string }[] = [];
@@ -473,6 +559,20 @@ export class PostEditor extends LitElement {
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
+    }
+
+    connectedCallback(): void {
+        super.connectedCallback();
+        document.addEventListener("paste", this.pasteImage);
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        document.removeEventListener("paste", this.pasteImage);
+    }
+
+    protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        this.messageElement?.focus();
     }
 
     render() {
@@ -497,24 +597,24 @@ export class PostEditor extends LitElement {
             this.insert = undefined;
         };
 
-        return html` <div class="flex max-w-[600px] bg-white dark:bg-black rounded border-t border-l border-r border-gray/50">
+        return html` <div class="flex max-w-[600px] bg-white dark:bg-black border-t border-primary border-dashed">
             <div class="flex max-w-full flex-col flex-grow relative">
                 ${
-                    this.handleSuggestions
+                    this.handleSuggestions && this.handleSuggestions.length > 0
                         ? html`<div
-                              class="flex flex-col bg-white dark:bg-black border border-gray/50 absolute"
+                              class="flex flex-col bg-white dark:bg-black border border-gray absolute max-w-[100vw] z-[200]"
                               style="top: calc(${this.handleSuggestions.length} * -2.5em);"
                           >
                               ${map(
                                   this.handleSuggestions,
                                   (suggestion) => html` <button
                                       @click=${() => insertSuggestion(suggestion.handle)}
-                                      class="flex items-center gap-2 p-2 border-bottom border-gray/50 hover:bg-primary hover:text-white"
+                                      class="flex items-center gap-2 p-2 border-bottom border-gray hover:bg-primary hover:text-white"
                                   >
                                       ${suggestion.avatar
                                           ? html`<img class="w-[1.5em] h-[1.5em] rounded-full" src="${suggestion.avatar}" />`
                                           : html`<i class="icon w-[1.5em] h-[1.5em]">${defaultAvatar}</i>`}
-                                      <span>${suggestion.displayName ?? suggestion.handle}</span>
+                                      <span class="truncate">${suggestion.displayName ?? suggestion.handle}</span>
                                       <span class="ml-auto text-gray text-sm">${suggestion.displayName ? suggestion.handle : ""}</span>
                                   </button>`
                               )}
@@ -522,11 +622,45 @@ export class PostEditor extends LitElement {
                         : nothing
                 }
                 ${this.isSending ? html`<div class="p-2 text-sm animate-pulse">Sending post</div>` : nothing}
+                ${
+                    this.replyTo
+                        ? html`<div class="flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
+                              ${renderRecord(
+                                  this.replyTo.uri,
+                                  this.replyTo.author,
+                                  this.replyTo.record as AppBskyFeedPost.Record,
+                                  this.replyTo.embed,
+                                  true,
+                                  false,
+                                  "Replying to"
+                              )}
+                              <button
+                                  class="absolute right-4 top-4 z-[100] bg-black rounded-full p-1"
+                                  @click=${() => {
+                                      this.replyTo = undefined;
+                                  }}
+                                  ?disabled=${this.isSending}
+                              >
+                                  <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
+                              </button>
+                          </div>`
+                        : nothing
+                }
                 <textarea
                     id="message"
                     @input=${this.input}
-                    class="resize-none outline-none bg-transparent dark:text-white disabled:text-gray dark:disabled:text-gray p-2 whitespace-normal"
-                    placeholder="Add a post to your thread about ${this.hashtag!}. The hashtag will be added automatically."
+                    @drop=${(ev: DragEvent) => this.pasteImage(ev)}
+                    @dragover=${(ev: DragEvent) => ev.preventDefault()}
+                    class="resize-none outline-none bg-transparent dark:text-white disabled:text-gray dark:disabled:text-gray p-2"
+                    placeholder="${
+                        !this.quote && !this.replyTo
+                            ? `Add a post to your thread about ${this.hashtag!}. The hashtag will be added automatically.`
+                            : this.quote
+                            ? `Write your quote. It will be added to your thread about ${this.hashtag!}.`
+                            : `Write your reply. It will be added to the thread by ${
+                                  this.replyTo!.author.displayName ?? this.replyTo!.author.handle
+                              }.`
+                    }"
                     ?disabled=${this.isSending}
                 ></textarea>
                 ${
@@ -537,7 +671,7 @@ export class PostEditor extends LitElement {
                                   (card) =>
                                       html`<button
                                           @click=${() => this.addLinkCard(card)}
-                                          class="border border-gray/50 rounded py-1 px-4 flex gap-2"
+                                          class="border border-gray rounded py-1 px-4 flex gap-2"
                                           ?disabled=${this.isSending}
                                       >
                                           <div class="min-w-[70px]">Add card</div>
@@ -594,9 +728,33 @@ export class PostEditor extends LitElement {
                           </div>`
                         : nothing
                 }
+                ${
+                    this.quote
+                        ? html`<div class="relative flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
+                              ${renderRecord(
+                                  this.quote.uri,
+                                  this.quote.author,
+                                  this.quote.record as AppBskyFeedPost.Record,
+                                  this.quote.embed,
+                                  true,
+                                  false,
+                                  "Quoting"
+                              )}
+                              <button
+                                  class="absolute right-2 top-2 z-[100] bg-black rounded-full p-1"
+                                  @click=${() => {
+                                      this.quote = undefined;
+                                  }}
+                                  ?disabled=${this.isSending}
+                              >
+                                  <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
+                              </button>
+                          </div>`
+                        : nothing
+                }
                 <div class="flex items-right">
                     <button class="p-2 disabled:fill-gray" @click=${this.addImage} ?disabled=${this.embed || this.isSending}>
-                        <i class="icon w-6 h-6 ${this.embed || this.isSending ? "fill-gray/50" : ""}">${imageIcon}</i>
+                        <i class="icon w-6 h-6 ${this.embed || this.isSending ? "fill-gray" : ""}">${imageIcon}</i>
                     </button>
                     ${
                         this.imagesToUpload.length > 0
@@ -626,6 +784,42 @@ export class PostEditor extends LitElement {
         const totalCount = 300 - (1 + this.hashtag!.length);
         this.canPost = (this.count > 0 && this.count <= totalCount) || this.imagesToUpload.length > 0 || this.embed != undefined;
     }
+
+    setQuote(post: AppBskyFeedDefs.PostView | undefined) {
+        this.quote = post;
+        this.replyTo = undefined;
+        this.messageElement?.focus();
+    }
+
+    setReply(post: AppBskyFeedDefs.PostView | undefined) {
+        this.replyTo = post;
+        this.quote = undefined;
+        this.messageElement?.focus();
+    }
+
+    pasteImage = async (ev: ClipboardEvent | DragEvent) => {
+        const clipboardItems = ev instanceof ClipboardEvent ? ev.clipboardData?.items : ev.dataTransfer?.items;
+        if (!clipboardItems || clipboardItems.length == 0) return;
+        let foundItem: DataTransferItem | undefined;
+        for (let i = 0; i < clipboardItems.length; i++) {
+            const item = clipboardItems[i];
+            if (item.kind != "file") continue;
+            if (!["image/png", "image/jpeg"].includes(item.type)) continue;
+            foundItem = item;
+            break;
+        }
+        if (!foundItem) return;
+        ev.preventDefault();
+        const file = foundItem.getAsFile();
+        if (!file) return;
+        const image = await loadImageFile(file);
+        if (this.imagesToUpload.length == 4) {
+            alert("You can only upload 4 images per post");
+            return;
+        }
+        this.imagesToUpload = [...this.imagesToUpload, image];
+        this.canPost = true;
+    };
 
     async addImage() {
         if (this.imagesToUpload.length == 4) {
@@ -731,7 +925,7 @@ export class PostEditor extends LitElement {
         this.count = message.value.length;
         this.checkCanPost();
         message.style.height = "auto";
-        message.style.height = message.scrollHeight + "px";
+        message.style.height = Math.min(16 * 15, message.scrollHeight) + "px";
 
         this.isInHandle(
             message.value,
@@ -808,30 +1002,75 @@ export class PostEditor extends LitElement {
             const labels: SelfLabels | undefined = this.sensitive
                 ? { $type: "com.atproto.label.defs#selfLabels", values: [{ val: "porn" }] }
                 : undefined;
+
+            const mediaEmbed = this.embed ?? (imagesEmbed.images.length > 0 ? imagesEmbed : undefined);
+            const quoteEmbed = this.quote ? { uri: this.quote.uri, cid: this.quote.cid } : undefined;
+            let embed: AppBskyFeedPost.Record["embed"];
+            if (quoteEmbed && mediaEmbed) {
+                const recordWithMediaEmbed: AppBskyEmbedRecordWithMedia.Main = {
+                    $type: "app.bsky.embed.recordWithMedia",
+                    media: mediaEmbed,
+                    record: {
+                        record: quoteEmbed,
+                    },
+                };
+                embed = recordWithMediaEmbed;
+            } else if (quoteEmbed) {
+                const recordEmbed: AppBskyEmbedRecord.Main = {
+                    $type: "app.bsky.embed.record",
+                    record: quoteEmbed,
+                };
+                embed = recordEmbed;
+            } else {
+                embed = mediaEmbed;
+            }
+
             let record: AppBskyFeedPost.Record = {
                 $type: "app.bsky.feed.post",
                 text: richText.text,
                 facets: richText.facets,
                 createdAt: new Date().toISOString(),
-                embed: this.embed ?? (imagesEmbed.images.length > 0 ? imagesEmbed : undefined),
+                embed,
                 labels,
             };
 
             const baseKey = this.account + "|" + this.hashtag!;
             const prevRoot = localStorage.getItem(baseKey + "|root") ? JSON.parse(localStorage.getItem(baseKey + "|root")!) : undefined;
             const prevReply = localStorage.getItem(baseKey + "|reply") ? JSON.parse(localStorage.getItem(baseKey + "|reply")!) : undefined;
-            if (prevRoot) {
+            if (!this.replyTo) {
+                if (prevRoot) {
+                    record = {
+                        ...record,
+                        reply: {
+                            root: prevRoot,
+                            parent: prevReply ?? prevRoot,
+                        },
+                    };
+                }
+            }
+
+            if (this.replyTo && AppBskyFeedPost.isRecord(this.replyTo.record)) {
+                const parent = {
+                    uri: this.replyTo.uri,
+                    cid: this.replyTo.cid,
+                };
+
+                const root = this.replyTo.record.reply ? this.replyTo.record.reply.root : parent;
                 record = {
                     ...record,
                     reply: {
-                        root: prevRoot,
-                        parent: prevReply ?? prevRoot,
+                        root,
+                        parent,
                     },
                 };
             }
+
             const response = await this.bskyClient.post(record);
-            if (!prevRoot) localStorage.setItem(baseKey + "|root", JSON.stringify(response));
-            localStorage.setItem(baseKey + "|reply", JSON.stringify(response));
+
+            if (!this.replyTo) {
+                if (!prevRoot) localStorage.setItem(baseKey + "|root", JSON.stringify(response));
+                localStorage.setItem(baseKey + "|reply", JSON.stringify(response));
+            }
             this.messageElement!.value = "";
             this.count = 0;
             this.messageElement!.style.height = "auto";
@@ -840,6 +1079,8 @@ export class PostEditor extends LitElement {
             this.cardSuggestions = undefined;
             this.handleSuggestions = undefined;
             this.imagesToUpload.length = 0;
+            this.replyTo = undefined;
+            this.quote = undefined;
         } catch (e) {
             console.error(e);
             alert("Couldn't publish post!");
@@ -852,7 +1093,7 @@ export class PostEditor extends LitElement {
 
 function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External) {
     const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
-    return html`<a class="w-full border rounded border-gray/50 flex mb-2" target="_blank" href="${cardEmbed.uri}">
+    return html`<a class="w-full border rounded border-gray flex mb-2" target="_blank" href="${cardEmbed.uri}">
         ${thumb ? html`<img src="${thumb}" class="w-[100px] object-contain" />` : nothing}
         <div class="flex flex-col p-2 w-full">
             <span class="text-gray text-xs">${new URL(cardEmbed.uri).host}</span>
@@ -900,10 +1141,18 @@ function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
     const postUrl = `https://bsky.app/profile/${author.did}/post/${rkey}`;
     const embeds = recordEmbed.record.embeds && recordEmbed.record.embeds.length > 0 ? recordEmbed.record.embeds[0] : undefined;
     const sensitive = recordEmbed.record.labels?.some((label) => ["porn", "nudity", "sexual"].includes(label.val)) ?? false;
-    return html`<div class="border border-gray/50 rounded p-2 mb-2">${renderRecord(postUrl, author, record, embeds, true, sensitive)}</div>`;
+    return html`<div class="border border-gray rounded p-2 mb-2">${renderRecord(postUrl, author, record, embeds, true, sensitive)}</div>`;
 }
-function renderRecordWithMediaEmbed(recordWithMediaEmbed: AppBskyEmbedRecordWithMedia.View) {
-    return nothing;
+function renderRecordWithMediaEmbed(recordWithMediaEmbed: AppBskyEmbedRecordWithMedia.View, sensitive: boolean) {
+    const imagesEmbed = AppBskyEmbedImages.isView(recordWithMediaEmbed.media) ? recordWithMediaEmbed.media.images : undefined;
+    const cardEmbed =
+        AppBskyEmbedExternal.isView(recordWithMediaEmbed.media) || AppBskyEmbedExternal.isMain(recordWithMediaEmbed.media)
+            ? recordWithMediaEmbed.media.external
+            : undefined;
+    return html`<div class="mt-2">
+        ${cardEmbed ? renderCardEmbed(cardEmbed) : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive) : nothing}
+        ${renderRecordEmbed(recordWithMediaEmbed.record)}
+    </div>`;
 }
 
 function renderEmbed(embed: AppBskyFeedDefs.PostView["embed"] | AppBskyFeedPost.Record["embed"], sensitive: boolean) {
@@ -913,7 +1162,8 @@ function renderEmbed(embed: AppBskyFeedDefs.PostView["embed"] | AppBskyFeedPost.
     const recordWithMediaEmbed = AppBskyEmbedRecordWithMedia.isView(embed) ? embed : undefined;
     return html`<div class="mt-2">
         ${cardEmbed ? renderCardEmbed(cardEmbed) : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive) : nothing}
-        ${recordEmbed ? renderRecordEmbed(recordEmbed) : nothing} ${recordWithMediaEmbed ? renderRecordWithMediaEmbed(recordWithMediaEmbed) : nothing}
+        ${recordEmbed ? renderRecordEmbed(recordEmbed) : nothing}
+        ${recordWithMediaEmbed ? renderRecordWithMediaEmbed(recordWithMediaEmbed, sensitive) : nothing}
     </div>`;
 }
 
@@ -923,17 +1173,34 @@ function renderRecord(
     record: AppBskyFeedPost.Record,
     embed: AppBskyFeedDefs.PostView["embed"] | undefined,
     smallAvatar: boolean,
-    sensitive: boolean
+    sensitive: boolean,
+    prefix?: string
 ): TemplateResult {
-    return html` <div class="flex items-center gap-2">
+    const replyToAuthorDid = record.reply?.parent.uri.replace("at://", "").split("/")[0];
+    const replyToProfile = replyToAuthorDid ? profileCache[replyToAuthorDid] : undefined;
+    return html` <div class="w-full flex items-center gap-2">
+            ${prefix ? html`<span class="mr-1 font-bold">${prefix}</span>` : nothing}
             <a class="flex items-center gap-2" href="https://bsky.app/profile/${author.handle ?? author.did}" target="_blank">
                 ${author.avatar
                     ? html`<img class="${smallAvatar ? "w-[1em] h-[1em]" : "w-[2em] h-[2em]"} rounded-full" src="${author.avatar}" />`
                     : defaultAvatar}
-                <span class="text-primary">${author.displayName ?? author.handle}</span>
+                <span class="${smallAvatar ? "text-sm" : ""} line-clamp-1 hover:underline">${author.displayName ?? author.handle}</span>
             </a>
-            <a class="ml-auto text-xs text-primary/75" href="${postUrl}" target="_blank">${getDateString(new Date(record.createdAt))}</a>
+            ${prefix == undefined
+                ? html`<a class="flex-1 text-right text-xs text-gray whitespace-nowrap hover:underline" href="${postUrl}" target="_blank"
+                      >${getDateString(new Date(record.createdAt))}</a
+                  >`
+                : nothing}
         </div>
+        ${replyToProfile
+            ? html`<div class="flex gap-1 text-xs items-center">
+                  <i class="icon fill-gray">${replyIcon}</i>
+                  <span>Replying to</span>
+                  <a class="line-clamp-1 hover:underline" href="https://bsky.app/profile/${replyToAuthorDid}" target="_blank"
+                      >${replyToProfile.displayName ?? replyToProfile.handle}</a
+                  >
+              </div>`
+            : nothing}
         <div class="mt-1 break-words">${unsafeHTML(processText(record))}</div>
         ${embed ? renderEmbed(embed, sensitive) : nothing}`;
 }
@@ -948,9 +1215,12 @@ export class PostViewElement extends LitElement {
     @property()
     post?: AppBskyFeedDefs.PostView;
 
+    @property()
+    postEditor?: PostEditor;
+
     render() {
         if (!this.post || !AppBskyFeedPost.isRecord(this.post.record)) {
-            return html`<div class="border-t border-gray/30 px-4 py-2">
+            return html`<div class="border-t border-gray/50 px-4 py-2">
                 ${contentLoader}
                 </div>
             </div>`;
@@ -959,20 +1229,24 @@ export class PostViewElement extends LitElement {
         const rkey = this.post.uri.replace("at://", "").split("/")[2];
         const author = this.post.author;
         const postUrl = `https://bsky.app/profile/${author.did}/post/${rkey}`;
-        return html`<div class="border-t border-gray/30 px-4 py-2">
+        return html`<div class="border-t border-gray/50 px-4 py-2">
             ${renderRecord(
                 postUrl,
                 author,
                 this.post.record,
                 this.post.embed,
                 false,
-                this.post.labels?.some((label) => ["porn", "sexual", "nudity"].includes(label.val)) ?? false
+                this.post.labels?.some((label) => ["porn", "sexual", "nudity"].includes(label.val)) ?? false,
+                undefined
             )}
             <div class="flex items-center gap-4 mt-1">
-                <a href="${postUrl}" target="_blank" class="flex items-center cursor-pointer gap-1"
-                    ><i class="icon w-[1.2em] h-[1.2em] fill-gray dark:fill-white/50">${replyIcon}</i
-                    ><span class="text-gray">${this.post.replyCount}</span></a
-                >
+                <button @click=${this.reply} class="flex gap-1 items-center text-gray">
+                    <i class="icon w-[1.2em] h-[1.2em] fill-gray dark:fill-white/50">${replyIcon}</i
+                    ><span class="text-gray">${this.post.replyCount}</span>
+                </button>
+                <button @click=${this.quote} class="flex gap-1 items-center text-gray">
+                    <i class="icon w-[1.2em] h-[1.2em] fill-gray dark:fill-white/50">${quoteIcon}</i>
+                </button>
                 <div class="flex gap-1 items-center text-gray">
                     <icon-toggle @change=${this.toggleRepost} icon="reblog" .value=${this.post.viewer?.repost ?? false}
                         >${this.post.repostCount ?? 0}</icon-toggle
@@ -987,7 +1261,7 @@ export class PostViewElement extends LitElement {
         </div>`;
     }
 
-    canLikeAndRepost(toggle: IconToggle) {
+    canInteract(toggle: IconToggle) {
         if (this.bskyClient?.service.toString().includes("api")) {
             if (confirm("Do you want to log-in to repost, like, and create posts?")) {
                 location.reload();
@@ -999,9 +1273,21 @@ export class PostViewElement extends LitElement {
         }
     }
 
+    async quote(ev: CustomEvent) {
+        if (this.postEditor) {
+            this.postEditor.setQuote(this.post);
+        }
+    }
+
+    async reply(ev: CustomEvent) {
+        if (this.postEditor) {
+            this.postEditor.setReply(this.post);
+        }
+    }
+
     async toggleRepost(ev: CustomEvent) {
         const toggle = ev.target as IconToggle;
-        if (!this.canLikeAndRepost(toggle)) return;
+        if (!this.canInteract(toggle)) return;
         if (!this.post) return;
         if (!this.post.viewer) this.post.viewer = {};
         if (ev.detail.value) {
@@ -1020,7 +1306,7 @@ export class PostViewElement extends LitElement {
     likeUri: string | undefined;
     async toggleLike(ev: CustomEvent) {
         const toggle = ev.target as IconToggle;
-        if (!this.canLikeAndRepost(toggle)) return;
+        if (!this.canInteract(toggle)) return;
         if (!this.post) return;
         if (!this.post.viewer) this.post.viewer = {};
         if (ev.detail.value) {
@@ -1038,7 +1324,7 @@ export class PostViewElement extends LitElement {
 }
 
 @customElement("image-editor")
-export class ImageEditor extends LitElement {
+export class ImageEditor extends CloseableElement {
     static styles = [globalStyles];
 
     @property()
@@ -1056,7 +1342,7 @@ export class ImageEditor extends LitElement {
                 <div class="flex items-center">
                     <h1 class="text-lg text-primary font-bold">Edit image</h1>
                     <button
-                        @click=${() => this.remove()}
+                        @click=${() => this.close()}
                         class="ml-auto bg-primary text-white px-2 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
                     >
                         Save
@@ -1070,7 +1356,7 @@ export class ImageEditor extends LitElement {
                             this.image.alt = (ev.target as HTMLInputElement)!.value;
                         }
                     }}
-                    class="flex-1 resize-none outline-none bg-transparent dark:text-white disabled:text-gray dark:disabled:text-gray px-2 pt-2 whitespace-normal"
+                    class="flex-1 max-h-[11.5em] resize-none outline-none bg-transparent drop:bg-white dark:text-white disabled:text-gray dark:disabled:text-gray px-2 pt-2"
                     placeholder="Add alt text to your image"
                 >
 ${alt}</textarea
@@ -1081,7 +1367,7 @@ ${alt}</textarea
 }
 
 @customElement("alt-text")
-export class AltText extends LitElement {
+export class AltText extends CloseableElement {
     static styles = [globalStyles];
 
     @property()
@@ -1093,7 +1379,7 @@ export class AltText extends LitElement {
 
     render() {
         const alt = this.alt ? this.alt : "";
-        return html`<div @click=${() => this.remove()} class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black">
+        return html`<div @click=${() => this.close()} class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black">
             <div class="mx-auto max-w-[600px] h-full flex flex-col p-4 gap-2">
                 <div class="flex items-center">
                     <h1 class="text-lg text-primary font-bold">Alt text</h1>
@@ -1104,3 +1390,6 @@ export class AltText extends LitElement {
         </div>`;
     }
 }
+
+import "./help";
+import "./trending";

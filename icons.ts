@@ -9,6 +9,8 @@ import closeIconSvg from "remixicon/icons/System/close-circle-line.svg";
 // @ts-ignore
 import commentIconSvg from "remixicon/icons/Communication/chat-4-line.svg";
 // @ts-ignore
+import quoteIconSvg from "remixicon/icons/Communication/chat-quote-line.svg";
+// @ts-ignore
 import replyIconSvg from "remixicon/icons/Business/reply-line.svg";
 // @ts-ignore
 import starIconSvg from "remixicon/icons/System/star-line.svg";
@@ -46,3 +48,4 @@ export const heartIcon = unsafeHTML(heartIconSvg);
 export const editIcon = unsafeHTML(editIconSvg);
 export const deleteIcon = unsafeHTML(deleteIconSvg);
 export const shieldIcon = unsafeHTML(shieldIconSvg);
+export const quoteIcon = unsafeHTML(quoteIconSvg);

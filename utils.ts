@@ -205,7 +205,7 @@ export class IconToggle extends LitElement {
                 : "text-gray dark:text-white/50"}"
             @click=${this.toggle}
         >
-            <i class="icon w-6 h-6 ${this.value ? "fill-primary dark:fill-primary" : "fill-gray dark:fill-white/50"}"
+            <i class="icon w-4 h-4 ${this.value ? "fill-primary dark:fill-primary" : "fill-gray"}"
                 >${icons[this.icon as "reblog" | "heart" | "shield"] ?? ""}</i
             ><slot></slot>
         </div>`;
@@ -256,33 +256,34 @@ export async function downloadImage(url: string): Promise<ImageInfo | Error> {
     }
 }
 
+export async function readFile(file: File) {
+    return new Promise<{ dataUri: string; mimeType: string }>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (event.target && event.target.result) resolve({ dataUri: event.target.result as string, mimeType: file.type });
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+export async function loadImageFile(file: File): Promise<ImageInfo> {
+    const { dataUri, mimeType } = await readFile(file);
+    const base64Data = dataUri.split(",")[1];
+    const uint8Array = new Uint8Array(
+        atob(base64Data)
+            .split("")
+            .map((char) => char.charCodeAt(0))
+    );
+    return { alt: "", dataUri, data: uint8Array, mimeType };
+}
+
 export async function loadImageFiles(imageFiles: FileList): Promise<ImageInfo[]> {
     const convertedDataArray: ImageInfo[] = [];
-
-    async function readFile(file: File) {
-        return new Promise<{ dataUri: string; mimeType: string }>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                if (event.target && event.target.result) resolve({ dataUri: event.target.result as string, mimeType: file.type });
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-
     for (let i = 0; i < imageFiles.length; i++) {
         const file = imageFiles[i];
         if (!file) continue;
-        const { dataUri, mimeType } = await readFile(file);
-        const base64Data = dataUri.split(",")[1];
-        const uint8Array = new Uint8Array(
-            atob(base64Data)
-                .split("")
-                .map((char) => char.charCodeAt(0))
-        );
-
-        convertedDataArray.push({ alt: "", dataUri, data: uint8Array, mimeType });
+        convertedDataArray.push(await loadImageFile(file));
     }
-
     return convertedDataArray;
 }
 
