@@ -1,15 +1,10 @@
-import { AppBskyFeedDefs, AppBskyFeedPost, BskyAgent } from "@atproto/api";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { LitElement, PropertyValueMap, TemplateResult, html, nothing, svg } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { LitElement, html, nothing, svg } from "lit";
+import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { PostSearch } from "../bsky";
-import { FirehosePost, startEventStream } from "../firehose";
-import { ImageInfo, contentLoader, dom, login, logout, onVisibleOnce } from "../utils";
+import { contentLoader, login, logout } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import "../elements";
-import { cacheProfile } from "../profilecache";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -46,8 +41,11 @@ export class App extends LitElement {
 
         if (!this.isLoading) {
             const accountProfile = localStorage.getItem("profile") ? JSON.parse(localStorage.getItem("profile")!) : null;
+            const account = localStorage.getItem("a");
+            const password = localStorage.getItem("a");
             content = html`<p class="text-center mx-auto w-[280px]">Explore & create hashtag threads in real-time on BlueSky</p>
                 <div class="mx-auto flex flex-col gap-4 mt-4 w-[280px]">
+                    ${this.error ? html`<div class="mx-auto max-w-[300px] text-[#cc0000] font-bold text-center">${this.error}</div>` : nothing}
                     <input
                         id="hashtag"
                         class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
@@ -70,12 +68,14 @@ export class App extends LitElement {
                                   id="account"
                                   class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
                                   placeholder="Account, e.g. badlogic.bsky.social"
+                                  value="${account}"
                               />
                               <input
                                   id="password"
                                   type="password"
                                   class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
                                   placeholder="App password"
+                                  value="${password}"
                               />
                           `}
                     <button class="align-center rounded bg-primary text-white px-4 py-2" @click=${this.goLive}>Go live!</button>
@@ -84,9 +84,6 @@ export class App extends LitElement {
                         : nothing}
                     ${accountProfile ? html`<button class="text-sm text-primary" @click=${this.logout}>Log out</button>` : nothing}
                 </div>
-                ${this.error
-                    ? html`<div class="mx-auto mt-8 max-w-[300px] border border-gray bg-gray text-white p-4 rounded text-center">${this.error}</div>`
-                    : nothing}
                 <a class="text-xl text-primary text-center font-bold mt-16" href="help.html">How does it work?</a>
                 <a class="text-xl text-primary text-center font-bold mt-8" href="trending.html">Trending hashtags</a>`;
         }

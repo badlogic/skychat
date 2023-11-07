@@ -1,4 +1,4 @@
-import { AppBskyActorDefs, BskyAgent } from "@atproto/api";
+import { AppBskyActorDefs, AtpSessionData, AtpSessionEvent, BskyAgent } from "@atproto/api";
 import { TemplateResult, html, render, svg } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 
@@ -282,14 +282,30 @@ export function onVisibleOnce(target: Element, callback: () => void) {
 }
 
 export async function login(account?: string, password?: string) {
+    const persistSession = (evt: AtpSessionEvent, sess?: AtpSessionData) => {
+        // store the session-data for reuse
+        if (evt == "create" || evt == "update") {
+            localStorage.setItem("s", JSON.stringify(sess));
+        }
+    };
+
     if (!account || !password) return new BskyAgent({ service: "https://api.bsky.app" });
-    const bskyClient = new BskyAgent({ service: "https://bsky.social" });
+    const bskyClient = new BskyAgent({ service: "https://bsky.social", persistSession });
     try {
-        const response = await bskyClient.login({
-            identifier: account,
-            password,
-        });
-        if (!response.success) throw new Error();
+        const session = localStorage.getItem("s") ? (JSON.parse(localStorage.getItem("s")!) as AtpSessionData) : undefined;
+        let resumeSuccess = false;
+        if (session) {
+            const resume = await bskyClient.resumeSession(session);
+            resumeSuccess = resume.success;
+        }
+
+        if (!resumeSuccess) {
+            const response = await bskyClient.login({
+                identifier: account,
+                password,
+            });
+            if (!response.success) throw new Error();
+        }
         const profileResponse = await bskyClient.app.bsky.actor.getProfile({ actor: account });
         if (!profileResponse.success) {
             throw new Error();
@@ -307,6 +323,7 @@ export function logout() {
     localStorage.removeItem("profile");
     localStorage.removeItem("a");
     localStorage.removeItem("p");
+    localStorage.removeItem("s");
 }
 
 export function hasHashtag(text: string, hashtag: string) {
@@ -320,10 +337,39 @@ export function hasHashtag(text: string, hashtag: string) {
 }
 
 export function renderAuthor(author: AppBskyActorDefs.ProfileView, smallAvatar = false) {
-    return html`<a class="flex items-center gap-2" href="https://bsky.app/profile/${author.handle ?? author.did}" target="_blank">
+    return html`<a class="flex items-center gap-2" href="${getProfileUrl(author.handle ?? author.did)}" target="_blank">
         ${author.avatar
             ? html`<img class="${smallAvatar ? "w-[1em] h-[1em]" : "w-[2em] h-[2em]"} rounded-full" src="${author.avatar}" />`
             : defaultAvatar}
-        <span class="${smallAvatar ? "text-sm" : ""} line-clamp-1 hover:underline">${author.displayName ?? author.handle}</span>
+        <span class="${smallAvatar ? "text-sm" : ""} font-bold line-clamp-1 hover:underline">${author.displayName ?? author.handle}</span>
     </a>`;
+}
+
+export function getProfileUrl(account: AppBskyActorDefs.ProfileView | string) {
+    return `https://bsky.app/profile/${typeof account == "string" ? account : account.did}`;
+}
+
+export function deepEqual(a: any, b: any): boolean {
+    if (a === b) {
+        return true;
+    }
+
+    if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) {
+        return false;
+    }
+
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+
+    if (keysA.length !== keysB.length) {
+        return false;
+    }
+
+    for (const key of keysA) {
+        if (!keysB.includes(key) || !deepEqual(a[key], b[key])) {
+            return false;
+        }
+    }
+
+    return true;
 }

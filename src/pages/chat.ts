@@ -5,12 +5,12 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { PostSearch } from "../bsky";
 import { FirehosePost, startEventStream } from "../firehose";
-import { ImageInfo, contentLoader, dom, hasHashtag, login, logout, onVisibleOnce } from "../utils";
+import { ImageInfo, contentLoader, dom, getProfileUrl, hasHashtag, login, logout, onVisibleOnce } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import "../elements";
 import { cacheProfile } from "../profilecache";
-import { bellIcon } from "../icons";
+import { bellIcon, homeIcon } from "../icons";
 import { PostEditor } from "../elements";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
@@ -71,7 +71,6 @@ export class Chat extends LitElement {
         const loginResponse = await login(this.account, this.password);
         if (loginResponse instanceof Error) {
             alert("Couldn't log in with your BlueSky credentials");
-            logout();
             location.href = "/";
             return;
         }
@@ -80,6 +79,7 @@ export class Chat extends LitElement {
         this.isLoading = false;
         this.isLive = true;
         const checkNotifications = async () => {
+            if (!this.bskyClient?.session) return;
             const response = await this.bskyClient?.countUnreadNotifications();
             if (!response || !response.success) {
                 console.log("No notifications");
@@ -95,21 +95,31 @@ export class Chat extends LitElement {
             }
         };
         checkNotifications();
-        setInterval(checkNotifications, 5000);
+        setInterval(checkNotifications, 15000);
     }
 
     renderHeader() {
-        return html`<div class="flex p-2 items-center bg-white dark:bg-black sticky top-0 z-[100]">
+        return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-[100]">
             <a class="flex items-center text-primary font-bold text-center" href="/"
-                ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
+                ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
             >
-            <a class="flex-grow text-primary font-bold pl-2" href="/chat.html?hashtag=${encodeURIComponent(this.hashtag!)}"> > ${this.hashtag}</a>
+            <a class="flex-grow text-primary font-bold pl-2 truncate" href="/chat.html?hashtag=${encodeURIComponent(this.hashtag!)}"
+                >${this.hashtag}</a
+            >
             ${this.accountProfile
-                ? html`<div class="flex gap-2">
+                ? html`<div class="flex gap-2 ml-2">
                       <button @click=${this.logout}>
                           ${this.accountProfile.avatar
-                              ? html`<img class="max-w-6 max-h-6 rounded-full" src="${this.accountProfile.avatar}" />`
+                              ? html`<img class="w-6 max-w-[none] h-6 rounded-full" src="${this.accountProfile.avatar}" />`
                               : html`<i class="icon w-6 h-6">${defaultAvatar}</i>`}
+                      </button>
+                      <button
+                          @click=${() => {
+                              document.body.append(dom(html`<skychat-feed-overlay .bskyClient=${this.bskyClient}></skychat-feed-overlay>`)[0]);
+                          }}
+                          class="relative flex"
+                      >
+                          <i class="icon w-6 h-6">${homeIcon}</i>
                       </button>
                       <button
                           @click=${() => {
@@ -136,8 +146,8 @@ export class Chat extends LitElement {
             const baseKey = this.account + "|" + this.hashtag!;
             if (localStorage.getItem(baseKey + "|root") && !this.askedReuse) {
                 const root = localStorage.getItem(baseKey + "|root");
-                const rootUrl = `https://bsky.app/profile/${this.account}/post/${root?.replace("at://", "").split("/")[2]}`;
-                return html`<div class="w-full max-w-[590px] mx-auto h-full flex flex-col">
+                const rootUrl = `${getProfileUrl(this.account ?? "")}/post/${root?.replace("at://", "").split("/")[2]}`;
+                return html`<div class="w-full max-w-[600px] mx-auto h-full flex flex-col">
                     ${this.renderHeader()}
                     <p class="text-center mt-4">
                         You have an <a href="${rootUrl}" target="_blank" class="text-primary">existing thread</a> for ${this.hashtag}
@@ -194,7 +204,7 @@ export class Chat extends LitElement {
         const liveDom = dom(html`<main id="livedom" class="w-full h-full overflow-auto">
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
                 ${this.renderHeader()}
-                <div id="posts" class="flex-grow">
+                <div id="posts" class="flex-grow pt-[40px]">
                     <div id="loadOlderPosts" class="w-full text-center p-4 animate-pulse">
                         Loading older posts for <span class="text-primary">${this.hashtag}</span>
                     </div>
@@ -202,7 +212,7 @@ export class Chat extends LitElement {
                 ${this.account
                     ? html`
                           <post-editor
-                              class="sticky bottom-0"
+                              class="sticky bottom-0 border-t border-primary border-dashed"
                               .account=${this.account}
                               .bskyClient=${this.bskyClient}
                               .hashtag=${this.hashtag}
@@ -318,13 +328,15 @@ export class Chat extends LitElement {
         try {
             if (!AppBskyFeedPost.isRecord(post.record)) return;
             const postHtml = dom(
-                html`<post-view
-                    animation=${animation}
-                    .bskyClient=${this.bskyClient}
-                    .post=${post}
-                    .quoteCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setQuote(post)}
-                    .replyCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setReply(post)}
-                ></post-view>`
+                html`<div class="border-t border-gray/50">
+                    <post-view
+                        animation=${animation}
+                        .bskyClient=${this.bskyClient}
+                        .post=${post}
+                        .quoteCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setQuote(post)}
+                        .replyCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setReply(post)}
+                    ></post-view>
+                </div>`
             )[0];
             this.liveDom.querySelector("#posts")!.append(postHtml);
         } catch (e) {
@@ -349,12 +361,15 @@ export class Chat extends LitElement {
         let first: HTMLElement | undefined;
         let last: HTMLElement | undefined;
         for (const post of olderPosts) {
-            const postHtml = dom(html`<post-view
-                .bskyClient=${this.bskyClient}
-                .post=${post}
-                .quoteCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setQuote(post)}
-                .replyCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setReply(post)}
-            ></post-view>`)[0];
+            const postHtml = dom(html`<div class="border-t border-gray/50">
+                <post-view
+                    .bskyClient=${this.bskyClient}
+                    .post=${post}
+                    .quoteCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setQuote(post)}
+                    .replyCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setReply(post)}
+                    class="border-t border-gray/50"
+                ></post-view>
+            </div>`)[0];
             posts.insertBefore(postHtml, load);
             if (!first) first = postHtml;
             last = postHtml;
@@ -362,7 +377,6 @@ export class Chat extends LitElement {
 
         if (first) {
             const f = first;
-            const l = last;
             const initialScrollHeight = this.liveDom.scrollHeight;
             const adjustScroll = () => {
                 if (!this.liveDom) return;

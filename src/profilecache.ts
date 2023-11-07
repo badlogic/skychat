@@ -10,3 +10,20 @@ export async function cacheProfile(bskyClient: BskyAgent, did: string) {
         }
     }
 }
+
+export async function cacheProfiles(bskyClient: BskyAgent, dids: string[]) {
+    dids = dids.filter((did) => !profileCache[did]);
+    if (dids.length == 0) return;
+    while (dids.length > 0) {
+        const batch = dids.splice(0, 25);
+        const response = await bskyClient.app.bsky.actor.getProfiles({
+            actors: batch,
+        });
+        if (!response.success) {
+            return;
+        }
+        for (const profile of response.data.profiles) {
+            profileCache[profile.did] = profile;
+        }
+    }
+}

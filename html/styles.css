@@ -50,6 +50,10 @@
     .help a {
         @apply text-primary;
     }
+
+    .blur-background {
+        backdrop-filter: blur(4px);
+    }
 }
 
 @layer icon {

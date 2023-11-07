@@ -7,8 +7,15 @@
         {
             "type": "chrome",
             "request": "launch",
-            "name": "frontend",
+            "name": "chat",
             "url": "http://localhost:8080",
+            "webRoot": "${workspaceFolder}/html"
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "client",
+            "url": "http://localhost:8080/client.html",
             "webRoot": "${workspaceFolder}/html"
         }
     ]

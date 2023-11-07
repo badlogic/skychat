@@ -1,10 +1,11 @@
-import { AppBskyFeedDefs, AppBskyFeedPost, BskyAgent, RichText } from "@atproto/api";
+import { AppBskyFeedDefs, AppBskyFeedGetPosts, AppBskyFeedPost, BskyAgent, RichText } from "@atproto/api";
 import { Link } from "@atproto/api/dist/client/types/app/bsky/richtext/facet";
+import { getProfileUrl } from "./utils";
 
 function replaceHandles(text: string): string {
     const handleRegex = /@([\p{L}_.-]+)/gu;
     const replacedText = text.replace(handleRegex, (match, handle) => {
-        return `<a class="text-primary" href="https://bsky.app/profile/${handle}" target="_blank">@${handle}</a>`;
+        return `<a class="text-primary" href="${getProfileUrl(handle)}" target="_blank">@${handle}</a>`;
     });
 
     return replacedText;
@@ -107,19 +108,25 @@ export async function extractLinkCard(url: string): Promise<LinkCard | Error> {
     }
 }
 
-export async function loadPosts(bskyClient: BskyAgent, uris: string[], posts: Map<string, AppBskyFeedDefs.PostView>): Promise<undefined | Error> {
+export async function loadPosts(bskyClient: BskyAgent, uris: string[], posts: Map<string, AppBskyFeedDefs.PostView>) {
+    const promises: Promise<AppBskyFeedGetPosts.Response>[] = [];
     while (uris.length > 0) {
         const block = uris.splice(0, 25).filter((uri) => !posts.has(uri));
         if (block.length == 0) continue;
-        const postsResponse = await bskyClient.app.bsky.feed.getPosts({
-            uris: block,
-        });
-        if (!postsResponse.success) {
+        promises.push(
+            bskyClient.app.bsky.feed.getPosts({
+                uris: block,
+            })
+        );
+    }
+    const responses = await Promise.all(promises);
+    for (const response of responses) {
+        if (!response.success) {
             return Error(`Couldn't load posts`);
         }
-        for (const post of postsResponse.data.posts) {
+        for (const post of response.data.posts) {
             posts.set(post.uri, post);
         }
     }
-    return undefined;
+    return posts;
 }

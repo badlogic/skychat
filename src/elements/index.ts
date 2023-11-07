@@ -1,4 +1,5 @@
 export * from "./closable";
+export * from "./feed";
 export * from "./icontoggle";
 export * from "./notifications";
 export * from "./popup";

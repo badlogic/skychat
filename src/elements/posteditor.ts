@@ -20,6 +20,7 @@ import { deleteIcon, editIcon, imageIcon } from "../icons";
 import { renderEmbed, renderRecord } from "./postview";
 import { ImageInfo, dom, downloadImage, downscaleImage, loadImageFile, loadImageFiles } from "../utils";
 import { CloseableElement } from "./closable";
+import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -36,6 +37,12 @@ export class PostEditor extends LitElement {
 
     @property()
     cancelable = false;
+
+    @property()
+    cancled: () => void = () => {};
+
+    @property()
+    suggestBottom = false;
 
     @state()
     count = 0;
@@ -57,10 +64,10 @@ export class PostEditor extends LitElement {
     embed?: AppBskyEmbedExternal.Main;
 
     @property()
-    private quote?: AppBskyFeedDefs.PostView;
+    quote?: AppBskyFeedDefs.PostView;
 
     @property()
-    private replyTo?: AppBskyFeedDefs.PostView;
+    replyTo?: AppBskyFeedDefs.PostView;
 
     @state()
     imagesToUpload: { alt: string; dataUri: string; data: Uint8Array; mimeType: string }[] = [];
@@ -112,33 +119,11 @@ export class PostEditor extends LitElement {
             this.insert = undefined;
         };
 
-        return html` <div class="flex max-w-[600px] bg-white dark:bg-black border-t border-primary border-dashed">
+        return html` <div class="flex max-w-[600px] bg-white dark:bg-black">
             <div class="flex max-w-full flex-col flex-grow relative">
                 ${
-                    this.handleSuggestions && this.handleSuggestions.length > 0
-                        ? html`<div
-                              class="flex flex-col bg-white dark:bg-black border border-gray rounded absolute max-w-[100vw] z-[200]"
-                              style="top: calc(${this.handleSuggestions.length} * -2.5em);"
-                          >
-                              ${map(
-                                  this.handleSuggestions,
-                                  (suggestion) => html` <button
-                                      @click=${() => insertSuggestion(suggestion.handle)}
-                                      class="flex items-center gap-2 p-2 border-bottom border-gray hover:bg-primary hover:text-white"
-                                  >
-                                      ${suggestion.avatar
-                                          ? html`<img class="w-[1.5em] h-[1.5em] rounded-full" src="${suggestion.avatar}" />`
-                                          : html`<i class="icon w-[1.5em] h-[1.5em]">${defaultAvatar}</i>`}
-                                      <span class="truncate">${suggestion.displayName ?? suggestion.handle}</span>
-                                      <span class="ml-auto text-gray text-sm">${suggestion.displayName ? suggestion.handle : ""}</span>
-                                  </button>`
-                              )}
-                          </div>`
-                        : nothing
-                }
-                ${
                     this.replyTo
-                        ? html`<div class="animate-jump-in flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
+                        ? html`<div class="flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
                               ${renderRecord(
                                   this.replyTo.uri,
                                   this.replyTo.author,
@@ -268,9 +253,7 @@ export class PostEditor extends LitElement {
                 }
                 ${
                     this.quote
-                        ? html`<div
-                              class="animate-jump-in relative flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2"
-                          >
+                        ? html`<div class="relative flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
                               ${renderRecord(
                                   this.quote.uri,
                                   this.quote.author,
@@ -318,7 +301,10 @@ export class PostEditor extends LitElement {
                     ${
                         this.cancelable
                             ? html`<button
-                                  @click=${() => this.remove()}
+                                  @click=${() => {
+                                      this.remove();
+                                      this.cancled();
+                                  }}
                                   class="ml-2 bg-gray text-white my-2 mr-2 px-2 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
                               >
                                   Cancel
@@ -333,6 +319,30 @@ export class PostEditor extends LitElement {
                         Post
                     </button>
                 </div>
+                ${
+                    this.handleSuggestions && this.handleSuggestions.length > 0
+                        ? html`<div
+                              class="mx-auto flex flex-col bg-white dark:bg-black border border-gray rounded ${!this.suggestBottom
+                                  ? "absolute"
+                                  : "w-full"} max-w-[100vw] z-[200]"
+                              style="${!this.suggestBottom ? `top: calc(${this.handleSuggestions.length} * -2.5em);` : ""}"
+                          >
+                              ${map(
+                                  this.handleSuggestions,
+                                  (suggestion) => html` <button
+                                      @click=${() => insertSuggestion(suggestion.handle)}
+                                      class="flex items-center gap-2 p-2 border-bottom border-gray hover:bg-primary hover:text-white"
+                                  >
+                                      ${suggestion.avatar
+                                          ? html`<img class="w-[1.5em] h-[1.5em] rounded-full" src="${suggestion.avatar}" />`
+                                          : html`<i class="icon w-[1.5em] h-[1.5em]">${defaultAvatar}</i>`}
+                                      <span class="truncate">${suggestion.displayName ?? suggestion.handle}</span>
+                                      <span class="ml-auto text-gray text-sm">${suggestion.displayName ? suggestion.handle : ""}</span>
+                                  </button>`
+                              )}
+                          </div>`
+                        : nothing
+                }
             </div>
         </div>`;
     }
@@ -638,6 +648,10 @@ export class PostEditor extends LitElement {
             this.imagesToUpload.length = 0;
             this.replyTo = undefined;
             this.quote = undefined;
+            if (this.cancelable) {
+                this.remove();
+                this.cancled();
+            }
         } catch (e) {
             console.error(e);
             alert("Couldn't publish post!");
@@ -685,6 +699,40 @@ export class ImageEditor extends CloseableElement {
 ${alt}</textarea
                 >
             </div>
+        </div>`;
+    }
+}
+
+@customElement("post-editor-overlay")
+export class PostEditorOverlay extends CloseableElement {
+    @property()
+    account?: string;
+
+    @property()
+    bskyClient?: BskyAgent;
+
+    @property()
+    quote?: PostView;
+
+    @property()
+    replyTo?: PostView;
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    protected render() {
+        if (!this.account || !this.bskyClient) return nothing;
+        return html`<div class="absolute flex items-end top-0 w-full h-full backdrop-blur z-[2000] ">
+            <post-editor
+                class="border border-gray/50 animate-fade mx-auto w-[600px]"
+                .account=${this.account!}
+                .bskyClient=${this.bskyClient}
+                .cancelable=${true}
+                .cancled=${() => this.close()}
+                .quote=${this.quote}
+                .replyTo=${this.replyTo}
+            ></post-editor>
         </div>`;
     }
 }

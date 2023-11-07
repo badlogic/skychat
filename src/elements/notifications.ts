@@ -1,6 +1,3 @@
-import { customElement, property, query, state } from "lit/decorators.js";
-import { CloseableElement } from "./closable";
-import { PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import {
     AppBskyActorDefs,
     AppBskyFeedDefs,
@@ -10,17 +7,21 @@ import {
     AppBskyGraphFollow,
     AppBskyNotificationListNotifications,
     BskyAgent,
-    RichText,
 } from "@atproto/api";
-import { contentLoader, defaultAvatar, dom, getTimeDifference, onVisibleOnce, renderAuthor } from "../utils";
+import { PropertyValueMap, TemplateResult, html, nothing } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { loadPosts, processText } from "../bsky";
-import { UnsafeHTMLDirective, unsafeHTML } from "lit/directives/unsafe-html.js";
-import { renderEmbed } from "./postview";
 import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
+import { contentLoader, dom, getTimeDifference, onVisibleOnce, renderAuthor } from "../utils";
+import { CloseableElement } from "./closable";
 import { PostEditor } from "./posteditor";
+import { renderEmbed } from "./postview";
 
 type NotificationType = "like" | "repost" | "follow" | "mention" | "reply" | "quote" | (string & {});
+
+type GroupedNotification = Notification & { autors: [] };
 
 @customElement("skychat-notifications")
 export class Notifications extends CloseableElement {
@@ -66,6 +67,9 @@ export class Notifications extends CloseableElement {
                 if (notification.reasonSubject && notification.reasonSubject.includes("app.bsky.feed.post")) {
                     postsToLoad.push(notification.reasonSubject);
                 }
+                if (AppBskyFeedPost.isRecord(notification.record) && notification.record.reply) {
+                    postsToLoad.push(notification.record.reply.parent.uri);
+                }
                 if (notification.uri.includes("app.bsky.feed.post")) {
                     postsToLoad.push(notification.uri);
                 }
@@ -84,9 +88,9 @@ export class Notifications extends CloseableElement {
     }
 
     render() {
-        return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black">
-            <div class="mx-auto max-w-[600px] h-full flex flex-col px-4 overflow-auto">
-                <div class="flex py-2 items-center bg-white dark:bg-black sticky top-0 z-[100]">
+        return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black overflow-auto">
+            <div class="mx-auto max-w-[600px] h-full flex flex-col">
+                <div class="fixed top-0 w-[600px] max-w-[100%] flex py-2 px-4 items-center bg-white dark:bg-black z-[100]">
                     <span class="flex items-center text-primary font-bold">Notifications</span>
                     <button
                         @click=${() => this.close()}
@@ -95,24 +99,18 @@ export class Notifications extends CloseableElement {
                         Close
                     </button>
                 </div>
-                ${this.isLoading
-                    ? html`<div class="animate-fade flex-grow flex flex-col">
-                          <div class="align-top">${contentLoader}</div>
-                      </div>`
-                    : this.renderNotifications()}
+                <div class="pt-[40px]">
+                    ${this.isLoading
+                        ? html`<div class="animate-fade flex-grow flex flex-col">
+                              <div class="align-top"><div id="loader" class="w-full text-center p-4 animate-pulse">Loading notifications</div></div>
+                          </div>`
+                        : this.renderNotifications()}
+                </div>
             </div>
         </div>`;
     }
 
     renderNotification(notification: AppBskyNotificationListNotifications.Notification) {
-        const labels: Record<NotificationType, string> = {
-            follow: "followed you",
-            like: "liked your post",
-            mention: "mentioned you",
-            quote: "quoted you",
-            reply: "replied to your post",
-            repost: "reposted your post",
-        };
         const icons: Record<NotificationType, TemplateResult> = {
             follow: html`${followIcon}`,
             mention: html`${atIcon}`,
@@ -148,17 +146,16 @@ export class Notifications extends CloseableElement {
                         ${post.embed ? renderEmbed(post.embed, false, true) : nothing}`;
                     break;
                 case "reply":
-                    const parent = this.posts.get(notification.reasonSubject!);
+                    const parent = this.posts.get((notification.record as any).reply.parent.uri);
                     postContent = html`${parent && accountProfile && AppBskyFeedPost.isRecord(parent.record)
                             ? html`<div class="border border-gray/50 rounded p-2">
-                                  <div class="dark:text-white/50 text-black/50">${renderAuthor(accountProfile, true)}</div>
+                                  <div class="dark:text-white/50 text-black/50">${renderAuthor(parent.author, true)}</div>
                                   <div class="mt-1 mb-1 break-words dark:text-white/50 text-black/50 leading-tight">
                                       ${unsafeHTML(processText(parent.record))}
                                   </div>
                                   ${parent.embed ? renderEmbed(parent.embed, false, true) : nothing}
                               </div>`
                             : nothing}<post-view
-                            .minimal=${true}
                             .showHeader=${false}
                             .bskyClient=${this.bskyClient}
                             .post=${post}
@@ -169,7 +166,6 @@ export class Notifications extends CloseableElement {
                 case "mention":
                 case "quote":
                     postContent = html`<post-view
-                        .minimal=${true}
                         .showHeader=${false}
                         .bskyClient=${this.bskyClient}
                         .post=${post}
@@ -192,13 +188,12 @@ export class Notifications extends CloseableElement {
         }
 
         return html`<div class="flex flex-col border-b border-gray/50 ${notification.isRead ? "" : "bg-[#cbdaff] dark:bg-[#001040]"} px-4 py-2">
-            <div class="flex items-center mb-2 gap-2">
+            <div class="flex items-center gap-2">
                 <i class="icon w-5 h-5">${icons[notification.reason] ?? ""}</i>
                 ${renderAuthor(notification.author, false)}
-                <span>${labels[notification.reason] ?? "did a thing"}</span>
                 <span class="text-xs text-gray">${getTimeDifference(date.getTime())}</span>
             </div>
-            ${postContent ? postContent : nothing}
+            ${postContent ? html`<div class="mt-2">${postContent}</div>` : nothing}
         </div>`;
     }
 
@@ -206,7 +201,7 @@ export class Notifications extends CloseableElement {
         const account = localStorage.getItem("a");
         const editorDom = dom(html`<div class="absolute flex bottom-0 w-full z-[2000]">
             <post-editor
-                class="mx-auto w-[600px] border border-gray rounded"
+                class="animate-jump-in mx-auto w-[600px] border border-gray rounded"
                 .account=${account}
                 .bskyClient=${this.bskyClient}
                 .cancelable=${true}
@@ -220,7 +215,7 @@ export class Notifications extends CloseableElement {
         const account = localStorage.getItem("a");
         const editorDom = dom(html`<div class="absolute flex bottom-0 w-full z-[2000]">
             <post-editor
-                class="mx-auto w-[600px] border border-gray rounded"
+                class="animate-jump-in mx-auto w-[600px] border border-gray rounded"
                 .account=${account}
                 .bskyClient=${this.bskyClient}
                 .cancelable=${true}
@@ -231,19 +226,25 @@ export class Notifications extends CloseableElement {
         document.body.append(editorDom);
     }
 
+    groupLikes(notifications: AppBskyNotificationListNotifications.Notification[]) {}
+
     renderNotifications() {
         if (!this.lastNotifications) return html``;
 
         let notificationsDom = dom(html`<div class="notifications flex flex-col">
             ${map(this.lastNotifications.notifications, (notification) => this.renderNotification(notification))}
-            <div id="loader" class="w-full text-center p-4 animate-pulse">Loading more notifications</div>
+            <div id="loader" class="w-full text-center p-4 animate-pulse">Loading notifications</div>
         </div>`)[0];
 
         const loader = notificationsDom.querySelector("#loader") as HTMLElement;
         const loadMore = async () => {
             await this.loadMoreNotifications();
             loader?.remove();
-            if (!this.lastNotifications) return;
+            if (!this.lastNotifications || this.lastNotifications.notifications.length == 0) {
+                loader.innerText = "No more notifications";
+                return;
+            }
+
             for (const notification of this.lastNotifications.notifications) {
                 notificationsDom.append(dom(this.renderNotification(notification))[0]);
             }

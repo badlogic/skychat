@@ -36,6 +36,8 @@ import shieldIconSvg from "remixicon/icons/System/shield-keyhole-line.svg";
 import atIconSvg from "remixicon/icons/Business/at-line.svg";
 // @ts-ignore
 import followIconSvg from "remixicon/icons/User & Faces/user-follow-line.svg";
+// @ts-ignore
+import homeIconSvg from "remixicon/icons/Buildings/home-line.svg";
 
 import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 import { html } from "lit";
@@ -59,6 +61,7 @@ export const shieldIcon = unsafeHTML(shieldIconSvg);
 export const quoteIcon = unsafeHTML(quoteIconSvg);
 export const atIcon = unsafeHTML(atIconSvg);
 export const followIcon = unsafeHTML(followIconSvg);
+export const homeIcon = unsafeHTML(homeIconSvg);
 
 export function icon(svg: string) {
     return html`<i class="flex w-[1.2em] h-[1.2em] border-white fill-primary">${unsafeHTML(svg)}</i>`;

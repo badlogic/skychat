@@ -14,16 +14,15 @@ import { map } from "lit/directives/map.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { processText } from "../bsky";
 import { quoteIcon, replyIcon } from "../icons";
-import { PostEditor } from "./posteditor";
 import { profileCache } from "../profilecache";
-import { contentLoader, dom, getDateString, renderAuthor } from "../utils";
+import { contentLoader, dom, getDateString, getProfileUrl, getTimeDifference, renderAuthor } from "../utils";
 import { CloseableElement } from "./closable";
 import { IconToggle } from "./icontoggle";
 
 export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External) {
     const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
-    return html`<a class="w-full border rounded border-gray flex mb-2" target="_blank" href="${cardEmbed.uri}">
-        ${thumb ? html`<img src="${thumb}" class="w-[100px] object-contain" />` : nothing}
+    return html`<a class="w-full border rounded border-gray/50 flex mb-2" target="_blank" href="${cardEmbed.uri}">
+        ${thumb ? html`<img src="${thumb}" class="rounded-l w-[100px] object-cover" />` : nothing}
         <div class="flex flex-col p-2 w-full">
             <span class="text-gray text-xs">${new URL(cardEmbed.uri).host}</span>
             <span class="font-bold text-sm">${cardEmbed.title}</span>
@@ -33,7 +32,7 @@ export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | A
 }
 
 export function renderImagesEmbedSmall(images: AppBskyEmbedImages.ViewImage[]) {
-    return html`<div class="flex mx-2">
+    return html`<div class="flex mx-2 justify-center">
         ${map(
             images,
             (image) => html`<div class="w-1/4 relative">
@@ -80,10 +79,10 @@ export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
     const record = recordEmbed.record.value;
     const rkey = recordEmbed.record.uri.replace("at://", "").split("/")[2];
     const author = recordEmbed.record.author;
-    const postUrl = `https://bsky.app/profile/${author.did}/post/${rkey}`;
+    const postUrl = `${getProfileUrl(author)}/post/${rkey}`;
     const embeds = recordEmbed.record.embeds && recordEmbed.record.embeds.length > 0 ? recordEmbed.record.embeds[0] : undefined;
     const sensitive = recordEmbed.record.labels?.some((label) => ["porn", "nudity", "sexual"].includes(label.val)) ?? false;
-    return html`<div class="border border-gray rounded p-2 mb-2">${renderRecord(postUrl, author, record, embeds, true, sensitive)}</div>`;
+    return html`<div class="border border-gray/50 rounded p-2 mb-2">${renderRecord(postUrl, author, record, embeds, true, sensitive)}</div>`;
 }
 
 export function renderRecordWithMediaEmbed(recordWithMediaEmbed: AppBskyEmbedRecordWithMedia.View, sensitive: boolean, minimal = false) {
@@ -118,25 +117,27 @@ export function renderRecord(
     smallAvatar: boolean,
     sensitive: boolean,
     prefix?: string,
-    showHeader = true
+    showHeader = true,
+    subHeader?: TemplateResult | HTMLElement
 ): TemplateResult {
     const replyToAuthorDid = record.reply?.parent.uri.replace("at://", "").split("/")[0];
     const replyToProfile = replyToAuthorDid ? profileCache[replyToAuthorDid] : undefined;
     return html` ${showHeader
             ? html`<div class="w-full flex items-center gap-2">
-                  ${prefix ? html`<span class="mr-1 font-bold">${prefix}</span>` : nothing} ${renderAuthor(author, smallAvatar)}
-                  ${prefix == undefined
-                      ? html`<a class="flex-1 text-right text-xs text-gray whitespace-nowrap hover:underline" href="${postUrl}" target="_blank"
-                            >${getDateString(new Date(record.createdAt))}</a
-                        >`
-                      : nothing}
-              </div>`
+                      ${prefix ? html`<span class="mr-1 font-bold">${prefix}</span>` : nothing} ${renderAuthor(author, smallAvatar)}
+                      ${prefix == undefined
+                          ? html`<a class="flex-1 text-right text-xs text-gray whitespace-nowrap hover:underline" href="${postUrl}" target="_blank"
+                                >${getDateString(new Date(record.createdAt))}</a
+                            >`
+                          : nothing}
+                  </div>
+                  ${subHeader ? subHeader : nothing}`
             : nothing}
         ${replyToProfile
-            ? html`<div class="flex gap-1 text-xs items-center">
-                  <i class="icon fill-gray">${replyIcon}</i>
+            ? html`<div class="flex gap-1 text-xs items-center text-lightgray">
+                  <i class="icon fill-lightgray">${replyIcon}</i>
                   <span>Replying to</span>
-                  <a class="line-clamp-1 hover:underline" href="https://bsky.app/profile/${replyToAuthorDid}" target="_blank"
+                  <a class="line-clamp-1 hover:underline" href="${getProfileUrl(replyToAuthorDid ?? "")}" target="_blank"
                       >${replyToProfile.displayName ?? replyToProfile.handle}</a
                   >
               </div>`
@@ -163,10 +164,10 @@ export class PostViewElement extends LitElement {
     animation: string = "";
 
     @property()
-    minimal = false;
+    showHeader = true;
 
     @property()
-    showHeader = true;
+    subHeader?: TemplateResult | HTMLElement;
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
@@ -174,7 +175,7 @@ export class PostViewElement extends LitElement {
 
     render() {
         if (!this.post || !AppBskyFeedPost.isRecord(this.post.record)) {
-            return html`<div class="border-t border-gray/50 px-4 py-2">
+            return html`<div class="px-4 py-2">
                 ${contentLoader}
                 </div>
             </div>`;
@@ -183,7 +184,7 @@ export class PostViewElement extends LitElement {
         const rkey = this.post.uri.replace("at://", "").split("/")[2];
         const author = this.post.author;
         const postUrl = `https://bsky.app/profile/${author.did}/post/${rkey}`;
-        return html`<div class="${this.animation} ${!this.minimal ? "border-t border-gray/50" : ""} px-4 py-2">
+        return html`<div class="${this.animation} px-4 py-2">
             ${renderRecord(
                 postUrl,
                 author,
@@ -192,7 +193,8 @@ export class PostViewElement extends LitElement {
                 false,
                 this.post.labels?.some((label) => ["porn", "sexual", "nudity"].includes(label.val)) ?? false,
                 undefined,
-                this.showHeader
+                this.showHeader,
+                this.subHeader
             )}
             <div class="flex items-center gap-4 mt-1">
                 <button @click=${this.reply} class="flex gap-1 items-center text-gray">
