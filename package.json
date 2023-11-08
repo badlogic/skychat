@@ -8,9 +8,10 @@
     "clean": "rimraf html/build",
     "build:css": "npx tailwindcss -i html/styles.css -o html/build/styles-bundle.css",
     "build:site": "node ./esbuild.site.mjs",
+    "build:worker": "node ./esbuild.worker.mjs",
     "build:server": "node ./esbuild.server.mjs",
-    "dev": "concurrently \"PORT=3333 node --watch build/server.js\" \"npx live-server html --cors --watch . --no-browser\" \"npm run build:site -- --watch\" \"npm run build:css -- --watch\" \"npm run build:server -- --watch\"",
-    "build": "npm run build:css && npm run build:site && npm run build:server",
+    "dev": "concurrently \"PORT=3333 node --watch build/server.js\" \"npx live-server html --cors --watch . --no-browser\" \"npm run build:site -- --watch\" \"npm run build:worker -- --watch\" \"npm run build:css -- --watch\" \"npm run build:server -- --watch\"",
+    "build": "npm run build:css && npm run build:site && npm run build:worker && npm run build:server",
     "server": "PORT=3333 node --max_old_space_size=8192 --trace-warnings build/server.js"
   },
   "repository": {

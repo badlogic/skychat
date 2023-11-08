@@ -15,6 +15,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "client",
+            // "url": "http://localhost:8080/client.html#profile/did:plc:u5zbvzswo2j4xkxkua64o6ju",
             "url": "http://localhost:8080/client.html",
             "webRoot": "${workspaceFolder}/html"
         }

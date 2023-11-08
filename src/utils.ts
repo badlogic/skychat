@@ -1,6 +1,8 @@
 import { AppBskyActorDefs, AtpSessionData, AtpSessionEvent, BskyAgent } from "@atproto/api";
 import { TemplateResult, html, render, svg } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
+// @ts-ignore
+import logoSvg from "../html/logo.svg";
 
 export function getDateString(inputDateTime: Date): string {
     const hours = inputDateTime.getHours();
@@ -260,13 +262,10 @@ export async function downscaleImage(imageData: ImageInfo, targetSizeInBytes = 9
 }
 
 export function onVisibleOnce(target: Element, callback: () => void) {
-    let callbackTriggered = false;
-
     const observer = new IntersectionObserver(
         (entries) => {
             entries.forEach((entry) => {
                 if (entry.isIntersecting) {
-                    callbackTriggered = true;
                     callback();
                     observer.unobserve(entry.target);
                 }
@@ -336,10 +335,32 @@ export function hasHashtag(text: string, hashtag: string) {
     return false;
 }
 
-export function renderAuthor(author: AppBskyActorDefs.ProfileView, smallAvatar = false) {
-    return html`<a class="flex items-center gap-2" href="${getProfileUrl(author.handle ?? author.did)}" target="_blank">
+export function renderTopbar(title: string, buttons: TemplateResult | HTMLElement) {
+    return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-[100]">
+        <a class="flex items-center text-primary font-bold text-center" href="/client.html"
+            ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
+        >
+        <button class="text-primary font-bold pl-2 relative pr-2">
+            <span>${title}</span>
+        </button>
+        ${buttons}
+    </div>`;
+}
+
+export function renderAuthor(bskyClient: BskyAgent | undefined, author: AppBskyActorDefs.ProfileView, smallAvatar = false) {
+    return html`<a
+        class="flex items-center gap-2"
+        href="${getProfileUrl(author.handle ?? author.did)}"
+        target="_blank"
+        @click=${(ev: Event) => {
+            if (!bskyClient) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            document.body.append(dom(html`<profile-overlay .bskyClient=${bskyClient} .did=${author.did}></profile-overlay>`)[0]);
+        }}
+    >
         ${author.avatar
-            ? html`<img class="${smallAvatar ? "w-[1em] h-[1em]" : "w-[2em] h-[2em]"} rounded-full" src="${author.avatar}" />`
+            ? html`<img loading="lazy" class="${smallAvatar ? "w-[1em] h-[1em]" : "w-[2em] h-[2em]"} rounded-full" src="${author.avatar}" />`
             : defaultAvatar}
         <span class="${smallAvatar ? "text-sm" : ""} font-bold line-clamp-1 hover:underline">${author.displayName ?? author.handle}</span>
     </a>`;
@@ -349,27 +370,28 @@ export function getProfileUrl(account: AppBskyActorDefs.ProfileView | string) {
     return `https://bsky.app/profile/${typeof account == "string" ? account : account.did}`;
 }
 
-export function deepEqual(a: any, b: any): boolean {
-    if (a === b) {
-        return true;
+export function hasLinkOrButtonParent(el: Element | HTMLElement | null) {
+    if (!el) return false;
+    el = el as HTMLElement;
+    while (el) {
+        if (el.tagName == "A" || el.tagName == "BUTTON") return true;
+        el = el.parentElement as HTMLElement;
     }
+    return false;
+}
 
-    if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) {
-        return false;
-    }
-
-    const keysA = Object.keys(a);
-    const keysB = Object.keys(b);
-
-    if (keysA.length !== keysB.length) {
-        return false;
-    }
-
-    for (const key of keysA) {
-        if (!keysB.includes(key) || !deepEqual(a[key], b[key])) {
-            return false;
+export function waitForServiceWorkerActivation(registration: ServiceWorkerRegistration): Promise<ServiceWorker | undefined> {
+    return new Promise<ServiceWorker | undefined>((resolve, reject) => {
+        if (registration.active) {
+            resolve(registration.active);
+        } else {
+            registration.addEventListener("activate", (event) => {
+                if (event.target instanceof ServiceWorkerRegistration && event.target.active) {
+                    resolve(event.target.active);
+                } else {
+                    reject(new Error("Service Worker activation failed"));
+                }
+            });
         }
-    }
-
-    return true;
+    });
 }

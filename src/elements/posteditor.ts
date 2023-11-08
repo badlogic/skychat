@@ -125,8 +125,9 @@ export class PostEditor extends LitElement {
                     this.replyTo
                         ? html`<div class="flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
                               ${renderRecord(
-                                  this.replyTo.uri,
+                                  this.bskyClient,
                                   this.replyTo.author,
+                                  this.replyTo.uri.replace("at://", "").split("/")[2],
                                   this.replyTo.record as AppBskyFeedPost.Record,
                                   this.replyTo.embed,
                                   true,
@@ -195,7 +196,7 @@ export class PostEditor extends LitElement {
                 ${
                     AppBskyEmbedExternal.isMain(this.embed)
                         ? html`<div class="flex relative px-2">
-                              <div class="w-full">${renderEmbed(this.embed, false)}</div>
+                              <div class="w-full">${renderEmbed(this.bskyClient, this.embed, false)}</div>
                               <button
                                   class="absolute right-4 top-4 z-[100]"
                                   @click=${(ev: Event) => {
@@ -255,8 +256,9 @@ export class PostEditor extends LitElement {
                     this.quote
                         ? html`<div class="relative flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
                               ${renderRecord(
-                                  this.quote.uri,
+                                  this.bskyClient,
                                   this.quote.author,
+                                  this.quote.uri.replace("at://", "").split("/")[2],
                                   this.quote.record as AppBskyFeedPost.Record,
                                   this.quote.embed,
                                   true,
@@ -723,7 +725,7 @@ export class PostEditorOverlay extends CloseableElement {
 
     protected render() {
         if (!this.account || !this.bskyClient) return nothing;
-        return html`<div class="absolute flex items-end top-0 w-full h-full backdrop-blur z-[2000] ">
+        return html`<div class="absolute flex items-end top-0 w-full h-[100svh] backdrop-blur z-[2000] ">
             <post-editor
                 class="border border-gray/50 animate-fade mx-auto w-[600px]"
                 .account=${this.account!}

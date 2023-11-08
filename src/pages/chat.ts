@@ -1,17 +1,17 @@
 import { AppBskyFeedDefs, AppBskyFeedPost, BskyAgent } from "@atproto/api";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { LitElement, PropertyValueMap, TemplateResult, html, nothing, svg } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { LitElement, PropertyValueMap, html, nothing, svg } from "lit";
+import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { PostSearch } from "../bsky";
 import { FirehosePost, startEventStream } from "../firehose";
-import { ImageInfo, contentLoader, dom, getProfileUrl, hasHashtag, login, logout, onVisibleOnce } from "../utils";
+import { contentLoader, dom, getProfileUrl, hasHashtag, login, logout, onVisibleOnce } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import "../elements";
-import { cacheProfile } from "../profilecache";
+import { PostEditor, routeHash } from "../elements";
 import { bellIcon, homeIcon } from "../icons";
-import { PostEditor } from "../elements";
+import { cacheProfile } from "../profilecache";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -123,7 +123,7 @@ export class Chat extends LitElement {
                       </button>
                       <button
                           @click=${() => {
-                              document.body.append(dom(html`<skychat-notifications .bskyClient=${this.bskyClient}></skychat-notifications>`)[0]);
+                              document.body.append(dom(html`<notifications-overlay .bskyClient=${this.bskyClient}></notifications-overlay>`)[0]);
                               this.bell?.classList.remove("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
                               this.notifications?.classList.add("hidden");
                           }}

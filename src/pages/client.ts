@@ -1,12 +1,13 @@
 import { LitElement, PropertyValueMap, html, nothing } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { homeIcon, bellIcon } from "../icons";
-import { contentLoader, defaultAvatar, dom, login, logout } from "../utils";
+import { homeIcon, bellIcon, editIcon } from "../icons";
+import { contentLoader, defaultAvatar, dom, login, logout, waitForServiceWorkerActivation } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import { BskyAgent } from "@atproto/api";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { ThreadOverlay as ThreadOverlay, ProfileOverlay, pushHash, routeHash } from "../elements";
 
 @customElement("skychat-client")
 class SkychatClient extends LitElement {
@@ -128,6 +129,13 @@ class SkychatClient extends LitElement {
     }
 
     renderMain() {
+        if (!this.bskyClient) return html`<div>Unexpected error: bskyClient is undefined in renderMain()</div>`;
+        if (location.hash && location.hash.length > 0) {
+            const hash = location.hash;
+            history.replaceState(null, "", location.href.split("#")[0]);
+            routeHash(this.bskyClient, hash);
+        }
+
         const mainDom = dom(html`<main class="w-full h-full overflow-auto">
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
                 ${this.renderTopbar()}<skychat-feed
@@ -139,6 +147,14 @@ class SkychatClient extends LitElement {
                         }
                     }}
                 ></skychat-feed>
+                <div class="fixed bottom-4 transform translate-x-[calc(min(100vw,600px)-4em)] z-100">
+                    <button
+                        class="flex justify-center items-center w-12 h-12 border-primary bg-primary rounded-full"
+                        @click=${() => this.showPostEditor()}
+                    >
+                        <i class="icon w-6 h-6 fill-white">${editIcon}</i>
+                    </button>
+                </div>
             </div>
         </main>`)[0];
 
@@ -148,6 +164,12 @@ class SkychatClient extends LitElement {
             }
         });
         return mainDom;
+    }
+
+    showPostEditor() {
+        document.body.append(
+            dom(html`<post-editor-overlay .account=${localStorage.getItem("a")} .bskyClient=${this.bskyClient}></post-editor-overly>`)[0]
+        );
     }
 
     async login() {
@@ -187,11 +209,43 @@ class SkychatClient extends LitElement {
             }
             this.bskyClient = bskyClient;
             this.accountProfile = JSON.parse(localStorage.getItem("profile")!) as ProfileViewDetailed;
+
             this.setupCheckNotifications();
+            this.setupWorkerNotifications();
         } catch (e) {
             console.error(e);
         } finally {
             this.isConnecting = false;
+        }
+    }
+
+    async setupWorkerNotifications() {
+        try {
+            const account = localStorage.getItem("a");
+            const password = localStorage.getItem("p");
+            if ("serviceWorker" in navigator && account && password) {
+                const registration = await navigator.serviceWorker.register("/service-worker.js");
+                const worker = await waitForServiceWorkerActivation(registration);
+                if (!worker) {
+                    console.log("Couldn't activate worker");
+                } else {
+                    console.log("Activated worker");
+                }
+                navigator.serviceWorker.addEventListener("controllerchange", (event) => {
+                    const newController = event.target as ServiceWorkerContainer;
+                    newController.controller?.postMessage({ account, password });
+                });
+                navigator.serviceWorker.addEventListener("message", (event) => {
+                    console.log("+ Received message");
+                    console.log(event.data);
+                    if (event.data == "notifications") {
+                        document.body.append(dom(html`<notifications-overlay .bskyClient=${this.bskyClient}></notifications-overlay>`)[0]);
+                    }
+                });
+                worker?.postMessage({ account, password });
+            }
+        } catch (e) {
+            console.error("Couldn't request notification permission and start service worker.", e);
         }
     }
 
@@ -221,6 +275,7 @@ class SkychatClient extends LitElement {
     logout() {
         if (confirm("Log out?")) {
             logout();
+            navigator.serviceWorker.controller?.postMessage("logout");
             location.reload();
         }
     }
@@ -244,10 +299,15 @@ class SkychatClient extends LitElement {
                         : html`<i class="icon w-6 h-6">${defaultAvatar}</i>`}
                 </button>
                 <button
-                    @click=${() => {
-                        document.body.append(dom(html`<skychat-notifications .bskyClient=${this.bskyClient}></skychat-notifications>`)[0]);
+                    @click=${async () => {
+                        document.body.append(dom(html`<notifications-overlay .bskyClient=${this.bskyClient}></notifications-overlay>`)[0]);
                         this.bell?.classList.remove("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
                         this.notifications?.classList.add("hidden");
+
+                        let response = await Notification.requestPermission();
+                        if (response == "granted") {
+                            this.setupWorkerNotifications();
+                        }
                     }}
                     class="relative flex"
                 >

@@ -12,19 +12,19 @@ import { PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { loadPosts, processText } from "../bsky";
+import { loadPosts } from "../bsky";
 import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
-import { contentLoader, dom, getTimeDifference, onVisibleOnce, renderAuthor } from "../utils";
-import { CloseableElement } from "./closable";
+import { contentLoader, dom, getTimeDifference, onVisibleOnce, renderAuthor, renderTopbar } from "../utils";
+import { CloseableElement, HashNavCloseableElement } from "./closable";
 import { PostEditor } from "./posteditor";
-import { renderEmbed } from "./postview";
+import { renderEmbed, renderPostText } from "./postview";
 
 type NotificationType = "like" | "repost" | "follow" | "mention" | "reply" | "quote" | (string & {});
 
 type GroupedNotification = Notification & { autors: [] };
 
-@customElement("skychat-notifications")
-export class Notifications extends CloseableElement {
+@customElement("notifications-overlay")
+export class NotificationsOverlay extends HashNavCloseableElement {
     @property()
     bskyClient?: BskyAgent;
 
@@ -83,22 +83,27 @@ export class Notifications extends CloseableElement {
         }
     }
 
+    getHash(): string {
+        return "notifications";
+    }
+
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        super.firstUpdated(_changedProperties);
         this.load();
     }
 
     render() {
         return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black overflow-auto">
             <div class="mx-auto max-w-[600px] h-full flex flex-col">
-                <div class="fixed top-0 w-[600px] max-w-[100%] flex py-2 px-4 items-center bg-white dark:bg-black z-[100]">
-                    <span class="flex items-center text-primary font-bold">Notifications</span>
-                    <button
+                ${renderTopbar(
+                    "Notifications",
+                    html`<button
                         @click=${() => this.close()}
                         class="ml-auto bg-primary text-white px-2 rounded disabled:bg-gray/70 disabled:text-white/70"
                     >
                         Close
-                    </button>
-                </div>
+                    </button>`
+                )}
                 <div class="pt-[40px]">
                     ${this.isLoading
                         ? html`<div class="animate-fade flex-grow flex flex-col">
@@ -141,19 +146,19 @@ export class Notifications extends CloseableElement {
                 case "like":
                 case "repost":
                     postContent = html`<div class="break-words dark:text-white/50 text-black/50 leading-tight">
-                            ${unsafeHTML(processText(post.record))}
+                            ${renderPostText(this.bskyClient, post.record)}
                         </div>
-                        ${post.embed ? renderEmbed(post.embed, false, true) : nothing}`;
+                        ${post.embed ? renderEmbed(this.bskyClient, post.embed, false, true) : nothing}`;
                     break;
                 case "reply":
                     const parent = this.posts.get((notification.record as any).reply.parent.uri);
                     postContent = html`${parent && accountProfile && AppBskyFeedPost.isRecord(parent.record)
                             ? html`<div class="border border-gray/50 rounded p-2">
-                                  <div class="dark:text-white/50 text-black/50">${renderAuthor(parent.author, true)}</div>
+                                  <div class="dark:text-white/50 text-black/50">${renderAuthor(this.bskyClient, parent.author, true)}</div>
                                   <div class="mt-1 mb-1 break-words dark:text-white/50 text-black/50 leading-tight">
-                                      ${unsafeHTML(processText(parent.record))}
+                                      ${renderPostText(this.bskyClient, parent.record)}
                                   </div>
-                                  ${parent.embed ? renderEmbed(parent.embed, false, true) : nothing}
+                                  ${parent.embed ? renderEmbed(this.bskyClient, parent.embed, false, true) : nothing}
                               </div>`
                             : nothing}<post-view
                             .showHeader=${false}
@@ -190,7 +195,7 @@ export class Notifications extends CloseableElement {
         return html`<div class="flex flex-col border-b border-gray/50 ${notification.isRead ? "" : "bg-[#cbdaff] dark:bg-[#001040]"} px-4 py-2">
             <div class="flex items-center gap-2">
                 <i class="icon w-5 h-5">${icons[notification.reason] ?? ""}</i>
-                ${renderAuthor(notification.author, false)}
+                ${renderAuthor(this.bskyClient, notification.author, false)}
                 <span class="text-xs text-gray">${getTimeDifference(date.getTime())}</span>
             </div>
             ${postContent ? html`<div class="mt-2">${postContent}</div>` : nothing}

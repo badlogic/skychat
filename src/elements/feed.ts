@@ -4,10 +4,9 @@ import { LitElement, PropertyValueMap, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { reblogIcon } from "../icons";
-import { cacheProfiles, profileCache } from "../profilecache";
-import { contentLoader, deepEqual, dom, getProfileUrl, onVisibleOnce } from "../utils";
-import { CloseableElement } from "./closable";
-import { PostViewElement } from "./postview";
+import { cacheProfiles } from "../profilecache";
+import { contentLoader, dom, getProfileUrl, onVisibleOnce, renderTopbar } from "../utils";
+import { CloseableElement, pushHash } from "./closable";
 
 @customElement("skychat-feed")
 export class Feed extends LitElement {
@@ -25,9 +24,29 @@ export class Feed extends LitElement {
 
     topPost?: AppBskyFeedDefs.FeedViewPost;
     lastPosts?: AppBskyFeedGetTimeline.OutputSchema;
+    seenPosts = new Map<String, FeedViewPost>();
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
+    }
+
+    getPostKey(post: FeedViewPost) {
+        let replyKey = "";
+        if (post.reply) {
+            if (
+                AppBskyFeedDefs.isPostView(post.reply.parent) ||
+                AppBskyFeedDefs.isNotFoundPost(post.reply.parent) ||
+                AppBskyFeedDefs.isBlockedPost(post.reply.parent)
+            )
+                replyKey += post.reply.parent.uri;
+            if (
+                AppBskyFeedDefs.isPostView(post.reply.root) ||
+                AppBskyFeedDefs.isNotFoundPost(post.reply.root) ||
+                AppBskyFeedDefs.isBlockedPost(post.reply.root)
+            )
+                replyKey += post.reply.root.uri;
+        }
+        return post.post.uri + (AppBskyFeedDefs.isReasonRepost(post.reason) ? post.reason.by.did : "") + replyKey;
     }
 
     async load() {
@@ -48,68 +67,45 @@ export class Feed extends LitElement {
                 const topPost = this.topPost;
                 let lastResponse: AppBskyFeedGetTimeline.Response | undefined;
                 let done = false;
+                let iterations = 0;
                 while (!done) {
+                    iterations++;
+                    if (iterations == 2) {
+                        console.log("wtf");
+                    }
                     const feedResponse = await this.bskyClient.app.bsky.feed.getTimeline(
                         lastResponse ? { cursor: lastResponse.data.cursor } : undefined
                     );
                     if (!feedResponse.success) break;
                     if (feedResponse.data.feed.length == 0) break;
                     for (const post of feedResponse.data.feed) {
-                        if (post.post.uri != topPost.post.uri) {
+                        const postKey = this.getPostKey(post);
+                        if (this.seenPosts.has(postKey)) {
+                            done = true;
+                            break;
+                        } else {
                             posts.push(post);
-                            continue;
                         }
-                        if ((post.reply && !topPost.reply) || (!post.reply && topPost.reply)) {
-                            posts.push(post);
-                            continue;
-                        }
-                        if (
-                            post.reply &&
-                            topPost.reply &&
-                            (post.reply.parent.uri != topPost.reply.parent.uri || post.reply.root.uri != topPost.reply.root.uri)
-                        ) {
-                            posts.push(post);
-                            continue;
-                        }
-                        if ((post.reason && !topPost.reason) || (!post.reason && topPost.reason)) {
-                            posts.push(post);
-                            continue;
-                        }
-                        if (
-                            AppBskyFeedDefs.isReasonRepost(post.reason) &&
-                            AppBskyFeedDefs.isReasonRepost(topPost.reason) &&
-                            post.reason.by.did != topPost.reason.by.did
-                        ) {
-                            posts.push(post);
-                            continue;
-                        }
-                        done = true;
-                        break;
                     }
                     lastResponse = feedResponse;
                 }
-                console.log(posts.length + " new posts");
-                if (posts.length == 0) return;
-                if (!this.postsDom) return;
-                const insertNode = this.postsDom.children[0];
-                if (!insertNode) return;
-                const scrollElement = document.querySelector("main");
-                if (!scrollElement) return;
                 posts.reverse();
-                for (const post of posts) {
-                    const postDom = dom(html`<div class="animate-fade">${this.renderPost(post)}</div>`)[0];
-                    this.postsDom.insertBefore(postDom, insertNode);
-                }
-                const initialScrollHeight = scrollElement.scrollHeight;
-                const adjustScroll = () => {
-                    if (!scrollElement) return;
-                    if (scrollElement.scrollHeight != initialScrollHeight) {
-                        scrollElement.scrollTop = scrollElement.scrollHeight - initialScrollHeight;
-                    } else {
-                        requestAnimationFrame(adjustScroll);
+
+                console.log(posts.length + " new posts");
+                if (posts.length == 0 || !this.postsDom) return;
+                const insertNode = this.postsDom.children[0];
+                if (!insertNode) {
+                    posts.reverse();
+                    for (const post of posts) {
+                        const postDom = dom(html`<div class="animate-fade">${this.renderPost(post)}</div>`)[0];
+                        this.postsDom.append(postDom);
                     }
-                };
-                // adjustScroll();
+                } else {
+                    for (const post of posts) {
+                        const postDom = dom(html`<div class="animate-fade">${this.renderPost(post)}</div>`)[0];
+                        this.postsDom.insertBefore(postDom, insertNode);
+                    }
+                }
                 this.topPost = posts[0];
                 this.newPosts(posts.length);
             } catch (e) {
@@ -181,11 +177,24 @@ export class Feed extends LitElement {
     }
 
     renderPost(post: FeedViewPost) {
+        const postKey = this.getPostKey(post);
+        if (this.seenPosts.has(postKey)) {
+            console.log("Already seen post " + postKey);
+        }
+        this.seenPosts.set(postKey, post);
         if (!post.reply) {
             const repostedBy = AppBskyFeedDefs.isReasonRepost(post.reason)
-                ? html`<div class="px-4 pt-2 mb-[-0.25em] flex items-center gap-2 text-lightgray text-xs"><i class="icon w-4 h-4 fill-lightgray">${reblogIcon}</i><a class="hover:underline truncate" href="${getProfileUrl(
+                ? html`<div class="px-4 pt-2 mb-[-0.25em] flex items-center gap-2 text-gray dark:text-lightgray text-xs"><i class="icon w-4 h-4 fill-gray dark:fill-lightgray">${reblogIcon}</i><a class="hover:underline truncate" href="${getProfileUrl(
                       post.reason.by
-                  )}">${post.reason.by.displayName ?? post.reason.by.handle}</div>`
+                  )}" @click=${(ev: Event) => {
+                      if (!this.bskyClient) return;
+                      if (!AppBskyFeedDefs.isReasonRepost(post.reason)) return;
+                      ev.preventDefault();
+                      ev.stopPropagation();
+                      document.body.append(
+                          dom(html`<profile-overlay .bskyClient=${this.bskyClient} .did=${post.reason.by.did}></profile-overlay>`)[0]
+                      );
+                  }}>${post.reason.by.displayName ?? post.reason.by.handle}</div>`
                 : nothing;
             return html`<div class="border-t border-gray/50 px-2">
                 ${repostedBy ? repostedBy : nothing}
@@ -193,7 +202,7 @@ export class Feed extends LitElement {
             </div>`;
         } else {
             return html`<div class="border-t border-gray/50 px-2 mb-2 flex">
-                <div class="flex-col">
+                <div class="flex flex-col w-full">
                     <post-view
                         .bskyClient=${this.bskyClient}
                         .post=${post.reply.parent}
@@ -253,15 +262,15 @@ export class FeedOverlay extends CloseableElement {
     render() {
         return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black overflow-auto">
             <div class="mx-auto max-w-[600px] h-full flex flex-col">
-                <div class="fixed top-0 w-[600px] max-w-[100%] flex py-2 px-4 items-center bg-white dark:bg-black z-[100]">
-                    <span class="flex items-center text-primary font-bold">Home</span>
-                    <button
+                ${renderTopbar(
+                    "Home",
+                    html`<button
                         @click=${() => this.close()}
                         class="ml-auto bg-primary text-white px-2 rounded disabled:bg-gray/70 disabled:text-white/70"
                     >
                         Close
-                    </button>
-                </div>
+                    </button>`
+                )}
                 <div class="pt-[40px]">
                     <skychat-feed .bskyClient=${this.bskyClient}></skychat-feed>
                 </div>

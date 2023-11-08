@@ -1,46 +1,4 @@
-import { AppBskyFeedDefs, AppBskyFeedGetPosts, AppBskyFeedPost, BskyAgent, RichText } from "@atproto/api";
-import { Link } from "@atproto/api/dist/client/types/app/bsky/richtext/facet";
-import { getProfileUrl } from "./utils";
-
-function replaceHandles(text: string): string {
-    const handleRegex = /@([\p{L}_.-]+)/gu;
-    const replacedText = text.replace(handleRegex, (match, handle) => {
-        return `<a class="text-primary" href="${getProfileUrl(handle)}" target="_blank">@${handle}</a>`;
-    });
-
-    return replacedText;
-}
-
-function applyFacets(record: AppBskyFeedPost.Record) {
-    if (!record.facets) {
-        return record.text;
-    }
-
-    const rt = new RichText({
-        text: record.text,
-        facets: record.facets as any,
-    });
-
-    const text: string[] = [];
-
-    for (const segment of rt.segments()) {
-        if (segment.isMention()) {
-            text.push(`<a class="text-primary" href="https:///profile/${segment.mention?.did}" target="_blank">${segment.text}</a>`);
-        } else if (segment.isLink()) {
-            text.push(`<a class="text-primary" href="${segment.link?.uri}" target="_blank">${segment.text}</a>`);
-        } else if (segment.isTag()) {
-            text.push(`<span class="text-blue-500">${segment.text}</span>`);
-        } else {
-            text.push(segment.text);
-        }
-    }
-    const result = text.join("");
-    return result;
-}
-
-export function processText(record: AppBskyFeedPost.Record) {
-    return replaceHandles(applyFacets(record)).trim().replaceAll("\n", "<br/>");
-}
+import { AppBskyFeedDefs, AppBskyFeedGetPosts, BskyAgent } from "@atproto/api";
 
 type SearchPost = {
     tid: string;

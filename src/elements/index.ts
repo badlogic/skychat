@@ -5,5 +5,6 @@ export * from "./notifications";
 export * from "./popup";
 export * from "./posteditor";
 export * from "./postview";
+export * from "./profile";
 export * from "./styles";
 export * from "./themetoggle";

@@ -4,3 +4,5 @@ node_modules
 site/build/
 server/build/
 build
+html/service-worker.js
+html/service-worker.js.map
