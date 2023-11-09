@@ -404,16 +404,24 @@ export class ThreadOverlay extends HashNavCloseableElement {
                 return;
             }
             let uri = `at://${this.author}/app.bsky.feed.post/${this.rkey}`;
-            const postResponse = await bskyClient.getPosts({ uris: [uri] });
+            const postResponse = await bskyClient.getPostThread({ uri });
             if (!postResponse.success) {
-                this.error = "Thread not found";
+                this.error = "Thread not found.";
                 return;
             }
-            if (postResponse.data.posts.length == 0) {
-                this.error = "Thread not found";
+            if (postResponse.data.thread.blocked) {
+                this.error = "You have blocked the author or you have been blocked by the author.";
                 return;
             }
-            const post = postResponse.data.posts[0];
+            if (postResponse.data.thread.notFound) {
+                this.error = "Thread not found.";
+                return;
+            }
+            if (!AppBskyFeedDefs.isThreadViewPost(postResponse.data.thread)) {
+                this.error = "Thread not found.";
+                return;
+            }
+            const post = postResponse.data.thread.post;
             if (AppBskyFeedPost.isRecord(post.record) && post.record.reply) {
                 uri = post.record.reply.root.uri;
             }
@@ -424,14 +432,17 @@ export class ThreadOverlay extends HashNavCloseableElement {
                 uri,
             });
             if (!response.success) {
-                this.error = "Thread not found";
+                this.error = "Thread not found.";
                 return;
             }
             if (!AppBskyFeedDefs.isThreadViewPost(response.data.thread)) {
-                this.error = "Thread not found";
+                this.error = "Thread not found.";
                 return;
             }
             this.thread = response.data.thread;
+        } catch (e) {
+            this.error = "Thread not found.";
+            return;
         } finally {
             this.isLoading = false;
         }
