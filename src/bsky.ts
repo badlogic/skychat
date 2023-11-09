@@ -1,6 +1,8 @@
 import { AppBskyFeedDefs, AppBskyFeedGetPosts, AtpSessionData, AtpSessionEvent, BskyAgent } from "@atproto/api";
 import { Store } from "./store";
 
+type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow"; fromDid: string; toDid: string; token: string };
+
 type SearchPost = {
     tid: string;
     cid: string;
@@ -112,8 +114,12 @@ export async function login(account?: string, password?: string): Promise<void |
         let user = Store.getUser();
         let resumeSuccess = false;
         if (user && user.account == account && user.password == password && user.session) {
-            const resume = await bskyClient.resumeSession(user.session);
-            resumeSuccess = resume.success;
+            try {
+                const resume = await bskyClient.resumeSession(user.session);
+                resumeSuccess = resume.success;
+            } catch (e) {
+                // no-op in case resume didn't work.
+            }
         }
 
         if (!resumeSuccess) {
@@ -123,12 +129,14 @@ export async function login(account?: string, password?: string): Promise<void |
             });
             if (!response.success) {
                 Store.setUser(undefined);
+                bskyClient = undefined;
                 throw new Error();
             }
         }
         const profileResponse = await bskyClient.app.bsky.actor.getProfile({ actor: account });
         if (!profileResponse.success) {
             Store.setUser(undefined);
+            bskyClient = undefined;
             throw new Error();
         }
         Store.setUser({
@@ -139,6 +147,8 @@ export async function login(account?: string, password?: string): Promise<void |
             hashTagThreads: user && user.account == account ? user.hashTagThreads ?? {} : {},
         });
     } catch (e) {
+        Store.setUser(undefined);
+        bskyClient = undefined;
         return new Error("Couldn't log-in with your BlueSky credentials.");
     }
 }

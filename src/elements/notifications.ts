@@ -12,7 +12,7 @@ import { map } from "lit/directives/map.js";
 import { bskyClient, loadPosts } from "../bsky";
 import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
 import { Store } from "../store";
-import { dom, getTimeDifference, onVisibleOnce, renderAuthor, renderTopbar } from "../utils";
+import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, renderAuthor, renderTopbar } from "../utils";
 import { HashNavCloseableElement } from "./closable";
 import { PostEditor } from "./posteditor";
 import { renderEmbed, renderPostText } from "./postview";
@@ -33,18 +33,70 @@ export class NotificationsOverlay extends HashNavCloseableElement {
 
     posts = new Map<string, AppBskyFeedDefs.PostView>();
 
+    intervalId: any = -1;
+
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
 
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        clearInterval(this.intervalId);
+    }
+
     async load() {
         if (!bskyClient) return;
-        await this.loadMoreNotifications();
+        await this.loadNotifications();
         this.isLoading = false;
+
+        let loading = false;
+        const checkNewNotifications = async () => {
+            if (loading) return;
+            if (!bskyClient) return;
+            const firstNode = this.notificationsDom?.children[0];
+            if (!firstNode) return;
+            loading = true;
+            try {
+                const listResponse = await bskyClient.listNotifications();
+                if (!listResponse.success) {
+                    console.error("Couldn't list new notifications");
+                    return;
+                }
+                const postsToLoad: string[] = [];
+                let numUnread = 0;
+                for (const notification of listResponse.data.notifications) {
+                    if (notification.reasonSubject && notification.reasonSubject.includes("app.bsky.feed.post")) {
+                        postsToLoad.push(notification.reasonSubject);
+                    }
+                    if (AppBskyFeedPost.isRecord(notification.record) && notification.record.reply) {
+                        postsToLoad.push(notification.record.reply.parent.uri);
+                    }
+                    if (notification.uri.includes("app.bsky.feed.post")) {
+                        postsToLoad.push(notification.uri);
+                    }
+                    numUnread += notification.isRead ? 0 : 1;
+                }
+                if (numUnread == 0) return;
+                await loadPosts(postsToLoad, this.posts);
+                const updateReponse = await bskyClient.updateSeenNotifications();
+                if (!updateReponse.success) console.error("Couldn't update seen notifications");
+
+                for (const notification of listResponse.data.notifications) {
+                    if (notification.isRead) continue;
+                    const notificationDom = dom(this.renderNotification(notification))[0];
+                    this.notificationsDom?.insertBefore(notificationDom, firstNode);
+                }
+            } catch (e) {
+                console.error("Couldn't load newer notifications", e);
+            } finally {
+                loading = false;
+            }
+        };
+        this.intervalId = setInterval(checkNewNotifications, 2000);
     }
 
     loading = false;
-    async loadMoreNotifications() {
+    async loadNotifications() {
         if (!bskyClient) return;
         if (this.loading) return;
         try {
@@ -134,11 +186,23 @@ export class NotificationsOverlay extends HashNavCloseableElement {
 
         let postContent: TemplateResult | undefined;
         if (post && AppBskyFeedPost.isRecord(post.record)) {
+            const authorDid = post.author.did;
+            const rkey = post.uri.replace("at://", "").split("/")[2];
             switch (notification.reason) {
                 case "like":
                 case "repost":
-                    postContent = html`<div class="break-words dark:text-white/50 text-black/50 leading-tight">${renderPostText(post.record)}</div>
-                        ${post.embed ? renderEmbed(post.embed, false, true) : nothing}`;
+                    postContent = html`<div
+                        class="cursor-pointer"
+                        @click=${(ev: Event) => {
+                            if (!bskyClient) return;
+                            if (hasLinkOrButtonParent(ev.target as HTMLElement)) return;
+                            ev.stopPropagation();
+                            document.body.append(dom(html`<thread-overlay .author=${authorDid} .rkey=${rkey}></thread-overlay>`)[0]);
+                        }}
+                    >
+                        <div class="break-words dark:text-white/50 text-black/50 leading-tight">${renderPostText(post.record)}</div>
+                        ${post.embed ? renderEmbed(post.embed, false, true) : nothing}
+                    </div>`;
                     break;
                 case "reply":
                     const parent = this.posts.get((notification.record as any).reply.parent.uri);
@@ -191,19 +255,11 @@ export class NotificationsOverlay extends HashNavCloseableElement {
     }
 
     quote(post: AppBskyFeedDefs.PostView) {
-        const editorDom = dom(html`<div class="absolute flex bottom-0 w-full z-[2000]">
-            <post-editor class="animate-jump-in mx-auto w-[600px] border border-gray rounded" .cancelable=${true} .quote=${post}></post-editor>
-        </div>`)[0];
-        document.body.append(editorDom);
+        document.body.append(dom(html`<post-editor-overlay .quote=${post}></post-editor-overly>`)[0]);
     }
 
     reply(post: AppBskyFeedDefs.PostView) {
-        const editorDom = dom(html`<div class="absolute flex bottom-0 w-full z-[2000]">
-            <post-editor class="animate-jump-in mx-auto w-[600px] border border-gray rounded" .cancelable=${true}></post-editor>
-        </div>`)[0];
-        const editor: PostEditor = editorDom.querySelector("post-editor")!;
-        editor.setReply(post);
-        document.body.append(editorDom);
+        document.body.append(dom(html`<post-editor-overlay .replyTo=${post}></post-editor-overly>`)[0]);
     }
 
     groupLikes(notifications: AppBskyNotificationListNotifications.Notification[]) {}
@@ -211,14 +267,14 @@ export class NotificationsOverlay extends HashNavCloseableElement {
     renderNotifications() {
         if (!this.lastNotifications) return html``;
 
-        let notificationsDom = dom(html`<div class="notifications flex flex-col">
+        const notificationsDom = dom(html`<div id="notifications" class="flex flex-col">
             ${map(this.lastNotifications.notifications, (notification) => this.renderNotification(notification))}
             <div id="loader" class="w-full text-center p-4 animate-pulse">Loading notifications</div>
         </div>`)[0];
 
         const loader = notificationsDom.querySelector("#loader") as HTMLElement;
         const loadMore = async () => {
-            await this.loadMoreNotifications();
+            await this.loadNotifications();
             loader?.remove();
             if (!this.lastNotifications || this.lastNotifications.notifications.length == 0) {
                 loader.innerText = "No more notifications";

@@ -705,7 +705,7 @@ export class PostEditorOverlay extends CloseableElement {
     protected render() {
         const user = Store.getUser();
         if (!user || !bskyClient) return nothing;
-        return html`<div class="absolute flex items-end top-0 w-full h-[100svh] backdrop-blur z-[2000] ">
+        return html`<div class="absolute flex items-end top-0 w-full h-[100svh] backdrop-blur z-[1000] ">
             <post-editor
                 class="border border-gray/50 animate-fade animate-duration-[250ms] mx-auto w-[600px]"
                 .cancelable=${true}

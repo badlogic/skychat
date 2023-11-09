@@ -6,14 +6,14 @@ let watch = process.argv.length >= 3 && process.argv[2] == "--watch";
 
 const config = {
     entryPoints: {
-        server: "server.ts",
+        server: "src/server.ts",
     },
     bundle: true,
     sourcemap: true,
     platform: "node",
     outdir: "build/",
     logLevel: "info",
-    minify: !watch,
+    minify: false,
 };
 
 if (!watch) {

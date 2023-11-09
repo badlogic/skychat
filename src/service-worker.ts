@@ -1,94 +1,24 @@
-import { BskyAgent } from "@atproto/api";
-import { install } from "husky";
-
 declare var self: ServiceWorkerGlobalScope;
 export {};
 
-let installId = "";
-let bskyClient: BskyAgent | undefined;
-let lastNumUnread = 0;
-let lastAccount = "";
-let lastPassword = "";
-let intervalId: any;
-
-function poll() {
-    lastNumUnread = 0;
-    clearInterval(intervalId);
-    intervalId = setInterval(async () => {
-        if (!bskyClient) {
-            console.log(`- Not connected ${installId}`);
-        } else {
-            console.log(`- Polling ${installId}`);
-            const numUnread = await bskyClient.countUnreadNotifications();
-            if (!numUnread.success) {
-                console.error(`- Couldn't get number of unread notifications ${installId}`);
-                return;
-            }
-            if (numUnread.data.count > lastNumUnread) {
-                self.registration.showNotification(`You have new ${numUnread.data.count} notifications`, { icon: "./logo.png" });
-                console.log(`- Notified user of ${numUnread.data.count} unread notifications ${installId}`);
-            }
-            lastNumUnread = numUnread.data.count;
-        }
-    }, 5000);
-}
-
-async function login(account: string, password: string) {
-    try {
-        bskyClient = new BskyAgent({ service: "https://bsky.social" });
-        const response = await bskyClient.login({ identifier: account, password });
-        if (!response.success) throw Error();
-        lastAccount = account;
-        lastPassword = password;
-        console.log(`- Logged in ${account} ${installId}`);
-    } catch (e) {
-        console.error(`- Couldn't login ${account}`);
-        bskyClient = undefined;
-    }
-}
-
 self.addEventListener("install", (event) => {
-    installId = (Math.random() * 1000).toFixed(0);
-    console.log(`- Installing service worker ${installId}`);
-    event.waitUntil(self.skipWaiting());
+    self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-    console.log(`- Activating service worker ${installId}`);
+    console.log(`Activating service worker`);
     const activate = () => {
-        poll();
         return self.clients.claim();
     };
     event.waitUntil(activate());
 });
 
-self.addEventListener("message", async (event) => {
-    console.log(`- Received message ${installId}`);
-    console.log(event.data);
-
-    if (event.data == "logout") {
-        bskyClient = undefined;
-        lastAccount = "";
-        lastPassword = "";
-    }
-
-    if (event.data.account && event.data.password) {
-        if (!bskyClient || event.data.account != lastAccount || event.data.password != lastPassword) {
-            login(event.data.account, event.data.password);
-        } else {
-            console.log(`- Already logged in ${lastAccount} ${installId}`);
-        }
-    }
-
-    poll();
-});
-
 self.addEventListener("notificationclick", (event: any) => {
     event.notification.close();
     const click = async () => {
-        const clientList = await self.clients.matchAll({ type: "window" });
+        const clientList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
         for (const client of clientList) {
-            console.log(`- Sending message to window ${installId}`);
+            console.log(`- Sending message to window`);
             if ("focus" in client) client.focus();
             client.postMessage("notifications");
         }
@@ -98,3 +28,57 @@ self.addEventListener("notificationclick", (event: any) => {
     };
     event.waitUntil(click());
 });
+
+import { BskyAgent } from "@atproto/api";
+import { initializeApp } from "firebase/app";
+import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
+const firebaseConfig = {
+    apiKey: "AIzaSyAZ2nH3qKCFqFhQSdeNH91SNAfTHl-nP7s",
+    authDomain: "skychat-733ab.firebaseapp.com",
+    projectId: "skychat-733ab",
+    storageBucket: "skychat-733ab.appspot.com",
+    messagingSenderId: "693556593993",
+    appId: "1:693556593993:web:8137dd0568c75b50d1c698",
+};
+type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow"; fromDid: string; toDid: string; token: string };
+const app = initializeApp(firebaseConfig);
+const messaging = getMessaging(app);
+onBackgroundMessage(messaging, async (payload) => {
+    console.log("Background message received. ", payload);
+    if (payload.data && payload.data.type && payload.data.fromDid) {
+        const notification = payload.data as Notification;
+        const bskyClient = new BskyAgent({ service: "https://api.bsky.app" });
+        let from = "Someone";
+        try {
+            const response = await bskyClient.getProfile({ actor: notification.fromDid });
+            if (response.success) {
+                from = response.data.displayName ?? response.data.handle;
+            }
+        } catch (e) {
+            console.error("Couldn't fetch profile for " + payload.data.from);
+        }
+        let message = "";
+        switch (notification.type) {
+            case "follow":
+                message = `${from} is following you`;
+                break;
+            case "like":
+                message = `${from} liked your post`;
+                break;
+            case "quote":
+                message = `${from} quoted your post`;
+                break;
+            case "reply":
+                message = `${from} replied to your post`;
+                break;
+            case "repost":
+                message = `${from} reposted your post`;
+                break;
+            default:
+                message = "You have a new notification";
+        }
+
+        self.registration.showNotification("New notification", { body: message, icon: "./logo.png" });
+    }
+});
+console.log("Initialized worker messaging.");

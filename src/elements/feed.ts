@@ -23,9 +23,15 @@ export class Feed extends LitElement {
     topPost?: AppBskyFeedDefs.FeedViewPost;
     lastPosts?: AppBskyFeedGetTimeline.OutputSchema;
     seenPosts = new Map<String, FeedViewPost>();
+    intervalId: any = -1;
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        clearImmediate(this.intervalId);
     }
 
     getPostKey(post: FeedViewPost) {
@@ -107,10 +113,10 @@ export class Feed extends LitElement {
                 console.error(e);
             } finally {
                 checking = false;
-                setTimeout(checkNewPosts, 2000);
             }
         };
         checkNewPosts();
+        this.intervalId = setInterval(checkNewPosts, 5000);
     }
 
     loading = false;

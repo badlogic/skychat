@@ -243,7 +243,7 @@ export class PostViewElement extends LitElement {
 
         const rkey = this.post.uri.replace("at://", "").split("/")[2];
         const author = this.post.author;
-        return html`<div class="${this.animation} px-4 py-2">
+        return html`<div class="${this.animation} px-4 py-2 outline-none">
             ${renderRecord(
                 author,
                 rkey,

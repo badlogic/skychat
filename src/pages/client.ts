@@ -1,15 +1,15 @@
 import { LitElement, PropertyValueMap, html, nothing } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { homeIcon, bellIcon, editIcon } from "../icons";
+import { bellIcon, editIcon } from "../icons";
 import { contentLoader, defaultAvatar, dom, waitForServiceWorkerActivation } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
-import { BskyAgent } from "@atproto/api";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { ThreadOverlay as ThreadOverlay, ProfileOverlay, pushHash, routeHash } from "../elements";
-import { Store } from "../store";
 import { bskyClient, login, logout } from "../bsky";
+import { routeHash } from "../elements";
+import { Store } from "../store";
+import { FirebaseOptions, initializeApp } from "firebase/app";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 @customElement("skychat-client")
 class SkychatClient extends LitElement {
@@ -33,6 +33,9 @@ class SkychatClient extends LitElement {
 
     @query("#ping")
     ping?: HTMLElement;
+
+    lastAccount = "";
+    lastPassword = "";
 
     constructor() {
         super();
@@ -67,14 +70,14 @@ class SkychatClient extends LitElement {
                     id="account"
                     class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
                     placeholder="Account, e.g. badlogic.bsky.social"
-                    value="${user?.account ?? ""}"
+                    value="${this.lastAccount}"
                 />
                 <input
                     id="password"
                     type="password"
                     class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
                     placeholder="App password"
-                    value="${user?.password ?? ""}"
+                    value="${this.lastPassword}"
                 />
                 <button class="align-center rounded bg-primary text-white px-4 py-2" @click=${this.login}>Sign in</button>
                 ${!user ? html`<p class="text-xs mt-0 pt-0 text-center">Your credentials will only be stored on your device.</p>` : nothing}
@@ -186,19 +189,21 @@ class SkychatClient extends LitElement {
                 account = undefined;
                 password = undefined;
             }
-            if (!account && !password) {
+            if (!account || !password) {
                 this.error = "Invalid account or password.";
                 Store.setUser(undefined);
                 return;
             }
+            this.lastAccount = account;
+            this.lastPassword = password;
             const response = await login(account, password);
             if (response instanceof Error) {
                 this.error = response.message;
                 Store.setUser(undefined);
                 return;
             }
-            this.setupCheckNotifications();
             this.setupWorkerNotifications();
+            this.setupCheckNotifications();
         } catch (e) {
             console.error(e);
         } finally {
@@ -208,28 +213,45 @@ class SkychatClient extends LitElement {
 
     async setupWorkerNotifications() {
         try {
-            const user = Store.getUser();
-            if ("serviceWorker" in navigator && user) {
-                const registration = await navigator.serviceWorker.register("/service-worker.js");
-                const worker = await waitForServiceWorkerActivation(registration);
-                if (!worker) {
-                    console.log("Couldn't activate worker");
-                } else {
-                    console.log("Activated worker");
-                }
-                navigator.serviceWorker.addEventListener("controllerchange", (event) => {
-                    const newController = event.target as ServiceWorkerContainer;
-                    newController.controller?.postMessage({ account: user.account, password: user.password });
-                });
-                navigator.serviceWorker.addEventListener("message", (event) => {
-                    console.log("+ Received message");
-                    console.log(event.data);
-                    if (event.data == "notifications") {
+            if (Notification.permission != "granted" || !Store.getUser()) {
+                console.log("Can not setup push notifications, permission not granted or not logged in.");
+                return;
+            }
+            const firebaseConfig: FirebaseOptions = {
+                apiKey: "AIzaSyAZ2nH3qKCFqFhQSdeNH91SNAfTHl-nP7s",
+                authDomain: "skychat-733ab.firebaseapp.com",
+                projectId: "skychat-733ab",
+                storageBucket: "skychat-733ab.appspot.com",
+                messagingSenderId: "693556593993",
+                appId: "1:693556593993:web:8137dd0568c75b50d1c698",
+            };
+
+            const app = initializeApp(firebaseConfig);
+            const messaging = getMessaging(app);
+            const token = await getToken(messaging, {
+                vapidKey: "BIqRsppm0-uNKJoRjVCzu5ZYtT-Jo6jyjDXVuqLbudGvpRTuGwptZ9x5ueu5imL7xdjVA989bJOJYcx_Pvf-AYM",
+            });
+            const baseUrl = location.href.includes("localhost") || location.href.includes("192.168.1") ? "http://localhost:3333/" : "/";
+            const response = await fetch(
+                baseUrl + `api/register?token=${encodeURIComponent(token)}&did=${encodeURIComponent(Store.getUser()?.profile.did ?? "")}`
+            );
+            if (!response.ok) {
+                console.error("Couldn't register push token.");
+                return;
+            }
+            console.log("Initialized notifications: ");
+            console.log(token);
+            onMessage(messaging, (ev) => {
+                console.log("Received message in app");
+                console.log(ev.data);
+            });
+            navigator.serviceWorker.addEventListener("message", (ev) => {
+                if (ev.data && ev.data == "notifications") {
+                    if (location.hash.replace("#", "") != "notifications") {
                         document.body.append(dom(html`<notifications-overlay></notifications-overlay>`)[0]);
                     }
-                });
-                worker?.postMessage({ account: user.account, password: user.password });
-            }
+                }
+            });
         } catch (e) {
             console.error("Couldn't request notification permission and start service worker.", e);
         }
