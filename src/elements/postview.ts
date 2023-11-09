@@ -18,8 +18,9 @@ import { profileCache } from "../profilecache";
 import { contentLoader, dom, getDateString, getProfileUrl, hasLinkOrButtonParent, renderAuthor, renderTopbar } from "../utils";
 import { CloseableElement, HashNavCloseableElement } from "./closable";
 import { IconToggle } from "./icontoggle";
+import { bskyClient } from "../bsky";
 
-export function renderPostText(bskyClient: BskyAgent | undefined, record: AppBskyFeedPost.Record) {
+export function renderPostText(record: AppBskyFeedPost.Record) {
     if (!record.facets) {
         return record.text;
     }
@@ -42,9 +43,7 @@ export function renderPostText(bskyClient: BskyAgent | undefined, record: AppBsk
                         if (!bskyClient) return;
                         ev.preventDefault();
                         ev.stopPropagation();
-                        document.body.append(
-                            dom(html`<profile-overlay .bskyClient=${bskyClient} .did=${segment.mention?.did}></profile-overlay>`)[0]
-                        );
+                        document.body.append(dom(html`<profile-overlay .did=${segment.mention?.did}></profile-overlay>`)[0]);
                     }}
                     >${segment.text}</a
                 >`
@@ -115,7 +114,7 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
     </div>`;
 }
 
-export function renderRecordEmbed(bskyClient: BskyAgent | undefined, recordEmbed: AppBskyEmbedRecord.View) {
+export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
     if (!AppBskyEmbedRecord.isViewRecord(recordEmbed.record)) return nothing;
     if (!AppBskyFeedPost.isRecord(recordEmbed.record.value)) return nothing;
     const record = recordEmbed.record.value;
@@ -123,15 +122,10 @@ export function renderRecordEmbed(bskyClient: BskyAgent | undefined, recordEmbed
     const author = recordEmbed.record.author;
     const embeds = recordEmbed.record.embeds && recordEmbed.record.embeds.length > 0 ? recordEmbed.record.embeds[0] : undefined;
     const sensitive = recordEmbed.record.labels?.some((label) => ["porn", "nudity", "sexual"].includes(label.val)) ?? false;
-    return html`<div class="border border-gray/50 rounded p-2 mb-2">${renderRecord(bskyClient, author, rkey, record, embeds, true, sensitive)}</div>`;
+    return html`<div class="border border-gray/50 rounded p-2 mb-2">${renderRecord(author, rkey, record, embeds, true, sensitive)}</div>`;
 }
 
-export function renderRecordWithMediaEmbed(
-    bskyClient: BskyAgent | undefined,
-    recordWithMediaEmbed: AppBskyEmbedRecordWithMedia.View,
-    sensitive: boolean,
-    minimal = false
-) {
+export function renderRecordWithMediaEmbed(recordWithMediaEmbed: AppBskyEmbedRecordWithMedia.View, sensitive: boolean, minimal = false) {
     const imagesEmbed = AppBskyEmbedImages.isView(recordWithMediaEmbed.media) ? recordWithMediaEmbed.media.images : undefined;
     const cardEmbed =
         AppBskyEmbedExternal.isView(recordWithMediaEmbed.media) || AppBskyEmbedExternal.isMain(recordWithMediaEmbed.media)
@@ -139,29 +133,23 @@ export function renderRecordWithMediaEmbed(
             : undefined;
     return html`<div class="mt-2">
         ${cardEmbed ? renderCardEmbed(cardEmbed) : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive, minimal) : nothing}
-        ${!minimal ? renderRecordEmbed(bskyClient, recordWithMediaEmbed.record) : nothing}
+        ${!minimal ? renderRecordEmbed(recordWithMediaEmbed.record) : nothing}
     </div>`;
 }
 
-export function renderEmbed(
-    bskyClient: BskyAgent | undefined,
-    embed: AppBskyFeedDefs.PostView["embed"] | AppBskyFeedPost.Record["embed"],
-    sensitive: boolean,
-    minimal = false
-) {
+export function renderEmbed(embed: AppBskyFeedDefs.PostView["embed"] | AppBskyFeedPost.Record["embed"], sensitive: boolean, minimal = false) {
     const cardEmbed = AppBskyEmbedExternal.isView(embed) || AppBskyEmbedExternal.isMain(embed) ? embed.external : undefined;
     const imagesEmbed = AppBskyEmbedImages.isView(embed) ? embed.images : undefined;
     const recordEmbed = AppBskyEmbedRecord.isView(embed) ? embed : undefined;
     const recordWithMediaEmbed = AppBskyEmbedRecordWithMedia.isView(embed) ? embed : undefined;
     return html`<div class="mt-2">
         ${cardEmbed ? renderCardEmbed(cardEmbed) : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive, minimal) : nothing}
-        ${recordEmbed && !minimal ? renderRecordEmbed(bskyClient, recordEmbed) : nothing}
-        ${recordWithMediaEmbed ? renderRecordWithMediaEmbed(bskyClient, recordWithMediaEmbed, sensitive, minimal) : nothing}
+        ${recordEmbed && !minimal ? renderRecordEmbed(recordEmbed) : nothing}
+        ${recordWithMediaEmbed ? renderRecordWithMediaEmbed(recordWithMediaEmbed, sensitive, minimal) : nothing}
     </div>`;
 }
 
 export function renderRecord(
-    bskyClient: BskyAgent | undefined,
     author: ProfileViewBasic | ProfileViewDetailed,
     rkey: string,
     record: AppBskyFeedPost.Record,
@@ -181,12 +169,12 @@ export function renderRecord(
             if (!bskyClient) return;
             if (hasLinkOrButtonParent(ev.target as HTMLElement)) return;
             ev.stopPropagation();
-            document.body.append(dom(html`<thread-overlay .bskyClient=${bskyClient} .author=${author.did} .rkey=${rkey}></thread-overlay>`)[0]);
+            document.body.append(dom(html`<thread-overlay .author=${author.did} .rkey=${rkey}></thread-overlay>`)[0]);
         }}
     >
         ${showHeader
             ? html`<div class="w-full flex items-center gap-2">
-                      ${prefix ? html`<span class="mr-1 font-bold">${prefix}</span>` : nothing} ${renderAuthor(bskyClient, author, smallAvatar)}
+                      ${prefix ? html`<span class="mr-1 font-bold">${prefix}</span>` : nothing} ${renderAuthor(author, smallAvatar)}
                       ${prefix == undefined
                           ? html`<a
                                 class="ml-auto text-right text-xs text-gray whitespace-nowrap hover:underline"
@@ -196,9 +184,7 @@ export function renderRecord(
                                     if (!bskyClient) return;
                                     ev.preventDefault();
                                     ev.stopPropagation();
-                                    document.body.append(
-                                        dom(html`<thread-overlay .bskyClient=${bskyClient} .author=${author.did} .rkey=${rkey}></thread-overlay>`)[0]
-                                    );
+                                    document.body.append(dom(html`<thread-overlay .author=${author.did} .rkey=${rkey}></thread-overlay>`)[0]);
                                 }}
                                 >${getDateString(new Date(record.createdAt))}</a
                             >`
@@ -215,16 +201,13 @@ export function renderRecord(
                   >
               </div>`
             : nothing}
-        <div class="mt-1 break-words leading-tight">${renderPostText(bskyClient, record)}</div>
-        ${embed ? renderEmbed(bskyClient, embed, sensitive) : nothing}
+        <div class="mt-1 break-words leading-tight">${renderPostText(record)}</div>
+        ${embed ? renderEmbed(embed, sensitive) : nothing}
     </div>`;
 }
 
 @customElement("post-view")
 export class PostViewElement extends LitElement {
-    @property()
-    bskyClient?: BskyAgent;
-
     @property()
     post?: AppBskyFeedDefs.PostView;
 
@@ -262,7 +245,6 @@ export class PostViewElement extends LitElement {
         const author = this.post.author;
         return html`<div class="${this.animation} px-4 py-2">
             ${renderRecord(
-                this.bskyClient,
                 author,
                 rkey,
                 this.post.record,
@@ -295,8 +277,9 @@ export class PostViewElement extends LitElement {
         </div>`;
     }
 
+    // FIXME wtf is this for?
     canInteract(toggle: IconToggle) {
-        if (this.bskyClient?.service.toString().includes("api")) {
+        if (bskyClient?.service.toString().includes("api")) {
             if (confirm("Do you want to log-in to repost, like, and create posts?")) {
                 location.reload();
             }
@@ -323,12 +306,12 @@ export class PostViewElement extends LitElement {
         if (ev.detail.value) {
             toggle.value = true;
             toggle.innerText = (Number.parseInt(toggle.innerText) + 1).toString();
-            const response = await this.bskyClient!.repost(this.post.uri, this.post.cid);
+            const response = await bskyClient!.repost(this.post.uri, this.post.cid);
             this.post.viewer.repost = response.uri;
         } else {
             toggle.value = false;
             toggle.innerText = (Number.parseInt(toggle.innerText) - 1).toString();
-            if (this.post.viewer.repost) this.bskyClient?.deleteRepost(this.post.viewer.repost);
+            if (this.post.viewer.repost) bskyClient?.deleteRepost(this.post.viewer.repost);
             this.post.viewer.repost = undefined;
         }
     }
@@ -342,12 +325,12 @@ export class PostViewElement extends LitElement {
         if (ev.detail.value) {
             toggle.value = true;
             toggle.innerText = (Number.parseInt(toggle.innerText) + 1).toString();
-            const response = await this.bskyClient!.like(this.post.uri, this.post.cid);
+            const response = await bskyClient!.like(this.post.uri, this.post.cid);
             this.post.viewer.like = response.uri;
         } else {
             toggle.value = false;
             toggle.innerText = (Number.parseInt(toggle.innerText) - 1).toString();
-            if (this.post.viewer.like) await this.bskyClient?.deleteLike(this.post.viewer.like);
+            if (this.post.viewer.like) await bskyClient?.deleteLike(this.post.viewer.like);
             this.post.viewer.like = undefined;
         }
     }
@@ -378,9 +361,6 @@ export class AltText extends CloseableElement {
 
 @customElement("thread-overlay")
 export class ThreadOverlay extends HashNavCloseableElement {
-    @property()
-    bskyClient?: BskyAgent;
-
     @property()
     author?: string;
 
@@ -415,7 +395,7 @@ export class ThreadOverlay extends HashNavCloseableElement {
 
     async load() {
         try {
-            if (!this.bskyClient) {
+            if (!bskyClient) {
                 this.error = "No connection.";
                 return;
             }
@@ -424,7 +404,7 @@ export class ThreadOverlay extends HashNavCloseableElement {
                 return;
             }
             let uri = `at://${this.author}/app.bsky.feed.post/${this.rkey}`;
-            const postResponse = await this.bskyClient.getPosts({ uris: [uri] });
+            const postResponse = await bskyClient.getPosts({ uris: [uri] });
             if (!postResponse.success) {
                 this.error = "Thread not found";
                 return;
@@ -438,7 +418,7 @@ export class ThreadOverlay extends HashNavCloseableElement {
                 uri = post.record.reply.root.uri;
             }
 
-            const response = await this.bskyClient.getPostThread({
+            const response = await bskyClient.getPostThread({
                 depth: 1000,
                 parentHeight: 1000,
                 uri,
@@ -469,7 +449,8 @@ export class ThreadOverlay extends HashNavCloseableElement {
                         Close
                     </button>`
                 )}
-                <div class="px-4 pt-[40px]">
+                <div class="px-4">
+                    <div class="h-[40px]"></div>
                     ${this.isLoading ? html`<div>${contentLoader}</div>` : nothing} ${this.error ? html`<div>${this.error}</div>` : nothing}
                     ${this.thread ? this.renderThread(this.thread) : nothing}
                 </div>
@@ -478,17 +459,13 @@ export class ThreadOverlay extends HashNavCloseableElement {
     }
 
     renderThread(thread: AppBskyFeedDefs.ThreadViewPost): HTMLElement {
-        if (!AppBskyFeedDefs.isThreadViewPost(thread)) return dom(html``)[0];
+        if (!AppBskyFeedDefs.isThreadViewPost(thread)) {
+            return dom(html``)[0];
+        }
         let uri = `at://${this.author}/app.bsky.feed.post/${this.rkey}`;
         const postDom = dom(html`<div>
             <div class="${thread.post.uri == uri ? "border-l border-primary" : ""}">
-                <post-view
-                    .bskyClient=${this.bskyClient}
-                    .post=${thread.post}
-                    .quoteCallback=${this.quote}
-                    .replyCallback=${this.reply}
-                    .showReplyTo=${false}
-                ></post-view>
+                <post-view .post=${thread.post} .quoteCallback=${this.quote} .replyCallback=${this.reply} .showReplyTo=${false}></post-view>
             </div>
             <div class="ml-2 border-l border-dashed border-gray/50">
                 ${map(thread.replies, (reply) => {
@@ -499,25 +476,19 @@ export class ThreadOverlay extends HashNavCloseableElement {
         </div>`)[0];
         if (thread.post.uri == uri) {
             setTimeout(() => {
-                postDom.scrollIntoView({ behavior: "smooth", block: "center" });
+                const postViewDom = postDom.querySelector("post-view");
+                postViewDom?.scrollIntoView({ behavior: "smooth", block: "center" });
+                postViewDom?.parentElement?.classList.add("animate-shake");
             }, 500);
         }
-        return postDom;
+        return postDom; //
     }
 
     quote(post: AppBskyFeedDefs.PostView) {
-        document.body.append(
-            dom(
-                html`<post-editor-overlay .account=${localStorage.getItem("a")} .bskyClient=${this.bskyClient} .quote=${post}></post-editor-overly>`
-            )[0]
-        );
+        document.body.append(dom(html`<post-editor-overlay .quote=${post}></post-editor-overly>`)[0]);
     }
 
     reply(post: AppBskyFeedDefs.PostView) {
-        document.body.append(
-            dom(
-                html`<post-editor-overlay .account=${localStorage.getItem("a")} .bskyClient=${this.bskyClient} .replyTo=${post}></post-editor-overly>`
-            )[0]
-        );
+        document.body.append(dom(html`<post-editor-overlay .replyTo=${post}></post-editor-overly>`)[0]);
     }
 }

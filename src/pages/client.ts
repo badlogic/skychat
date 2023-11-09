@@ -2,12 +2,14 @@ import { LitElement, PropertyValueMap, html, nothing } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { homeIcon, bellIcon, editIcon } from "../icons";
-import { contentLoader, defaultAvatar, dom, login, logout, waitForServiceWorkerActivation } from "../utils";
+import { contentLoader, defaultAvatar, dom, waitForServiceWorkerActivation } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import { BskyAgent } from "@atproto/api";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { ThreadOverlay as ThreadOverlay, ProfileOverlay, pushHash, routeHash } from "../elements";
+import { Store } from "../store";
+import { bskyClient, login, logout } from "../bsky";
 
 @customElement("skychat-client")
 class SkychatClient extends LitElement {
@@ -32,16 +34,8 @@ class SkychatClient extends LitElement {
     @query("#ping")
     ping?: HTMLElement;
 
-    account: string | undefined;
-    password: string | undefined;
-    accountProfile: ProfileViewDetailed | null;
-    bskyClient?: BskyAgent;
-
     constructor() {
         super();
-        this.account = localStorage.getItem("a") ?? undefined;
-        this.password = localStorage.getItem("p") ?? undefined;
-        this.accountProfile = localStorage.getItem("profile") ? JSON.parse(localStorage.getItem("profile")!) : null;
     }
 
     protected createRenderRoot(): Element | ShadowRoot {
@@ -49,13 +43,13 @@ class SkychatClient extends LitElement {
     }
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
-        if (this.accountProfile) this.login();
+        if (Store.getUser()) this.login();
     }
 
     render() {
         if (this.isConnecting) return this.renderConnecting();
-        if (!this.bskyClient) {
-            if (this.accountProfile) {
+        if (!bskyClient) {
+            if (Store.getUser()) {
                 return this.renderConnecting();
             } else {
                 return this.renderLogin();
@@ -65,9 +59,7 @@ class SkychatClient extends LitElement {
     }
 
     renderLogin() {
-        const accountProfile = localStorage.getItem("profile") ? JSON.parse(localStorage.getItem("profile")!) : null;
-        const account = localStorage.getItem("a");
-        const password = localStorage.getItem("a");
+        const user = Store.getUser();
         const content = html`<p class="text-center mx-auto w-[280px]">A BlueSky client</p>
             <div class="mx-auto flex flex-col gap-4 mt-4 w-[280px]">
                 ${this.error ? html`<div class="mx-auto max-w-[300px] text-[#cc0000] font-bold text-center">${this.error}</div>` : nothing}
@@ -75,18 +67,18 @@ class SkychatClient extends LitElement {
                     id="account"
                     class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
                     placeholder="Account, e.g. badlogic.bsky.social"
-                    value="${account}"
+                    value="${user?.account ?? ""}"
                 />
                 <input
                     id="password"
                     type="password"
                     class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
                     placeholder="App password"
-                    value="${password}"
+                    value="${user?.password ?? ""}"
                 />
                 <button class="align-center rounded bg-primary text-white px-4 py-2" @click=${this.login}>Sign in</button>
-                ${!accountProfile ? html`<p class="text-xs mt-0 pt-0 text-center">Your credentials will only be stored on your device.</p>` : nothing}
-                ${accountProfile ? html`<button class="text-sm text-primary" @click=${this.logout}>Log out</button>` : nothing}
+                ${!user ? html`<p class="text-xs mt-0 pt-0 text-center">Your credentials will only be stored on your device.</p>` : nothing}
+                ${user ? html`<button class="text-sm text-primary" @click=${this.logout}>Log out</button>` : nothing}
             </div>
             <a class="text-xl text-primary text-center font-bold mt-16" href="help.html">How does it work?</a>`;
 
@@ -129,18 +121,17 @@ class SkychatClient extends LitElement {
     }
 
     renderMain() {
-        if (!this.bskyClient) return html`<div>Unexpected error: bskyClient is undefined in renderMain()</div>`;
+        if (!bskyClient) return html`<div>Unexpected error: bskyClient is undefined in renderMain()</div>`;
         if (location.hash && location.hash.length > 0) {
             const hash = location.hash;
             history.replaceState(null, "", location.href.split("#")[0]);
-            routeHash(this.bskyClient, hash);
+            routeHash(hash);
         }
 
         const mainDom = dom(html`<main class="w-full h-full overflow-auto">
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
                 ${this.renderTopbar()}<skychat-feed
                     class="pt-[40px]"
-                    .bskyClient=${this.bskyClient}
                     .newPosts=${() => {
                         if (document.querySelector("main")!.scrollTop > 0) {
                             this.ping?.classList.remove("hidden");
@@ -167,17 +158,16 @@ class SkychatClient extends LitElement {
     }
 
     showPostEditor() {
-        document.body.append(
-            dom(html`<post-editor-overlay .account=${localStorage.getItem("a")} .bskyClient=${this.bskyClient}></post-editor-overly>`)[0]
-        );
+        document.body.append(dom(html`<post-editor-overlay></post-editor-overly>`)[0]);
     }
 
     async login() {
         this.isConnecting = true;
         this.requestUpdate();
         try {
-            let account = this.accountElement?.value ?? this.account;
-            let password = this.passwordElement?.value ?? this.password;
+            const user = Store.getUser();
+            let account = this.accountElement?.value ?? user?.account;
+            let password = this.passwordElement?.value ?? user?.password;
             if (account) {
                 account = account.trim().replace("@", "");
                 if (account.length == 0) {
@@ -198,18 +188,15 @@ class SkychatClient extends LitElement {
             }
             if (!account && !password) {
                 this.error = "Invalid account or password.";
-                this.accountProfile = null;
+                Store.setUser(undefined);
                 return;
             }
-            const bskyClient = await login(account, password);
-            if (bskyClient instanceof Error) {
-                this.error = bskyClient.message;
-                this.accountProfile = null;
+            const response = await login(account, password);
+            if (response instanceof Error) {
+                this.error = response.message;
+                Store.setUser(undefined);
                 return;
             }
-            this.bskyClient = bskyClient;
-            this.accountProfile = JSON.parse(localStorage.getItem("profile")!) as ProfileViewDetailed;
-
             this.setupCheckNotifications();
             this.setupWorkerNotifications();
         } catch (e) {
@@ -221,9 +208,8 @@ class SkychatClient extends LitElement {
 
     async setupWorkerNotifications() {
         try {
-            const account = localStorage.getItem("a");
-            const password = localStorage.getItem("p");
-            if ("serviceWorker" in navigator && account && password) {
+            const user = Store.getUser();
+            if ("serviceWorker" in navigator && user) {
                 const registration = await navigator.serviceWorker.register("/service-worker.js");
                 const worker = await waitForServiceWorkerActivation(registration);
                 if (!worker) {
@@ -233,16 +219,16 @@ class SkychatClient extends LitElement {
                 }
                 navigator.serviceWorker.addEventListener("controllerchange", (event) => {
                     const newController = event.target as ServiceWorkerContainer;
-                    newController.controller?.postMessage({ account, password });
+                    newController.controller?.postMessage({ account: user.account, password: user.password });
                 });
                 navigator.serviceWorker.addEventListener("message", (event) => {
                     console.log("+ Received message");
                     console.log(event.data);
                     if (event.data == "notifications") {
-                        document.body.append(dom(html`<notifications-overlay .bskyClient=${this.bskyClient}></notifications-overlay>`)[0]);
+                        document.body.append(dom(html`<notifications-overlay></notifications-overlay>`)[0]);
                     }
                 });
-                worker?.postMessage({ account, password });
+                worker?.postMessage({ account: user.account, password: user.password });
             }
         } catch (e) {
             console.error("Couldn't request notification permission and start service worker.", e);
@@ -252,8 +238,8 @@ class SkychatClient extends LitElement {
     setupCheckNotifications() {
         const checkNotifications = async () => {
             try {
-                if (!this.bskyClient?.session) return;
-                const response = await this.bskyClient?.countUnreadNotifications();
+                if (!bskyClient?.session) return;
+                const response = await bskyClient?.countUnreadNotifications();
                 if (!response || !response.success) {
                     return;
                 }
@@ -281,6 +267,7 @@ class SkychatClient extends LitElement {
     }
 
     renderTopbar() {
+        const user = Store.getUser();
         return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-[100]">
             <a class="flex items-center text-primary font-bold text-center" href="/client.html"
                 ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
@@ -294,13 +281,13 @@ class SkychatClient extends LitElement {
             </button>
             <div class="ml-auto flex gap-2 ml-2">
                 <button @click=${this.logout}>
-                    ${this.accountProfile?.avatar
-                        ? html`<img class="w-6 max-w-[none] h-6 rounded-full" src="${this.accountProfile.avatar}" />`
+                    ${user?.profile.avatar
+                        ? html`<img class="w-6 max-w-[none] h-6 rounded-full" src="${user.profile.avatar}" />`
                         : html`<i class="icon w-6 h-6">${defaultAvatar}</i>`}
                 </button>
                 <button
                     @click=${async () => {
-                        document.body.append(dom(html`<notifications-overlay .bskyClient=${this.bskyClient}></notifications-overlay>`)[0]);
+                        document.body.append(dom(html`<notifications-overlay></notifications-overlay>`)[0]);
                         this.bell?.classList.remove("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
                         this.notifications?.classList.add("hidden");
 

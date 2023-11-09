@@ -3,6 +3,7 @@ import { TemplateResult, html, render, svg } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 // @ts-ignore
 import logoSvg from "../html/logo.svg";
+import { bskyClient } from "./bsky";
 
 export function getDateString(inputDateTime: Date): string {
     const hours = inputDateTime.getHours();
@@ -280,51 +281,6 @@ export function onVisibleOnce(target: Element, callback: () => void) {
     observer.observe(target);
 }
 
-export async function login(account?: string, password?: string) {
-    const persistSession = (evt: AtpSessionEvent, sess?: AtpSessionData) => {
-        // store the session-data for reuse
-        if (evt == "create" || evt == "update") {
-            localStorage.setItem("s", JSON.stringify(sess));
-        }
-    };
-
-    if (!account || !password) return new BskyAgent({ service: "https://api.bsky.app" });
-    const bskyClient = new BskyAgent({ service: "https://bsky.social", persistSession });
-    try {
-        const session = localStorage.getItem("s") ? (JSON.parse(localStorage.getItem("s")!) as AtpSessionData) : undefined;
-        let resumeSuccess = false;
-        if (session) {
-            const resume = await bskyClient.resumeSession(session);
-            resumeSuccess = resume.success;
-        }
-
-        if (!resumeSuccess) {
-            const response = await bskyClient.login({
-                identifier: account,
-                password,
-            });
-            if (!response.success) throw new Error();
-        }
-        const profileResponse = await bskyClient.app.bsky.actor.getProfile({ actor: account });
-        if (!profileResponse.success) {
-            throw new Error();
-        }
-        localStorage.setItem("profile", JSON.stringify(profileResponse.data));
-        localStorage.setItem("a", account);
-        localStorage.setItem("p", password);
-        return bskyClient;
-    } catch (e) {
-        return new Error("Couldn't log-in with your BlueSky credentials.");
-    }
-}
-
-export function logout() {
-    localStorage.removeItem("profile");
-    localStorage.removeItem("a");
-    localStorage.removeItem("p");
-    localStorage.removeItem("s");
-}
-
 export function hasHashtag(text: string, hashtag: string) {
     const tokens = text.split(/[ \t\n\r.,;!?'"]+/);
     for (const token of tokens) {
@@ -347,7 +303,7 @@ export function renderTopbar(title: string, buttons: TemplateResult | HTMLElemen
     </div>`;
 }
 
-export function renderAuthor(bskyClient: BskyAgent | undefined, author: AppBskyActorDefs.ProfileView, smallAvatar = false) {
+export function renderAuthor(author: AppBskyActorDefs.ProfileView, smallAvatar = false) {
     return html`<a
         class="flex items-center gap-2"
         href="${getProfileUrl(author.handle ?? author.did)}"
@@ -356,7 +312,7 @@ export function renderAuthor(bskyClient: BskyAgent | undefined, author: AppBskyA
             if (!bskyClient) return;
             ev.preventDefault();
             ev.stopPropagation();
-            document.body.append(dom(html`<profile-overlay .bskyClient=${bskyClient} .did=${author.did}></profile-overlay>`)[0]);
+            document.body.append(dom(html`<profile-overlay .did=${author.did}></profile-overlay>`)[0]);
         }}
     >
         ${author.avatar

@@ -111,7 +111,6 @@ export class CloseableElement extends LitElement {
 export abstract class HashNavCloseableElement extends LitElement {
     readonly navCallback;
     readonly escapeCallback;
-    bskyClient?: BskyAgent;
     closed = false;
     @property()
     pushState = true;
@@ -125,9 +124,8 @@ export abstract class HashNavCloseableElement extends LitElement {
     abstract getHash(): string;
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
-        if (!this.bskyClient) return;
         if (this.pushState) history.pushState(null, "", location.href.split("#")[0]);
-        pushHash(this.bskyClient, this.getHash());
+        pushHash(this.getHash());
         document.title = "Skychat - " + this.getHash();
     }
 
@@ -141,12 +139,11 @@ export abstract class HashNavCloseableElement extends LitElement {
 }
 
 let setup = false;
-export function pushHash(bskyClient: BskyAgent, hash: string) {
+export function pushHash(hash: string) {
     if (!setup) {
         setup = true;
         window.addEventListener("hashchange", () => {
-            if (!bskyClient) return;
-            routeHash(bskyClient, location.hash);
+            routeHash(location.hash);
         });
     }
 
@@ -155,7 +152,7 @@ export function pushHash(bskyClient: BskyAgent, hash: string) {
     history.replaceState(null, "", baseUrl + (hash.length == 0 ? "" : "#" + hash));
 }
 
-export function routeHash(bskyClient: BskyAgent, hash: string) {
+export function routeHash(hash: string) {
     if (hash && hash.length > 0) {
         const tokens = hash.replace("#", "").split("/");
         if (tokens.length > 0) {
@@ -165,9 +162,7 @@ export function routeHash(bskyClient: BskyAgent, hash: string) {
                     const profileOverlay = child as ProfileOverlay;
                     if (profileOverlay.did == tokens[1]) return;
                 }
-                document.body.append(
-                    dom(html`<profile-overlay .bskyClient=${bskyClient} .did=${tokens[1]} .pushState=${false}></profile-overlay>`)[0]
-                );
+                document.body.append(dom(html`<profile-overlay .did=${tokens[1]} .pushState=${false}></profile-overlay>`)[0]);
             }
             if (tokens[0] == "thread" && tokens[1] && tokens[2]) {
                 const child = document.body.children[document.body.children.length - 1];
@@ -175,11 +170,7 @@ export function routeHash(bskyClient: BskyAgent, hash: string) {
                     const threadOverlay = child as ThreadOverlay;
                     if (threadOverlay.author == tokens[1] && threadOverlay.rkey == tokens[2]) return;
                 }
-                document.body.append(
-                    dom(
-                        html`<thread-overlay .bskyClient=${bskyClient} .author=${tokens[1]} .rkey=${tokens[2]} .pushState=${false}></thread-overlay>`
-                    )[0]
-                );
+                document.body.append(dom(html`<thread-overlay .author=${tokens[1]} .rkey=${tokens[2]} .pushState=${false}></thread-overlay>`)[0]);
             }
             if (tokens[0] == "notifications") {
                 const child = document.body.children[document.body.children.length - 1];
@@ -187,7 +178,7 @@ export function routeHash(bskyClient: BskyAgent, hash: string) {
                     const threadOverlay = child as ThreadOverlay;
                     if (threadOverlay.author == tokens[1] && threadOverlay.rkey == tokens[2]) return;
                 }
-                document.body.append(dom(html`<notifications-overlay .bskyClient=${bskyClient} .pushState=${false}></notifications-overlay>`)[0]);
+                document.body.append(dom(html`<notifications-overlay .pushState=${false}></notifications-overlay>`)[0]);
             }
         }
     }

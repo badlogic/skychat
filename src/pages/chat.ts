@@ -3,15 +3,16 @@ import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/act
 import { LitElement, PropertyValueMap, html, nothing, svg } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { PostSearch } from "../bsky";
+import { PostSearch, bskyClient, login, logout } from "../bsky";
 import { FirehosePost, startEventStream } from "../firehose";
-import { contentLoader, dom, getProfileUrl, hasHashtag, login, logout, onVisibleOnce } from "../utils";
+import { contentLoader, dom, getProfileUrl, hasHashtag, onVisibleOnce } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import "../elements";
 import { PostEditor, routeHash } from "../elements";
 import { bellIcon, homeIcon } from "../icons";
 import { cacheProfile } from "../profilecache";
+import { Store } from "../store";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -35,13 +36,9 @@ export class Chat extends LitElement {
     @query("#bell")
     bell?: HTMLElement;
     @query("#notifications")
-    notifications?: HTMLElement;
+    numNotifications?: HTMLElement;
 
-    account: string | undefined;
-    password: string | undefined;
-    accountProfile: ProfileViewDetailed | null;
-    hashtag: string | null;
-    bskyClient?: BskyAgent;
+    hashtag: string | undefined;
     postSearch?: PostSearch;
     askedReuse = false;
     userScrolled = false;
@@ -51,10 +48,7 @@ export class Chat extends LitElement {
 
     constructor() {
         super();
-        this.account = localStorage.getItem("a") ?? undefined;
-        this.password = localStorage.getItem("p") ?? undefined;
-        this.accountProfile = localStorage.getItem("profile") ? JSON.parse(localStorage.getItem("profile")!) : null;
-        this.hashtag = new URL(location.href).searchParams.get("hashtag") ?? null;
+        this.hashtag = new URL(location.href).searchParams.get("hashtag") ?? undefined;
     }
 
     protected createRenderRoot(): Element | ShadowRoot {
@@ -67,38 +61,46 @@ export class Chat extends LitElement {
 
     async load() {
         this.isLoading = true;
-        if (!this.hashtag) return;
-        const loginResponse = await login(this.account, this.password);
-        if (loginResponse instanceof Error) {
-            alert("Couldn't log in with your BlueSky credentials");
-            location.href = "/";
-            return;
-        }
-        this.bskyClient = loginResponse;
-        this.postSearch = new PostSearch(this.bskyClient, this.hashtag.replace("#", ""));
-        this.isLoading = false;
-        this.isLive = true;
-        const checkNotifications = async () => {
-            if (!this.bskyClient?.session) return;
-            const response = await this.bskyClient?.countUnreadNotifications();
-            if (!response || !response.success) {
-                console.log("No notifications");
+        try {
+            if (!this.hashtag) {
+                this.error = "No hashtag given.";
                 return;
             }
-            if (response.data?.count > 0) {
-                this.bell?.classList.add("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
-                this.notifications?.classList.remove("hidden");
-                this.notifications!.innerText = "" + response.data.count;
-            } else {
-                this.bell?.classList.remove("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
-                this.notifications?.classList.add("hidden");
+            const user = Store.getUser();
+            const loginResponse = await login(user?.account, user?.password);
+            if (loginResponse instanceof Error) {
+                alert("Couldn't log in with your BlueSky credentials");
+                location.href = "/";
+                return;
             }
-        };
-        checkNotifications();
-        setInterval(checkNotifications, 15000);
+            this.postSearch = new PostSearch(this.hashtag.replace("#", ""));
+            this.isLoading = false;
+            this.isLive = true;
+            const checkNotifications = async () => {
+                if (!Store.getUser()) return;
+                const response = await bskyClient?.countUnreadNotifications();
+                if (!response || !response.success) {
+                    console.log("No notifications");
+                    return;
+                }
+                if (response.data?.count > 0) {
+                    this.bell?.classList.add("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
+                    this.numNotifications?.classList.remove("hidden");
+                    this.numNotifications!.innerText = "" + response.data.count;
+                } else {
+                    this.bell?.classList.remove("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
+                    this.numNotifications?.classList.add("hidden");
+                }
+            };
+            checkNotifications();
+            setInterval(checkNotifications, 15000);
+        } finally {
+            this.isLoading = false;
+        }
     }
 
     renderHeader() {
+        const user = Store.getUser();
         return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-[100]">
             <a class="flex items-center text-primary font-bold text-center" href="/"
                 ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
@@ -106,16 +108,16 @@ export class Chat extends LitElement {
             <a class="flex-grow text-primary font-bold pl-2 truncate" href="/chat.html?hashtag=${encodeURIComponent(this.hashtag!)}"
                 >${this.hashtag}</a
             >
-            ${this.accountProfile
+            ${user
                 ? html`<div class="flex gap-2 ml-2">
                       <button @click=${this.logout}>
-                          ${this.accountProfile.avatar
-                              ? html`<img class="w-6 max-w-[none] h-6 rounded-full" src="${this.accountProfile.avatar}" />`
+                          ${user.profile.avatar
+                              ? html`<img class="w-6 max-w-[none] h-6 rounded-full" src="${user.profile.avatar}" />`
                               : html`<i class="icon w-6 h-6">${defaultAvatar}</i>`}
                       </button>
                       <button
                           @click=${() => {
-                              document.body.append(dom(html`<skychat-feed-overlay .bskyClient=${this.bskyClient}></skychat-feed-overlay>`)[0]);
+                              document.body.append(dom(html`<skychat-feed-overlay></skychat-feed-overlay>`)[0]);
                           }}
                           class="relative flex"
                       >
@@ -123,9 +125,9 @@ export class Chat extends LitElement {
                       </button>
                       <button
                           @click=${() => {
-                              document.body.append(dom(html`<notifications-overlay .bskyClient=${this.bskyClient}></notifications-overlay>`)[0]);
+                              document.body.append(dom(html`<notifications-overlay></notifications-overlay>`)[0]);
                               this.bell?.classList.remove("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
-                              this.notifications?.classList.add("hidden");
+                              this.numNotifications?.classList.add("hidden");
                           }}
                           class="relative flex"
                       >
@@ -142,15 +144,21 @@ export class Chat extends LitElement {
     }
 
     render() {
+        if (location.hash && location.hash.length > 0) {
+            const hash = location.hash;
+            history.replaceState(null, "", location.href.split("#")[0]);
+            routeHash(hash);
+        }
+
         if (this.isLive) {
-            const baseKey = this.account + "|" + this.hashtag!;
-            if (localStorage.getItem(baseKey + "|root") && !this.askedReuse) {
-                const root = localStorage.getItem(baseKey + "|root");
-                const rootUrl = `${getProfileUrl(this.account ?? "")}/post/${root?.replace("at://", "").split("/")[2]}`;
+            const user = Store.getUser();
+            if (user && user.hashTagThreads[this.hashtag ?? ""] && !this.askedReuse) {
+                const thread = user.hashTagThreads[this.hashtag!];
+                const rootUrl = `/client.html#thread/${user.profile.did}/${thread.root.uri?.replace("at://", "").split("/")[2]}`;
                 return html`<div class="w-full max-w-[600px] mx-auto h-full flex flex-col">
                     ${this.renderHeader()}
-                    <p class="text-center mt-4">
-                        You have an <a href="${rootUrl}" target="_blank" class="text-primary">existing thread</a> for ${this.hashtag}
+                    <p class="text-center pt-[40px] mt-4">
+                        You have an <a href="${rootUrl}" class="text-primary">existing thread</a> for ${this.hashtag}
                     </p>
                     <p class="text-center mt-4">Do you want to add new posts to the existing thread, or start a new thread?</p>
                     <div class="flex flex-col mx-auto gap-4 mt-4">
@@ -167,8 +175,8 @@ export class Chat extends LitElement {
                             class="px-4 py-2 rounded bg-primary text-white"
                             @click=${() => {
                                 this.askedReuse = true;
-                                localStorage.removeItem(baseKey + "|root");
-                                localStorage.removeItem(baseKey + "|reply");
+                                delete user.hashTagThreads[this.hashtag!];
+                                Store.setUser(user);
                                 this.requestUpdate();
                             }}
                         >
@@ -181,7 +189,7 @@ export class Chat extends LitElement {
             }
         }
 
-        return html` <main class="flex flex-col justify-between m-auto max-w-[728px] px-4 h-full leading-5">
+        return html` <main class="flex flex-col justify-between m-auto max-w-[600px] px-4 pt-[40px] h-full leading-5">
             <theme-toggle></theme-toggle>
             <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
@@ -201,6 +209,7 @@ export class Chat extends LitElement {
     }
 
     renderLive() {
+        const user = Store.getUser();
         const liveDom = dom(html`<main id="livedom" class="w-full h-full overflow-auto">
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
                 ${this.renderHeader()}
@@ -209,15 +218,8 @@ export class Chat extends LitElement {
                         Loading older posts for <span class="text-primary">${this.hashtag}</span>
                     </div>
                 </div>
-                ${this.account
-                    ? html`
-                          <post-editor
-                              class="sticky bottom-0 border-t border-primary border-dashed"
-                              .account=${this.account}
-                              .bskyClient=${this.bskyClient}
-                              .hashtag=${this.hashtag}
-                          ></post-editor>
-                      `
+                ${user
+                    ? html` <post-editor class="sticky bottom-0 border-t border-primary border-dashed" .hashtag=${this.hashtag}></post-editor> `
                     : nothing}
             </div>
             <div id="catchup" class="bg-gray hidden fixed flex items-center z-[50]">
@@ -286,7 +288,7 @@ export class Chat extends LitElement {
         const postHandler = async (firehosePost: FirehosePost) => {
             try {
                 if (!hasHashtag(firehosePost.text, this.hashtag!)) return;
-                const response = await this.bskyClient!.getPosts({
+                const response = await bskyClient!.getPosts({
                     uris: [firehosePost.uri],
                 });
                 if (!response.success) throw Error(`Couldn't get post for ${firehosePost.uri}`);
@@ -294,7 +296,7 @@ export class Chat extends LitElement {
                 if (AppBskyFeedPost.isRecord(post.record)) {
                     if (post.record.reply) {
                         const did = post.record.reply.parent.uri.replace("at://", "").split("/")[0];
-                        await cacheProfile(this.bskyClient!, did);
+                        await cacheProfile(bskyClient!, did);
                     }
                 }
                 this.renderPost(post, "animate-fade-left");
@@ -331,7 +333,6 @@ export class Chat extends LitElement {
                 html`<div class="border-t border-gray/50">
                     <post-view
                         animation=${animation}
-                        .bskyClient=${this.bskyClient}
                         .post=${post}
                         .quoteCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setQuote(post)}
                         .replyCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setReply(post)}
@@ -358,12 +359,10 @@ export class Chat extends LitElement {
             this.loadingOlder = false;
             return;
         }
-        let first: HTMLElement | undefined;
-        let last: HTMLElement | undefined;
+
         for (const post of olderPosts) {
             const postHtml = dom(html`<div class="border-t border-gray/50">
                 <post-view
-                    .bskyClient=${this.bskyClient}
                     .post=${post}
                     .quoteCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setQuote(post)}
                     .replyCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setReply(post)}
@@ -371,27 +370,27 @@ export class Chat extends LitElement {
                 ></post-view>
             </div>`)[0];
             posts.insertBefore(postHtml, load);
-            if (!first) first = postHtml;
-            last = postHtml;
         }
 
-        if (first) {
-            const f = first;
-            const initialScrollHeight = this.liveDom.scrollHeight;
-            const adjustScroll = () => {
-                if (!this.liveDom) return;
-                if (this.liveDom.scrollHeight != initialScrollHeight) {
-                    load.remove();
-                    posts.insertBefore(load, f);
-                    this.liveDom.scrollTop = this.liveDom.scrollHeight - initialScrollHeight - (initialOffset == 0 ? 0 : load.clientHeight);
-                    this.loadingOlder = false;
-                } else {
-                    requestAnimationFrame(adjustScroll);
-                }
-            };
-            adjustScroll();
+        const loaderHeight = load.clientHeight;
+        if (posts.children.length > 0) {
+            load.remove();
+            posts.insertBefore(load, posts.children[0]);
         }
 
+        const initialScrollHeight = this.liveDom.scrollHeight;
+        const adjustScroll = () => {
+            if (!this.liveDom) return;
+            if (this.liveDom.scrollHeight != initialScrollHeight) {
+                this.liveDom.scrollTop = this.liveDom.scrollHeight - initialScrollHeight - (initialOffset == 0 ? 0 : loaderHeight);
+                this.loadingOlder = false;
+            } else {
+                requestAnimationFrame(adjustScroll);
+            }
+        };
+        adjustScroll();
+
+        this.loadingOlder = false;
         onVisibleOnce(load! as HTMLElement, () => this.loadOlderPosts());
     }
 

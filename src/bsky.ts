@@ -1,4 +1,5 @@
-import { AppBskyFeedDefs, AppBskyFeedGetPosts, BskyAgent } from "@atproto/api";
+import { AppBskyFeedDefs, AppBskyFeedGetPosts, AtpSessionData, AtpSessionEvent, BskyAgent } from "@atproto/api";
+import { Store } from "./store";
 
 type SearchPost = {
     tid: string;
@@ -16,9 +17,10 @@ type SearchPost = {
 
 export class PostSearch {
     offset = 0;
-    constructor(public readonly bskyClient: BskyAgent, public readonly query: string) {}
+    constructor(public readonly query: string) {}
 
     async next() {
+        if (!bskyClient) return Error("Not connected");
         try {
             const response = await fetch(`https://search.bsky.social/search/posts?q=${encodeURIComponent(this.query)}&offset=${this.offset}`);
             if (response.status != 200) {
@@ -28,7 +30,7 @@ export class PostSearch {
             const posts: AppBskyFeedDefs.PostView[] = [];
             while (rawPosts.length > 0) {
                 const uris = rawPosts.splice(0, 25).map((rawPost) => `at://${rawPost.user.did}/${rawPost.tid}`);
-                const postsResponse = await this.bskyClient.app.bsky.feed.getPosts({
+                const postsResponse = await bskyClient.app.bsky.feed.getPosts({
                     uris,
                 });
                 if (!postsResponse.success) {
@@ -66,7 +68,8 @@ export async function extractLinkCard(url: string): Promise<LinkCard | Error> {
     }
 }
 
-export async function loadPosts(bskyClient: BskyAgent, uris: string[], posts: Map<string, AppBskyFeedDefs.PostView>) {
+export async function loadPosts(uris: string[], posts: Map<string, AppBskyFeedDefs.PostView>) {
+    if (!bskyClient) throw new Error("Not connected");
     const promises: Promise<AppBskyFeedGetPosts.Response>[] = [];
     while (uris.length > 0) {
         const block = uris.splice(0, 25).filter((uri) => !posts.has(uri));
@@ -87,4 +90,59 @@ export async function loadPosts(bskyClient: BskyAgent, uris: string[], posts: Ma
         }
     }
     return posts;
+}
+
+export let bskyClient: BskyAgent | undefined = undefined;
+
+export async function login(account?: string, password?: string): Promise<void | Error> {
+    if (!account || !password) {
+        bskyClient = new BskyAgent({ service: "https://api.bsky.app" });
+        return;
+    }
+
+    let session: AtpSessionData | undefined;
+    const persistSession = (evt: AtpSessionEvent, s?: AtpSessionData) => {
+        if (evt == "create" || evt == "update") {
+            session = s;
+        }
+    };
+
+    bskyClient = new BskyAgent({ service: "https://bsky.social", persistSession });
+    try {
+        let user = Store.getUser();
+        let resumeSuccess = false;
+        if (user && user.account == account && user.password == password && user.session) {
+            const resume = await bskyClient.resumeSession(user.session);
+            resumeSuccess = resume.success;
+        }
+
+        if (!resumeSuccess) {
+            const response = await bskyClient.login({
+                identifier: account,
+                password,
+            });
+            if (!response.success) {
+                Store.setUser(undefined);
+                throw new Error();
+            }
+        }
+        const profileResponse = await bskyClient.app.bsky.actor.getProfile({ actor: account });
+        if (!profileResponse.success) {
+            Store.setUser(undefined);
+            throw new Error();
+        }
+        Store.setUser({
+            account,
+            password,
+            session,
+            profile: profileResponse.data,
+            hashTagThreads: user && user.account == account ? user.hashTagThreads ?? {} : {},
+        });
+    } catch (e) {
+        return new Error("Couldn't log-in with your BlueSky credentials.");
+    }
+}
+
+export function logout() {
+    Store.setUser(undefined);
 }

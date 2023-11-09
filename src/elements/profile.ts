@@ -1,16 +1,13 @@
-import { customElement, property, state } from "lit/decorators.js";
-import { CloseableElement, HashNavCloseableElement } from "./closable";
-import { PropertyValueMap, html } from "lit";
-import { contentLoader, renderTopbar } from "../utils";
-import { BskyAgent } from "@atproto/api";
-import { cacheProfile, profileCache } from "../profilecache";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { PropertyValueMap, html } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import { bskyClient } from "../bsky";
+import { cacheProfile, profileCache } from "../profilecache";
+import { contentLoader, renderTopbar } from "../utils";
+import { HashNavCloseableElement } from "./closable";
 
 @customElement("profile-overlay")
 export class ProfileOverlay extends HashNavCloseableElement {
-    @property()
-    bskyClient?: BskyAgent;
-
     @property()
     did?: string;
 
@@ -29,11 +26,11 @@ export class ProfileOverlay extends HashNavCloseableElement {
 
     async load() {
         try {
-            if (!this.bskyClient || !this.did) {
+            if (!bskyClient || !this.did) {
                 this.error = "Couldn't load profile";
                 return;
             }
-            await cacheProfile(this.bskyClient, this.did);
+            await cacheProfile(bskyClient, this.did);
             this.profile = profileCache[this.did];
             if (!this.profile) {
                 this.error = "Couldn't load profile";
@@ -60,7 +57,7 @@ export class ProfileOverlay extends HashNavCloseableElement {
     render() {
         if (this.isLoading || this.error)
             return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black overflow-auto">
-                <div class="mx-auto max-w-[600px] h-full flex flex-col p-4 gap-2">
+                <div class="mx-auto max-w-[600px] h-full flex flex-col gap-2">
                     ${renderTopbar(
                         "Profile",
                         html`<button
@@ -75,7 +72,7 @@ export class ProfileOverlay extends HashNavCloseableElement {
             </div>`;
 
         return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black overflow-auto">
-            <div class="mx-auto max-w-[600px] h-full flex flex-col p-4 gap-2">
+            <div class="mx-auto max-w-[600px] h-full flex flex-col gap-2">
                 ${renderTopbar(
                     "Profile",
                     html`<button

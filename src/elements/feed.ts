@@ -7,12 +7,10 @@ import { reblogIcon } from "../icons";
 import { cacheProfiles } from "../profilecache";
 import { contentLoader, dom, getProfileUrl, onVisibleOnce, renderTopbar } from "../utils";
 import { CloseableElement, pushHash } from "./closable";
+import { bskyClient } from "../bsky";
 
 @customElement("skychat-feed")
 export class Feed extends LitElement {
-    @property()
-    bskyClient?: BskyAgent;
-
     @state()
     isLoading = true;
 
@@ -50,7 +48,6 @@ export class Feed extends LitElement {
     }
 
     async load() {
-        if (!this.bskyClient) return;
         await this.loadOlderPosts();
         this.topPost = this.lastPosts ? this.lastPosts.feed[0] : undefined;
         this.isLoading = false;
@@ -60,7 +57,7 @@ export class Feed extends LitElement {
             try {
                 if (checking) return;
                 checking = true;
-                if (!this.bskyClient) return;
+                if (!bskyClient) return;
                 if (!this.topPost) return;
 
                 const posts: FeedViewPost[] = [];
@@ -73,9 +70,7 @@ export class Feed extends LitElement {
                     if (iterations == 2) {
                         console.log("wtf");
                     }
-                    const feedResponse = await this.bskyClient.app.bsky.feed.getTimeline(
-                        lastResponse ? { cursor: lastResponse.data.cursor } : undefined
-                    );
+                    const feedResponse = await bskyClient.app.bsky.feed.getTimeline(lastResponse ? { cursor: lastResponse.data.cursor } : undefined);
                     if (!feedResponse.success) break;
                     if (feedResponse.data.feed.length == 0) break;
                     for (const post of feedResponse.data.feed) {
@@ -120,18 +115,18 @@ export class Feed extends LitElement {
 
     loading = false;
     async loadOlderPosts() {
-        if (!this.bskyClient) return;
+        if (!bskyClient) return;
         if (this.loading) return;
         try {
             this.loading = true;
-            const feedResponse = await this.bskyClient.app.bsky.feed.getTimeline(this.lastPosts ? { cursor: this.lastPosts.cursor } : undefined);
+            const feedResponse = await bskyClient.app.bsky.feed.getTimeline(this.lastPosts ? { cursor: this.lastPosts.cursor } : undefined);
             if (!feedResponse.success) {
                 console.error("Couldn't load feed");
                 this.lastPosts = undefined;
                 return;
             }
             this.lastPosts = feedResponse.data;
-            if (!this.lastPosts || this.lastPosts.feed.length == 0 || !this.bskyClient) return;
+            if (!this.lastPosts || this.lastPosts.feed.length == 0 || !bskyClient) return;
 
             const dids: string[] = [];
             for (const post of this.lastPosts.feed) {
@@ -140,7 +135,7 @@ export class Feed extends LitElement {
                     dids.push(did);
                 }
             }
-            await cacheProfiles(this.bskyClient, dids);
+            await cacheProfiles(bskyClient, dids);
         } finally {
             this.loading = false;
         }
@@ -161,19 +156,11 @@ export class Feed extends LitElement {
     }
 
     quote(post: AppBskyFeedDefs.PostView) {
-        document.body.append(
-            dom(
-                html`<post-editor-overlay .account=${localStorage.getItem("a")} .bskyClient=${this.bskyClient} .quote=${post}></post-editor-overly>`
-            )[0]
-        );
+        document.body.append(dom(html`<post-editor-overlay .quote=${post}></post-editor-overly>`)[0]);
     }
 
     reply(post: AppBskyFeedDefs.PostView) {
-        document.body.append(
-            dom(
-                html`<post-editor-overlay .account=${localStorage.getItem("a")} .bskyClient=${this.bskyClient} .replyTo=${post}></post-editor-overly>`
-            )[0]
-        );
+        document.body.append(dom(html`<post-editor-overlay .replyTo=${post}></post-editor-overly>`)[0]);
     }
 
     renderPost(post: FeedViewPost) {
@@ -187,35 +174,22 @@ export class Feed extends LitElement {
                 ? html`<div class="px-4 pt-2 mb-[-0.25em] flex items-center gap-2 text-gray dark:text-lightgray text-xs"><i class="icon w-4 h-4 fill-gray dark:fill-lightgray">${reblogIcon}</i><a class="hover:underline truncate" href="${getProfileUrl(
                       post.reason.by
                   )}" @click=${(ev: Event) => {
-                      if (!this.bskyClient) return;
                       if (!AppBskyFeedDefs.isReasonRepost(post.reason)) return;
                       ev.preventDefault();
                       ev.stopPropagation();
-                      document.body.append(
-                          dom(html`<profile-overlay .bskyClient=${this.bskyClient} .did=${post.reason.by.did}></profile-overlay>`)[0]
-                      );
+                      document.body.append(dom(html`<profile-overlay .did=${post.reason.by.did}></profile-overlay>`)[0]);
                   }}>${post.reason.by.displayName ?? post.reason.by.handle}</div>`
                 : nothing;
             return html`<div class="border-t border-gray/50 px-2">
                 ${repostedBy ? repostedBy : nothing}
-                <post-view .bskyClient=${this.bskyClient} .post=${post.post} .quoteCallback=${this.quote} .replyCallback=${this.reply}></post-view>
+                <post-view .post=${post.post} .quoteCallback=${this.quote} .replyCallback=${this.reply}></post-view>
             </div>`;
         } else {
             return html`<div class="border-t border-gray/50 px-2 mb-2 flex">
                 <div class="flex flex-col w-full">
-                    <post-view
-                        .bskyClient=${this.bskyClient}
-                        .post=${post.reply.parent}
-                        .quoteCallback=${this.quote}
-                        .replyCallback=${this.reply}
-                    ></post-view>
+                    <post-view .post=${post.reply.parent} .quoteCallback=${this.quote} .replyCallback=${this.reply}></post-view>
                     <div class="ml-4 border-l border-l-primary">
-                        <post-view
-                            .bskyClient=${this.bskyClient}
-                            .post=${post.post}
-                            .quoteCallback=${this.quote}
-                            .replyCallback=${this.reply}
-                        ></post-view>
+                        <post-view .post=${post.post} .quoteCallback=${this.quote} .replyCallback=${this.reply}></post-view>
                     </div>
                 </div>
             </div>`;
@@ -252,9 +226,6 @@ export class Feed extends LitElement {
 
 @customElement("skychat-feed-overlay")
 export class FeedOverlay extends CloseableElement {
-    @property()
-    bskyClient?: BskyAgent;
-
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
@@ -272,7 +243,7 @@ export class FeedOverlay extends CloseableElement {
                     </button>`
                 )}
                 <div class="pt-[40px]">
-                    <skychat-feed .bskyClient=${this.bskyClient}></skychat-feed>
+                    <skychat-feed></skychat-feed>
                 </div>
             </div>
         </div>`;

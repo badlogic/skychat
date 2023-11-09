@@ -1,21 +1,19 @@
 import {
-    AppBskyActorDefs,
     AppBskyFeedDefs,
     AppBskyFeedLike,
     AppBskyFeedPost,
     AppBskyFeedRepost,
     AppBskyGraphFollow,
     AppBskyNotificationListNotifications,
-    BskyAgent,
 } from "@atproto/api";
 import { PropertyValueMap, TemplateResult, html, nothing } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { customElement, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { loadPosts } from "../bsky";
+import { bskyClient, loadPosts } from "../bsky";
 import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
-import { contentLoader, dom, getTimeDifference, onVisibleOnce, renderAuthor, renderTopbar } from "../utils";
-import { CloseableElement, HashNavCloseableElement } from "./closable";
+import { Store } from "../store";
+import { dom, getTimeDifference, onVisibleOnce, renderAuthor, renderTopbar } from "../utils";
+import { HashNavCloseableElement } from "./closable";
 import { PostEditor } from "./posteditor";
 import { renderEmbed, renderPostText } from "./postview";
 
@@ -25,9 +23,6 @@ type GroupedNotification = Notification & { autors: [] };
 
 @customElement("notifications-overlay")
 export class NotificationsOverlay extends HashNavCloseableElement {
-    @property()
-    bskyClient?: BskyAgent;
-
     @state()
     isLoading = true;
 
@@ -43,20 +38,18 @@ export class NotificationsOverlay extends HashNavCloseableElement {
     }
 
     async load() {
-        if (!this.bskyClient) return;
+        if (!bskyClient) return;
         await this.loadMoreNotifications();
         this.isLoading = false;
     }
 
     loading = false;
     async loadMoreNotifications() {
-        if (!this.bskyClient) return;
+        if (!bskyClient) return;
         if (this.loading) return;
         try {
             this.loading = true;
-            const listResponse = await this.bskyClient.listNotifications(
-                this.lastNotifications ? { cursor: this.lastNotifications.cursor } : undefined
-            );
+            const listResponse = await bskyClient.listNotifications(this.lastNotifications ? { cursor: this.lastNotifications.cursor } : undefined);
             if (!listResponse.success) {
                 console.error("Couldn't update seen notifications");
                 this.lastNotifications = undefined;
@@ -74,9 +67,9 @@ export class NotificationsOverlay extends HashNavCloseableElement {
                     postsToLoad.push(notification.uri);
                 }
             }
-            await loadPosts(this.bskyClient, postsToLoad, this.posts);
+            await loadPosts(postsToLoad, this.posts);
             this.lastNotifications = listResponse.data;
-            const updateReponse = await this.bskyClient.updateSeenNotifications();
+            const updateReponse = await bskyClient.updateSeenNotifications();
             if (!updateReponse.success) console.error("Couldn't update seen notifications");
         } finally {
             this.loading = false;
@@ -124,9 +117,8 @@ export class NotificationsOverlay extends HashNavCloseableElement {
             reply: html`${replyIcon}`,
             repost: html`${reblogIcon}`,
         };
-        const accountProfile: AppBskyActorDefs.ProfileViewDetailed = localStorage.getItem("profile")
-            ? JSON.parse(localStorage.getItem("profile")!)
-            : null;
+        const user = Store.getUser();
+        const profile = user?.profile;
         let post: AppBskyFeedDefs.PostView | undefined;
         switch (notification.reason) {
             case "like":
@@ -145,24 +137,21 @@ export class NotificationsOverlay extends HashNavCloseableElement {
             switch (notification.reason) {
                 case "like":
                 case "repost":
-                    postContent = html`<div class="break-words dark:text-white/50 text-black/50 leading-tight">
-                            ${renderPostText(this.bskyClient, post.record)}
-                        </div>
-                        ${post.embed ? renderEmbed(this.bskyClient, post.embed, false, true) : nothing}`;
+                    postContent = html`<div class="break-words dark:text-white/50 text-black/50 leading-tight">${renderPostText(post.record)}</div>
+                        ${post.embed ? renderEmbed(post.embed, false, true) : nothing}`;
                     break;
                 case "reply":
                     const parent = this.posts.get((notification.record as any).reply.parent.uri);
-                    postContent = html`${parent && accountProfile && AppBskyFeedPost.isRecord(parent.record)
+                    postContent = html`${parent && profile && AppBskyFeedPost.isRecord(parent.record)
                             ? html`<div class="border border-gray/50 rounded p-2">
-                                  <div class="dark:text-white/50 text-black/50">${renderAuthor(this.bskyClient, parent.author, true)}</div>
+                                  <div class="dark:text-white/50 text-black/50">${renderAuthor(parent.author, true)}</div>
                                   <div class="mt-1 mb-1 break-words dark:text-white/50 text-black/50 leading-tight">
-                                      ${renderPostText(this.bskyClient, parent.record)}
+                                      ${renderPostText(parent.record)}
                                   </div>
-                                  ${parent.embed ? renderEmbed(this.bskyClient, parent.embed, false, true) : nothing}
+                                  ${parent.embed ? renderEmbed(parent.embed, false, true) : nothing}
                               </div>`
                             : nothing}<post-view
                             .showHeader=${false}
-                            .bskyClient=${this.bskyClient}
                             .post=${post}
                             .quoteCallback=${(post: AppBskyFeedDefs.PostView) => this.quote(post)}
                             .replyCallback=${(post: AppBskyFeedDefs.PostView) => this.reply(post)}
@@ -172,7 +161,6 @@ export class NotificationsOverlay extends HashNavCloseableElement {
                 case "quote":
                     postContent = html`<post-view
                         .showHeader=${false}
-                        .bskyClient=${this.bskyClient}
                         .post=${post}
                         .quoteCallback=${(post: AppBskyFeedDefs.PostView) => this.quote(post)}
                         .replyCallback=${(post: AppBskyFeedDefs.PostView) => this.reply(post)}
@@ -195,7 +183,7 @@ export class NotificationsOverlay extends HashNavCloseableElement {
         return html`<div class="flex flex-col border-b border-gray/50 ${notification.isRead ? "" : "bg-[#cbdaff] dark:bg-[#001040]"} px-4 py-2">
             <div class="flex items-center gap-2">
                 <i class="icon w-5 h-5">${icons[notification.reason] ?? ""}</i>
-                ${renderAuthor(this.bskyClient, notification.author, false)}
+                ${renderAuthor(notification.author, false)}
                 <span class="text-xs text-gray">${getTimeDifference(date.getTime())}</span>
             </div>
             ${postContent ? html`<div class="mt-2">${postContent}</div>` : nothing}
@@ -203,28 +191,15 @@ export class NotificationsOverlay extends HashNavCloseableElement {
     }
 
     quote(post: AppBskyFeedDefs.PostView) {
-        const account = localStorage.getItem("a");
         const editorDom = dom(html`<div class="absolute flex bottom-0 w-full z-[2000]">
-            <post-editor
-                class="animate-jump-in mx-auto w-[600px] border border-gray rounded"
-                .account=${account}
-                .bskyClient=${this.bskyClient}
-                .cancelable=${true}
-                .quote=${post}
-            ></post-editor>
+            <post-editor class="animate-jump-in mx-auto w-[600px] border border-gray rounded" .cancelable=${true} .quote=${post}></post-editor>
         </div>`)[0];
         document.body.append(editorDom);
     }
 
     reply(post: AppBskyFeedDefs.PostView) {
-        const account = localStorage.getItem("a");
         const editorDom = dom(html`<div class="absolute flex bottom-0 w-full z-[2000]">
-            <post-editor
-                class="animate-jump-in mx-auto w-[600px] border border-gray rounded"
-                .account=${account}
-                .bskyClient=${this.bskyClient}
-                .cancelable=${true}
-            ></post-editor>
+            <post-editor class="animate-jump-in mx-auto w-[600px] border border-gray rounded" .cancelable=${true}></post-editor>
         </div>`)[0];
         const editor: PostEditor = editorDom.querySelector("post-editor")!;
         editor.setReply(post);

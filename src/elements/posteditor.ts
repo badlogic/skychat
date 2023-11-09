@@ -15,26 +15,18 @@ import { SelfLabels } from "@atproto/api/dist/client/types/com/atproto/label/def
 import { LitElement, PropertyValueMap, html, nothing, svg } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { extractLinkCard } from "../bsky";
+import { bskyClient, extractLinkCard } from "../bsky";
 import { deleteIcon, editIcon, imageIcon } from "../icons";
 import { renderEmbed, renderRecord } from "./postview";
 import { ImageInfo, dom, downloadImage, downscaleImage, loadImageFile, loadImageFiles } from "../utils";
 import { CloseableElement } from "./closable";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { PostRef, Store } from "../store";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
 @customElement("post-editor")
 export class PostEditor extends LitElement {
-    @property()
-    bskyClient?: BskyAgent;
-
-    @property()
-    account?: string;
-
-    @property()
-    hashtag?: string;
-
     @property()
     cancelable = false;
 
@@ -42,7 +34,13 @@ export class PostEditor extends LitElement {
     cancled: () => void = () => {};
 
     @property()
-    suggestBottom = false;
+    quote?: AppBskyFeedDefs.PostView;
+
+    @property()
+    replyTo?: AppBskyFeedDefs.PostView;
+
+    @property()
+    hashtag?: string;
 
     @state()
     count = 0;
@@ -62,12 +60,6 @@ export class PostEditor extends LitElement {
 
     @state()
     embed?: AppBskyEmbedExternal.Main;
-
-    @property()
-    quote?: AppBskyFeedDefs.PostView;
-
-    @property()
-    replyTo?: AppBskyFeedDefs.PostView;
 
     @state()
     imagesToUpload: { alt: string; dataUri: string; data: Uint8Array; mimeType: string }[] = [];
@@ -103,10 +95,8 @@ export class PostEditor extends LitElement {
             if (startIndex < 0 || startIndex >= original.length || endIndex < startIndex || endIndex > original.length) {
                 throw new Error("Invalid indices");
             }
-
             const prefix = original.substring(0, startIndex);
             const suffix = original.substring(endIndex);
-
             return prefix + replacement + suffix;
         };
 
@@ -119,13 +109,23 @@ export class PostEditor extends LitElement {
             this.insert = undefined;
         };
 
+        let placeholder = "";
+        if (this.quote) {
+            placeholder = this.hashtag ? `Write your quote. It will be added to your thread about ${this.hashtag!}.` : "Write your quote.";
+        } else if (this.replyTo) {
+            placeholder = this.hashtag
+                ? `Write your reply. It will be added to the thread by ${this.replyTo.author.displayName ?? this.replyTo.author.handle}.`
+                : "Write your reply";
+        } else {
+            placeholder = this.hashtag ? `Add a post to your thread about ${this.hashtag!}. The hashtag will be added automatically.` : "What's up?";
+        }
+
         return html` <div class="flex max-w-[600px] bg-white dark:bg-black">
             <div class="flex max-w-full flex-col flex-grow relative">
                 ${
                     this.replyTo
                         ? html`<div class="flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
                               ${renderRecord(
-                                  this.bskyClient,
                                   this.replyTo.author,
                                   this.replyTo.uri.replace("at://", "").split("/")[2],
                                   this.replyTo.record as AppBskyFeedPost.Record,
@@ -158,21 +158,7 @@ export class PostEditor extends LitElement {
                     @drop=${(ev: DragEvent) => this.pasteImage(ev)}
                     @dragover=${(ev: DragEvent) => ev.preventDefault()}
                     class="resize-none outline-none bg-transparent dark:text-white disabled:text-gray dark:disabled:text-gray p-2"
-                    placeholder="${
-                        !this.quote && !this.replyTo
-                            ? this.hashtag
-                                ? `Add a post to your thread about ${this.hashtag!}. The hashtag will be added automatically.`
-                                : "What's up?"
-                            : this.quote
-                            ? this.hashtag
-                                ? `Write your quote. It will be added to your thread about ${this.hashtag!}.`
-                                : "Write your quote."
-                            : this.hashtag
-                            ? `Write your reply. It will be added to the thread by ${
-                                  this.replyTo!.author.displayName ?? this.replyTo!.author.handle
-                              }.`
-                            : "Write your reply"
-                    }"
+                    placeholder="${placeholder}"
                     ?disabled=${this.isSending}
                 ></textarea>
                 ${
@@ -196,7 +182,7 @@ export class PostEditor extends LitElement {
                 ${
                     AppBskyEmbedExternal.isMain(this.embed)
                         ? html`<div class="flex relative px-2">
-                              <div class="w-full">${renderEmbed(this.bskyClient, this.embed, false)}</div>
+                              <div class="w-full">${renderEmbed(this.embed, false)}</div>
                               <button
                                   class="absolute right-4 top-4 z-[100]"
                                   @click=${(ev: Event) => {
@@ -256,7 +242,6 @@ export class PostEditor extends LitElement {
                     this.quote
                         ? html`<div class="relative flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
                               ${renderRecord(
-                                  this.bskyClient,
                                   this.quote.author,
                                   this.quote.uri.replace("at://", "").split("/")[2],
                                   this.quote.record as AppBskyFeedPost.Record,
@@ -324,10 +309,8 @@ export class PostEditor extends LitElement {
                 ${
                     this.handleSuggestions && this.handleSuggestions.length > 0
                         ? html`<div
-                              class="mx-auto flex flex-col bg-white dark:bg-black border border-gray rounded ${!this.suggestBottom
-                                  ? "absolute"
-                                  : "w-full"} max-w-[100vw] z-[200]"
-                              style="${!this.suggestBottom ? `top: calc(${this.handleSuggestions.length} * -2.5em);` : ""}"
+                              class="mx-auto flex flex-col bg-white dark:bg-black border border-gray rounded absolute max-w-[100vw] z-[200]"
+                              style="top: calc(${this.handleSuggestions.length} * -2.5em);"
                           >
                               ${map(
                                   this.handleSuggestions,
@@ -413,7 +396,7 @@ export class PostEditor extends LitElement {
     }
 
     async addLinkCard(card: AppBskyRichtextFacet.Link) {
-        if (!this.bskyClient) return;
+        if (!bskyClient) return;
         let cardEmbed: AppBskyEmbedExternal.Main = {
             $type: "app.bsky.embed.external",
             external: {
@@ -435,7 +418,7 @@ export class PostEditor extends LitElement {
                 if (imageData instanceof Error) console.error(imageData);
                 else {
                     try {
-                        const response = await this.bskyClient.com.atproto.repo.uploadBlob(imageData.data, {
+                        const response = await bskyClient.com.atproto.repo.uploadBlob(imageData.data, {
                             headers: { "Content-Type": imageData.mimeType },
                             encoding: "",
                         });
@@ -501,7 +484,7 @@ export class PostEditor extends LitElement {
             message.selectionStart,
             async (match, start, end) => {
                 if (match.length == 0) return;
-                const response = await this.bskyClient?.app.bsky.actor.searchActorsTypeahead({
+                const response = await bskyClient?.app.bsky.actor.searchActorsTypeahead({
                     limit: 8,
                     q: match,
                 });
@@ -535,14 +518,16 @@ export class PostEditor extends LitElement {
     }
 
     async sendPost() {
-        if (!this.bskyClient) return;
+        const user = Store.getUser();
+        if (!user) return;
+        if (!bskyClient) return;
         try {
             this.isSending = true;
             this.canPost = false;
             this.requestUpdate();
             const richText = new RichText({ text: this.message + (this.hashtag ? ` ${this.hashtag}` : "") });
             try {
-                await richText.detectFacets(this.bskyClient!);
+                await richText.detectFacets(bskyClient!);
             } catch (e) {
                 // may explode if handles can't be resolved
             }
@@ -558,7 +543,7 @@ export class PostEditor extends LitElement {
                 console.log(
                     "Downscaling image took: " + (performance.now() - start) / 1000 + ", old: " + image.data.length + ", new: " + data.data.length
                 );
-                const response = await this.bskyClient.com.atproto.repo.uploadBlob(data.data, {
+                const response = await bskyClient.com.atproto.repo.uploadBlob(data.data, {
                     headers: { "Content-Type": image.mimeType },
                     encoding: "",
                 });
@@ -572,13 +557,13 @@ export class PostEditor extends LitElement {
                 ? { $type: "com.atproto.label.defs#selfLabels", values: [{ val: "porn" }] }
                 : undefined;
 
-            const mediaEmbed = this.embed ?? (imagesEmbed.images.length > 0 ? imagesEmbed : undefined);
+            const externalOrMediaEmbed = this.embed ?? (imagesEmbed.images.length > 0 ? imagesEmbed : undefined);
             const quoteEmbed = this.quote ? { uri: this.quote.uri, cid: this.quote.cid } : undefined;
             let embed: AppBskyFeedPost.Record["embed"];
-            if (quoteEmbed && mediaEmbed) {
+            if (quoteEmbed && externalOrMediaEmbed) {
                 const recordWithMediaEmbed: AppBskyEmbedRecordWithMedia.Main = {
                     $type: "app.bsky.embed.recordWithMedia",
-                    media: mediaEmbed,
+                    media: externalOrMediaEmbed,
                     record: {
                         record: quoteEmbed,
                     },
@@ -591,7 +576,7 @@ export class PostEditor extends LitElement {
                 };
                 embed = recordEmbed;
             } else {
-                embed = mediaEmbed;
+                embed = externalOrMediaEmbed;
             }
 
             let record: AppBskyFeedPost.Record = {
@@ -603,19 +588,12 @@ export class PostEditor extends LitElement {
                 labels,
             };
 
-            const baseKey = this.account + "|" + this.hashtag!;
-            const prevRoot = localStorage.getItem(baseKey + "|root") ? JSON.parse(localStorage.getItem(baseKey + "|root")!) : undefined;
-            const prevReply = localStorage.getItem(baseKey + "|reply") ? JSON.parse(localStorage.getItem(baseKey + "|reply")!) : undefined;
-            if (!this.replyTo) {
-                if (prevRoot) {
-                    record = {
-                        ...record,
-                        reply: {
-                            root: prevRoot,
-                            parent: prevReply ?? prevRoot,
-                        },
-                    };
-                }
+            let hashTagThread = !this.replyTo && this.hashtag ? user.hashTagThreads[this.hashtag] : undefined;
+            if (hashTagThread) {
+                record = {
+                    ...record,
+                    reply: hashTagThread,
+                };
             }
 
             if (this.replyTo && AppBskyFeedPost.isRecord(this.replyTo.record)) {
@@ -634,11 +612,15 @@ export class PostEditor extends LitElement {
                 };
             }
 
-            const response = await this.bskyClient.post(record);
+            const response = await bskyClient.post(record);
 
-            if (!this.replyTo) {
-                if (!prevRoot) localStorage.setItem(baseKey + "|root", JSON.stringify(response));
-                localStorage.setItem(baseKey + "|reply", JSON.stringify(response));
+            if (!this.replyTo && this.hashtag) {
+                if (!hashTagThread) {
+                    hashTagThread = { root: response, parent: response };
+                    user.hashTagThreads[this.hashtag] = hashTagThread;
+                }
+                hashTagThread.parent = response;
+                Store.setUser(user);
             }
             this.messageElement!.value = "";
             this.count = 0;
@@ -708,9 +690,6 @@ ${alt}</textarea
 @customElement("post-editor-overlay")
 export class PostEditorOverlay extends CloseableElement {
     @property()
-    account?: string;
-
-    @property()
     bskyClient?: BskyAgent;
 
     @property()
@@ -724,12 +703,11 @@ export class PostEditorOverlay extends CloseableElement {
     }
 
     protected render() {
-        if (!this.account || !this.bskyClient) return nothing;
+        const user = Store.getUser();
+        if (!user || !bskyClient) return nothing;
         return html`<div class="absolute flex items-end top-0 w-full h-[100svh] backdrop-blur z-[2000] ">
             <post-editor
-                class="border border-gray/50 animate-fade mx-auto w-[600px]"
-                .account=${this.account!}
-                .bskyClient=${this.bskyClient}
+                class="border border-gray/50 animate-fade animate-duration-[250ms] mx-auto w-[600px]"
                 .cancelable=${true}
                 .cancled=${() => this.close()}
                 .quote=${this.quote}

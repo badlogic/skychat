@@ -6,25 +6,26 @@ import { html, LitElement } from "lit";
 import { customElement, state, property } from "lit/decorators.js";
 import { globalStyles } from "./styles";
 import { icon } from "../icons";
+import { Store, Theme } from "../store";
 
 @customElement("theme-toggle")
 export class ThemeToggle extends LitElement {
     static styles = [globalStyles];
 
     @state()
-    theme = "dark";
+    theme: Theme = "dark";
 
     @property()
     absolute = true;
 
     connectedCallback(): void {
         super.connectedCallback();
-        this.theme = localStorage.getItem("theme") ?? "dark";
+        this.theme = Store.getTheme() ?? "dark";
         this.setTheme(this.theme);
     }
 
-    setTheme(theme: string) {
-        localStorage.setItem("theme", theme);
+    setTheme(theme: Theme) {
+        Store.setTheme(theme);
         if (theme == "dark") document.documentElement.classList.add("dark");
         else document.documentElement.classList.remove("dark");
     }
