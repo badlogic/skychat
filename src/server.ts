@@ -7,14 +7,14 @@ import { applicationDefault } from "firebase-admin/app";
 import { ComAtprotoSyncSubscribeRepos, SubscribeReposMessage, subscribeRepos } from "atproto-firehose";
 import { AppBskyEmbedRecord, AppBskyFeedPost } from "@atproto/api";
 
-type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow"; fromDid: string; toDid: string; token: string };
+type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow"; fromDid: string; toDid: string; tokens: string[] };
 
 const port = process.env.PORT ?? 3333;
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     console.log("Please set GOOGLE_APPLICATION_CREDENTIALS to the file path of your Firebase service credentials file.");
     process.exit(-1);
 }
-const registrations: Record<string, string> = {};
+const registrations: Record<string, string[]> = {};
 let pushService: admin.messaging.Messaging;
 
 (async () => {
@@ -43,9 +43,9 @@ let pushService: admin.messaging.Messaging;
                     case "app.bsky.feed.like":
                         if (payload.subject?.uri) {
                             const to = payload.subject.uri.replace("at://", "").split("/")[0];
-                            const token = registrations[to];
-                            if (token && from != to) {
-                                queue.push({ type: "like", fromDid: from, toDid: to, token });
+                            const tokens = registrations[to];
+                            if (tokens && from != to) {
+                                queue.push({ type: "like", fromDid: from, toDid: to, tokens });
                             }
                         }
                         break;
@@ -64,9 +64,9 @@ let pushService: admin.messaging.Messaging;
                                     }
                                     if (uri) {
                                         const to = uri.replace("at://", "").split("/")[0];
-                                        const token = registrations[to];
-                                        if (token && from != to) {
-                                            queue.push({ type: "reply", fromDid: from, toDid: to, token });
+                                        const tokens = registrations[to];
+                                        if (tokens && from != to) {
+                                            queue.push({ type: "reply", fromDid: from, toDid: to, tokens });
                                         }
                                     }
                                 }
@@ -75,9 +75,9 @@ let pushService: admin.messaging.Messaging;
                             if (payload.embed) {
                                 if (AppBskyEmbedRecord.isMain(payload.embed)) {
                                     const to = payload.embed.record.uri.replace("at://", "").split("/")[0];
-                                    const token = registrations[to];
-                                    if (token && from != to) {
-                                        queue.push({ type: "quote", fromDid: from, toDid: to, token });
+                                    const tokens = registrations[to];
+                                    if (tokens && from != to) {
+                                        queue.push({ type: "quote", fromDid: from, toDid: to, tokens });
                                     }
                                 }
                             }
@@ -86,18 +86,18 @@ let pushService: admin.messaging.Messaging;
                     case "app.bsky.feed.repost":
                         if (payload.subject?.uri) {
                             const to = payload.subject.uri.replace("at://", "").split("/")[0];
-                            const token = registrations[to];
-                            if (token && from != to) {
-                                queue.push({ type: "repost", fromDid: from, toDid: to, token });
+                            const tokens = registrations[to];
+                            if (tokens && from != to) {
+                                queue.push({ type: "repost", fromDid: from, toDid: to, tokens });
                             }
                         }
                         break;
                     case "app.bsky.graph.follow":
                         if (payload.subject?.uri) {
                             const to = payload.subject.replace("at://", "").split("/")[0];
-                            const token = registrations[to];
-                            if (token && from != to) {
-                                queue.push({ type: "follow", fromDid: from, toDid: to, token });
+                            const tokens = registrations[to];
+                            if (tokens && from != to) {
+                                queue.push({ type: "follow", fromDid: from, toDid: to, tokens });
                             }
                         }
                         break;
@@ -111,15 +111,19 @@ let pushService: admin.messaging.Messaging;
         queue.length = 0;
         for (const notification of queueCopy) {
             const data = { ...notification } as any;
-            delete data.token;
-            pushService
-                .send({ token: notification.token, data })
-                .then(() => {
-                    console.log("Sent " + JSON.stringify(notification));
-                })
-                .catch((reason) => {
-                    console.error("Couldn't send notification", reason);
-                });
+            delete data.tokens;
+            for (const token of notification.tokens) {
+                try {
+                    pushService
+                        .send({ token, data })
+                        .then(() => {
+                            console.log("Sent " + JSON.stringify(notification));
+                        })
+                        .catch((reason) => {
+                            console.error("Couldn't send notification", reason);
+                        });
+                } catch (e) {}
+            }
         }
     }, 2000);
 
@@ -132,7 +136,10 @@ let pushService: admin.messaging.Messaging;
             return;
         }
         console.log("Registration: " + token + ", " + did);
-        registrations[did] = token;
+        const tokens = registrations[did] ?? [];
+        if (tokens.indexOf(token) == -1) tokens.push(token);
+        registrations[did] = tokens;
+        console.log(`${did}: ${tokens.length} tokens`);
         res.send();
     });
 
