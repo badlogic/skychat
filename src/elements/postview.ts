@@ -32,6 +32,8 @@ import { bskyClient } from "../bsky";
 import { PopupMenu } from "./popup";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { Store } from "../store";
+import { ItemsListLoader } from "./list";
+import { likesLoader } from "./profile";
 
 export function renderPostText(record: AppBskyFeedPost.Record) {
     if (!record.facets) {
@@ -46,7 +48,6 @@ export function renderPostText(record: AppBskyFeedPost.Record) {
     const segments: TemplateResult[] = [];
 
     for (const segment of rt.segments()) {
-        //segment.text = segment.text.replace("\n", "<br/>");
         if (segment.isMention()) {
             segments.push(
                 html`<a
@@ -109,7 +110,10 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
             return html`<div class="relative">
                 <img
                     src="${image.thumb}"
-                    @click="${(ev: Event) => unblur(ev.target as HTMLElement)}"
+                    @click="${(ev: Event) => {
+                        ev.stopImmediatePropagation();
+                        unblur(ev.target as HTMLElement);
+                    }}"
                     alt="${image.alt}"
                     class="max-h-[40svh] rounded ${sensitive ? "blur-lg" : ""}"
                 />
@@ -262,7 +266,7 @@ export class PostViewElement extends LitElement {
 
         const rkey = splitAtUri(this.post.uri)?.rkey;
         const author = this.post.author;
-        return html`<div class="${this.animation} px-4 py-2 outline-none">
+        return html`<div class="${this.animation} outline-none">
             ${renderRecord(
                 author,
                 rkey,
@@ -300,7 +304,6 @@ export class PostViewElement extends LitElement {
 
     handleOption(option: PostOptions) {}
 
-    // FIXME wtf is this for?
     canInteract(toggle: IconToggle) {
         if (bskyClient?.service.toString().includes("api")) {
             if (confirm("Do you want to log-in to repost, like, and create posts?")) {
@@ -428,7 +431,7 @@ export class PostOptionsElement extends PopupMenu {
                         html`<profile-list-overlay
                             title="Likes"
                             .hash=${`likes/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
-                            .postUri=${this.post?.uri}
+                            .loader=${likesLoader(this.post?.uri)}
                         ></profile-list-overlay>`
                     )[0]
                 );
@@ -436,6 +439,15 @@ export class PostOptionsElement extends PopupMenu {
             case "quotes":
                 break;
             case "reposts":
+                document.body.append(
+                    dom(
+                        html`<profile-list-overlay
+                            title="Likes"
+                            .hash=${`likes/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
+                            .loader=${likesLoader(this.post?.uri)}
+                        ></profile-list-overlay>`
+                    )[0]
+                );
                 break;
             case "mute":
                 break;

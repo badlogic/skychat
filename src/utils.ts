@@ -293,14 +293,15 @@ export function hasHashtag(text: string, hashtag: string) {
 
 export function renderTopbar(title: string, buttons: TemplateResult | HTMLElement) {
     return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-[100]">
-        <a class="flex items-center text-primary font-bold text-center" href="/client.html"
-            ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
-        >
-        <button class="text-primary font-bold pl-2 relative pr-2">
-            <span>${title}</span>
-        </button>
-        ${buttons}
-    </div>`;
+            <a class="flex items-center text-primary font-bold text-center" href="/client.html"
+                ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
+            >
+            <button class="text-primary font-bold pl-2 relative pr-2">
+                <span>${title}</span>
+            </button>
+            ${buttons}
+        </div>
+        <div class="min-h-[40px] max-h-[40px]"></div>`;
 }
 
 export function renderAuthor(author: AppBskyActorDefs.ProfileView, smallAvatar = false) {

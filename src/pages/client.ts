@@ -6,10 +6,10 @@ import { contentLoader, defaultAvatar, dom, waitForServiceWorkerActivation } fro
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import { bskyClient, login, logout } from "../bsky";
-import { routeHash } from "../elements";
 import { Store } from "../store";
 import { FirebaseOptions, initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { routeHash } from "../elements/routing";
 
 @customElement("skychat-client")
 class SkychatClient extends LitElement {
@@ -135,7 +135,8 @@ class SkychatClient extends LitElement {
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
                 ${this.renderTopbar()}<skychat-feed
                     class="pt-[40px]"
-                    .newPosts=${() => {
+                    .poll=${true}
+                    .newItems=${() => {
                         if (document.querySelector("main")!.scrollTop > 0) {
                             this.ping?.classList.remove("hidden");
                         }

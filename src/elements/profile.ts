@@ -1,5 +1,5 @@
 import { ProfileView, ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { PropertyValueMap, html, nothing } from "lit";
+import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { bskyClient } from "../bsky";
 import { cacheProfile, profileCache } from "../profilecache";
@@ -11,6 +11,7 @@ import { map } from "lit/directives/map.js";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { renderPostText } from "./postview";
 import { Store } from "../store";
+import { ItemListLoaderResult, ItemsList, ItemsListLoader } from "./list";
 
 @customElement("profile-overlay")
 export class ProfileOverlay extends HashNavCloseableElement {
@@ -94,6 +95,79 @@ export class ProfileOverlay extends HashNavCloseableElement {
     }
 }
 
+@customElement("profile-view")
+export class ProfileViewElement extends LitElement {
+    @property()
+    profile?: ProfileView;
+
+    @property()
+    following = false;
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    render() {
+        if (!this.profile) {
+            return html`<div class="align-top">${contentLoader}</div>`;
+        }
+
+        const user = Store.getUser();
+        const rt = new RichText({ text: this.profile.description ?? "" });
+        rt.detectFacetsWithoutResolution();
+
+        return html`<div
+            class="cursor-pointer"
+            @click=${(ev: Event) => {
+                if (!bskyClient) return;
+                if (!this.profile) return;
+                if (hasLinkOrButtonParent(ev.target as HTMLElement)) return;
+                ev.stopPropagation();
+                document.body.append(dom(html`<profile-overlay .did=${this.profile.did}></profile-overlay>`)[0]);
+            }}
+        >
+            <div class="flex flex-col">
+                <div class="flex items-center">
+                    <div class="flex flex-col">
+                        ${renderAuthor(this.profile)}
+                        ${this.profile.viewer?.followedBy
+                            ? html`<div><span class="p-1 text-xs rounded bg-gray/50 text-white">Follows you</span></div>`
+                            : nothing}
+                    </div>
+                    ${this.profile.did != user?.profile.did
+                        ? html`<button class="${this.following ? "bg-gray" : "bg-primary"} text-white rounded px-2 ml-auto">
+                              ${this.following ? "Unfollow" : "Follow"}
+                          </button>`
+                        : nothing}
+                </div>
+                <div class="text-sm pt-2 whitespace-pre-wrap">${renderPostText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
+            </div>
+        </div>`;
+    }
+}
+
+@customElement("profile-list")
+export class ProfileList extends ItemsList<string, ProfileView> {
+    @property()
+    loader: (cursor?: string) => Promise<ItemListLoaderResult<string, ProfileView>> = async () => {
+        return { items: [] };
+    };
+
+    async loadItems(cursor?: string): Promise<ItemListLoaderResult<string, ProfileView>> {
+        return this.loader(cursor);
+    }
+
+    getItemKey(item: ProfileView): string {
+        return item.did;
+    }
+
+    renderItem(item: ProfileView): TemplateResult {
+        return html`<div class="border-b border-gray/50 px-4 py-2">
+            <profile-view .profile=${item} .following=${item.viewer?.followedBy}></profile-view>
+        </div>`;
+    }
+}
+
 @customElement("profile-list-overlay")
 export class ProfileListOverlay extends HashNavCloseableElement {
     @property()
@@ -103,17 +177,9 @@ export class ProfileListOverlay extends HashNavCloseableElement {
     hash: string = "";
 
     @property()
-    postUri?: string;
-
-    @property()
-    isLoading = true;
-
-    @property()
-    error?: string;
-
-    profiles?: ProfileViewBasic[];
-
-    cursor?: string;
+    loader: (cursor?: string) => Promise<ItemListLoaderResult<string, ProfileView>> = async () => {
+        return { items: [] };
+    };
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
@@ -123,42 +189,9 @@ export class ProfileListOverlay extends HashNavCloseableElement {
         return this.hash;
     }
 
-    loading = false;
-    async loadOlderProfiles() {
-        if (!bskyClient) return;
-        if (this.loading) return;
-        if (!this.postUri) return;
-        try {
-            this.loading = true;
-            const response = await bskyClient.getLikes({ uri: this.postUri, cursor: this.cursor });
-            if (!response.success) throw Error();
-            const profiles: ProfileViewBasic[] = [];
-            for (const like of response.data.likes) {
-                profiles.push(like.actor);
-            }
-            this.profiles = profiles;
-            this.cursor = response.data.cursor;
-        } catch (e) {
-            this.error = "Couldn't load profiles.";
-        } finally {
-            this.loading = false;
-            this.isLoading = false;
-        }
-    }
-
-    async load() {
-        await this.loadOlderProfiles();
-        this.isLoading = false;
-    }
-
-    protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
-        super.firstUpdated(_changedProperties);
-        this.load();
-    }
-
     render() {
         return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black overflow-auto">
-            <div class="mx-auto max-w-[600px] h-full flex flex-col gap-2">
+            <div class="mx-auto max-w-[600px] h-full flex flex-col">
                 ${renderTopbar(
                     this.title,
                     html`<button
@@ -168,72 +201,32 @@ export class ProfileListOverlay extends HashNavCloseableElement {
                         Close
                     </button>`
                 )}
-                <div class="px-4">
-                    <div class="h-[40px]"></div>
-                    ${this.isLoading ? html`<div>${contentLoader}</div>` : nothing} ${this.error ? html`<div>${this.error}</div>` : nothing}
-                    ${this.profiles ? this.renderProfiles() : nothing}
-                </div>
+                <profile-list .loader=${this.loader}></profile-list>
             </div>
         </div>`;
     }
+}
 
-    renderProfiles() {
-        const profilesDom = dom(
-            html`<div>
-                ${map(this.profiles, (profile) => this.renderProfile(profile))}
-                <div id="loader" class="w-full text-center p-4 animate-pulse">Loading more profiles</div>
-            </div>`
-        )[0];
+export function likesLoader(postUri?: string): ItemsListLoader<string, ProfileView> {
+    return async (cursor?: string) => {
+        if (!bskyClient) return new Error("Not connected");
+        if (!postUri) return new Error("No post given");
+        const result = await bskyClient.getLikes({ cursor, uri: postUri });
+        if (!result.success) {
+            return new Error("Could not load likes");
+        }
+        return { cursor: result.data.cursor, items: result.data.likes.map((like) => like.actor) };
+    };
+}
 
-        const loader = profilesDom.querySelector("#loader") as HTMLElement;
-        const loadMore = async () => {
-            await this.loadOlderProfiles();
-            if (!this.profiles || this.profiles.length == 0) {
-                loader.innerText = "No more profiles";
-                loader.classList.remove("animate-pulse");
-                return;
-            }
-            loader?.remove();
-            for (const profile of this.profiles) {
-                profilesDom.append(dom(this.renderProfile(profile))[0]);
-            }
-            profilesDom.append(loader);
-            onVisibleOnce(loader, loadMore);
-        };
-        onVisibleOnce(loader, loadMore);
-        return profilesDom;
-    }
-
-    renderProfile(profile: ProfileView) {
-        const user = Store.getUser();
-        const rt = new RichText({ text: profile.description ?? "" });
-        rt.detectFacetsWithoutResolution();
-
-        return html`<div
-            class="border-b border-gray/50 px-4 py-2 cursor-pointer"
-            @click=${(ev: Event) => {
-                if (!bskyClient) return;
-                if (hasLinkOrButtonParent(ev.target as HTMLElement)) return;
-                ev.stopPropagation();
-                document.body.append(dom(html`<profile-overlay .did=${profile.did}></profile-overlay>`)[0]);
-            }}
-        >
-            <div class="flex flex-col">
-                <div class="flex items-center">
-                    <div class="flex flex-col">
-                        ${renderAuthor(profile)}
-                        ${profile.viewer?.followedBy
-                            ? html`<div><span class="p-1 text-xs rounded bg-gray/50 text-white">Follows you</span></div>`
-                            : nothing}
-                    </div>
-                    ${profile.did != user?.profile.did
-                        ? html`<button class="${profile.viewer?.following ? "bg-gray" : "bg-primary"} text-white rounded px-2 ml-auto">
-                              ${profile.viewer?.following ? "Unfollow" : "Follow"}
-                          </button>`
-                        : nothing}
-                </div>
-                <div class="text-sm pt-2 whitespace-pre-wrap">${renderPostText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
-            </div>
-        </div>`;
-    }
+export function repostLoader(post?: PostView): ItemsListLoader<string, ProfileView> {
+    return async (cursor?: string) => {
+        if (!bskyClient) return new Error("Not connected");
+        if (!post) return new Error("No post given");
+        const result = await bskyClient.getRepostedBy({ cursor, uri: post.uri });
+        if (!result.success) {
+            return new Error("Could not load reposts");
+        }
+        return { cursor: result.data.cursor, items: result.data.repostedBy };
+    };
 }

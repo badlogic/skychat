@@ -1,6 +1,7 @@
 export * from "./closable";
 export * from "./feed";
 export * from "./icontoggle";
+export * from "./list";
 export * from "./notifications";
 export * from "./popup";
 export * from "./posteditor";

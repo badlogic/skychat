@@ -39,7 +39,8 @@
     "husky": "^8.0.3",
     "lit": "^2.8.0",
     "remixicon": "^3.5.0",
-    "tailwindcss-animated": "^1.0.1"
+    "tailwindcss-animated": "^1.0.1",
+    "typescript": "^5.2.2"
   },
   "devDependencies": {
     "@types/compression": "^1.7.3",

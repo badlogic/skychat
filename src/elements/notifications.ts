@@ -149,13 +149,11 @@ export class NotificationsOverlay extends HashNavCloseableElement {
                         Close
                     </button>`
                 )}
-                <div class="pt-[40px]">
-                    ${this.isLoading
-                        ? html`<div class="animate-fade flex-grow flex flex-col">
-                              <div class="align-top"><div id="loader" class="w-full text-center p-4 animate-pulse">Loading notifications</div></div>
-                          </div>`
-                        : this.renderNotifications()}
-                </div>
+                ${this.isLoading
+                    ? html`<div class="animate-fade flex-grow flex flex-col">
+                          <div class="align-top"><div id="loader" class="w-full text-center p-4 animate-pulse">Loading notifications</div></div>
+                      </div>`
+                    : this.renderNotifications()}
             </div>
         </div>`;
     }
@@ -198,8 +196,8 @@ export class NotificationsOverlay extends HashNavCloseableElement {
                             document.body.append(dom(html`<thread-overlay .postUri=${post?.uri}></thread-overlay>`)[0]);
                         }}
                     >
-                        <div class="break-words dark:text-white/50 text-black/50 leading-tight whitespace-pre-wrap">
-                            ${renderPostText(post.record)}
+                        <div class="break-words dark:text-white/50 text-black/50 leading-tight">
+                            <div class="whitespace-pre-wrap">${renderPostText(post.record)}</div>
                         </div>
                         ${post.embed ? renderEmbed(post.embed, false, true) : nothing}
                     </div>`;
@@ -207,10 +205,10 @@ export class NotificationsOverlay extends HashNavCloseableElement {
                 case "reply":
                     const parent = this.posts.get((notification.record as any).reply.parent.uri);
                     postContent = html`${parent && profile && AppBskyFeedPost.isRecord(parent.record)
-                            ? html`<div class="border border-gray/50 rounded p-2">
+                            ? html`<div class="border border-gray/50 rounded p-2 mb-2">
                                   <div class="dark:text-white/50 text-black/50">${renderAuthor(parent.author, true)}</div>
-                                  <div class="mt-1 mb-1 break-words dark:text-white/50 text-black/50 leading-tight whitespace-pre-wrap">
-                                      ${renderPostText(parent.record)}
+                                  <div class="mt-1 mb-1 break-words dark:text-white/50 text-black/50 leading-tight">
+                                      <div class="whitespace-pre-wrap">${renderPostText(parent.record)}</div>
                                   </div>
                                   ${parent.embed ? renderEmbed(parent.embed, false, true) : nothing}
                               </div>`
@@ -244,13 +242,13 @@ export class NotificationsOverlay extends HashNavCloseableElement {
             if (post) date = new Date(AppBskyFeedPost.isRecord(post.record) ? post.record.createdAt : new Date());
         }
 
-        return html`<div class="flex flex-col border-b border-gray/50 ${notification.isRead ? "" : "bg-[#cbdaff] dark:bg-[#001040]"} px-4 py-2">
+        return html`<div class="flex flex-col border-t border-gray/20 ${notification.isRead ? "" : "bg-[#cbdaff] dark:bg-[#001040]"} px-4 py-2">
             <div class="flex items-center gap-2">
                 <i class="icon w-5 h-5">${icons[notification.reason] ?? ""}</i>
                 ${renderAuthor(notification.author, false)}
                 <span class="text-xs text-gray">${getTimeDifference(date.getTime())}</span>
             </div>
-            ${postContent ? html`<div class="mt-2">${postContent}</div>` : nothing}
+            ${postContent ? html`<div class="mt-1">${postContent}</div>` : nothing}
         </div>`;
     }
 
