@@ -8,17 +8,30 @@ import {
     BskyAgent,
     RichText,
 } from "@atproto/api";
-import { ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { ProfileView, ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { quoteIcon, replyIcon } from "../icons";
+import { moreIcon, quoteIcon, replyIcon } from "../icons";
 import { profileCache } from "../profilecache";
-import { contentLoader, dom, getDateString, getProfileUrl, hasLinkOrButtonParent, renderAuthor, renderTopbar } from "../utils";
+import {
+    combineAtUri,
+    contentLoader,
+    dom,
+    getDateString,
+    getProfileUrl,
+    hasLinkOrButtonParent,
+    renderAuthor,
+    renderTopbar,
+    splitAtUri,
+} from "../utils";
 import { CloseableElement, HashNavCloseableElement } from "./closable";
 import { IconToggle } from "./icontoggle";
 import { bskyClient } from "../bsky";
+import { PopupMenu } from "./popup";
+import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { Store } from "../store";
 
 export function renderPostText(record: AppBskyFeedPost.Record) {
     if (!record.facets) {
@@ -33,6 +46,7 @@ export function renderPostText(record: AppBskyFeedPost.Record) {
     const segments: TemplateResult[] = [];
 
     for (const segment of rt.segments()) {
+        //segment.text = segment.text.replace("\n", "<br/>");
         if (segment.isMention()) {
             segments.push(
                 html`<a
@@ -53,7 +67,7 @@ export function renderPostText(record: AppBskyFeedPost.Record) {
         } else if (segment.isTag()) {
             segments.push(html`<span class="text-blue-500">${segment.text}</span>`);
         } else {
-            segments.push(html`${unsafeHTML(segment.text.replace("\n", "<br/>"))}`);
+            segments.push(html`${unsafeHTML(segment.text)}`);
         }
     }
     const result = html`${map(segments, (segment) => segment)}`;
@@ -118,7 +132,7 @@ export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
     if (!AppBskyEmbedRecord.isViewRecord(recordEmbed.record)) return nothing;
     if (!AppBskyFeedPost.isRecord(recordEmbed.record.value)) return nothing;
     const record = recordEmbed.record.value;
-    const rkey = recordEmbed.record.uri.replace("at://", "").split("/")[2];
+    const rkey = splitAtUri(recordEmbed.record.uri).rkey;
     const author = recordEmbed.record.author;
     const embeds = recordEmbed.record.embeds && recordEmbed.record.embeds.length > 0 ? recordEmbed.record.embeds[0] : undefined;
     const sensitive = recordEmbed.record.labels?.some((label) => ["porn", "nudity", "sexual"].includes(label.val)) ?? false;
@@ -159,17 +173,19 @@ export function renderRecord(
     prefix?: string,
     showHeader = true,
     subHeader?: TemplateResult | HTMLElement,
-    showReplyto = true
+    showReplyto = true,
+    openOnClick = true
 ): TemplateResult {
-    const replyToAuthorDid = record.reply?.parent.uri.replace("at://", "").split("/")[0];
+    const replyToAuthorDid = record.reply ? splitAtUri(record.reply?.parent.uri).repo : undefined;
     const replyToProfile = replyToAuthorDid ? profileCache[replyToAuthorDid] : undefined;
     return html`<div
-        class="w-full h-full cursor-pointer"
+        class="w-full h-full ${openOnClick ? "cursor-pointer" : ""}"
         @click=${(ev: Event) => {
+            if (!openOnClick) return;
             if (!bskyClient) return;
             if (hasLinkOrButtonParent(ev.target as HTMLElement)) return;
             ev.stopPropagation();
-            document.body.append(dom(html`<thread-overlay .author=${author.did} .rkey=${rkey}></thread-overlay>`)[0]);
+            document.body.append(dom(html`<thread-overlay .postUri=${combineAtUri(author.did, rkey)}></thread-overlay>`)[0]);
         }}
     >
         ${showHeader
@@ -184,7 +200,7 @@ export function renderRecord(
                                     if (!bskyClient) return;
                                     ev.preventDefault();
                                     ev.stopPropagation();
-                                    document.body.append(dom(html`<thread-overlay .author=${author.did} .rkey=${rkey}></thread-overlay>`)[0]);
+                                    document.body.append(dom(html`<thread-overlay .postUri=${combineAtUri(author.did, rkey)}></thread-overlay>`)[0]);
                                 }}
                                 >${getDateString(new Date(record.createdAt))}</a
                             >`
@@ -201,7 +217,7 @@ export function renderRecord(
                   >
               </div>`
             : nothing}
-        <div class="mt-1 break-words leading-tight">${renderPostText(record)}</div>
+        <div class="mt-1 break-words leading-tight whitespace-pre-wrap">${renderPostText(record)}</div>
         ${embed ? renderEmbed(embed, sensitive) : nothing}
     </div>`;
 }
@@ -229,6 +245,9 @@ export class PostViewElement extends LitElement {
     @property()
     showReplyTo = true;
 
+    @property()
+    openOnClick = true;
+
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
@@ -241,7 +260,7 @@ export class PostViewElement extends LitElement {
             </div>`;
         }
 
-        const rkey = this.post.uri.replace("at://", "").split("/")[2];
+        const rkey = splitAtUri(this.post.uri)?.rkey;
         const author = this.post.author;
         return html`<div class="${this.animation} px-4 py-2 outline-none">
             ${renderRecord(
@@ -254,7 +273,8 @@ export class PostViewElement extends LitElement {
                 undefined,
                 this.showHeader,
                 this.subHeader,
-                this.showReplyTo
+                this.showReplyTo,
+                this.openOnClick
             )}
             <div class="flex items-center gap-4 mt-1">
                 <button @click=${this.reply} class="flex gap-1 items-center text-gray">
@@ -273,9 +293,12 @@ export class PostViewElement extends LitElement {
                         >${this.post.likeCount ?? 0}</icon-toggle
                     >
                 </div>
+                <post-options class="ml-auto" .post=${this.post} .handleOption=${this.handleOption}></post-options>
             </div>
         </div>`;
     }
+
+    handleOption(option: PostOptions) {}
 
     // FIXME wtf is this for?
     canInteract(toggle: IconToggle) {
@@ -359,13 +382,73 @@ export class AltText extends CloseableElement {
     }
 }
 
+type PostOptions = "delete" | "likes" | "quotes" | "reposts" | "mute";
+
+@customElement("post-options")
+export class PostOptionsElement extends PopupMenu {
+    @property()
+    post?: PostView;
+
+    @property()
+    handleOption: (option: PostOptions) => void = () => {};
+
+    protected renderButton(): TemplateResult {
+        return html`<i slot="buttonText" class="icon w-[1.2em] h-[1.2em] fill-gray">${moreIcon}</i>`;
+    }
+    protected renderContent(): TemplateResult {
+        const did = Store.getUser()?.profile.did;
+        let options: PostOptions[] = ["likes", "reposts", "quotes", "mute"];
+        const labels = ["Show Likes", "Show Reposts", "Shot Quotes", "Mute Thread"];
+        return html` ${did && this.post?.uri.includes(did)
+            ? html`<button
+                  class="border-b border-gray/50 py-2 px-2 hover:bg-primary"
+                  @click=${() => {
+                      this.handleOption("delete");
+                      this.close();
+                  }}
+              >
+                  Delete Post
+              </button>`
+            : nothing}
+        ${map(
+            options,
+            (option, index) => html`<button class="border-b border-gray/50 py-2 px-2 hover:bg-primary" @click=${() => this._handleOption(option)}>
+                ${labels[index]}
+            </button>`
+        )}`;
+    }
+
+    async _handleOption(option: PostOptions) {
+        switch (option) {
+            case "delete":
+                break;
+            case "likes":
+                document.body.append(
+                    dom(
+                        html`<profile-list-overlay
+                            title="Likes"
+                            .hash=${`likes/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
+                            .postUri=${this.post?.uri}
+                        ></profile-list-overlay>`
+                    )[0]
+                );
+                break;
+            case "quotes":
+                break;
+            case "reposts":
+                break;
+            case "mute":
+                break;
+        }
+        this.handleOption(option);
+        this.close();
+    }
+}
+
 @customElement("thread-overlay")
 export class ThreadOverlay extends HashNavCloseableElement {
     @property()
-    author?: string;
-
-    @property()
-    rkey?: string;
+    postUri?: string;
 
     @state()
     isLoading = true;
@@ -385,7 +468,8 @@ export class ThreadOverlay extends HashNavCloseableElement {
     }
 
     getHash(): string {
-        return "thread/" + this.author + "/" + this.rkey;
+        const atUri = this.postUri ? splitAtUri(this.postUri) : undefined;
+        return atUri ? "thread/" + atUri.repo + "/" + atUri.rkey : "thread/unknown/unknown";
     }
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
@@ -394,33 +478,40 @@ export class ThreadOverlay extends HashNavCloseableElement {
     }
 
     async load() {
+        const notFoundMessage = "Thread not found. The post may have been deleted, or you were blocked by the user.";
         try {
             if (!bskyClient) {
                 this.error = "No connection.";
                 return;
             }
-            if (!this.author || !this.rkey) {
-                this.error = "Thread not found";
+            if (!this.postUri) {
+                this.error = notFoundMessage;
                 return;
             }
-            let uri = `at://${this.author}/app.bsky.feed.post/${this.rkey}`;
+            let uri = this.postUri;
             const postResponse = await bskyClient.getPostThread({ uri });
             if (!postResponse.success) {
-                this.error = "Thread not found.";
+                this.error = notFoundMessage;
                 return;
             }
             if (postResponse.data.thread.blocked) {
-                this.error = "You have blocked the author or you have been blocked by the author.";
+                this.error = "You have blocked the author or the author has blocked you.";
                 return;
             }
             if (postResponse.data.thread.notFound) {
-                this.error = "Thread not found.";
+                this.error = notFoundMessage;
                 return;
             }
             if (!AppBskyFeedDefs.isThreadViewPost(postResponse.data.thread)) {
-                this.error = "Thread not found.";
+                this.error = notFoundMessage;
                 return;
             }
+
+            if (AppBskyFeedDefs.isNotFoundPost(postResponse.data.thread.parent)) {
+                this.thread = postResponse.data.thread;
+                return;
+            }
+
             const post = postResponse.data.thread.post;
             if (AppBskyFeedPost.isRecord(post.record) && post.record.reply) {
                 uri = post.record.reply.root.uri;
@@ -432,16 +523,16 @@ export class ThreadOverlay extends HashNavCloseableElement {
                 uri,
             });
             if (!response.success) {
-                this.error = "Thread not found.";
+                this.error = notFoundMessage;
                 return;
             }
             if (!AppBskyFeedDefs.isThreadViewPost(response.data.thread)) {
-                this.error = "Thread not found.";
+                this.error = notFoundMessage;
                 return;
             }
             this.thread = response.data.thread;
         } catch (e) {
-            this.error = "Thread not found.";
+            this.error = notFoundMessage;
             return;
         } finally {
             this.isLoading = false;
@@ -473,18 +564,50 @@ export class ThreadOverlay extends HashNavCloseableElement {
         if (!AppBskyFeedDefs.isThreadViewPost(thread)) {
             return dom(html``)[0];
         }
-        let uri = `at://${this.author}/app.bsky.feed.post/${this.rkey}`;
+        let uri = this.postUri;
+
+        const insertNewPost = (post: PostView) => {
+            const newPost = dom(html`<div class="border-l border-primary">
+                <post-view .post=${post} .quoteCallback=${quote} .replyCallback=${reply} .showReplyTo=${false} .openOnClick=${false}></post-view>
+            </div>`)[0];
+            if (repliesDom.children.length > 0) {
+                repliesDom.children[0].before(newPost);
+            } else {
+                repliesDom.append(newPost);
+            }
+            setTimeout(() => {
+                newPost.scrollIntoView({ behavior: "smooth", block: "center" });
+                newPost.classList.add("animate-shake");
+            }, 500);
+        };
+
+        const quote = (post: AppBskyFeedDefs.PostView) => {
+            document.body.append(dom(html`<post-editor-overlay .quote=${post} .sent=${insertNewPost}></post-editor-overly>`)[0]);
+        };
+
+        const reply = (post: AppBskyFeedDefs.PostView) => {
+            document.body.append(dom(html`<post-editor-overlay .replyTo=${post} .sent=${insertNewPost}></post-editor-overly>`)[0]);
+        };
+
         const postDom = dom(html`<div>
+            ${AppBskyFeedDefs.isNotFoundPost(thread.parent) ? html`<div class="bg-lightgray text-white px-4 py-2">Deleted post.</div>` : nothing}
             <div class="${thread.post.uri == uri ? "border-l border-primary" : ""}">
-                <post-view .post=${thread.post} .quoteCallback=${this.quote} .replyCallback=${this.reply} .showReplyTo=${false}></post-view>
+                <post-view
+                    .post=${thread.post}
+                    .quoteCallback=${quote}
+                    .replyCallback=${reply}
+                    .showReplyTo=${false}
+                    .openOnClick=${false}
+                ></post-view>
             </div>
-            <div class="ml-2 border-l border-dashed border-gray/50">
+            <div id="replies" class="ml-4 border-l border-dashed border-gray/50">
                 ${map(thread.replies, (reply) => {
                     if (!AppBskyFeedDefs.isThreadViewPost(reply)) return html``;
                     return this.renderThread(reply);
                 })}
             </div>
         </div>`)[0];
+        const repliesDom = postDom.querySelector("#replies") as HTMLElement;
         if (thread.post.uri == uri) {
             setTimeout(() => {
                 const postViewDom = postDom.querySelector("post-view");
@@ -493,13 +616,5 @@ export class ThreadOverlay extends HashNavCloseableElement {
             }, 500);
         }
         return postDom; //
-    }
-
-    quote(post: AppBskyFeedDefs.PostView) {
-        document.body.append(dom(html`<post-editor-overlay .quote=${post}></post-editor-overly>`)[0]);
-    }
-
-    reply(post: AppBskyFeedDefs.PostView) {
-        document.body.append(dom(html`<post-editor-overlay .replyTo=${post}></post-editor-overly>`)[0]);
     }
 }

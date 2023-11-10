@@ -2,7 +2,7 @@ import { LitElement, PropertyValueMap, html } from "lit";
 import { BskyAgent } from "@atproto/api";
 import { property } from "lit/decorators.js";
 import { ProfileOverlay } from "./profile";
-import { dom } from "../utils";
+import { combineAtUri, dom, splitAtUri } from "../utils";
 import { ThreadOverlay } from "./postview";
 
 class BaseGuard<T> {
@@ -153,8 +153,17 @@ export function pushHash(hash: string) {
 }
 
 export function routeHash(hash: string) {
+    hash = hash.replace("#", "");
+
+    // Allow BlueSky links directly
+    if (hash.startsWith("https://bsky.app/profile/")) {
+        if (hash.includes("/post/")) {
+            hash = "thread/" + hash.replaceAll("https://bsky.app/profile/", "").replace("post/", "");
+        }
+    }
+
     if (hash && hash.length > 0) {
-        const tokens = hash.replace("#", "").split("/");
+        const tokens = hash.split("/");
         if (tokens.length > 0) {
             if (tokens[0] == "profile" && tokens[1]) {
                 const child = document.body.children[document.body.children.length - 1];
@@ -168,15 +177,17 @@ export function routeHash(hash: string) {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "THREAD-OVERLAY") {
                     const threadOverlay = child as ThreadOverlay;
-                    if (threadOverlay.author == tokens[1] && threadOverlay.rkey == tokens[2]) return;
+                    const atUri = splitAtUri(threadOverlay.postUri!);
+                    if (atUri.repo == tokens[1] && atUri.rkey == tokens[2]) return;
                 }
-                document.body.append(dom(html`<thread-overlay .author=${tokens[1]} .rkey=${tokens[2]} .pushState=${false}></thread-overlay>`)[0]);
+                document.body.append(
+                    dom(html`<thread-overlay .postUri=${combineAtUri(tokens[1], tokens[2])} .pushState=${false}></thread-overlay>`)[0]
+                );
             }
             if (tokens[0] == "notifications") {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "NOTIFICATIONS-OVERLAY") {
-                    const threadOverlay = child as ThreadOverlay;
-                    if (threadOverlay.author == tokens[1] && threadOverlay.rkey == tokens[2]) return;
+                    return;
                 }
                 document.body.append(dom(html`<notifications-overlay .pushState=${false}></notifications-overlay>`)[0]);
             }

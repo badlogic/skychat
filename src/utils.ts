@@ -351,3 +351,14 @@ export function waitForServiceWorkerActivation(registration: ServiceWorkerRegist
         }
     });
 }
+
+export type AtUri = { repo: string; type: string; rkey: string };
+
+export function splitAtUri(uri: string): AtUri {
+    const tokens = uri.replace("at://", "").split("/");
+    return { repo: tokens[0], type: tokens[1], rkey: tokens[2] };
+}
+
+export function combineAtUri(repo: string, rkey: string, type: string = "app.bsky.feed.post") {
+    return "at://" + repo + "/" + type + "/" + rkey;
+}

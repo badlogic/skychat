@@ -5,7 +5,7 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { reblogIcon } from "../icons";
 import { cacheProfiles } from "../profilecache";
-import { contentLoader, dom, getProfileUrl, onVisibleOnce, renderTopbar } from "../utils";
+import { contentLoader, dom, getProfileUrl, onVisibleOnce, renderTopbar, splitAtUri } from "../utils";
 import { CloseableElement, pushHash } from "./closable";
 import { bskyClient } from "../bsky";
 
@@ -79,6 +79,7 @@ export class Feed extends LitElement {
                     const feedResponse = await bskyClient.app.bsky.feed.getTimeline(lastResponse ? { cursor: lastResponse.data.cursor } : undefined);
                     if (!feedResponse.success) break;
                     if (feedResponse.data.feed.length == 0) break;
+                    const dids: string[] = [];
                     for (const post of feedResponse.data.feed) {
                         const postKey = this.getPostKey(post);
                         if (this.seenPosts.has(postKey)) {
@@ -87,7 +88,12 @@ export class Feed extends LitElement {
                         } else {
                             posts.push(post);
                         }
+                        if (post.reply && AppBskyFeedPost.isRecord(post.reply.parent.record) && post.reply.parent.record.reply) {
+                            const did = splitAtUri(post.reply.parent.record.reply.parent.uri).repo;
+                            dids.push(did);
+                        }
                     }
+                    await cacheProfiles(bskyClient, dids);
                     lastResponse = feedResponse;
                 }
                 posts.reverse();
@@ -137,7 +143,7 @@ export class Feed extends LitElement {
             const dids: string[] = [];
             for (const post of this.lastPosts.feed) {
                 if (post.reply && AppBskyFeedPost.isRecord(post.reply.parent.record) && post.reply.parent.record.reply) {
-                    const did = post.reply.parent.record.reply.parent.uri.replace("at://", "").split("/")[0];
+                    const did = splitAtUri(post.reply.parent.record.reply.parent.uri).repo;
                     dids.push(did);
                 }
             }

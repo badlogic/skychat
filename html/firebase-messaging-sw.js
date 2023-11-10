@@ -33489,7 +33489,7 @@ if (cid) {
         default:
           message = "You have a new notification";
       }
-      self.registration.showNotification("New notification", { body: message, icon: "./logo.png" });
+      self.registration.showNotification("New notification", { body: message, icon: "./logo.png", badge: "./logo.png" });
     }
   }));
   console.log("Initialized worker messaging.");

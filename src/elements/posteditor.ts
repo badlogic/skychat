@@ -18,7 +18,7 @@ import { map } from "lit/directives/map.js";
 import { bskyClient, extractLinkCard } from "../bsky";
 import { deleteIcon, editIcon, imageIcon } from "../icons";
 import { renderEmbed, renderRecord } from "./postview";
-import { ImageInfo, dom, downloadImage, downscaleImage, loadImageFile, loadImageFiles } from "../utils";
+import { ImageInfo, dom, downloadImage, downscaleImage, loadImageFile, loadImageFiles, splitAtUri } from "../utils";
 import { CloseableElement } from "./closable";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { PostRef, Store } from "../store";
@@ -32,6 +32,9 @@ export class PostEditor extends LitElement {
 
     @property()
     cancled: () => void = () => {};
+
+    @property()
+    sent: (post: PostView) => void = () => {};
 
     @property()
     quote?: AppBskyFeedDefs.PostView;
@@ -127,7 +130,7 @@ export class PostEditor extends LitElement {
                         ? html`<div class="flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
                               ${renderRecord(
                                   this.replyTo.author,
-                                  this.replyTo.uri.replace("at://", "").split("/")[2],
+                                  splitAtUri(this.replyTo.uri).rkey,
                                   this.replyTo.record as AppBskyFeedPost.Record,
                                   this.replyTo.embed,
                                   true,
@@ -213,12 +216,7 @@ export class PostEditor extends LitElement {
                                           @click=${(ev: Event) => {
                                               if (!ev.currentTarget) return;
                                               const target = ev.currentTarget as HTMLElement;
-                                              target.parentElement?.classList.add("animate-jump-out");
-
-                                              setTimeout(() => {
-                                                  this.imagesToUpload = this.imagesToUpload.filter((other) => image != other);
-                                                  this.checkCanPost();
-                                              }, 500);
+                                              this.imagesToUpload = this.imagesToUpload.filter((other) => image != other);
                                           }}
                                           ?disabled=${this.isSending}
                                       >
@@ -243,7 +241,7 @@ export class PostEditor extends LitElement {
                         ? html`<div class="relative flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
                               ${renderRecord(
                                   this.quote.author,
-                                  this.quote.uri.replace("at://", "").split("/")[2],
+                                  splitAtUri(this.quote.uri).rkey,
                                   this.quote.record as AppBskyFeedPost.Record,
                                   this.quote.embed,
                                   true,
@@ -613,6 +611,11 @@ export class PostEditor extends LitElement {
             }
 
             const response = await bskyClient.post(record);
+            const postResponse = await bskyClient.getPosts({ uris: [response.uri] });
+            if (!postResponse.success) {
+                throw Error("Couldn't post.");
+            }
+            this.sent(postResponse.data.posts[0]);
 
             if (!this.replyTo && this.hashtag) {
                 if (!hashTagThread) {
@@ -658,7 +661,7 @@ export class ImageEditor extends CloseableElement {
     render() {
         const dataUri = this.image ? this.image.dataUri : "";
         const alt = this.image ? this.image.alt : "";
-        return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black">
+        return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black overflow-auto">
             <div class="mx-auto max-w-[600px] h-full flex flex-col p-4 gap-2">
                 <div class="flex items-center">
                     <h1 class="text-lg text-primary font-bold">Edit image</h1>
@@ -698,6 +701,9 @@ export class PostEditorOverlay extends CloseableElement {
     @property()
     replyTo?: PostView;
 
+    @property()
+    sent: (post: PostView) => void = () => {};
+
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
@@ -712,6 +718,7 @@ export class PostEditorOverlay extends CloseableElement {
                 .cancled=${() => this.close()}
                 .quote=${this.quote}
                 .replyTo=${this.replyTo}
+                .sent=${(post: PostView) => this.sent(post)}
             ></post-editor>
         </div>`;
     }

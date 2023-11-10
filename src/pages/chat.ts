@@ -5,7 +5,7 @@ import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { PostSearch, bskyClient, login, logout } from "../bsky";
 import { FirehosePost, startEventStream } from "../firehose";
-import { contentLoader, dom, getProfileUrl, hasHashtag, onVisibleOnce } from "../utils";
+import { contentLoader, dom, getProfileUrl, hasHashtag, onVisibleOnce, splitAtUri } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import "../elements";
@@ -154,7 +154,7 @@ export class Chat extends LitElement {
             const user = Store.getUser();
             if (user && user.hashTagThreads[this.hashtag ?? ""] && !this.askedReuse) {
                 const thread = user.hashTagThreads[this.hashtag!];
-                const rootUrl = `/client.html#thread/${user.profile.did}/${thread.root.uri?.replace("at://", "").split("/")[2]}`;
+                const rootUrl = `/client.html#thread/${user.profile.did}/${splitAtUri(thread.root.uri).rkey}`;
                 return html`<div class="w-full max-w-[600px] mx-auto h-full flex flex-col">
                     ${this.renderHeader()}
                     <p class="text-center pt-[40px] mt-4">
@@ -295,7 +295,7 @@ export class Chat extends LitElement {
                 const post = response.data.posts[0];
                 if (AppBskyFeedPost.isRecord(post.record)) {
                     if (post.record.reply) {
-                        const did = post.record.reply.parent.uri.replace("at://", "").split("/")[0];
+                        const did = splitAtUri(post.record.reply.parent.uri).repo!;
                         await cacheProfile(bskyClient!, did);
                     }
                 }

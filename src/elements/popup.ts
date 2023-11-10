@@ -1,25 +1,63 @@
-import { LitElement, TemplateResult, html, nothing } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { LitElement, TemplateResult, html, css, nothing } from "lit";
+import { customElement, state } from "lit/decorators.js";
 import { globalStyles } from "./styles";
 
-@customElement("popup-overlay")
-export class Popup extends LitElement {
-    static styles = [globalStyles];
-
-    @property()
-    buttonText = "Click me";
-
-    @property()
+export abstract class PopupMenu extends LitElement {
+    @state()
     show = false;
+
+    constructor() {
+        super();
+    }
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    handleButtonClick() {
+        this.show = !this.show;
+        if (this.show) {
+            document.body.classList.add("disable-pointer-events");
+        } else {
+            document.body.classList.remove("disable-pointer-events");
+        }
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        document.addEventListener("click", (ev) => this.handleDocumentClick(ev));
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        document.removeEventListener("click", (ev) => this.handleDocumentClick(ev));
+    }
+
+    handleDocumentClick(event: Event) {
+        if (this.show && !this.contains(event.target as Node)) {
+            this.show = false;
+            document.body.classList.remove("disable-pointer-events");
+        }
+    }
 
     protected render(): TemplateResult {
         return html`<div class="relative">
-            <div @click=${() => (this.show = !this.show)} class="rounded bg-black text-white p-1 text-xs">${this.buttonText}</div>
+            <div @click=${this.handleButtonClick}>${this.renderButton()}</div>
             ${this.show
-                ? html`<div @click=${() => (this.show = !this.show)} class="absolute bg-black text-white p-4 rounded border border-gray/50 z-[100]">
-                      <slot></slot>
-                  </div>`
+                ? html`<div class="whitespace-nowrap flex flex-col bg-white dark:bg-black border border-gray rounded ${
+                      this.show ? "enable-pointer-events" : "hidden"
+                  } absolute right-0">
+                      ${this.renderContent()}
+                          </div>
+                      </div>`
                 : nothing}
-        </div> `;
+        </div>`;
     }
+
+    protected close(): void {
+        this.show = false;
+        document.body.classList.remove("disable-pointer-events");
+    }
+    protected abstract renderButton(): TemplateResult;
+    protected abstract renderContent(): TemplateResult;
 }

@@ -12,7 +12,7 @@ import { map } from "lit/directives/map.js";
 import { bskyClient, loadPosts } from "../bsky";
 import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
 import { Store } from "../store";
-import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, renderAuthor, renderTopbar } from "../utils";
+import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, renderAuthor, renderTopbar, splitAtUri } from "../utils";
 import { HashNavCloseableElement } from "./closable";
 import { PostEditor } from "./posteditor";
 import { renderEmbed, renderPostText } from "./postview";
@@ -186,8 +186,6 @@ export class NotificationsOverlay extends HashNavCloseableElement {
 
         let postContent: TemplateResult | undefined;
         if (post && AppBskyFeedPost.isRecord(post.record)) {
-            const authorDid = post.author.did;
-            const rkey = post.uri.replace("at://", "").split("/")[2];
             switch (notification.reason) {
                 case "like":
                 case "repost":
@@ -197,10 +195,12 @@ export class NotificationsOverlay extends HashNavCloseableElement {
                             if (!bskyClient) return;
                             if (hasLinkOrButtonParent(ev.target as HTMLElement)) return;
                             ev.stopPropagation();
-                            document.body.append(dom(html`<thread-overlay .author=${authorDid} .rkey=${rkey}></thread-overlay>`)[0]);
+                            document.body.append(dom(html`<thread-overlay .postUri=${post?.uri}></thread-overlay>`)[0]);
                         }}
                     >
-                        <div class="break-words dark:text-white/50 text-black/50 leading-tight">${renderPostText(post.record)}</div>
+                        <div class="break-words dark:text-white/50 text-black/50 leading-tight whitespace-pre-wrap">
+                            ${renderPostText(post.record)}
+                        </div>
                         ${post.embed ? renderEmbed(post.embed, false, true) : nothing}
                     </div>`;
                     break;
@@ -209,7 +209,7 @@ export class NotificationsOverlay extends HashNavCloseableElement {
                     postContent = html`${parent && profile && AppBskyFeedPost.isRecord(parent.record)
                             ? html`<div class="border border-gray/50 rounded p-2">
                                   <div class="dark:text-white/50 text-black/50">${renderAuthor(parent.author, true)}</div>
-                                  <div class="mt-1 mb-1 break-words dark:text-white/50 text-black/50 leading-tight">
+                                  <div class="mt-1 mb-1 break-words dark:text-white/50 text-black/50 leading-tight whitespace-pre-wrap">
                                       ${renderPostText(parent.record)}
                                   </div>
                                   ${parent.embed ? renderEmbed(parent.embed, false, true) : nothing}

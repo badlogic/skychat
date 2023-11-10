@@ -14,6 +14,15 @@ const config = {
     outdir: "build/",
     logLevel: "info",
     minify: false,
+    loader: {
+        ".ttf": "dataurl",
+        ".woff": "dataurl",
+        ".woff2": "dataurl",
+        ".eot": "dataurl",
+        ".html": "text",
+        ".svg": "text",
+        ".css": "text",
+    },
 };
 
 if (!watch) {
