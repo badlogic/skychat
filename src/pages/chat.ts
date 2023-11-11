@@ -1,19 +1,19 @@
-import { AppBskyFeedDefs, AppBskyFeedPost, BskyAgent } from "@atproto/api";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { AppBskyFeedPost } from "@atproto/api";
 import { LitElement, PropertyValueMap, html, nothing, svg } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { PostSearch, bskyClient, login, logout } from "../bsky";
 import { FirehosePost, startEventStream } from "../firehose";
-import { contentLoader, dom, getProfileUrl, hasHashtag, onVisibleOnce, splitAtUri } from "../utils";
+import { contentLoader, dom, hasHashtag, onVisibleOnce, splitAtUri } from "../utils";
+import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import "../elements";
 import { PostEditor } from "../elements";
+import { routeHash } from "../elements/routing";
 import { bellIcon, homeIcon } from "../icons";
 import { cacheProfile } from "../profilecache";
 import { Store } from "../store";
-import { routeHash } from "../elements/routing";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -329,21 +329,33 @@ export class Chat extends LitElement {
         reconnectHandler();
     }
 
-    renderPost(post: AppBskyFeedDefs.PostView, animation: string = "") {
+    async deletePost(post: PostView, postDom: HTMLElement) {
+        if (!bskyClient) return;
+        try {
+            await bskyClient.deletePost(post.uri);
+        } catch (e) {
+            console.error("Couldn't delete post.", e);
+            alert("Couldn't delete post.");
+        }
+        postDom.remove();
+    }
+
+    renderPost(post: PostView, animation: string = "") {
         if (!this.liveDom || !this.editor) return;
         try {
             if (!AppBskyFeedPost.isRecord(post.record)) return;
-            const postHtml = dom(
+            const postDom = dom(
                 html`<div class="border-t border-gray/50">
                     <post-view
                         animation=${animation}
                         .post=${post}
-                        .quoteCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setQuote(post)}
-                        .replyCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setReply(post)}
+                        .quoteCallback=${(post: PostView) => this.editor?.setQuote(post)}
+                        .replyCallback=${(post: PostView) => this.editor?.setReply(post)}
+                        .deleteCallback=${(post: PostView) => this.deletePost(post, postDom)}
                     ></post-view>
                 </div>`
             )[0];
-            this.liveDom.querySelector("#posts")!.append(postHtml);
+            this.liveDom.querySelector("#posts")!.append(postDom);
         } catch (e) {
             console.error(e);
         }
@@ -365,15 +377,16 @@ export class Chat extends LitElement {
         }
 
         for (const post of olderPosts) {
-            const postHtml = dom(html`<div class="border-t border-gray/50">
+            const postDom = dom(html`<div class="border-t border-gray/50">
                 <post-view
                     .post=${post}
-                    .quoteCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setQuote(post)}
-                    .replyCallback=${(post: AppBskyFeedDefs.PostView) => this.editor?.setReply(post)}
+                    .quoteCallback=${(post: PostView) => this.editor?.setQuote(post)}
+                    .replyCallback=${(post: PostView) => this.editor?.setReply(post)}
+                    .deleteCallback=${(post: PostView) => this.deletePost(post, postDom)}
                     class="border-t border-gray/50"
                 ></post-view>
             </div>`)[0];
-            posts.insertBefore(postHtml, load);
+            posts.insertBefore(postDom, load);
         }
 
         const loaderHeight = load.clientHeight;

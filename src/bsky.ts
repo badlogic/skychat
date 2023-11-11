@@ -1,4 +1,5 @@
-import { AppBskyFeedDefs, AppBskyFeedGetPosts, AtpSessionData, AtpSessionEvent, BskyAgent } from "@atproto/api";
+import { AppBskyFeedGetPosts, AtpSessionData, AtpSessionEvent, BskyAgent } from "@atproto/api";
+import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { Store } from "./store";
 
 type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow"; fromDid: string; toDid: string; token: string };
@@ -29,7 +30,7 @@ export class PostSearch {
                 return Error(`Couldn't load posts for query ${this.query}, offset ${this.offset}`);
             }
             const rawPosts = (await response.json()) as SearchPost[];
-            const posts: AppBskyFeedDefs.PostView[] = [];
+            const posts: PostView[] = [];
             while (rawPosts.length > 0) {
                 const uris = rawPosts.splice(0, 25).map((rawPost) => `at://${rawPost.user.did}/${rawPost.tid}`);
                 const postsResponse = await bskyClient.app.bsky.feed.getPosts({
@@ -70,7 +71,7 @@ export async function extractLinkCard(url: string): Promise<LinkCard | Error> {
     }
 }
 
-export async function loadPosts(uris: string[], posts: Map<string, AppBskyFeedDefs.PostView>) {
+export async function loadPosts(uris: string[], posts: Map<string, PostView>) {
     if (!bskyClient) throw new Error("Not connected");
     const promises: Promise<AppBskyFeedGetPosts.Response>[] = [];
     while (uris.length > 0) {

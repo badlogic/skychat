@@ -6,6 +6,9 @@ import {
     AppBskyGraphFollow,
     AppBskyNotificationListNotifications,
 } from "@atproto/api";
+import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { FirebaseOptions, initializeApp } from "firebase/app";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import { PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
@@ -30,7 +33,7 @@ export class NotificationsOverlay extends HashNavOverlay {
 
     lastNotifications?: AppBskyNotificationListNotifications.OutputSchema;
 
-    posts = new Map<string, AppBskyFeedDefs.PostView>();
+    posts = new Map<string, PostView>();
 
     intervalId: any = -1;
 
@@ -159,7 +162,8 @@ export class NotificationsOverlay extends HashNavOverlay {
         };
         const user = Store.getUser();
         const profile = user?.profile;
-        let post: AppBskyFeedDefs.PostView | undefined;
+        let post: PostView | undefined;
+        let notificationDom: HTMLElement | undefined;
         switch (notification.reason) {
             case "like":
             case "repost":
@@ -205,8 +209,9 @@ export class NotificationsOverlay extends HashNavOverlay {
                             : nothing}<post-view
                             .showHeader=${false}
                             .post=${post}
-                            .quoteCallback=${(post: AppBskyFeedDefs.PostView) => this.quote(post)}
-                            .replyCallback=${(post: AppBskyFeedDefs.PostView) => this.reply(post)}
+                            .quoteCallback=${this.quote}
+                            .replyCallback=${this.reply}
+                            .deleteCallback=${(post: PostView) => this.deletePost(post, notificationDom!)}
                         ></post-view>`;
                     break;
                 case "mention":
@@ -214,8 +219,9 @@ export class NotificationsOverlay extends HashNavOverlay {
                     postContent = html`<post-view
                         .showHeader=${false}
                         .post=${post}
-                        .quoteCallback=${(post: AppBskyFeedDefs.PostView) => this.quote(post)}
-                        .replyCallback=${(post: AppBskyFeedDefs.PostView) => this.reply(post)}
+                        .quoteCallback=${this.quote}
+                        .replyCallback=${this.reply}
+                        .deleteCallback=${(post: PostView) => this.deletePost(post, notificationDom!)}
                     ></post-view>`;
                     break;
             }
@@ -232,22 +238,36 @@ export class NotificationsOverlay extends HashNavOverlay {
             if (post) date = new Date(AppBskyFeedPost.isRecord(post.record) ? post.record.createdAt : new Date());
         }
 
-        return html`<div class="flex flex-col border-t border-gray/20 ${notification.isRead ? "" : "bg-[#cbdaff] dark:bg-[#001040]"} px-4 py-2">
+        notificationDom = dom(html`<div
+            class="flex flex-col border-t border-gray/20 ${notification.isRead ? "" : "bg-[#cbdaff] dark:bg-[#001040]"} px-4 py-2"
+        >
             <div class="flex items-center gap-2">
                 <i class="icon w-5 h-5">${icons[notification.reason] ?? ""}</i>
                 ${renderAuthor(notification.author, false)}
                 <span class="text-xs text-gray">${getTimeDifference(date.getTime())}</span>
             </div>
             ${postContent ? html`<div class="mt-1">${postContent}</div>` : nothing}
-        </div>`;
+        </div>`)[0];
+        return html`${notificationDom}`;
     }
 
-    quote(post: AppBskyFeedDefs.PostView) {
+    quote(post: PostView) {
         document.body.append(dom(html`<post-editor-overlay .quote=${post}></post-editor-overly>`)[0]);
     }
 
-    reply(post: AppBskyFeedDefs.PostView) {
+    reply(post: PostView) {
         document.body.append(dom(html`<post-editor-overlay .replyTo=${post}></post-editor-overly>`)[0]);
+    }
+
+    async deletePost(post: PostView, postDom: HTMLElement) {
+        if (!bskyClient) return;
+        try {
+            await bskyClient.deletePost(post.uri);
+        } catch (e) {
+            console.error("Couldn't delete post.", e);
+            alert("Couldn't delete post.");
+        }
+        postDom.remove();
     }
 
     groupLikes(notifications: AppBskyNotificationListNotifications.Notification[]) {}
@@ -278,5 +298,51 @@ export class NotificationsOverlay extends HashNavOverlay {
         onVisibleOnce(loader, loadMore);
 
         return notificationsDom;
+    }
+}
+
+export async function setupWorkerNotifications() {
+    try {
+        if (Notification.permission != "granted" || !Store.getUser()) {
+            console.log("Can not setup push notifications, permission not granted or not logged in.");
+            return;
+        }
+        const firebaseConfig: FirebaseOptions = {
+            apiKey: "AIzaSyAZ2nH3qKCFqFhQSdeNH91SNAfTHl-nP7s",
+            authDomain: "skychat-733ab.firebaseapp.com",
+            projectId: "skychat-733ab",
+            storageBucket: "skychat-733ab.appspot.com",
+            messagingSenderId: "693556593993",
+            appId: "1:693556593993:web:8137dd0568c75b50d1c698",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const messaging = getMessaging(app);
+        const token = await getToken(messaging, {
+            vapidKey: "BIqRsppm0-uNKJoRjVCzu5ZYtT-Jo6jyjDXVuqLbudGvpRTuGwptZ9x5ueu5imL7xdjVA989bJOJYcx_Pvf-AYM",
+        });
+        const baseUrl = location.href.includes("localhost") || location.href.includes("192.168.1") ? "http://localhost:3333/" : "/";
+        const response = await fetch(
+            baseUrl + `api/register?token=${encodeURIComponent(token)}&did=${encodeURIComponent(Store.getUser()?.profile.did ?? "")}`
+        );
+        if (!response.ok) {
+            console.error("Couldn't register push token.");
+            return;
+        }
+        console.log("Initialized notifications: ");
+        console.log(token);
+        onMessage(messaging, (ev) => {
+            console.log("Received message in app");
+            console.log(ev.data);
+        });
+        navigator.serviceWorker.addEventListener("message", (ev) => {
+            if (ev.data && ev.data == "notifications") {
+                if (location.hash.replace("#", "") != "notifications") {
+                    document.body.append(dom(html`<notifications-overlay></notifications-overlay>`)[0]);
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Couldn't request notification permission and start service worker.", e);
     }
 }

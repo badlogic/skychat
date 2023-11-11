@@ -17,7 +17,7 @@ import { LitElement, PropertyValueMap, TemplateResult, html, nothing, svg } from
 import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { bskyClient, extractLinkCard } from "../bsky";
-import { deleteIcon, editIcon, imageIcon } from "../icons";
+import { deleteIcon, editIcon, imageIcon, spinnerIcon } from "../icons";
 import { Store } from "../store";
 import { ImageInfo, dom, downloadImage, downscaleImage, loadImageFile, loadImageFiles, splitAtUri } from "../utils";
 import { renderEmbed, renderRecord } from "./postview";
@@ -37,10 +37,10 @@ export class PostEditor extends LitElement {
     sent: (post: PostView) => void = () => {};
 
     @property()
-    quote?: AppBskyFeedDefs.PostView;
+    quote?: PostView;
 
     @property()
-    replyTo?: AppBskyFeedDefs.PostView;
+    replyTo?: PostView;
 
     @property()
     hashtag?: string;
@@ -137,7 +137,11 @@ export class PostEditor extends LitElement {
                                   this.replyTo.embed,
                                   true,
                                   false,
-                                  "Replying to"
+                                  "Replying to",
+                                  undefined,
+                                  undefined,
+                                  false,
+                                  false
                               )}
                               <button
                                   class="absolute right-4 top-4 z-[100] bg-black rounded-full p-1"
@@ -246,7 +250,11 @@ export class PostEditor extends LitElement {
                                   this.quote.embed,
                                   true,
                                   false,
-                                  "Quoting"
+                                  "Quoting",
+                                  undefined,
+                                  undefined,
+                                  false,
+                                  false
                               )}
                               <button
                                   class="absolute right-2 top-2 z-[100] bg-black rounded-full p-1"
@@ -277,7 +285,15 @@ export class PostEditor extends LitElement {
                             : nothing
                     }
                     </button>
-                    <span
+                    ${
+                        this.isSending
+                            ? html`<div class="ml-4 flex items-center">
+                                  <span class="text-center">Sending post</span>
+                                  <i class="ml-2 icon w-6 h-6 animate-spin">${spinnerIcon}</i>
+                              </div>`
+                            : nothing
+                    }
+                     <span
                         class="ml-auto bg-transparent dark:text-gray text-end text-xs flex items-center ${
                             this.count > totalCount ? "text-red dark:text-red" : ""
                         }"
@@ -335,13 +351,13 @@ export class PostEditor extends LitElement {
         this.canPost = (this.count > 0 && this.count <= totalCount) || this.imagesToUpload.length > 0 || this.embed != undefined;
     }
 
-    setQuote(post: AppBskyFeedDefs.PostView | undefined) {
+    setQuote(post: PostView | undefined) {
         this.quote = post;
         this.replyTo = undefined;
         this.messageElement?.focus();
     }
 
-    setReply(post: AppBskyFeedDefs.PostView | undefined) {
+    setReply(post: PostView | undefined) {
         this.replyTo = post;
         this.quote = undefined;
         this.messageElement?.focus();
@@ -491,7 +507,6 @@ export class PostEditor extends LitElement {
                 this.insert = { start, end };
             },
             () => {
-                console.log("Not in handle");
                 this.handleSuggestions = [];
                 this.insert = undefined;
             }

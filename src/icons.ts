@@ -40,11 +40,16 @@ import followIconSvg from "remixicon/icons/User & Faces/user-follow-line.svg";
 import homeIconSvg from "remixicon/icons/Buildings/home-line.svg";
 // @ts-ignore
 import moreIconSvg from "remixicon/icons/System/more-line.svg";
+// @ts-ignore
+import spinnerIconSvg from "remixicon/icons/System/loader-3-line.svg";
+// @ts-ignore
+import settings2IconSvg from "remixicon/icons/Media/equalizer-line.svg";
 
 import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 import { html } from "lit";
 
 export const settingsIcon = unsafeHTML(settingsIconSvg);
+export const settings2Icon = unsafeHTML(settings2IconSvg);
 export const bookmarkIcon = unsafeHTML(bookmarkIconSvg);
 export const addIcon = unsafeHTML(addIconSvg);
 export const closeIcon = unsafeHTML(closeIconSvg);
@@ -65,6 +70,7 @@ export const atIcon = unsafeHTML(atIconSvg);
 export const followIcon = unsafeHTML(followIconSvg);
 export const homeIcon = unsafeHTML(homeIconSvg);
 export const moreIcon = unsafeHTML(moreIconSvg);
+export const spinnerIcon = unsafeHTML(spinnerIconSvg);
 
 export function icon(svg: string) {
     return html`<i class="flex w-[1.2em] h-[1.2em] border-white fill-primary">${unsafeHTML(svg)}</i>`;

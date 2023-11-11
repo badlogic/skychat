@@ -8,7 +8,7 @@ import { ComAtprotoSyncSubscribeRepos, SubscribeReposMessage, subscribeRepos } f
 import { AppBskyEmbedRecord, AppBskyFeedPost } from "@atproto/api";
 import { getTimeDifference, splitAtUri } from "./utils";
 
-type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow"; fromDid: string; toDid: string; tokens: string[] };
+type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow"; fromDid: string; toDid: string; tokens: string[]; postUri?: string };
 
 const port = process.env.PORT ?? 3333;
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
@@ -25,7 +25,7 @@ let numPushMessages = 0;
 
 const registrations: Record<string, string[]> = {};
 const queue: Notification[] = [];
-const streamErrors: { code: string; reason: string; date: string }[] = [];
+const streamErrors: { code: string; reason: string; date: string; postUri?: string }[] = [];
 
 (async () => {
     const app = express();
@@ -44,68 +44,74 @@ const streamErrors: { code: string; reason: string; date: string }[] = [];
             message.ops.forEach((op) => {
                 const from = message.repo;
                 const payload = op.payload as any;
-                switch (payload?.$type) {
-                    case "app.bsky.feed.like":
-                        if (payload.subject?.uri) {
-                            const to = splitAtUri(payload.subject.uri).repo;
-                            const tokens = registrations[to];
-                            if (tokens && from != to) {
-                                queue.push({ type: "like", fromDid: from, toDid: to, tokens });
+                let postUri: string | undefined;
+                try {
+                    switch (payload?.$type) {
+                        case "app.bsky.feed.like":
+                            if (payload.subject?.uri) {
+                                const to = splitAtUri(payload.subject.uri).repo;
+                                postUri = payload.subject?.uri;
+                                const tokens = registrations[to];
+                                if (tokens && from != to) {
+                                    queue.push({ type: "like", fromDid: from, toDid: to, tokens, postUri });
+                                }
                             }
-                        }
-                        break;
-                    case "app.bsky.feed.post":
-                        if (AppBskyFeedPost.isRecord(payload)) {
-                            if (from == "did:plc:7syfakzcriq44mwbdbc7jwvn") {
-                                console.log("");
-                            }
-                            if (payload.reply) {
+                            break;
+                        case "app.bsky.feed.post":
+                            if (AppBskyFeedPost.isRecord(payload)) {
                                 if (payload.reply) {
-                                    let uri;
-                                    if (payload.reply.parent) {
-                                        uri = payload.reply.parent.uri;
-                                    } else {
-                                        uri = payload.reply.root?.uri;
+                                    if (payload.reply) {
+                                        let uri;
+                                        if (payload.reply.parent) {
+                                            uri = payload.reply.parent.uri;
+                                        } else {
+                                            uri = payload.reply.root?.uri;
+                                        }
+                                        if (uri) {
+                                            postUri = "at://" + from + "/" + op.path;
+                                            const to = splitAtUri(uri).repo;
+                                            const tokens = registrations[to];
+                                            if (tokens && from != to) {
+                                                queue.push({ type: "reply", fromDid: from, toDid: to, tokens, postUri });
+                                            }
+                                        }
                                     }
-                                    if (uri) {
-                                        const to = splitAtUri(uri).repo;
+                                }
+
+                                if (payload.embed) {
+                                    if (AppBskyEmbedRecord.isMain(payload.embed)) {
+                                        const to = splitAtUri(payload.embed.record.uri).repo;
+                                        postUri = payload.embed.record.uri;
                                         const tokens = registrations[to];
                                         if (tokens && from != to) {
-                                            queue.push({ type: "reply", fromDid: from, toDid: to, tokens });
+                                            queue.push({ type: "quote", fromDid: from, toDid: to, tokens, postUri });
                                         }
                                     }
                                 }
                             }
-
-                            if (payload.embed) {
-                                if (AppBskyEmbedRecord.isMain(payload.embed)) {
-                                    const to = splitAtUri(payload.embed.record.uri).repo;
-                                    const tokens = registrations[to];
-                                    if (tokens && from != to) {
-                                        queue.push({ type: "quote", fromDid: from, toDid: to, tokens });
-                                    }
+                            break;
+                        case "app.bsky.feed.repost":
+                            if (payload.subject?.uri) {
+                                const to = splitAtUri(payload.subject.uri).repo;
+                                postUri = payload.subject.uri;
+                                const tokens = registrations[to];
+                                if (tokens && from != to) {
+                                    queue.push({ type: "repost", fromDid: from, toDid: to, tokens, postUri });
                                 }
                             }
-                        }
-                        break;
-                    case "app.bsky.feed.repost":
-                        if (payload.subject?.uri) {
-                            const to = splitAtUri(payload.subject.uri).repo;
-                            const tokens = registrations[to];
-                            if (tokens && from != to) {
-                                queue.push({ type: "repost", fromDid: from, toDid: to, tokens });
+                            break;
+                        case "app.bsky.graph.follow":
+                            if (payload.subject?.uri) {
+                                const to = splitAtUri(payload.subject).repo;
+                                const tokens = registrations[to];
+                                if (tokens && from != to) {
+                                    queue.push({ type: "follow", fromDid: from, toDid: to, tokens });
+                                }
                             }
-                        }
-                        break;
-                    case "app.bsky.graph.follow":
-                        if (payload.subject?.uri) {
-                            const to = splitAtUri(payload.subject).repo;
-                            const tokens = registrations[to];
-                            if (tokens && from != to) {
-                                queue.push({ type: "follow", fromDid: from, toDid: to, tokens });
-                            }
-                        }
-                        break;
+                            break;
+                    }
+                } catch (e) {
+                    console.error("Error processing message op.", e);
                 }
             });
         }

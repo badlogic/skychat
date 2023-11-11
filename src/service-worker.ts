@@ -29,9 +29,10 @@ self.addEventListener("notificationclick", (event: any) => {
     event.waitUntil(click());
 });
 
-import { BskyAgent } from "@atproto/api";
+import { AppBskyFeedDefs, AppBskyFeedPost, BskyAgent } from "@atproto/api";
 import { initializeApp } from "firebase/app";
 import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
+import { splitAtUri } from "./utils";
 const firebaseConfig = {
     apiKey: "AIzaSyAZ2nH3qKCFqFhQSdeNH91SNAfTHl-nP7s",
     authDomain: "skychat-733ab.firebaseapp.com",
@@ -49,13 +50,25 @@ onBackgroundMessage(messaging, async (payload) => {
         const notification = payload.data as Notification;
         const bskyClient = new BskyAgent({ service: "https://api.bsky.app" });
         let from = "Someone";
+        let postText = "";
         try {
             const response = await bskyClient.getProfile({ actor: notification.fromDid });
             if (response.success) {
                 from = response.data.displayName ?? response.data.handle;
             }
         } catch (e) {
-            console.error("Couldn't fetch profile for " + payload.data.from);
+            console.error("Couldn't fetch profile for " + payload.data.from, e);
+        }
+        if (payload.data.postUri) {
+            try {
+                const response = await bskyClient.app.bsky.feed.getPosts({ uris: [payload.data.postUri] });
+                if (response.success) {
+                    const post = response.data.posts[0];
+                    postText = (post.record as any)?.text;
+                }
+            } catch (e) {
+                console.error("Couldn't fetch post for " + payload.data.from, e);
+            }
         }
         let message = "";
         switch (notification.type) {
@@ -78,7 +91,12 @@ onBackgroundMessage(messaging, async (payload) => {
                 message = "You have a new notification";
         }
 
-        self.registration.showNotification("New notification", { body: message, icon: "./logo.png", badge: "./logo.png" });
+        if (postText.length > 0) message += `\n${postText}`;
+        self.registration.showNotification("New notification", {
+            body: message + (postText.length > 0 ? "\n\n" + postText : ""),
+            icon: "./logo.png",
+            badge: "./logo.png",
+        });
     }
 });
 console.log("Initialized worker messaging.");

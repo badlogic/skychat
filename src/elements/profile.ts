@@ -126,42 +126,34 @@ export class ProfileOverlay extends HashNavOverlay {
                         ><span class="font-bold">${getNumber(profile.followersCount)}</span> followers</a
                     >
                     <a href="" target="_blank" @click=${showFollowing}><span class="font-bold">${getNumber(profile.followsCount)}</span> following</a>
-                    <span class="font-bold">${getNumber(profile.postsCount)}</span>
+                    <span><span class="font-bold">${getNumber(profile.postsCount)}</span> posts</span>
                 </div>
                 <div class="mt-1 leading-tight whitespace-pre-wrap">${renderPostText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
             </div>
             <div class="mt-4 border-b border-gray/50">
                 <button
-                    class="${this.filter == "posts_no_replies" ? "border-b border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
+                    class="${this.filter == "posts_no_replies" ? "border-b-2 border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
                     @click=${() => (this.filter = "posts_no_replies")}
                 >
                     Posts
                 </button>
                 <button
-                    class="${this.filter == "posts_with_replies" ? "border-b border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
+                    class="${this.filter == "posts_with_replies" ? "border-b-2 border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
                     @click=${() => (this.filter = "posts_with_replies")}
                 >
                     Posts & Replies
                 </button>
                 <button
-                    class="${this.filter == "posts_with_media" ? "border-b border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
+                    class="${this.filter == "posts_with_media" ? "border-b-2 border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
                     @click=${() => (this.filter = "posts_with_media")}
                 >
                     Media
                 </button>
-                ${profile.did == user?.profile.did
-                    ? html`<button
-                          class="${this.filter == "likes" ? "border-b border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
-                          @click=${() => (this.filter = "likes")}
-                      >
-                          Likes
-                      </button>`
-                    : nothing}
                 <button
-                    class="${this.filter == "posts_with_media" ? "border-b border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
-                    @click=${() => (this.filter = "posts_with_media")}
+                    class="${this.filter == "likes" ? "border-b-2 border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
+                    @click=${() => (this.filter = "likes")}
                 >
-                    Lists
+                    Likes
                 </button>
             </div>
             ${dom(

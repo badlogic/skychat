@@ -1,6 +1,7 @@
 import { AppBskyActorDefs, AtpSessionData, AtpSessionEvent, BskyAgent } from "@atproto/api";
 import { TemplateResult, html, render, svg } from "lit";
 import { bskyClient } from "./bsky";
+import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 
 export function getNumber(num: number | undefined): string {
     if (num == undefined) return "0";
@@ -295,7 +296,7 @@ export function hasHashtag(text: string, hashtag: string) {
     return false;
 }
 
-export function renderAuthor(author: AppBskyActorDefs.ProfileView, smallAvatar = false) {
+export function renderAuthor(author: ProfileView, smallAvatar = false) {
     return html`<a
         class="flex items-center gap-2"
         href="${getProfileUrl(author.handle ?? author.did)}"
@@ -314,7 +315,7 @@ export function renderAuthor(author: AppBskyActorDefs.ProfileView, smallAvatar =
     </a>`;
 }
 
-export function getProfileUrl(account: AppBskyActorDefs.ProfileView | string) {
+export function getProfileUrl(account: ProfileView | string) {
     return `https://bsky.app/profile/${typeof account == "string" ? account : account.did}`;
 }
 

@@ -8,7 +8,7 @@ import {
     RichText,
 } from "@atproto/api";
 import { ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { PostView, ThreadViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
@@ -153,7 +153,7 @@ export function renderRecordWithMediaEmbed(recordWithMediaEmbed: AppBskyEmbedRec
     </div>`;
 }
 
-export function renderEmbed(embed: AppBskyFeedDefs.PostView["embed"] | AppBskyFeedPost.Record["embed"], sensitive: boolean, minimal = false) {
+export function renderEmbed(embed: PostView["embed"] | AppBskyFeedPost.Record["embed"], sensitive: boolean, minimal = false) {
     const cardEmbed = AppBskyEmbedExternal.isView(embed) || AppBskyEmbedExternal.isMain(embed) ? embed.external : undefined;
     const imagesEmbed = AppBskyEmbedImages.isView(embed) ? embed.images : undefined;
     const recordEmbed = AppBskyEmbedRecord.isView(embed) ? embed : undefined;
@@ -169,7 +169,7 @@ export function renderRecord(
     author: ProfileViewBasic | ProfileViewDetailed,
     rkey: string,
     record: AppBskyFeedPost.Record,
-    embed: AppBskyFeedDefs.PostView["embed"] | undefined,
+    embed: PostView["embed"] | undefined,
     smallAvatar: boolean,
     sensitive: boolean,
     prefix?: string,
@@ -230,13 +230,16 @@ export function renderRecord(
 @customElement("post-view")
 export class PostViewElement extends LitElement {
     @property()
-    post?: AppBskyFeedDefs.PostView;
+    post?: PostView;
 
     @property()
-    quoteCallback: (post: AppBskyFeedDefs.PostView) => void = () => {};
+    quoteCallback: (post: PostView) => void = () => {};
 
     @property()
-    replyCallback: (post: AppBskyFeedDefs.PostView) => void = () => {};
+    replyCallback: (post: PostView) => void = () => {};
+
+    @property()
+    deleteCallback: (post: PostView) => void = () => {};
 
     @property()
     animation: string = "";
@@ -286,10 +289,10 @@ export class PostViewElement extends LitElement {
                 this.shortTime
             )}
             <div class="flex items-center gap-4 mt-1">
-                <button @click=${this.reply} class="flex gap-1 items-center text-gray">
+                <button @click=${() => this.replyCallback(this.post!)} class="flex gap-1 items-center text-gray">
                     <i class="icon w-[1.2em] h-[1.2em] fill-gray">${replyIcon}</i><span class="text-gray">${this.post.replyCount}</span>
                 </button>
-                <button @click=${this.quote} class="flex gap-1 items-center text-gray">
+                <button @click=${() => this.quoteCallback(this.post!)} class="flex gap-1 items-center text-gray">
                     <i class="icon w-[1.2em] h-[1.2em] fill-gray">${quoteIcon}</i>
                 </button>
                 <div class="flex gap-1 items-center text-gray">
@@ -302,12 +305,20 @@ export class PostViewElement extends LitElement {
                         >${this.post.likeCount ?? 0}</icon-toggle
                     >
                 </div>
-                <post-options class="${this.shortTime ? "" : "ml-auto"}" .post=${this.post} .handleOption=${this.handleOption}></post-options>
+                <post-options
+                    class="${this.shortTime ? "" : "ml-auto"}"
+                    .post=${this.post}
+                    .handleOption=${(option: PostOptions) => this.handleOption(option)}
+                ></post-options>
             </div>
         </div>`;
     }
 
-    handleOption(option: PostOptions) {}
+    handleOption(option: PostOptions) {
+        if (option == "delete") {
+            this.deleteCallback(this.post!);
+        }
+    }
 
     canInteract(toggle: IconToggle) {
         if (bskyClient?.service.toString().includes("api")) {
@@ -319,14 +330,6 @@ export class PostViewElement extends LitElement {
         } else {
             return true;
         }
-    }
-
-    async quote(ev: CustomEvent) {
-        this.quoteCallback(this.post!);
-    }
-
-    async reply(ev: CustomEvent) {
-        this.replyCallback(this.post!);
     }
 
     async toggleRepost(ev: CustomEvent) {
@@ -381,7 +384,7 @@ export class AltText extends Overlay {
     }
 }
 
-type PostOptions = "delete" | "likes" | "quotes" | "reposts" | "mute";
+type PostOptions = "delete" | "likes" | "reposts" | "mute";
 
 @customElement("post-options")
 export class PostOptionsElement extends PopupMenu {
@@ -394,10 +397,11 @@ export class PostOptionsElement extends PopupMenu {
     protected renderButton(): TemplateResult {
         return html`<i slot="buttonText" class="icon w-[1.2em] h-[1.2em] fill-gray">${moreIcon}</i>`;
     }
+
     protected renderContent(): TemplateResult {
         const did = Store.getUser()?.profile.did;
-        let options: PostOptions[] = ["likes", "reposts", "quotes", "mute"];
-        const labels = ["Show Likes", "Show Reposts", "Shot Quotes", "Mute Thread"];
+        let options: PostOptions[] = ["likes", "reposts", "mute"];
+        const labels = ["Show Likes", "Show Reposts", "Mute Thread"];
         return html` ${map(
             options,
             (option, index) => html`<button class="border-b border-gray/50 py-2 px-2 hover:bg-primary" @click=${() => this._handleOption(option)}>
@@ -432,8 +436,6 @@ export class PostOptionsElement extends PopupMenu {
                     )[0]
                 );
                 break;
-            case "quotes":
-                break;
             case "reposts":
                 document.body.append(
                     dom(
@@ -465,7 +467,7 @@ export class ThreadOverlay extends HashNavOverlay {
     error?: string;
 
     @state()
-    thread?: AppBskyFeedDefs.ThreadViewPost;
+    thread?: ThreadViewPost;
 
     constructor() {
         super();
@@ -554,18 +556,20 @@ export class ThreadOverlay extends HashNavOverlay {
         </div>`;
     }
 
-    renderThreadPost(thread: AppBskyFeedDefs.ThreadViewPost, isRoot = true): HTMLElement {
+    renderThreadPost(thread: ThreadViewPost, isRoot = true): HTMLElement {
         if (!AppBskyFeedDefs.isThreadViewPost(thread)) {
             return dom(html``)[0];
         }
         let uri = this.postUri;
 
+        const animation = "animate-shake animate-delay-500";
         const insertNewPost = (post: PostView, repliesDom: HTMLElement) => {
-            const newPost = dom(html`<div class="min-w-[250px] mb-2 pl-2 border-l border-primary">
+            const newPost = dom(html`<div class="min-w-[250px] mb-2 pl-2 border-l border-primary ${animation}">
                 <post-view
                     .post=${post}
                     .quoteCallback=${(post: PostView) => quote(post, newPost.querySelector("#replies")!)}
                     .replyCallback=${(post: PostView) => reply(post, newPost.querySelector("#replies")!)}
+                    .deleteCallback=${(post: PostView) => deletePost(post, newPost)}
                     .showReplyTo=${false}
                     .openOnClick=${false}
                     .shortTime=${true}
@@ -579,33 +583,46 @@ export class ThreadOverlay extends HashNavOverlay {
             }
             setTimeout(() => {
                 newPost.scrollIntoView({ behavior: "smooth", block: "center" });
-                newPost.classList.add("animate-shake");
             }, 500);
         };
 
-        const quote = (post: AppBskyFeedDefs.PostView, repliesDom: HTMLElement) => {
+        const quote = (post: PostView, repliesDom: HTMLElement) => {
             document.body.append(
                 dom(html`<post-editor-overlay .quote=${post} .sent=${(post: PostView) => insertNewPost(post, repliesDom)}></post-editor-overly>`)[0]
             );
         };
 
-        const reply = (post: AppBskyFeedDefs.PostView, repliesDom: HTMLElement) => {
+        const reply = (post: PostView, repliesDom: HTMLElement) => {
             document.body.append(
                 dom(html`<post-editor-overlay .replyTo=${post} .sent=${(post: PostView) => insertNewPost(post, repliesDom)}></post-editor-overly>`)[0]
             );
         };
 
+        const deletePost = async (post: PostView, postDom: HTMLElement) => {
+            if (!bskyClient) return;
+            try {
+                await bskyClient.deletePost(post.uri);
+            } catch (e) {
+                console.error("Couldn't delete post.", e);
+                alert("Couldn't delete post.");
+            }
+            postDom.remove();
+        };
+
         const postDom = dom(html`<div>
-            ${AppBskyFeedDefs.isNotFoundPost(thread.parent) ? html`<div class="bg-lightgray text-white px-4 py-2">Deleted post.</div>` : nothing}
+            ${AppBskyFeedDefs.isNotFoundPost(thread.parent)
+                ? html`<div class="bg-lightgray text-white px-4 py-2 mb-2 rounded">Deleted post.</div>`
+                : nothing}
             <div
-                class="min-w-[250px] mb-2 ${!isRoot || (thread.post.uri == uri && isRoot) ? "pl-2" : ""} ${thread.post.uri == uri
-                    ? "border-l border-primary"
-                    : ""}"
+                class="${thread.post.uri == uri ? animation : ""} min-w-[250px] mb-2 ${!isRoot || (thread.post.uri == uri && isRoot)
+                    ? "pl-2"
+                    : ""} ${thread.post.uri == uri ? "border-l border-primary" : ""}"
             >
                 <post-view
                     .post=${thread.post}
                     .quoteCallback=${(post: PostView) => quote(post, repliesDom)}
                     .replyCallback=${(post: PostView) => reply(post, repliesDom)}
+                    .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
                     .showReplyTo=${false}
                     .openOnClick=${false}
                     .shortTime=${true}
@@ -623,7 +640,6 @@ export class ThreadOverlay extends HashNavOverlay {
             setTimeout(() => {
                 const postViewDom = postDom.querySelector("post-view");
                 postViewDom?.scrollIntoView({ behavior: "smooth", block: "center" });
-                postViewDom?.parentElement?.classList.add("animate-shake");
             }, 500);
         }
         return postDom; //
