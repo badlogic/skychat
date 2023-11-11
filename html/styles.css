@@ -66,6 +66,10 @@
     .enable-pointer-events {
         pointer-events: all;
     }
+
+    .break-any {
+        overflow-wrap: anywhere;
+    }
 }
 
 @layer icon {

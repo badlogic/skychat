@@ -1,6 +1,6 @@
 import { RichText } from "@atproto/api";
 import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { bskyClient } from "../bsky";
@@ -12,6 +12,7 @@ import { HashNavOverlay, renderTopbar } from "./overlay";
 import { renderPostText } from "./postview";
 import { PopupMenu } from "./popup";
 import { moreIcon } from "../icons";
+import { ActorTimelineFilter, actorTimelineLoader } from "./feed";
 
 @customElement("profile-overlay")
 export class ProfileOverlay extends HashNavOverlay {
@@ -26,6 +27,9 @@ export class ProfileOverlay extends HashNavOverlay {
 
     @state()
     error?: string;
+
+    @state()
+    filter: ActorTimelineFilter = "posts_no_replies";
 
     async load() {
         try {
@@ -65,6 +69,35 @@ export class ProfileOverlay extends HashNavOverlay {
         const profile = this.profile;
         const rt = new RichText({ text: this.profile.description ?? "" });
         rt.detectFacetsWithoutResolution();
+
+        const showFollowers = (ev: Event) => {
+            ev.preventDefault();
+            ev.stopImmediatePropagation();
+            document.body.append(
+                dom(
+                    html`<profile-list-overlay
+                        title="Followers"
+                        .hash=${`followers/${profile.did}`}
+                        .loader=${followersLoader(profile.did)}
+                    ></profile-list-overlay>`
+                )[0]
+            );
+        };
+
+        const showFollowing = (ev: Event) => {
+            ev.preventDefault();
+            ev.stopImmediatePropagation();
+            document.body.append(
+                dom(
+                    html`<profile-list-overlay
+                        title="Following"
+                        .hash=${`following/${profile.did}`}
+                        .loader=${followingLoader(profile.did)}
+                    ></profile-list-overlay>`
+                )[0]
+            );
+        };
+
         return html`<div>
             ${this.profile.banner
                 ? html`<img src="${profile.banner}" class="h-[150px] w-full object-cover" />`
@@ -89,17 +122,45 @@ export class ProfileOverlay extends HashNavOverlay {
                     <span class="text-gray dark:text-lightgray text-sm">${profile.handle}</span>
                 </div>
                 <div class="mt-2 text-sm flex gap-2">
-                    <a href="${getProfileUrl(profile)}" target="_blank"
+                    <a href="" target="_blank" @click=${showFollowers}
                         ><span class="font-bold">${getNumber(profile.followersCount)}</span> followers</a
                     >
-                    <a href="${getProfileUrl(profile)}" target="_blank"
-                        ><span class="font-bold">${getNumber(profile.followsCount)}</span> following</a
-                    >
-                    <a href="${getProfileUrl(profile)}" target="_blank"><span class="font-bold">${getNumber(profile.postsCount)}</span> posts</a>
+                    <a href="" target="_blank" @click=${showFollowing}><span class="font-bold">${getNumber(profile.followsCount)}</span> following</a>
+                    <span class="font-bold">${getNumber(profile.postsCount)}</span>
                 </div>
                 <div class="mt-1 leading-tight whitespace-pre-wrap">${renderPostText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
-                <div>Would show profile of ${this.profile.displayName ?? this.profile.handle}</div>
             </div>
+            <div class="mt-4 border-b border-gray/50">
+                <button
+                    class="${this.filter == "posts_no_replies" ? "border-b border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
+                    @click=${() => (this.filter = "posts_no_replies")}
+                >
+                    Posts
+                </button>
+                <button
+                    class="${this.filter == "posts_with_replies" ? "border-b border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
+                    @click=${() => (this.filter = "posts_with_replies")}
+                >
+                    Posts & Replies
+                </button>
+                <button
+                    class="${this.filter == "posts_with_media" ? "border-b border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
+                    @click=${() => (this.filter = "posts_with_media")}
+                >
+                    Media
+                </button>
+                ${profile.did == user?.profile.did
+                    ? html`<button
+                          class="${this.filter == "likes" ? "border-b border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
+                          @click=${() => (this.filter = "likes")}
+                      >
+                          Likes
+                      </button>`
+                    : nothing}
+            </div>
+            ${dom(
+                html`<div class="min-h-[100dvh]"><skychat-feed .feedLoader=${actorTimelineLoader(profile.did, this.filter)}></skychat-feed></div>`
+            )[0]}
         </div>`;
     }
 }
@@ -243,14 +304,38 @@ export function likesLoader(postUri?: string): ItemsListLoader<string, ProfileVi
     };
 }
 
-export function repostLoader(post?: PostView): ItemsListLoader<string, ProfileView> {
+export function repostLoader(postUri?: string): ItemsListLoader<string, ProfileView> {
     return async (cursor?: string) => {
         if (!bskyClient) return new Error("Not connected");
-        if (!post) return new Error("No post given");
-        const result = await bskyClient.getRepostedBy({ cursor, uri: post.uri });
+        if (!postUri) return new Error("No post given");
+        const result = await bskyClient.getRepostedBy({ cursor, uri: postUri });
         if (!result.success) {
             return new Error("Could not load reposts");
         }
         return { cursor: result.data.cursor, items: result.data.repostedBy };
+    };
+}
+
+export function followersLoader(did: string): ItemsListLoader<string, ProfileView> {
+    return async (cursor?: string) => {
+        if (!bskyClient) return new Error("Not connected");
+        if (!did) return new Error("No account given");
+        const result = await bskyClient.getFollowers({ cursor, actor: did });
+        if (!result.success) {
+            return new Error("Could not load followers");
+        }
+        return { cursor: result.data.cursor, items: result.data.followers };
+    };
+}
+
+export function followingLoader(did: string): ItemsListLoader<string, ProfileView> {
+    return async (cursor?: string) => {
+        if (!bskyClient) return new Error("Not connected");
+        if (!did) return new Error("No account given");
+        const result = await bskyClient.getFollows({ cursor, actor: did });
+        if (!result.success) {
+            return new Error("Could not load followings");
+        }
+        return { cursor: result.data.cursor, items: result.data.follows };
     };
 }

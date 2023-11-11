@@ -1,5 +1,5 @@
 import { html } from "lit";
-import { ProfileOverlay, ThreadOverlay, likesLoader } from ".";
+import { ProfileOverlay, ThreadOverlay, followersLoader, followingLoader, likesLoader } from ".";
 import { dom, splitAtUri, combineAtUri } from "../utils";
 
 export async function routeHash(hash: string) {
@@ -52,6 +52,38 @@ export async function routeHash(hash: string) {
                             title="Likes"
                             .hash=${`likes/${tokens[1]}/${tokens[2]}`}
                             .loader=${likesLoader(combineAtUri(tokens[1], tokens[2]))}
+                            .pushState=${false}
+                        ></profile-list-overlay>`
+                    )[0]
+                );
+            }
+            if (tokens[0] == "following") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "PROFILE-LIST-OVERLAY") {
+                    return;
+                }
+                document.body.append(
+                    dom(
+                        html`<profile-list-overlay
+                            title="Following"
+                            .hash=${`following/${tokens[1]}`}
+                            .loader=${followingLoader(tokens[1])}
+                            .pushState=${false}
+                        ></profile-list-overlay>`
+                    )[0]
+                );
+            }
+            if (tokens[0] == "followers") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "PROFILE-LIST-OVERLAY") {
+                    return;
+                }
+                document.body.append(
+                    dom(
+                        html`<profile-list-overlay
+                            title="Followers"
+                            .hash=${`followers/${tokens[1]}`}
+                            .loader=${followersLoader(tokens[1])}
                             .pushState=${false}
                         ></profile-list-overlay>`
                     )[0]

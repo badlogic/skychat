@@ -1,29 +1,33 @@
-import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api";
+import { AppBskyFeedDefs, AppBskyFeedPost, BskyAgent } from "@atproto/api";
 import { FeedViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { TemplateResult, html, nothing } from "lit";
-import { customElement } from "lit/decorators.js";
-import { bskyClient } from "../bsky";
+import { customElement, property } from "lit/decorators.js";
+import { bskyClient, login } from "../bsky";
 import { reblogIcon } from "../icons";
 import { cacheProfiles } from "../profilecache";
 import { dom, getProfileUrl, splitAtUri } from "../utils";
-import { ItemListLoaderResult, ItemsList } from "./list";
+import { ItemListLoaderResult, ItemsList, ItemsListLoader } from "./list";
 import { Overlay, renderTopbar } from "./overlay";
 
 @customElement("skychat-feed")
 export class Feed extends ItemsList<string, FeedViewPost> {
+    @property()
+    feedLoader: ItemsListLoader<string, FeedViewPost> = homeTimelineLoader;
+
     async loadItems(cursor?: string | undefined): Promise<ItemListLoaderResult<string, AppBskyFeedDefs.FeedViewPost>> {
         if (!bskyClient) return new Error("Not connected");
-        const feedResponse = await bskyClient.app.bsky.feed.getTimeline({ cursor });
-        if (!feedResponse.success) return new Error("Could not load feed");
+        const result = await this.feedLoader(cursor);
+        if (result instanceof Error) return result;
+
         const dids: string[] = [];
-        for (const post of feedResponse.data.feed) {
+        for (const post of result.items) {
             if (post.reply && AppBskyFeedPost.isRecord(post.reply.parent.record) && post.reply.parent.record.reply) {
                 const did = splitAtUri(post.reply.parent.record.reply.parent.uri).repo;
                 dids.push(did);
             }
         }
         await cacheProfiles(bskyClient, dids);
-        return { cursor: feedResponse.data.cursor, items: feedResponse.data.feed };
+        return result;
     }
 
     getItemKey(post: AppBskyFeedDefs.FeedViewPost): string {
@@ -96,3 +100,23 @@ export class FeedOverlay extends Overlay {
         return html`<skychat-feed poll="true"></skychat-feed>`;
     }
 }
+
+export const homeTimelineLoader = async (cursor?: string) => {
+    if (!bskyClient) return new Error("Couldn't load feed");
+    const result = await bskyClient.app.bsky.feed.getTimeline({ cursor });
+    if (!result.success) return new Error("Couldn't load feed");
+    return { cursor: result.data.cursor, items: result.data.feed };
+};
+
+export type ActorTimelineFilter = "posts_with_replies" | "posts_no_replies" | "posts_with_media" | "likes";
+export const actorTimelineLoader = (did: string, filter: ActorTimelineFilter): ItemsListLoader<string, FeedViewPost> => {
+    return async (cursor?: string) => {
+        if (!bskyClient) return new Error("Couldn't load feed");
+        const result =
+            filter != "likes"
+                ? await bskyClient.app.bsky.feed.getAuthorFeed({ cursor, actor: did, filter })
+                : await bskyClient.app.bsky.feed.getActorLikes({ cursor, actor: did });
+        if (!result.success) return new Error("Couldn't load feed");
+        return { cursor: result.data.cursor, items: result.data.feed };
+    };
+};

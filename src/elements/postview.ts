@@ -30,7 +30,7 @@ import {
 } from "../utils";
 import { IconToggle } from "./icontoggle";
 import { PopupMenu } from "./popup";
-import { likesLoader } from "./profile";
+import { likesLoader, repostLoader } from "./profile";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 
 export function renderPostText(record: AppBskyFeedPost.Record) {
@@ -80,7 +80,7 @@ export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | A
         <div class="flex flex-col p-2 w-full">
             <span class="text-gray text-xs">${new URL(cardEmbed.uri).host}</span>
             <span class="font-bold text-sm">${cardEmbed.title}</span>
-            <div class="text-sm line-clamp-2">${cardEmbed.description}</div>
+            <div class="text-sm line-clamp-2 break-any">${cardEmbed.description}</div>
         </div>
     </a>`;
 }
@@ -440,7 +440,7 @@ export class PostOptionsElement extends PopupMenu {
                         html`<profile-list-overlay
                             title="Reposts"
                             .hash=${`likes/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
-                            .loader=${likesLoader(this.post?.uri)}
+                            .loader=${repostLoader(this.post?.uri)}
                         ></profile-list-overlay>`
                     )[0]
                 );
