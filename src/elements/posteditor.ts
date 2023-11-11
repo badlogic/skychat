@@ -144,7 +144,7 @@ export class PostEditor extends LitElement {
                                   false
                               )}
                               <button
-                                  class="absolute right-4 top-4 z-[100] bg-black rounded-full p-1"
+                                  class="absolute right-4 top-4 bg-black rounded-full p-1"
                                   @click=${(ev: Event) => {
                                       if (!ev.currentTarget) return;
                                       const target = ev.currentTarget as HTMLElement;
@@ -191,7 +191,7 @@ export class PostEditor extends LitElement {
                         ? html`<div class="flex relative px-2">
                               <div class="w-full">${renderEmbed(this.embed, false)}</div>
                               <button
-                                  class="absolute right-4 top-4 z-[100]"
+                                  class="absolute right-4 top-4"
                                   @click=${(ev: Event) => {
                                       if (!ev.currentTarget) return;
                                       const target = ev.currentTarget as HTMLElement;
@@ -216,7 +216,7 @@ export class PostEditor extends LitElement {
                                   this.imagesToUpload,
                                   (image) => html`<div class="w-1/4 relative">
                                       <img src="${image.dataUri}" class="animate-jump-in px-1 w-full h-[100px] object-cover" /><button
-                                          class="absolute right-2 top-2 z-[100] bg-black rounded-full p-1"
+                                          class="absolute right-2 top-2 bg-black rounded-full p-1"
                                           @click=${(ev: Event) => {
                                               if (!ev.currentTarget) return;
                                               const target = ev.currentTarget as HTMLElement;
@@ -227,7 +227,7 @@ export class PostEditor extends LitElement {
                                           <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
                                       </button>
                                       <button
-                                          class="absolute left-2 top-2 z-[100] bg-black rounded-full p-1"
+                                          class="absolute left-2 top-2 bg-black rounded-full p-1"
                                           @click=${() => {
                                               document.body.append(dom(html`<image-editor .image=${image}></image-editor>`)[0]);
                                           }}
@@ -257,7 +257,7 @@ export class PostEditor extends LitElement {
                                   false
                               )}
                               <button
-                                  class="absolute right-2 top-2 z-[100] bg-black rounded-full p-1"
+                                  class="absolute right-2 top-2 bg-black rounded-full p-1"
                                   @click=${(ev: Event) => {
                                       if (!ev.currentTarget) return;
                                       const target = ev.currentTarget as HTMLElement;
@@ -324,7 +324,7 @@ export class PostEditor extends LitElement {
                 ${
                     this.handleSuggestions && this.handleSuggestions.length > 0
                         ? html`<div
-                              class="mx-auto flex flex-col bg-white dark:bg-black border border-gray rounded absolute max-w-[100vw] z-[200]"
+                              class="mx-auto flex flex-col bg-white dark:bg-black border border-gray rounded absolute max-w-[100vw]"
                               style="top: calc(${this.handleSuggestions.length} * -2.5em);"
                           >
                               ${map(
@@ -718,7 +718,7 @@ export class PostEditorOverlay extends CloseableElement {
     protected render() {
         const user = Store.getUser();
         if (!user || !bskyClient) return nothing;
-        return html`<div class="absolute flex items-end top-0 w-full h-[100svh] backdrop-blur z-[1000] ">
+        return html`<div class="fixed flex items-end top-0 w-full h-[100svh] backdrop-blur z-10">
             <post-editor
                 class="border border-gray/50 animate-fade animate-duration-[250ms] mx-auto w-[600px]"
                 .cancelable=${true}

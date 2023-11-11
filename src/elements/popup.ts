@@ -64,7 +64,7 @@ export abstract class PopupMenu extends LitElement {
             ${this.show
                 ? html`<div id="content" class="whitespace-nowrap flex flex-col bg-white dark:bg-black border border-gray rounded ${
                       this.show ? "enable-pointer-events" : "hidden"
-                  } absolute right-0">
+                  } absolute right-0 z-20">
                       ${this.renderContent()}
                           </div>
                       </div>`

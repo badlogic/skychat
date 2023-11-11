@@ -105,7 +105,7 @@ export class Chat extends LitElement {
 
     renderHeader() {
         const user = Store.getUser();
-        return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-[100]">
+        return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black">
             <a class="flex items-center text-primary font-bold text-center" href="/"
                 ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
             >
@@ -226,7 +226,7 @@ export class Chat extends LitElement {
                     ? html` <post-editor class="sticky bottom-0 border-t border-primary border-dashed" .hashtag=${this.hashtag}></post-editor> `
                     : nothing}
             </div>
-            <div id="catchup" class="bg-gray hidden fixed flex items-center z-[50]">
+            <div id="catchup" class="bg-gray hidden fixed flex items-center">
                 <button
                     @click=${() => {
                         this.userScrolled = false;

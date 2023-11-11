@@ -135,7 +135,7 @@ export abstract class Overlay extends LitElement {
     }
 
     render() {
-        return html`<div class="fixed top-0 left-0 w-full h-full bg-white dark:bg-black overflow-auto z-[1000]">
+        return html`<div class="fixed top-0 left-0 w-full h-full bg-white dark:bg-black overflow-auto z-10">
             <div class="mx-auto max-w-[600px] h-full flex flex-col">${this.renderHeader()} ${this.renderContent()}</div>
         </div>`;
     }
@@ -174,7 +174,7 @@ export abstract class HashNavOverlay extends Overlay {
 import logoSvg from "../../html/logo.svg";
 
 export function renderTopbar(title: string, buttons?: TemplateResult | HTMLElement) {
-    return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-[100]">
+    return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-10">
             <a class="flex items-center text-primary font-bold text-center" href="/client.html"
                 ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
             >

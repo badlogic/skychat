@@ -143,7 +143,7 @@ class SkychatClient extends LitElement {
                         }
                     }}
                 ></skychat-feed>
-                <div class="fixed bottom-4 transform translate-x-[calc(min(100vw,600px)-4em)] z-100">
+                <div class="fixed bottom-4 transform translate-x-[calc(min(100vw,600px)-4em)]">
                     <button
                         class="flex justify-center items-center w-12 h-12 border-primary bg-primary rounded-full"
                         @click=${() => this.showPostEditor()}
@@ -246,7 +246,7 @@ class SkychatClient extends LitElement {
 
     renderTopbar() {
         const user = Store.getUser();
-        return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-[100]">
+        return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-10">
             <a class="flex items-center text-primary font-bold text-center" href="/client.html"
                 ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
             >

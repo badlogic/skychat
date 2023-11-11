@@ -109,8 +109,10 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
                 <img
                     src="${image.thumb}"
                     @click="${(ev: Event) => {
-                        ev.stopImmediatePropagation();
-                        unblur(ev.target as HTMLElement);
+                        if (sensitive) {
+                            ev.stopImmediatePropagation();
+                            unblur(ev.target as HTMLElement);
+                        }
                     }}"
                     alt="${image.alt}"
                     class="max-h-[40svh] rounded ${sensitive ? "blur-lg" : ""}"
