@@ -113,7 +113,7 @@ const streamErrors: { code: string; reason: string; date: string }[] = [];
 
     const setupStream = () => {
         numStreamRestarts++;
-        let client = subscribeRepos(`wss://bsky.social`, { decodeRepoOps: true });
+        let client = subscribeRepos(`wss://bsky.network`, { decodeRepoOps: true });
         client.on("message", onMessage);
         client.on("error", (code, reason) => streamErrors.push({ date: new Date().toString(), code, reason }));
         client.on("close", () => setupStream());

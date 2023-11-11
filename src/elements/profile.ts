@@ -157,6 +157,12 @@ export class ProfileOverlay extends HashNavOverlay {
                           Likes
                       </button>`
                     : nothing}
+                <button
+                    class="${this.filter == "posts_with_media" ? "border-b border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
+                    @click=${() => (this.filter = "posts_with_media")}
+                >
+                    Lists
+                </button>
             </div>
             ${dom(
                 html`<div class="min-h-[100dvh]"><skychat-feed .feedLoader=${actorTimelineLoader(profile.did, this.filter)}></skychat-feed></div>`

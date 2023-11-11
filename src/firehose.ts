@@ -17,7 +17,7 @@ export const startEventStream = (onPost: (post: FirehosePost) => void, onClose: 
 };
 
 export class BskyEventStream {
-    serviceUri = "bsky.social";
+    serviceUri = "bsky.network";
     nsid = "com.atproto.sync.subscribeRepos";
     closed: boolean = false;
 
@@ -25,7 +25,7 @@ export class BskyEventStream {
     protected baseClient = new AtpBaseClient();
 
     constructor(private onPost: (post: FirehosePost) => void, private onClose: () => void) {
-        this.serviceUri = "bsky.social";
+        this.serviceUri = "bsky.network";
         this.nsid = "com.atproto.sync.subscribeRepos";
         this.ws = new WebSocket(`wss://${this.serviceUri}/xrpc/${this.nsid}`);
         this.ws.binaryType = "arraybuffer";
@@ -45,18 +45,17 @@ export class BskyEventStream {
                     const cr = await CarReader.fromBytes(message.blocks);
                     if (op.cid) {
                         const blocks = cr._blocks.map((block) => cborDecode(block.bytes)) as any[];
-                        if (blocks.length < 2) continue;
-                        const payload = blocks[blocks.length - 2];
-                        if (payload["$type"] != "app.bsky.feed.post") continue;
-                        const payloadDid = blocks[blocks.length - 1];
-                        if (!payloadDid["did"]) continue;
-
-                        op.post = {
-                            uri: `at://${payloadDid["did"]}/app.bsky.feed.post/${op.path.split("/")[1]}`,
-                            authorDid: payloadDid["did"],
-                            rkey: op.path.split("/")[1],
-                            ...payload,
-                        } as FirehosePost;
+                        for (const block of blocks) {
+                            if (block["$type"] == "app.bsky.feed.post") {
+                                op.post = {
+                                    uri: `at://${message.repo}/app.bsky.feed.post/${op.path.split("/")[1]}`,
+                                    authorDid: message.repo,
+                                    rkey: op.path.split("/")[1],
+                                    ...block,
+                                } as FirehosePost;
+                                break;
+                            }
+                        }
                     }
                 }
             }

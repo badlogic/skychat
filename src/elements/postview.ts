@@ -560,16 +560,17 @@ export class ThreadOverlay extends HashNavOverlay {
         }
         let uri = this.postUri;
 
-        const insertNewPost = (post: PostView) => {
+        const insertNewPost = (post: PostView, repliesDom: HTMLElement) => {
             const newPost = dom(html`<div class="min-w-[250px] mb-2 pl-2 border-l border-primary">
                 <post-view
                     .post=${post}
-                    .quoteCallback=${quote}
-                    .replyCallback=${reply}
+                    .quoteCallback=${(post: PostView) => quote(post, newPost.querySelector("#replies")!)}
+                    .replyCallback=${(post: PostView) => reply(post, newPost.querySelector("#replies")!)}
                     .showReplyTo=${false}
                     .openOnClick=${false}
                     .shortTime=${true}
                 ></post-view>
+                <div id="replies" class="${isRoot ? "ml-2" : "ml-4"}"></div>
             </div>`)[0];
             if (repliesDom.children.length > 0) {
                 repliesDom.children[0].before(newPost);
@@ -582,12 +583,16 @@ export class ThreadOverlay extends HashNavOverlay {
             }, 500);
         };
 
-        const quote = (post: AppBskyFeedDefs.PostView) => {
-            document.body.append(dom(html`<post-editor-overlay .quote=${post} .sent=${insertNewPost}></post-editor-overly>`)[0]);
+        const quote = (post: AppBskyFeedDefs.PostView, repliesDom: HTMLElement) => {
+            document.body.append(
+                dom(html`<post-editor-overlay .quote=${post} .sent=${(post: PostView) => insertNewPost(post, repliesDom)}></post-editor-overly>`)[0]
+            );
         };
 
-        const reply = (post: AppBskyFeedDefs.PostView) => {
-            document.body.append(dom(html`<post-editor-overlay .replyTo=${post} .sent=${insertNewPost}></post-editor-overly>`)[0]);
+        const reply = (post: AppBskyFeedDefs.PostView, repliesDom: HTMLElement) => {
+            document.body.append(
+                dom(html`<post-editor-overlay .replyTo=${post} .sent=${(post: PostView) => insertNewPost(post, repliesDom)}></post-editor-overly>`)[0]
+            );
         };
 
         const postDom = dom(html`<div>
@@ -599,8 +604,8 @@ export class ThreadOverlay extends HashNavOverlay {
             >
                 <post-view
                     .post=${thread.post}
-                    .quoteCallback=${quote}
-                    .replyCallback=${reply}
+                    .quoteCallback=${(post: PostView) => quote(post, repliesDom)}
+                    .replyCallback=${(post: PostView) => reply(post, repliesDom)}
                     .showReplyTo=${false}
                     .openOnClick=${false}
                     .shortTime=${true}
