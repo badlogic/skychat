@@ -307,6 +307,7 @@ export class PostEditor extends LitElement {
                                       this.cancled();
                                   }}
                                   class="ml-2 bg-gray text-white my-2 mr-2 px-2 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
+                                  ?disabled=${this.isSending}
                               >
                                   Cancel
                               </button>`
