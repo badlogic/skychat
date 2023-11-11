@@ -41,18 +41,36 @@ export async function routeHash(hash: string) {
                 }
                 document.body.append(dom(html`<notifications-overlay .pushState=${false}></notifications-overlay>`)[0]);
             }
-
             if (tokens[0] == "likes") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "PROFILE-LIST-OVERLAY") {
+                    return;
+                }
                 document.body.append(
                     dom(
                         html`<profile-list-overlay
                             title="Likes"
                             .hash=${`likes/${tokens[1]}/${tokens[2]}`}
                             .loader=${likesLoader(combineAtUri(tokens[1], tokens[2]))}
+                            .pushState=${false}
                         ></profile-list-overlay>`
                     )[0]
                 );
             }
         }
     }
+}
+
+let setup = false;
+export function pushHash(hash: string) {
+    if (!setup) {
+        setup = true;
+        window.addEventListener("hashchange", () => {
+            routeHash(location.hash);
+        });
+    }
+
+    if (hash.startsWith("#")) hash = hash.substring(1);
+    const baseUrl = window.location.href.split("#")[0];
+    history.replaceState(null, "", baseUrl + (hash.length == 0 ? "" : "#" + hash));
 }

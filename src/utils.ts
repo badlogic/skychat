@@ -1,9 +1,13 @@
 import { AppBskyActorDefs, AtpSessionData, AtpSessionEvent, BskyAgent } from "@atproto/api";
 import { TemplateResult, html, render, svg } from "lit";
-import { unsafeHTML } from "lit/directives/unsafe-html.js";
-// @ts-ignore
-import logoSvg from "../html/logo.svg";
 import { bskyClient } from "./bsky";
+
+export function getNumber(num: number | undefined): string {
+    if (num == undefined) return "0";
+    if (num < 1000) return num.toString();
+    if (num < 1000000) return (num / 1000).toFixed(1) + "K";
+    return (num / 1000000).toFixed(1) + "M";
+}
 
 export function getDateString(inputDateTime: Date): string {
     const hours = inputDateTime.getHours();
@@ -289,19 +293,6 @@ export function hasHashtag(text: string, hashtag: string) {
         }
     }
     return false;
-}
-
-export function renderTopbar(title: string, buttons: TemplateResult | HTMLElement) {
-    return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-[100]">
-            <a class="flex items-center text-primary font-bold text-center" href="/client.html"
-                ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
-            >
-            <button class="text-primary font-bold pl-2 relative pr-2">
-                <span>${title}</span>
-            </button>
-            ${buttons}
-        </div>
-        <div class="min-h-[40px] max-h-[40px]"></div>`;
 }
 
 export function renderAuthor(author: AppBskyActorDefs.ProfileView, smallAvatar = false) {

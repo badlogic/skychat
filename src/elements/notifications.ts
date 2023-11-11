@@ -12,9 +12,8 @@ import { map } from "lit/directives/map.js";
 import { bskyClient, loadPosts } from "../bsky";
 import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
 import { Store } from "../store";
-import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, renderAuthor, renderTopbar, splitAtUri } from "../utils";
-import { HashNavCloseableElement } from "./closable";
-import { PostEditor } from "./posteditor";
+import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, renderAuthor } from "../utils";
+import { HashNavOverlay, renderTopbar } from "./overlay";
 import { renderEmbed, renderPostText } from "./postview";
 
 type NotificationType = "like" | "repost" | "follow" | "mention" | "reply" | "quote" | (string & {});
@@ -22,7 +21,7 @@ type NotificationType = "like" | "repost" | "follow" | "mention" | "reply" | "qu
 type GroupedNotification = Notification & { autors: [] };
 
 @customElement("notifications-overlay")
-export class NotificationsOverlay extends HashNavCloseableElement {
+export class NotificationsOverlay extends HashNavOverlay {
     @state()
     isLoading = true;
 
@@ -137,25 +136,16 @@ export class NotificationsOverlay extends HashNavCloseableElement {
         this.load();
     }
 
-    render() {
-        return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black overflow-auto">
-            <div class="mx-auto max-w-[600px] h-full flex flex-col">
-                ${renderTopbar(
-                    "Notifications",
-                    html`<button
-                        @click=${() => this.close()}
-                        class="ml-auto bg-primary text-white px-2 rounded disabled:bg-gray/70 disabled:text-white/70"
-                    >
-                        Close
-                    </button>`
-                )}
-                ${this.isLoading
-                    ? html`<div class="animate-fade flex-grow flex flex-col">
-                          <div class="align-top"><div id="loader" class="w-full text-center p-4 animate-pulse">Loading notifications</div></div>
-                      </div>`
-                    : this.renderNotifications()}
-            </div>
-        </div>`;
+    renderHeader(): TemplateResult {
+        return html` ${renderTopbar("Notifications", this.closeButton())}`;
+    }
+
+    renderContent(): TemplateResult {
+        return html`${this.isLoading
+            ? html`<div class="animate-fade flex-grow flex flex-col">
+                  <div class="align-top"><div id="loader" class="w-full text-center p-4 animate-pulse">Loading notifications</div></div>
+              </div>`
+            : this.renderNotifications()}`;
     }
 
     renderNotification(notification: AppBskyNotificationListNotifications.Notification) {

@@ -1,4 +1,4 @@
-export * from "./closable";
+export * from "./overlay";
 export * from "./feed";
 export * from "./icontoggle";
 export * from "./list";

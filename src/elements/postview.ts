@@ -5,35 +5,33 @@ import {
     AppBskyEmbedRecordWithMedia,
     AppBskyFeedDefs,
     AppBskyFeedPost,
-    BskyAgent,
     RichText,
 } from "@atproto/api";
-import { ProfileView, ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
+import { bskyClient } from "../bsky";
 import { moreIcon, quoteIcon, replyIcon } from "../icons";
 import { profileCache } from "../profilecache";
+import { Store } from "../store";
 import {
     combineAtUri,
     contentLoader,
     dom,
     getDateString,
     getProfileUrl,
+    getTimeDifference,
     hasLinkOrButtonParent,
     renderAuthor,
-    renderTopbar,
     splitAtUri,
 } from "../utils";
-import { CloseableElement, HashNavCloseableElement } from "./closable";
 import { IconToggle } from "./icontoggle";
-import { bskyClient } from "../bsky";
 import { PopupMenu } from "./popup";
-import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { Store } from "../store";
-import { ItemsListLoader } from "./list";
 import { likesLoader } from "./profile";
+import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 
 export function renderPostText(record: AppBskyFeedPost.Record) {
     if (!record.facets) {
@@ -178,7 +176,8 @@ export function renderRecord(
     showHeader = true,
     subHeader?: TemplateResult | HTMLElement,
     showReplyto = true,
-    openOnClick = true
+    openOnClick = true,
+    shortTime = false
 ): TemplateResult {
     const replyToAuthorDid = record.reply ? splitAtUri(record.reply?.parent.uri).repo : undefined;
     const replyToProfile = replyToAuthorDid ? profileCache[replyToAuthorDid] : undefined;
@@ -197,7 +196,7 @@ export function renderRecord(
                       ${prefix ? html`<span class="mr-1 font-bold">${prefix}</span>` : nothing} ${renderAuthor(author, smallAvatar)}
                       ${prefix == undefined
                           ? html`<a
-                                class="ml-auto text-right text-xs text-gray whitespace-nowrap hover:underline"
+                                class="${shortTime ? "" : "ml-auto"} text-right text-xs text-gray whitespace-nowrap hover:underline"
                                 href="https://bsky.app/profile/${author.did}/post/${rkey}"
                                 target="_blank"
                                 @click=${(ev: Event) => {
@@ -206,7 +205,9 @@ export function renderRecord(
                                     ev.stopPropagation();
                                     document.body.append(dom(html`<thread-overlay .postUri=${combineAtUri(author.did, rkey)}></thread-overlay>`)[0]);
                                 }}
-                                >${getDateString(new Date(record.createdAt))}</a
+                                >${!shortTime
+                                    ? getDateString(new Date(record.createdAt))
+                                    : getTimeDifference(new Date(record.createdAt).getTime())}</a
                             >`
                           : nothing}
                   </div>
@@ -252,6 +253,9 @@ export class PostViewElement extends LitElement {
     @property()
     openOnClick = true;
 
+    @property()
+    shortTime = false;
+
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
@@ -278,7 +282,8 @@ export class PostViewElement extends LitElement {
                 this.showHeader,
                 this.subHeader,
                 this.showReplyTo,
-                this.openOnClick
+                this.openOnClick,
+                this.shortTime
             )}
             <div class="flex items-center gap-4 mt-1">
                 <button @click=${this.reply} class="flex gap-1 items-center text-gray">
@@ -297,7 +302,7 @@ export class PostViewElement extends LitElement {
                         >${this.post.likeCount ?? 0}</icon-toggle
                     >
                 </div>
-                <post-options class="ml-auto" .post=${this.post} .handleOption=${this.handleOption}></post-options>
+                <post-options class="${this.shortTime ? "" : "ml-auto"}" .post=${this.post} .handleOption=${this.handleOption}></post-options>
             </div>
         </div>`;
     }
@@ -363,25 +368,16 @@ export class PostViewElement extends LitElement {
 }
 
 @customElement("alt-text")
-export class AltText extends CloseableElement {
+export class AltText extends Overlay {
     @property()
-    alt?: string;
+    alt: string = "";
 
-    protected createRenderRoot(): Element | ShadowRoot {
-        return this;
+    renderHeader(): TemplateResult {
+        return html`${renderTopbar("Alt Text", this.closeButton())}`;
     }
 
-    render() {
-        const alt = this.alt ? this.alt : "";
-        return html`<div @click=${() => this.close()} class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black">
-            <div class="mx-auto max-w-[600px] h-full flex flex-col p-4 gap-2">
-                <div class="flex items-center">
-                    <h1 class="text-lg text-primary font-bold">Alt text</h1>
-                    <button class="ml-auto bg-primary text-white px-2 py-1 rounded disabled:bg-gray/70 disabled:text-white/70">Close</button>
-                </div>
-                <div class="overflow-auto flex-1 whitespace-pre-wrap">${alt}</div>
-            </div>
-        </div>`;
+    renderContent(): TemplateResult {
+        return html`<div class="overflow-auto flex-1 whitespace-pre-wrap">${this.alt}</div>`;
     }
 }
 
@@ -402,7 +398,13 @@ export class PostOptionsElement extends PopupMenu {
         const did = Store.getUser()?.profile.did;
         let options: PostOptions[] = ["likes", "reposts", "quotes", "mute"];
         const labels = ["Show Likes", "Show Reposts", "Shot Quotes", "Mute Thread"];
-        return html` ${did && this.post?.uri.includes(did)
+        return html` ${map(
+            options,
+            (option, index) => html`<button class="border-b border-gray/50 py-2 px-2 hover:bg-primary" @click=${() => this._handleOption(option)}>
+                ${labels[index]}
+            </button>`
+        )}
+        ${did && this.post?.uri.includes(did)
             ? html`<button
                   class="border-b border-gray/50 py-2 px-2 hover:bg-primary"
                   @click=${() => {
@@ -412,13 +414,7 @@ export class PostOptionsElement extends PopupMenu {
               >
                   Delete Post
               </button>`
-            : nothing}
-        ${map(
-            options,
-            (option, index) => html`<button class="border-b border-gray/50 py-2 px-2 hover:bg-primary" @click=${() => this._handleOption(option)}>
-                ${labels[index]}
-            </button>`
-        )}`;
+            : nothing}`;
     }
 
     async _handleOption(option: PostOptions) {
@@ -442,7 +438,7 @@ export class PostOptionsElement extends PopupMenu {
                 document.body.append(
                     dom(
                         html`<profile-list-overlay
-                            title="Likes"
+                            title="Reposts"
                             .hash=${`likes/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
                             .loader=${likesLoader(this.post?.uri)}
                         ></profile-list-overlay>`
@@ -458,7 +454,7 @@ export class PostOptionsElement extends PopupMenu {
 }
 
 @customElement("thread-overlay")
-export class ThreadOverlay extends HashNavCloseableElement {
+export class ThreadOverlay extends HashNavOverlay {
     @property()
     postUri?: string;
 
@@ -473,10 +469,6 @@ export class ThreadOverlay extends HashNavCloseableElement {
 
     constructor() {
         super();
-    }
-
-    protected createRenderRoot(): Element | ShadowRoot {
-        return this;
     }
 
     getHash(): string {
@@ -551,36 +543,33 @@ export class ThreadOverlay extends HashNavCloseableElement {
         }
     }
 
-    render() {
-        return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black overflow-auto">
-            <div class="mx-auto max-w-[600px] h-full flex flex-col gap-2">
-                ${renderTopbar(
-                    "Thread",
-                    html`<button
-                        @click=${() => this.close()}
-                        class="ml-auto bg-primary text-white px-2 rounded disabled:bg-gray/70 disabled:text-white/70"
-                    >
-                        Close
-                    </button>`
-                )}
-                <div class="px-4">
-                    <div class="h-[40px]"></div>
-                    ${this.isLoading ? html`<div>${contentLoader}</div>` : nothing} ${this.error ? html`<div>${this.error}</div>` : nothing}
-                    ${this.thread ? this.renderThread(this.thread) : nothing}
-                </div>
-            </div>
+    renderHeader() {
+        return html`${renderTopbar("Thread", this.closeButton())}`;
+    }
+
+    renderContent() {
+        return html`<div class="px-4">
+            ${this.isLoading ? html`<div>${contentLoader}</div>` : nothing} ${this.error ? html`<div>${this.error}</div>` : nothing}
+            ${this.thread ? this.renderThreadPost(this.thread) : nothing}
         </div>`;
     }
 
-    renderThread(thread: AppBskyFeedDefs.ThreadViewPost): HTMLElement {
+    renderThreadPost(thread: AppBskyFeedDefs.ThreadViewPost, isRoot = true): HTMLElement {
         if (!AppBskyFeedDefs.isThreadViewPost(thread)) {
             return dom(html``)[0];
         }
         let uri = this.postUri;
 
         const insertNewPost = (post: PostView) => {
-            const newPost = dom(html`<div class="border-l border-primary">
-                <post-view .post=${post} .quoteCallback=${quote} .replyCallback=${reply} .showReplyTo=${false} .openOnClick=${false}></post-view>
+            const newPost = dom(html`<div class="min-w-[250px] mb-2 pl-2 border-l border-primary">
+                <post-view
+                    .post=${post}
+                    .quoteCallback=${quote}
+                    .replyCallback=${reply}
+                    .showReplyTo=${false}
+                    .openOnClick=${false}
+                    .shortTime=${true}
+                ></post-view>
             </div>`)[0];
             if (repliesDom.children.length > 0) {
                 repliesDom.children[0].before(newPost);
@@ -603,19 +592,24 @@ export class ThreadOverlay extends HashNavCloseableElement {
 
         const postDom = dom(html`<div>
             ${AppBskyFeedDefs.isNotFoundPost(thread.parent) ? html`<div class="bg-lightgray text-white px-4 py-2">Deleted post.</div>` : nothing}
-            <div class="${thread.post.uri == uri ? "border-l border-primary" : ""}">
+            <div
+                class="min-w-[250px] mb-2 ${!isRoot || (thread.post.uri == uri && isRoot) ? "pl-2" : ""} ${thread.post.uri == uri
+                    ? "border-l border-primary"
+                    : ""}"
+            >
                 <post-view
                     .post=${thread.post}
                     .quoteCallback=${quote}
                     .replyCallback=${reply}
                     .showReplyTo=${false}
                     .openOnClick=${false}
+                    .shortTime=${true}
                 ></post-view>
             </div>
-            <div id="replies" class="ml-4 border-l border-dashed border-gray/50">
+            <div id="replies" class="${isRoot ? "ml-2" : "ml-4"}">
                 ${map(thread.replies, (reply) => {
                     if (!AppBskyFeedDefs.isThreadViewPost(reply)) return html``;
-                    return this.renderThread(reply);
+                    return html`<div class="border-l border-dashed border-gray/20">${this.renderThreadPost(reply, false)}</div>`;
                 })}
             </div>
         </div>`)[0];

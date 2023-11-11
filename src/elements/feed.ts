@@ -1,14 +1,13 @@
-import { AppBskyFeedDefs, AppBskyFeedGetTimeline, AppBskyFeedPost, BskyAgent } from "@atproto/api";
+import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api";
 import { FeedViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
-import { map } from "lit/directives/map.js";
+import { TemplateResult, html, nothing } from "lit";
+import { customElement } from "lit/decorators.js";
+import { bskyClient } from "../bsky";
 import { reblogIcon } from "../icons";
 import { cacheProfiles } from "../profilecache";
-import { contentLoader, dom, getProfileUrl, onVisibleOnce, renderTopbar, splitAtUri } from "../utils";
-import { CloseableElement, pushHash } from "./closable";
-import { bskyClient } from "../bsky";
+import { dom, getProfileUrl, splitAtUri } from "../utils";
 import { ItemListLoaderResult, ItemsList } from "./list";
+import { Overlay, renderTopbar } from "./overlay";
 
 @customElement("skychat-feed")
 export class Feed extends ItemsList<string, FeedViewPost> {
@@ -84,27 +83,16 @@ export class Feed extends ItemsList<string, FeedViewPost> {
 }
 
 @customElement("skychat-feed-overlay")
-export class FeedOverlay extends CloseableElement {
+export class FeedOverlay extends Overlay {
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
 
-    render() {
-        return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black overflow-auto">
-            <div class="mx-auto max-w-[600px] h-full flex flex-col">
-                ${renderTopbar(
-                    "Home",
-                    html`<button
-                        @click=${() => this.close()}
-                        class="ml-auto bg-primary text-white px-2 rounded disabled:bg-gray/70 disabled:text-white/70"
-                    >
-                        Close
-                    </button>`
-                )}
-                <div class="pt-[40px]">
-                    <skychat-feed poll="true"></skychat-feed>
-                </div>
-            </div>
-        </div>`;
+    renderHeader() {
+        return html`${renderTopbar("Home", this.closeButton())}`;
+    }
+
+    renderContent(): TemplateResult {
+        return html`<skychat-feed poll="true"></skychat-feed>`;
     }
 }

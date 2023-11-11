@@ -38,6 +38,7 @@
     "firebase-admin": "^11.11.0",
     "husky": "^8.0.3",
     "lit": "^2.8.0",
+    "openai": "^4.17.4",
     "remixicon": "^3.5.0",
     "tailwindcss-animated": "^1.0.1",
     "typescript": "^5.2.2"

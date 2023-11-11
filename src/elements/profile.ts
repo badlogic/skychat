@@ -1,20 +1,20 @@
-import { ProfileView, ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { RichText } from "@atproto/api";
+import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { bskyClient } from "../bsky";
 import { cacheProfile, profileCache } from "../profilecache";
-import { AtUri, contentLoader, dom, hasLinkOrButtonParent, onVisibleOnce, renderAuthor, renderTopbar } from "../utils";
-import { HashNavCloseableElement } from "./closable";
-import { closeIcon } from "../icons";
-import { RichText } from "@atproto/api";
-import { map } from "lit/directives/map.js";
-import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { renderPostText } from "./postview";
 import { Store } from "../store";
+import { contentLoader, defaultAvatar, dom, getNumber, getProfileUrl, hasLinkOrButtonParent, renderAuthor } from "../utils";
 import { ItemListLoaderResult, ItemsList, ItemsListLoader } from "./list";
+import { HashNavOverlay, renderTopbar } from "./overlay";
+import { renderPostText } from "./postview";
+import { PopupMenu } from "./popup";
+import { moreIcon } from "../icons";
 
 @customElement("profile-overlay")
-export class ProfileOverlay extends HashNavCloseableElement {
+export class ProfileOverlay extends HashNavOverlay {
     @property()
     did?: string;
 
@@ -26,10 +26,6 @@ export class ProfileOverlay extends HashNavCloseableElement {
 
     @state()
     error?: string;
-
-    constructor() {
-        super();
-    }
 
     async load() {
         try {
@@ -57,41 +53,80 @@ export class ProfileOverlay extends HashNavCloseableElement {
         this.load();
     }
 
-    protected createRenderRoot(): Element | ShadowRoot {
-        return this;
+    renderHeader(): TemplateResult {
+        return html`${renderTopbar("Profile", this.closeButton())}`;
     }
 
-    render() {
-        if (this.isLoading || this.error)
-            return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black overflow-auto">
-                <div class="mx-auto max-w-[600px] h-full flex flex-col gap-2">
-                    ${renderTopbar(
-                        "Profile",
-                        html`<button
-                            @click=${() => this.close()}
-                            class="ml-auto bg-primary text-white px-2 rounded disabled:bg-gray/70 disabled:text-white/70"
-                        >
-                            <i class="icon">${closeIcon}</i>
-                        </button>`
-                    )}
-                    <div class="align-top pt-[40px]">${this.error ? this.error : contentLoader}</div>
-                </div>
-            </div>`;
+    renderContent(): TemplateResult {
+        if (this.isLoading || this.error || !this.profile)
+            return html`<div class="align-top pt-[40px]">${this.error ? this.error : contentLoader}</div>`;
 
-        return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black overflow-auto">
-            <div class="mx-auto max-w-[600px] h-full flex flex-col gap-2">
-                ${renderTopbar(
-                    "Profile",
-                    html`<button
-                        @click=${() => this.close()}
-                        class="ml-auto bg-primary text-white px-2 rounded disabled:bg-gray/70 disabled:text-white/70"
+        const user = Store.getUser();
+        const profile = this.profile;
+        const rt = new RichText({ text: this.profile.description ?? "" });
+        rt.detectFacetsWithoutResolution();
+        return html`<div>
+            ${this.profile.banner
+                ? html`<img src="${profile.banner}" class="h-[150px] w-full object-cover" />`
+                : html`<div class="bg-blue-500 h-[150px] w-full"></div>`}
+            <div class="flex px-4 mt-[-48px] items-end">
+                ${profile.avatar
+                    ? html`<img class="w-24 h-24 rounded-full" src="${profile.avatar}" />`
+                    : html`<i class="icon w-24 h-24">${defaultAvatar}</i>`}
+                <div class="ml-auto flex items-center gap-2">
+                    ${profile.did != user?.profile.did
+                        ? html`<button class="${profile.viewer?.following ? "bg-gray/50" : "bg-primary"} text-white rounded-full px-4 py-1 ml-auto">
+                                  ${profile.viewer?.following ? "Unfollow" : "Follow"}
+                              </button>
+                              <profile-options .profile=${profile}></profile-options>`
+                        : nothing}
+                </div>
+            </div>
+            <div class="px-4">
+                <div class="text-2xl">${this.profile.displayName ?? this.profile.handle}</div>
+                <div class="flex items-center gap-2 mt-2">
+                    ${profile.viewer?.followedBy ? html`<span class="p-1 text-xs rounded bg-gray/50 text-white">Follows you</span>` : nothing}
+                    <span class="text-gray dark:text-lightgray text-sm">${profile.handle}</span>
+                </div>
+                <div class="mt-2 text-sm flex gap-2">
+                    <a href="${getProfileUrl(profile)}" target="_blank"
+                        ><span class="font-bold">${getNumber(profile.followersCount)}</span> followers</a
                     >
-                        Close
-                    </button>`
-                )}
-                <div></div>
+                    <a href="${getProfileUrl(profile)}" target="_blank"
+                        ><span class="font-bold">${getNumber(profile.followsCount)}</span> following</a
+                    >
+                    <a href="${getProfileUrl(profile)}" target="_blank"><span class="font-bold">${getNumber(profile.postsCount)}</span> posts</a>
+                </div>
+                <div class="mt-1 leading-tight whitespace-pre-wrap">${renderPostText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
+                <div>Would show profile of ${this.profile.displayName ?? this.profile.handle}</div>
             </div>
         </div>`;
+    }
+}
+
+@customElement("profile-options")
+export class ProfileOptionsElement extends PopupMenu {
+    @property()
+    profile?: ProfileView;
+
+    protected renderButton(): TemplateResult {
+        return html`<i slot="buttonText" class="icon w-[1.2em] h-[1.2em] fill-gray">${moreIcon}</i>`;
+    }
+    protected renderContent(): TemplateResult {
+        const createButton = (label: TemplateResult, click: () => void) => {
+            return html`<button
+                class="border-b border-gray/50 py-2 px-2 hover:bg-primary"
+                @click=${() => {
+                    this.close();
+                    click();
+                }}
+            >
+                ${label}
+            </button>`;
+        };
+
+        return html` ${createButton(html`<span>Add to List</span>`, () => {})} ${createButton(html`<span>Mute</span>`, () => {})}
+        ${createButton(html`<span>Block</span>`, () => {})} ${createButton(html`<span>Report</span>`, () => {})}`;
     }
 }
 
@@ -131,16 +166,16 @@ export class ProfileViewElement extends LitElement {
                     <div class="flex flex-col">
                         ${renderAuthor(this.profile)}
                         ${this.profile.viewer?.followedBy
-                            ? html`<div><span class="p-1 text-xs rounded bg-gray/50 text-white">Follows you</span></div>`
+                            ? html`<div class="mt-1"><span class="p-1 text-xs rounded bg-gray/50 text-white">Follows you</span></div>`
                             : nothing}
                     </div>
                     ${this.profile.did != user?.profile.did
-                        ? html`<button class="${this.following ? "bg-gray" : "bg-primary"} text-white rounded px-2 ml-auto">
+                        ? html`<button class="${this.following ? "bg-gray/50" : "bg-primary"} text-white rounded-full px-4 py-1 ml-auto">
                               ${this.following ? "Unfollow" : "Follow"}
                           </button>`
                         : nothing}
                 </div>
-                <div class="text-sm pt-2 whitespace-pre-wrap">${renderPostText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
+                <div class="mt-1 leading-tight whitespace-pre-wrap">${renderPostText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
             </div>
         </div>`;
     }
@@ -162,14 +197,12 @@ export class ProfileList extends ItemsList<string, ProfileView> {
     }
 
     renderItem(item: ProfileView): TemplateResult {
-        return html`<div class="border-b border-gray/50 px-4 py-2">
-            <profile-view .profile=${item} .following=${item.viewer?.followedBy}></profile-view>
-        </div>`;
+        return html`<profile-view .profile=${item} .following=${item.viewer?.following}></profile-view>`;
     }
 }
 
 @customElement("profile-list-overlay")
-export class ProfileListOverlay extends HashNavCloseableElement {
+export class ProfileListOverlay extends HashNavOverlay {
     @property()
     title: string = "";
 
@@ -189,21 +222,12 @@ export class ProfileListOverlay extends HashNavCloseableElement {
         return this.hash;
     }
 
-    render() {
-        return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black overflow-auto">
-            <div class="mx-auto max-w-[600px] h-full flex flex-col">
-                ${renderTopbar(
-                    this.title,
-                    html`<button
-                        @click=${() => this.close()}
-                        class="ml-auto bg-primary text-white px-2 rounded disabled:bg-gray/70 disabled:text-white/70"
-                    >
-                        Close
-                    </button>`
-                )}
-                <profile-list .loader=${this.loader}></profile-list>
-            </div>
-        </div>`;
+    renderHeader(): TemplateResult {
+        return html` ${renderTopbar(this.title, this.closeButton())}`;
+    }
+
+    renderContent(): TemplateResult {
+        return html`<profile-list .loader=${this.loader}></profile-list>`;
     }
 }
 

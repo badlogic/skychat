@@ -1,6 +1,7 @@
-import { LitElement, PropertyValueMap } from "lit";
+import { LitElement, PropertyValueMap, TemplateResult, html } from "lit";
 import { property } from "lit/decorators.js";
-import { routeHash } from "./routing";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
+import { pushHash } from "./routing";
 
 class BaseGuard<T> {
     protected callbacks: T[] = [];
@@ -89,11 +90,11 @@ export class CloseableElement extends LitElement {
     readonly escapeCallback;
     closed = false;
 
-    constructor() {
+    constructor(pushState = true) {
         super();
         this.navCallback = navigationGuard.register(() => this.close());
         this.escapeCallback = escapeGuard.register(() => this.close());
-        history.pushState(null, "", null);
+        if (pushState) history.pushState(null, "", null);
     }
 
     close() {
@@ -103,19 +104,61 @@ export class CloseableElement extends LitElement {
         escapeGuard.remove(this.escapeCallback);
         this.remove();
     }
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
 }
 
-export abstract class HashNavCloseableElement extends LitElement {
+export abstract class Overlay extends LitElement {
     readonly navCallback;
     readonly escapeCallback;
     closed = false;
+
+    constructor(pushState = true) {
+        super();
+        this.navCallback = navigationGuard.register(() => this.close());
+        this.escapeCallback = escapeGuard.register(() => this.close());
+        if (pushState) history.pushState(null, "", null);
+    }
+
+    close() {
+        if (this.closed) return;
+        this.closed = true;
+        navigationGuard.remove(this.navCallback);
+        escapeGuard.remove(this.escapeCallback);
+        this.remove();
+    }
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    render() {
+        return html`<div class="fixed top-0 left-0 w-full h-full bg-white dark:bg-black overflow-auto z-[1000]">
+            <div class="mx-auto max-w-[600px] h-full flex flex-col">${this.renderHeader()} ${this.renderContent()}</div>
+        </div>`;
+    }
+
+    abstract renderHeader(): TemplateResult;
+    abstract renderContent(): TemplateResult;
+
+    closeButton(): TemplateResult {
+        return html`<button
+            @click=${() => this.close()}
+            class="ml-auto bg-primary text-white px-2 rounded disabled:bg-gray/70 disabled:text-white/70"
+        >
+            Close
+        </button>`;
+    }
+}
+
+export abstract class HashNavOverlay extends Overlay {
     @property()
     pushState = true;
 
     constructor() {
-        super();
-        this.navCallback = navigationGuard.register(() => this.close());
-        this.escapeCallback = escapeGuard.register(() => this.close());
+        super(false);
     }
 
     abstract getHash(): string;
@@ -125,26 +168,20 @@ export abstract class HashNavCloseableElement extends LitElement {
         pushHash(this.getHash());
         document.title = "Skychat - " + this.getHash();
     }
-
-    close() {
-        if (this.closed) return;
-        this.closed = true;
-        navigationGuard.remove(this.navCallback);
-        escapeGuard.remove(this.escapeCallback);
-        this.remove();
-    }
 }
 
-let setup = false;
-export function pushHash(hash: string) {
-    if (!setup) {
-        setup = true;
-        window.addEventListener("hashchange", () => {
-            routeHash(location.hash);
-        });
-    }
+// @ts-ignore
+import logoSvg from "../../html/logo.svg";
 
-    if (hash.startsWith("#")) hash = hash.substring(1);
-    const baseUrl = window.location.href.split("#")[0];
-    history.replaceState(null, "", baseUrl + (hash.length == 0 ? "" : "#" + hash));
+export function renderTopbar(title: string, buttons?: TemplateResult | HTMLElement) {
+    return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-[100]">
+            <a class="flex items-center text-primary font-bold text-center" href="/client.html"
+                ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
+            >
+            <button class="text-primary font-bold pl-2 relative pr-2">
+                <span>${title}</span>
+            </button>
+            ${buttons}
+        </div>
+        <div class="min-h-[40px] max-h-[40px]"></div>`;
 }

@@ -11,17 +11,17 @@ import {
     RichText,
 } from "@atproto/api";
 import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { SelfLabels } from "@atproto/api/dist/client/types/com/atproto/label/defs";
-import { LitElement, PropertyValueMap, html, nothing, svg } from "lit";
+import { LitElement, PropertyValueMap, TemplateResult, html, nothing, svg } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { bskyClient, extractLinkCard } from "../bsky";
 import { deleteIcon, editIcon, imageIcon } from "../icons";
-import { renderEmbed, renderRecord } from "./postview";
+import { Store } from "../store";
 import { ImageInfo, dom, downloadImage, downscaleImage, loadImageFile, loadImageFiles, splitAtUri } from "../utils";
-import { CloseableElement } from "./closable";
-import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { PostRef, Store } from "../store";
+import { renderEmbed, renderRecord } from "./postview";
+import { CloseableElement, Overlay, renderTopbar } from "./overlay";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -124,7 +124,9 @@ export class PostEditor extends LitElement {
         }
 
         return html` <div class="flex max-w-[600px] bg-white dark:bg-black">
-            <div class="flex max-w-full flex-col flex-grow relative">
+            <div class="flex max-w-full flex-col flex-grow relative"
+                @drop=${(ev: DragEvent) => this.pasteImage(ev)}
+                @dragover=${(ev: DragEvent) => ev.preventDefault()}>
                 ${
                     this.replyTo
                         ? html`<div class="flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
@@ -158,8 +160,6 @@ export class PostEditor extends LitElement {
                 <textarea
                     id="message"
                     @input=${this.input}
-                    @drop=${(ev: DragEvent) => this.pasteImage(ev)}
-                    @dragover=${(ev: DragEvent) => ev.preventDefault()}
                     class="resize-none outline-none bg-transparent dark:text-white disabled:text-gray dark:disabled:text-gray p-2"
                     placeholder="${placeholder}"
                     ?disabled=${this.isSending}
@@ -650,7 +650,7 @@ export class PostEditor extends LitElement {
 }
 
 @customElement("image-editor")
-export class ImageEditor extends CloseableElement {
+export class ImageEditor extends Overlay {
     @property()
     image?: ImageInfo;
 
@@ -658,35 +658,26 @@ export class ImageEditor extends CloseableElement {
         return this;
     }
 
-    render() {
+    renderHeader(): TemplateResult {
+        return html`${renderTopbar("Edit Image", this.closeButton())}`;
+    }
+
+    renderContent(): TemplateResult {
         const dataUri = this.image ? this.image.dataUri : "";
         const alt = this.image ? this.image.alt : "";
-        return html`<div class="fixed top-0 left-0 w-full h-full z-[1000] bg-white dark:bg-black overflow-auto">
-            <div class="mx-auto max-w-[600px] h-full flex flex-col p-4 gap-2">
-                <div class="flex items-center">
-                    <h1 class="text-lg text-primary font-bold">Edit image</h1>
-                    <button
-                        @click=${() => this.close()}
-                        class="ml-auto bg-primary text-white px-2 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
-                    >
-                        Save
-                    </button>
-                </div>
-                <img src="${dataUri}" class="object-contain max-h-[75svh]" />
-                <textarea
-                    id="message"
-                    @input=${(ev: Event) => {
-                        if (this.image) {
-                            this.image.alt = (ev.target as HTMLInputElement)!.value;
-                        }
-                    }}
-                    class="flex-1 max-h-[11.5em] resize-none outline-none bg-transparent drop:bg-white dark:text-white disabled:text-gray dark:disabled:text-gray px-2 pt-2"
-                    placeholder="Add alt text to your image"
-                >
+        return html`<img src="${dataUri}" class="object-contain max-h-[75svh]" />
+            <textarea
+                id="message"
+                @input=${(ev: Event) => {
+                    if (this.image) {
+                        this.image.alt = (ev.target as HTMLInputElement)!.value;
+                    }
+                }}
+                class="flex-1 max-h-[11.5em] resize-none outline-none bg-transparent drop:bg-white dark:text-white disabled:text-gray dark:disabled:text-gray px-2 pt-2"
+                placeholder="Add alt text to your image"
+            >
 ${alt}</textarea
-                >
-            </div>
-        </div>`;
+            >`;
     }
 }
 
