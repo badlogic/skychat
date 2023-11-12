@@ -18,6 +18,7 @@ import { Store } from "../store";
 import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, renderAuthor, apiBaseUrl } from "../utils";
 import { HashNavOverlay, renderTopbar } from "./overlay";
 import { renderEmbed, renderPostText } from "./postview";
+import { cacheQuotes } from "../cache";
 
 type NotificationType = "like" | "repost" | "follow" | "mention" | "reply" | "quote" | (string & {});
 
@@ -121,7 +122,7 @@ export class NotificationsOverlay extends HashNavOverlay {
                     postsToLoad.push(notification.uri);
                 }
             }
-            await loadPosts(postsToLoad, this.posts);
+            await Promise.all([loadPosts(postsToLoad, this.posts), cacheQuotes(bskyClient, postsToLoad)]);
             this.lastNotifications = listResponse.data;
             const updateReponse = await bskyClient.updateSeenNotifications();
             if (!updateReponse.success) console.error("Couldn't update seen notifications");
