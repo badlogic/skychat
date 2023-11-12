@@ -4,7 +4,7 @@ import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { bskyClient } from "../bsky";
-import { cacheProfile, profileCache } from "../profilecache";
+import { cacheProfile, profileCache } from "../cache";
 import { Store } from "../store";
 import { contentLoader, defaultAvatar, dom, getNumber, getProfileUrl, hasLinkOrButtonParent, renderAuthor } from "../utils";
 import { ItemListLoaderResult, ItemsList, ItemsListLoader } from "./list";

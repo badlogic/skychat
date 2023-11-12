@@ -15,7 +15,7 @@ import { map } from "lit/directives/map.js";
 import { bskyClient, loadPosts } from "../bsky";
 import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
 import { Store } from "../store";
-import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, renderAuthor } from "../utils";
+import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, renderAuthor, apiBaseUrl } from "../utils";
 import { HashNavOverlay, renderTopbar } from "./overlay";
 import { renderEmbed, renderPostText } from "./postview";
 
@@ -321,9 +321,8 @@ export async function setupWorkerNotifications() {
         const token = await getToken(messaging, {
             vapidKey: "BIqRsppm0-uNKJoRjVCzu5ZYtT-Jo6jyjDXVuqLbudGvpRTuGwptZ9x5ueu5imL7xdjVA989bJOJYcx_Pvf-AYM",
         });
-        const baseUrl = location.href.includes("localhost") || location.href.includes("192.168.1") ? "http://localhost:3333/" : "/";
         const response = await fetch(
-            baseUrl + `api/register?token=${encodeURIComponent(token)}&did=${encodeURIComponent(Store.getUser()?.profile.did ?? "")}`
+            apiBaseUrl() + `api/register?token=${encodeURIComponent(token)}&did=${encodeURIComponent(Store.getUser()?.profile.did ?? "")}`
         );
         if (!response.ok) {
             console.error("Couldn't register push token.");

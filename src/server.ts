@@ -6,7 +6,9 @@ import * as admin from "firebase-admin";
 import { applicationDefault } from "firebase-admin/app";
 import { ComAtprotoSyncSubscribeRepos, SubscribeReposMessage, subscribeRepos } from "atproto-firehose";
 import { AppBskyEmbedRecord, AppBskyFeedPost } from "@atproto/api";
-import { getTimeDifference, splitAtUri } from "./utils";
+import { formatFileSize, getTimeDifference, splitAtUri } from "./utils";
+import * as fs from "fs/promises";
+import * as fsSync from "fs";
 
 type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow"; fromDid: string; toDid: string; tokens: string[]; postUri?: string };
 
@@ -16,16 +18,32 @@ if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     process.exit(-1);
 }
 
+if (!fsSync.existsSync("data")) {
+    fsSync.mkdirSync("data");
+}
+
+const registrationsFile = "data/registrations.json";
+const quotesFile = "data/quotes.json";
+
+const quotes: Record<string, string[]> = fsSync.existsSync(quotesFile) ? JSON.parse(fsSync.readFileSync(quotesFile, "utf8")) : {};
+const registrations: Record<string, string[]> = fsSync.existsSync(registrationsFile)
+    ? JSON.parse(fsSync.readFileSync(registrationsFile, "utf8"))
+    : {};
+const queue: Notification[] = [];
+const streamErrors: { code: string; reason: string; date: string; postUri?: string }[] = [];
+
 let serverStart = new Date();
 let streamStartNano = performance.now();
 let isStreaming = false;
 let numStreamEvents = 0;
 let numStreamRestarts = 0;
 let numPushMessages = 0;
-
-const registrations: Record<string, string[]> = {};
-const queue: Notification[] = [];
-const streamErrors: { code: string; reason: string; date: string; postUri?: string }[] = [];
+let numQuotes = 0 + 0;
+for (const quote in quotes) {
+    numQuotes += quotes[quote].length;
+}
+let numSaves = 0;
+let saveTime = 0;
 
 (async () => {
     const app = express();
@@ -86,6 +104,13 @@ const streamErrors: { code: string; reason: string; date: string; postUri?: stri
                                         if (tokens && from != to) {
                                             queue.push({ type: "quote", fromDid: from, toDid: to, tokens, postUri });
                                         }
+
+                                        let quotingPosts = quotes[postUri];
+                                        if (!quotingPosts) {
+                                            quotes[postUri] = quotingPosts = [];
+                                        }
+                                        quotingPosts.push("at://" + from + "/" + op.path);
+                                        numQuotes++;
                                     }
                                 }
                             }
@@ -119,13 +144,40 @@ const streamErrors: { code: string; reason: string; date: string; postUri?: stri
 
     const setupStream = () => {
         numStreamRestarts++;
+        console.log("(Re-)starting stream");
         let client = subscribeRepos(`wss://bsky.network`, { decodeRepoOps: true });
         client.on("message", onMessage);
-        client.on("error", (code, reason) => streamErrors.push({ date: new Date().toString(), code, reason }));
+        client.on("error", (code, reason) => {
+            streamErrors.push({ date: new Date().toString(), code, reason });
+            try {
+                client.close();
+            } catch (e) {}
+            setupStream();
+        });
         client.on("close", () => setupStream());
     };
     setupStream();
 
+    // Persistance task
+    setInterval(async () => {
+        const safeWriteFile = async (targetPath: string, data: string): Promise<void> => {
+            const tempPath = targetPath + ".tmp";
+            const start = performance.now();
+            try {
+                await fs.writeFile(tempPath, data);
+                await fs.rename(tempPath, targetPath);
+            } catch (error) {
+                console.error("Error writing file: " + targetPath, error);
+            }
+            saveTime = (performance.now() - start) / 1000;
+        };
+
+        await safeWriteFile(registrationsFile, JSON.stringify(registrations, null, 2));
+        await safeWriteFile(quotesFile, JSON.stringify(quotes, null, 2));
+        numSaves++;
+    }, 10000);
+
+    // Push messaging queue
     setInterval(() => {
         const queueCopy = [...queue];
         queue.length = 0;
@@ -182,7 +234,30 @@ const streamErrors: { code: string; reason: string; date: string; postUri?: stri
             numStreamRestarts,
             streamErrors,
             numPushMessages,
+            numQuotes,
+            numQuotedPosts: Object.keys(quotes).length,
+            numSaves,
+            saveTime: saveTime.toFixed(2) + " secs",
+            quotesFileSize: formatFileSize(fsSync.statSync(quotesFile).size),
+            registrationsFileSize: formatFileSize(fsSync.statSync(registrationsFile).size),
         });
+    });
+
+    app.get("/api/numquotes", (req, res) => {
+        const uris: string[] | string = req.query.uri as string[] | string;
+        const quotesPerUri: Record<string, number> = {};
+        if (Array.isArray(uris)) {
+            uris.forEach((uri) => {
+                quotesPerUri[uri] = quotes[uri]?.length ?? 0;
+            });
+        } else if (uris) {
+            quotesPerUri[uris] = quotes[uris]?.length ?? 0;
+        }
+        res.json(quotesPerUri);
+    });
+
+    app.get("/api/quotes", (req, res) => {
+        res.json(quotes[req.query.uri as string] ?? []);
     });
 
     http.createServer(app).listen(port, () => {

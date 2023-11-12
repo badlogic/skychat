@@ -1,5 +1,6 @@
 import { BskyAgent } from "@atproto/api";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { apiBaseUrl } from "./utils";
 
 export const profileCache: Record<string, ProfileViewDetailed> = {};
 export async function cacheProfile(bskyClient: BskyAgent, did: string) {
@@ -25,5 +26,20 @@ export async function cacheProfiles(bskyClient: BskyAgent, dids: string[]) {
         for (const profile of response.data.profiles) {
             profileCache[profile.did] = profile;
         }
+    }
+}
+
+export const quotesCache: Record<string, number> = {};
+export async function cacheQuotes(bskyClient: BskyAgent, postUris: string[]) {
+    postUris = postUris.filter((uri) => quotesCache[uri] == undefined);
+    if (postUris.length == 0) return;
+    const params = postUris.map((uri, index) => `uri=${encodeURIComponent(uri)}&`).join("");
+    const response = await fetch(apiBaseUrl() + "api/numquotes?" + params);
+    if (!response.ok) {
+        return;
+    }
+    const quotes = await response.json();
+    for (const uri of postUris) {
+        quotesCache[uri] = quotes[uri];
     }
 }

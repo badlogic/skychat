@@ -355,3 +355,19 @@ export function splitAtUri(uri: string): AtUri {
 export function combineAtUri(repo: string, rkey: string, type: string = "app.bsky.feed.post") {
     return "at://" + repo + "/" + type + "/" + rkey;
 }
+
+export function formatFileSize(size: number): string {
+    if (size < 1024) {
+        return size + " bytes";
+    } else if (size < 1024 * 1024) {
+        return (size / 1024).toFixed(2) + " KB";
+    } else if (size < 1024 * 1024 * 1024) {
+        return (size / 1024 / 1024).toFixed(2) + " MB";
+    } else {
+        return (size / 1024 / 1024 / 1024).toFixed(2) + " GB";
+    }
+}
+
+export function apiBaseUrl() {
+    return location.href.includes("localhost") || location.href.includes("192.168.1") ? "http://localhost:3333/" : "/";
+}

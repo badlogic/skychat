@@ -19,6 +19,7 @@ let repos: Repo[] = new Array();
             console.log("Dumping repos to repos.json");
             fs.writeFileSync("repos.json", JSON.stringify(repos, null, 2));
             console.log(`Done, ${repos.length} repos`);
+            process.exit(0);
         }
         cursor = response.data.cursor;
     }

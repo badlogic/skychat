@@ -93,7 +93,7 @@ onBackgroundMessage(messaging, async (payload) => {
 
         if (postText.length > 0) message += `\n${postText}`;
         self.registration.showNotification("New notification", {
-            body: message + (postText.length > 0 ? "\n\n" + postText : ""),
+            body: message,
             icon: "./logo.png",
             badge: "./logo.png",
         });

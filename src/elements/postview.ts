@@ -15,7 +15,7 @@ import { map } from "lit/directives/map.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { bskyClient } from "../bsky";
 import { moreIcon, quoteIcon, replyIcon } from "../icons";
-import { profileCache } from "../profilecache";
+import { cacheQuotes, profileCache, quotesCache } from "../cache";
 import { Store } from "../store";
 import {
     combineAtUri,
@@ -32,6 +32,7 @@ import { IconToggle } from "./icontoggle";
 import { PopupMenu } from "./popup";
 import { likesLoader, repostLoader } from "./profile";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
+import { quotesLoader } from "./feed";
 
 export function renderPostText(record: AppBskyFeedPost.Record) {
     if (!record.facets) {
@@ -295,7 +296,7 @@ export class PostViewElement extends LitElement {
                     <i class="icon w-[1.2em] h-[1.2em] fill-gray">${replyIcon}</i><span class="text-gray">${this.post.replyCount}</span>
                 </button>
                 <button @click=${() => this.quoteCallback(this.post!)} class="flex gap-1 items-center text-gray">
-                    <i class="icon w-[1.2em] h-[1.2em] fill-gray">${quoteIcon}</i>
+                    <i class="icon w-[1.2em] h-[1.2em] fill-gray">${quoteIcon}</i><span class="text-gray">${quotesCache[this.post.uri] ?? 0}</span>
                 </button>
                 <div class="flex gap-1 items-center text-gray">
                     <icon-toggle @change=${this.toggleRepost} icon="reblog" class="h-4" .value=${this.post.viewer?.repost ?? false}
@@ -386,7 +387,7 @@ export class AltText extends Overlay {
     }
 }
 
-type PostOptions = "delete" | "likes" | "reposts" | "mute";
+type PostOptions = "delete" | "likes" | "quotes" | "reposts" | "mute";
 
 @customElement("post-options")
 export class PostOptionsElement extends PopupMenu {
@@ -402,8 +403,8 @@ export class PostOptionsElement extends PopupMenu {
 
     protected renderContent(): TemplateResult {
         const did = Store.getUser()?.profile.did;
-        let options: PostOptions[] = ["likes", "reposts", "mute"];
-        const labels = ["Show Likes", "Show Reposts", "Mute Thread"];
+        let options: PostOptions[] = ["quotes", "reposts", "likes", "mute"];
+        const labels = ["Show Quotes", "Show Reposts", "Show Likes", "Mute Thread"];
         return html` ${map(
             options,
             (option, index) => html`<button class="border-b border-gray/50 py-2 px-2 hover:bg-primary" @click=${() => this._handleOption(option)}>
@@ -438,12 +439,17 @@ export class PostOptionsElement extends PopupMenu {
                     )[0]
                 );
                 break;
+            case "quotes":
+                document.body.append(
+                    dom(html`<skychat-feed-overlay title="Quotes" .feedLoader=${quotesLoader(this.post?.uri!)}></skychat-feed-overlay>`)[0]
+                );
+                break;
             case "reposts":
                 document.body.append(
                     dom(
                         html`<profile-list-overlay
                             title="Reposts"
-                            .hash=${`likes/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
+                            .hash=${`reposts/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
                             .loader=${repostLoader(this.post?.uri)}
                         ></profile-list-overlay>`
                     )[0]
@@ -539,6 +545,17 @@ export class ThreadOverlay extends HashNavOverlay {
                 return;
             }
             this.thread = response.data.thread;
+
+            const postUris: string[] = [];
+            const collectPostUris = (post: ThreadViewPost) => {
+                postUris.push(post.post.uri);
+                if (post.replies) {
+                    for (const reply of post.replies) {
+                        if (AppBskyFeedDefs.isThreadViewPost(reply)) collectPostUris(reply);
+                    }
+                }
+            };
+            await cacheQuotes(bskyClient, postUris);
         } catch (e) {
             this.error = notFoundMessage;
             return;
@@ -589,9 +606,7 @@ export class ThreadOverlay extends HashNavOverlay {
         };
 
         const quote = (post: PostView, repliesDom: HTMLElement) => {
-            document.body.append(
-                dom(html`<post-editor-overlay .quote=${post} .sent=${(post: PostView) => insertNewPost(post, repliesDom)}></post-editor-overly>`)[0]
-            );
+            document.body.append(dom(html`<post-editor-overlay .quote=${post}></post-editor-overly>`)[0]);
         };
 
         const reply = (post: PostView, repliesDom: HTMLElement) => {

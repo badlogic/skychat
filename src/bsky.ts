@@ -74,6 +74,7 @@ export async function extractLinkCard(url: string): Promise<LinkCard | Error> {
 export async function loadPosts(uris: string[], posts: Map<string, PostView>) {
     if (!bskyClient) throw new Error("Not connected");
     const promises: Promise<AppBskyFeedGetPosts.Response>[] = [];
+    uris = [...uris];
     while (uris.length > 0) {
         const block = uris.splice(0, 25).filter((uri) => !posts.has(uri));
         if (block.length == 0) continue;

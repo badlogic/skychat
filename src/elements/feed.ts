@@ -1,12 +1,12 @@
 import { AppBskyFeedDefs, AppBskyFeedPost, BskyAgent } from "@atproto/api";
 import { FeedViewPost, PostView, isFeedViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { TemplateResult, html, nothing } from "lit";
+import { PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { bskyClient } from "../bsky";
+import { bskyClient, loadPosts } from "../bsky";
 import { reblogIcon } from "../icons";
-import { cacheProfiles } from "../profilecache";
+import { cacheProfiles, cacheQuotes } from "../cache";
 import { Store } from "../store";
-import { dom, getProfileUrl, splitAtUri } from "../utils";
+import { apiBaseUrl, dom, getProfileUrl, splitAtUri } from "../utils";
 import { ItemListLoaderResult, ItemsList, ItemsListLoader } from "./list";
 import { Overlay, renderTopbar } from "./overlay";
 
@@ -25,15 +25,19 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
         if (result instanceof Error) return result;
 
         const dids: string[] = [];
+        const postUris: string[] = [];
         for (const post of result.items) {
             if (Feed.isFeedViewPost(post)) {
                 if (post.reply && AppBskyFeedPost.isRecord(post.reply.parent.record) && post.reply.parent.record.reply) {
                     const did = splitAtUri(post.reply.parent.record.reply.parent.uri).repo;
                     dids.push(did);
                 }
+                postUris.push(post.post.uri);
+            } else {
+                postUris.push(post.uri);
             }
         }
-        await cacheProfiles(bskyClient, dids);
+        await Promise.all([cacheProfiles(bskyClient, dids), await cacheQuotes(bskyClient, postUris)]);
         return result;
     }
 
@@ -135,16 +139,26 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
 
 @customElement("skychat-feed-overlay")
 export class FeedOverlay extends Overlay {
+    @property()
+    title: string = "Home";
+
+    @property()
+    feedLoader: ItemsListLoader<string, FeedViewPost | PostView> = homeTimelineLoader;
+
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
 
+    protected updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        super.updated(_changedProperties);
+    }
+
     renderHeader() {
-        return html`${renderTopbar("Home", this.closeButton())}`;
+        return html`${renderTopbar(this.title, this.closeButton())}`;
     }
 
     renderContent(): TemplateResult {
-        return html`<skychat-feed poll="true"></skychat-feed>`;
+        return html`<skychat-feed .feedLoader=${this.feedLoader} poll="true"></skychat-feed>`;
     }
 }
 
@@ -153,6 +167,21 @@ export const homeTimelineLoader = async (cursor?: string) => {
     const result = await bskyClient.app.bsky.feed.getTimeline({ cursor });
     if (!result.success) return new Error("Couldn't load feed");
     return { cursor: result.data.cursor, items: result.data.feed };
+};
+
+export const quotesLoader = (postUri: string): ItemsListLoader<string, FeedViewPost | PostView> => {
+    // FIXME introduce cursor
+    return async (cursor?: string) => {
+        if (cursor == "end") return { cursor: "end", items: [] };
+        if (!bskyClient) return new Error("Couldn't load quotes");
+        const result = await fetch(apiBaseUrl() + `api/quotes?uri=${encodeURIComponent(postUri)}`);
+        if (!result.ok) throw new Error("Couldn't load quotes");
+        const quotes = (await result.json()) as string[];
+        const posts = new Map<string, PostView>();
+        await loadPosts(quotes, posts);
+        const loadedPosts = quotes.map((quote) => posts.get(quote)!);
+        return { cursor: "end", items: loadedPosts };
+    };
 };
 
 export type ActorTimelineFilter = "posts_with_replies" | "posts_no_replies" | "posts_with_media" | "likes";
