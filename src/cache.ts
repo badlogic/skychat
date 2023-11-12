@@ -33,13 +33,16 @@ export const quotesCache: Record<string, number> = {};
 export async function cacheQuotes(bskyClient: BskyAgent, postUris: string[]) {
     postUris = postUris.filter((uri) => quotesCache[uri] == undefined);
     if (postUris.length == 0) return;
-    const params = postUris.map((uri, index) => `uri=${encodeURIComponent(uri)}&`).join("");
-    const response = await fetch(apiBaseUrl() + "api/numquotes?" + params);
-    if (!response.ok) {
-        return;
-    }
-    const quotes = await response.json();
-    for (const uri of postUris) {
-        quotesCache[uri] = quotes[uri];
+    postUris = [...postUris];
+    while (postUris.length > 0) {
+        const batch = postUris.splice(0, 15);
+        const response = await fetch(apiBaseUrl() + "api/numquotes?" + batch.map((uri) => `uri=${encodeURIComponent(uri)}&`).join(""));
+        if (!response.ok) {
+            return;
+        }
+        const quotes = await response.json();
+        for (const uri of batch) {
+            quotesCache[uri] = quotes[uri];
+        }
     }
 }
