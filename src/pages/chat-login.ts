@@ -11,8 +11,8 @@ import { i18n } from "../i18n";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
-@customElement("skychat-app")
-export class App extends LitElement {
+@customElement("skychat-chat-login")
+export class ChatLogin extends LitElement {
     @state()
     error?: string;
 
@@ -79,7 +79,7 @@ export class App extends LitElement {
                         : nothing}
                     ${user ? html`<button class="text-sm text-primary" @click=${this.logout}>${i18n("Log out")}</button>` : nothing}
                 </div>
-                <a class="text-xl text-primary text-center font-bold mt-16" href="help.html">${i18n("How does it work?")}</a>
+                <a class="text-xl text-primary text-center font-bold mt-16" href="chat-help.html">${i18n("How does it work?")}</a>
                 <a class="text-xl text-primary text-center font-bold mt-8" href="trending.html">${i18n("Trending hashtags")}</a>`;
         }
 

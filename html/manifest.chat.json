@@ -1,8 +1,8 @@
 {
-    "name": "Skychat",
-    "short_name": "Skychat",
+    "name": "Skychat Live",
+    "short_name": "Skychat Live",
     "description": "Explore & create hashtag threads in real-time on BlueSky",
-    "start_url": "/",
+    "start_url": "/chat-login.html",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#000000",

@@ -6,8 +6,8 @@ import logoSvg from "../../html/logo.svg";
 import { dom } from "../utils";
 import { map } from "lit/directives/map.js";
 
-@customElement("skychat-help")
-class Help extends LitElement {
+@customElement("skychat-chat-help")
+class ChatHelp extends LitElement {
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }

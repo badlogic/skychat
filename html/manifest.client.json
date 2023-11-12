@@ -1,8 +1,8 @@
 {
     "name": "Skychat",
     "short_name": "Skychat",
-    "description": "A BlueSky client.",
-    "start_url": "/client.html",
+    "description": "A better BlueSky client",
+    "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#000000",
