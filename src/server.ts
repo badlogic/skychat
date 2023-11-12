@@ -263,11 +263,4 @@ let saveTime = 0;
     const server = http.createServer(app).listen(port, () => {
         console.log(`App listening on port ${port}`);
     });
-
-    process.on("SIGTERM", () => {
-        console.log("SIGTERM received, shutting down gracefully");
-        server.close(() => {
-            console.log("HTTP server closed");
-        });
-    });
 })();

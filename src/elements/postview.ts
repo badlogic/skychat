@@ -104,7 +104,7 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
         if (sensitive) target.classList.toggle("blur-lg");
     };
 
-    return html`<div class="flex flex-col gap-2 items-center mb-2">
+    return html`<div class="flex flex-col gap-2 items-center">
         ${map(images, (image) => {
             return html`<div class="relative">
                 <img
@@ -141,7 +141,7 @@ export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
     const author = recordEmbed.record.author;
     const embeds = recordEmbed.record.embeds && recordEmbed.record.embeds.length > 0 ? recordEmbed.record.embeds[0] : undefined;
     const sensitive = recordEmbed.record.labels?.some((label) => ["porn", "nudity", "sexual"].includes(label.val)) ?? false;
-    return html`<div class="border border-gray/50 rounded p-2 mb-2">${renderRecord(author, rkey, record, embeds, true, sensitive)}</div>`;
+    return html`<div class="border border-gray/50 rounded p-2">${renderRecord(author, rkey, record, embeds, true, sensitive)}</div>`;
 }
 
 export function renderRecordWithMediaEmbed(recordWithMediaEmbed: AppBskyEmbedRecordWithMedia.View, sensitive: boolean, minimal = false) {
@@ -150,7 +150,7 @@ export function renderRecordWithMediaEmbed(recordWithMediaEmbed: AppBskyEmbedRec
         AppBskyEmbedExternal.isView(recordWithMediaEmbed.media) || AppBskyEmbedExternal.isMain(recordWithMediaEmbed.media)
             ? recordWithMediaEmbed.media.external
             : undefined;
-    return html`<div class="mt-2">
+    return html`<div class="mt-1">
         ${cardEmbed ? renderCardEmbed(cardEmbed) : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive, minimal) : nothing}
         ${!minimal ? renderRecordEmbed(recordWithMediaEmbed.record) : nothing}
     </div>`;
@@ -161,7 +161,7 @@ export function renderEmbed(embed: PostView["embed"] | AppBskyFeedPost.Record["e
     const imagesEmbed = AppBskyEmbedImages.isView(embed) ? embed.images : undefined;
     const recordEmbed = AppBskyEmbedRecord.isView(embed) ? embed : undefined;
     const recordWithMediaEmbed = AppBskyEmbedRecordWithMedia.isView(embed) ? embed : undefined;
-    return html`<div class="mt-2">
+    return html`<div class="mt-1">
         ${cardEmbed ? renderCardEmbed(cardEmbed) : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive, minimal) : nothing}
         ${recordEmbed && !minimal ? renderRecordEmbed(recordEmbed) : nothing}
         ${recordWithMediaEmbed ? renderRecordWithMediaEmbed(recordWithMediaEmbed, sensitive, minimal) : nothing}
@@ -555,6 +555,7 @@ export class ThreadOverlay extends HashNavOverlay {
                     }
                 }
             };
+            collectPostUris(this.thread);
             await cacheQuotes(bskyClient, postUris);
         } catch (e) {
             this.error = notFoundMessage;
