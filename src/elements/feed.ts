@@ -28,9 +28,9 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
         const postUris: string[] = [];
         for (const post of result.items) {
             if (Feed.isFeedViewPost(post)) {
-                if (post.reply && AppBskyFeedPost.isRecord(post.reply.parent.record) && post.reply.parent.record.reply) {
-                    const did = splitAtUri(post.reply.parent.record.reply.parent.uri).repo;
-                    dids.push(did);
+                if (post.reply && AppBskyFeedDefs.isPostView(post.reply.parent)) {
+                    postUris.push(post.reply.parent.uri);
+                    dids.push(splitAtUri(post.reply.parent.uri).repo);
                 }
                 postUris.push(post.post.uri);
             } else {

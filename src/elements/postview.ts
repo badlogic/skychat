@@ -544,8 +544,6 @@ export class ThreadOverlay extends HashNavOverlay {
                 this.error = notFoundMessage;
                 return;
             }
-            this.thread = response.data.thread;
-
             const postUris: string[] = [];
             const collectPostUris = (post: ThreadViewPost) => {
                 postUris.push(post.post.uri);
@@ -555,8 +553,9 @@ export class ThreadOverlay extends HashNavOverlay {
                     }
                 }
             };
-            collectPostUris(this.thread);
+            collectPostUris(response.data.thread);
             await cacheQuotes(bskyClient, postUris);
+            this.thread = response.data.thread;
         } catch (e) {
             this.error = notFoundMessage;
             return;

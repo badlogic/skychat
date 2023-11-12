@@ -136,7 +136,7 @@ class SkychatClient extends LitElement {
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
                 ${this.renderTopbar()}<skychat-feed
                     class="pt-[40px]"
-                    .poll=${true}
+                    .poll=${false}
                     .newItems=${() => {
                         if (document.querySelector("main")!.scrollTop > 0) {
                             this.ping?.classList.remove("hidden");
