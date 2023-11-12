@@ -179,7 +179,7 @@ export const quotesLoader = (postUri: string): ItemsListLoader<string, FeedViewP
         const quotes = (await result.json()) as string[];
         const posts = new Map<string, PostView>();
         await loadPosts(quotes, posts);
-        const loadedPosts = quotes.map((quote) => posts.get(quote)!);
+        const loadedPosts = quotes.map((quote) => posts.get(quote)!).filter((post) => post != undefined);
         return { cursor: "end", items: loadedPosts };
     };
 };
