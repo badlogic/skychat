@@ -1,6 +1,7 @@
 import { html } from "lit";
 import { ProfileOverlay, ThreadOverlay, followersLoader, followingLoader, likesLoader } from ".";
 import { dom, splitAtUri, combineAtUri } from "../utils";
+import { i18n } from "../i18n";
 
 export async function routeHash(hash: string) {
     hash = hash.replace("#", "");
@@ -49,7 +50,7 @@ export async function routeHash(hash: string) {
                 document.body.append(
                     dom(
                         html`<profile-list-overlay
-                            title="Likes"
+                            title="${i18n("Likes")}"
                             .hash=${`likes/${tokens[1]}/${tokens[2]}`}
                             .loader=${likesLoader(combineAtUri(tokens[1], tokens[2]))}
                             .pushState=${false}
@@ -65,7 +66,7 @@ export async function routeHash(hash: string) {
                 document.body.append(
                     dom(
                         html`<profile-list-overlay
-                            title="Following"
+                            title="${i18n("Following")}"
                             .hash=${`following/${tokens[1]}`}
                             .loader=${followingLoader(tokens[1])}
                             .pushState=${false}
@@ -81,7 +82,7 @@ export async function routeHash(hash: string) {
                 document.body.append(
                     dom(
                         html`<profile-list-overlay
-                            title="Followers"
+                            title="${i18n("Followers")}"
                             .hash=${`followers/${tokens[1]}`}
                             .loader=${followersLoader(tokens[1])}
                             .pushState=${false}

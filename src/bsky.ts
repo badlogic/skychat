@@ -116,12 +116,12 @@ export async function login(account?: string, password?: string): Promise<void |
         let user = Store.getUser();
         let resumeSuccess = false;
         if (user && user.account == account && user.password == password && user.session) {
-            try {
+            /*try {
                 const resume = await bskyClient.resumeSession(user.session);
                 resumeSuccess = resume.success;
             } catch (e) {
                 // no-op in case resume didn't work.
-            }
+            }*/
         }
 
         if (!resumeSuccess) {

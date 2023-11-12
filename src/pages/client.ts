@@ -11,6 +11,7 @@ import { FirebaseOptions, initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import { routeHash } from "../elements/routing";
 import { setupWorkerNotifications } from "../elements/notifications";
+import { i18n } from "../i18n";
 
 @customElement("skychat-client")
 class SkychatClient extends LitElement {
@@ -64,27 +65,28 @@ class SkychatClient extends LitElement {
 
     renderLogin() {
         const user = Store.getUser();
-        const content = html`<p class="text-center mx-auto w-[280px]">A BlueSky client</p>
+        const content = html`<p class="text-center mx-auto w-[280px]">${i18n("The better BlueSky app")}</p>
             <div class="mx-auto flex flex-col gap-4 mt-4 w-[280px]">
                 ${this.error ? html`<div class="mx-auto max-w-[300px] text-[#cc0000] font-bold text-center">${this.error}</div>` : nothing}
                 <input
                     id="account"
                     class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
-                    placeholder="Account, e.g. badlogic.bsky.social"
+                    placeholder="${i18n("Account, e.g. badlogic.bsky.social")}"
                     value="${this.lastAccount}"
                 />
                 <input
                     id="password"
                     type="password"
                     class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
-                    placeholder="App password"
+                    placeholder="${i18n("App password")}"
                     value="${this.lastPassword}"
                 />
-                <button class="align-center rounded bg-primary text-white px-4 py-2" @click=${this.login}>Sign in</button>
-                ${!user ? html`<p class="text-xs mt-0 pt-0 text-center">Your credentials will only be stored on your device.</p>` : nothing}
-                ${user ? html`<button class="text-sm text-primary" @click=${this.logout}>Log out</button>` : nothing}
-            </div>
-            <a class="text-xl text-primary text-center font-bold mt-16" href="help.html">How does it work?</a>`;
+                <button class="align-center rounded bg-primary text-white px-4 py-2" @click=${this.login}>${i18n("Sign in")}</button>
+                ${!user
+                    ? html`<p class="text-xs mt-0 pt-0 text-center">${i18n("Your credentials will only be stored on your device.")}</p>`
+                    : nothing}
+                ${user ? html`<button class="text-sm text-primary" @click=${this.logout}>${i18n("Log out")}</button>` : nothing}
+            </div>`;
 
         return html` <main class="flex flex-col justify-between m-auto max-w-[728px] px-4 h-full leading-5">
             <theme-toggle></theme-toggle>
@@ -92,13 +94,7 @@ class SkychatClient extends LitElement {
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
             >
             <div class="flex-grow flex flex-col">${content}</div>
-            <div class="text-center text-xs italic my-4 pb-4">
-                <a class="text-primary" href="https://skychat.social" target="_blank">Skychat</a>
-                is lovingly made by
-                <a class="text-primary" href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
-                No data is collected, not even your IP address.<br />
-                <a class="text-primary" href="https://github.com/badlogic/skychat" target="_blank">Source code</a>
-            </div>
+            <div class="text-center text-xs italic my-4 pb-4">${i18n("footer")}</div>
         </main>`;
     }
 
@@ -110,22 +106,16 @@ class SkychatClient extends LitElement {
             >
             <div class="flex-grow flex flex-col">
                 <div class="animate-fade flex-grow flex flex-col">
-                    <p class="text-center">Connecting</p>
+                    <p class="text-center">${i18n("Connecting")}</p>
                     <div class="align-top">${contentLoader}</div>
                 </div>
             </div>
-            <div class="text-center text-xs italic my-4 pb-4">
-                <a class="text-primary" href="https://skychat.social" target="_blank">Skychat</a>
-                is lovingly made by
-                <a class="text-primary" href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
-                No data is collected, not even your IP address.<br />
-                <a class="text-primary" href="https://github.com/badlogic/skychat" target="_blank">Source code</a>
-            </div>
+            <div class="text-center text-xs italic my-4 pb-4">${i18n("footer")}</div>
         </main>`;
     }
 
     renderMain() {
-        if (!bskyClient) return html`<div>Unexpected error: bskyClient is undefined in renderMain()</div>`;
+        if (!bskyClient) return html`<div>${i18n("Not connected")}</div>`;
         if (location.hash && location.hash.length > 0) {
             const hash = location.hash;
             history.replaceState(null, "", location.href.split("#")[0]);
@@ -136,7 +126,7 @@ class SkychatClient extends LitElement {
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
                 ${this.renderTopbar()}<skychat-feed
                     class="pt-[40px]"
-                    .poll=${false}
+                    .poll=${true}
                     .newItems=${() => {
                         if (document.querySelector("main")!.scrollTop > 0) {
                             this.ping?.classList.remove("hidden");
@@ -183,7 +173,7 @@ class SkychatClient extends LitElement {
                         account += ".bsky.social";
                     }
                     if (!password) {
-                        this.error = "Please specify an app password for your account. You can get one in your BlueSky app's settings.";
+                        this.error = i18n("Please specify an app password for your account. You can get one in your BlueSky app's settings.");
                         return;
                     }
                 }
@@ -192,7 +182,7 @@ class SkychatClient extends LitElement {
                 password = undefined;
             }
             if (!account || !password) {
-                this.error = "Invalid account or password.";
+                this.error = i18n("Invalid account or password.");
                 Store.setUser(undefined);
                 return;
             }
@@ -247,11 +237,11 @@ class SkychatClient extends LitElement {
     renderTopbar() {
         const user = Store.getUser();
         return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-10">
-            <a class="flex items-center text-primary font-bold text-center" href="/client.html"
+            <a class="flex items-center text-primary font-bold text-center" href="/"
                 ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
             >
             <button class="text-primary font-bold pl-2 relative pr-2" @click=${() => (this.querySelector("main")!.scrollTop = 0)}>
-                <span>Home</span>
+                <span>${i18n("Home")}</span>
                 <div
                     id="ping"
                     class="hidden animate-ping absolute top-0 right-0 rounded-full bg-primary text-white text-xs w-2 h-2 text-center"

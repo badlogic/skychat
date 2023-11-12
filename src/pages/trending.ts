@@ -6,6 +6,7 @@ import { FirehosePost, startEventStream } from "../firehose";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import { map } from "lit/directives/map.js";
+import { i18n } from "../i18n";
 
 type HashTag = {
     name: string;
@@ -88,13 +89,7 @@ class Trending extends LitElement {
                 )}
             </div>
 
-            <div class="text-center text-xs italic my-4 pb-4">
-                <a class="text-primary" href="https://skychat.social" target="_blank">Skychat</a>
-                is lovingly made by
-                <a class="text-primary" href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
-                No data is collected, not even your IP address.<br />
-                <a class="text-primary" href="https://github.com/badlogic/skychat" target="_blank">Source code</a>
-            </div>
+            <div class="text-center text-xs italic my-4 pb-4">${i18n("footer")}</div>
         </main>`;
     }
 }

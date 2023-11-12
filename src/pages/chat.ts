@@ -14,6 +14,7 @@ import { routeHash } from "../elements/routing";
 import { bellIcon, homeIcon } from "../icons";
 import { cacheProfile } from "../cache";
 import { Store } from "../store";
+import { i18n } from "../i18n";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -67,13 +68,13 @@ export class Chat extends LitElement {
         this.isLoading = true;
         try {
             if (!this.hashtag) {
-                this.error = "No hashtag given.";
+                this.error = i18n("No hashtag given");
                 return;
             }
             const user = Store.getUser();
             const loginResponse = await login(user?.account, user?.password);
             if (loginResponse instanceof Error) {
-                alert("Couldn't log in with your BlueSky credentials");
+                alert(i18n("Couldn't log in with your BlueSky credentials"));
                 location.href = "/";
                 return;
             }
@@ -105,7 +106,7 @@ export class Chat extends LitElement {
 
     renderHeader() {
         const user = Store.getUser();
-        return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black">
+        return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-10">
             <a class="flex items-center text-primary font-bold text-center" href="/"
                 ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
             >
@@ -158,34 +159,34 @@ export class Chat extends LitElement {
             const user = Store.getUser();
             if (user && user.hashTagThreads[this.hashtag ?? ""] && !this.askedReuse) {
                 const thread = user.hashTagThreads[this.hashtag!];
-                const rootUrl = `/client.html#thread/${user.profile.did}/${splitAtUri(thread.root.uri).rkey}`;
+                const rootUrl = `/#thread/${user.profile.did}/${splitAtUri(thread.root.uri).rkey}`;
                 return html`<div class="w-full max-w-[600px] mx-auto h-full flex flex-col">
                     ${this.renderHeader()}
-                    <p class="text-center pt-[40px] mt-4">
-                        You have an <a href="${rootUrl}" class="text-primary">existing thread</a> for ${this.hashtag}
-                    </p>
-                    <p class="text-center mt-4">Do you want to add new posts to the existing thread, or start a new thread?</p>
-                    <div class="flex flex-col mx-auto gap-4 mt-4">
-                        <button
-                            class="px-4 py-2 rounded bg-primary text-white"
-                            @click=${() => {
-                                this.askedReuse = true;
-                                this.requestUpdate();
-                            }}
-                        >
-                            Use existing thread
-                        </button>
-                        <button
-                            class="px-4 py-2 rounded bg-primary text-white"
-                            @click=${() => {
-                                this.askedReuse = true;
-                                delete user.hashTagThreads[this.hashtag!];
-                                Store.setUser(user);
-                                this.requestUpdate();
-                            }}
-                        >
-                            Start new thread
-                        </button>
+                    <div class="flex flex-col px-4">
+                        <p class="text-center pt-[40px] mt-4">${i18n("You have an existing thread for ")(rootUrl, this.hashtag!)}</p>
+                        <p class="text-center mt-4">${i18n("Do you want to add new posts to the existing thread, or start a new thread?")}</p>
+                        <div class="flex flex-col mx-auto gap-4 mt-4">
+                            <button
+                                class="flex-shrink px-4 py-2 rounded bg-primary text-white"
+                                @click=${() => {
+                                    this.askedReuse = true;
+                                    this.requestUpdate();
+                                }}
+                            >
+                                ${i18n("Use existing thread")}
+                            </button>
+                            <button
+                                class="flex-shrink px-4 py-2 rounded bg-primary text-white"
+                                @click=${() => {
+                                    this.askedReuse = true;
+                                    delete user.hashTagThreads[this.hashtag!];
+                                    Store.setUser(user);
+                                    this.requestUpdate();
+                                }}
+                            >
+                                ${i18n("Start new thread")}
+                            </button>
+                        </div>
                     </div>
                 </div>`;
             } else {
@@ -196,19 +197,13 @@ export class Chat extends LitElement {
         return html` <main class="flex flex-col justify-between m-auto max-w-[600px] px-4 pt-[40px] h-full leading-5">
             <theme-toggle></theme-toggle>
             <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
-                ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
+                ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat Live</span></a
             >
             <div class="flex-grow flex flex-col">
-                <p class="text-center">Connecting</p>
+                <p class="text-center">${i18n("Connecting")}</p>
                 <div class="align-top">${contentLoader}</div>
             </div>
-            <div class="text-center text-xs italic my-4 pb-4">
-                <a class="text-primary" href="https://skychat.social" target="_blank">Skychat</a>
-                is lovingly made by
-                <a class="text-primary" href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
-                No data is collected, not even your IP address.<br />
-                <a class="text-primary" href="https://github.com/badlogic/skychat" target="_blank">Source code</a>
-            </div>
+            <div class="text-center text-xs italic my-4 pb-4">${i18n("footer")}</div>
         </main>`;
     }
 
@@ -218,9 +213,7 @@ export class Chat extends LitElement {
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
                 ${this.renderHeader()}
                 <div id="posts" class="flex-grow pt-[40px]">
-                    <div id="loadOlderPosts" class="w-full text-center p-4 animate-pulse">
-                        Loading older posts for <span class="text-primary">${this.hashtag}</span>
-                    </div>
+                    <div id="loadOlderPosts" class="w-full text-center p-4 animate-pulse">${contentLoader}</div>
                 </div>
                 ${user
                     ? html` <post-editor class="sticky bottom-0 border-t border-primary border-dashed" .hashtag=${this.hashtag}></post-editor> `
@@ -235,7 +228,7 @@ export class Chat extends LitElement {
                     }}
                     class="rounded bg-primary px-2 py-1 text-sm text-white"
                 >
-                    ↓ Catch up ↓
+                    ${i18n("↓ Catch up ↓")}
                 </button>
             </div>
         </main>`)[0];
@@ -319,7 +312,7 @@ export class Chat extends LitElement {
                     .appendChild(
                         dom(
                             html`<div id="loadOlderPosts" class="reconnect w-full text-center p-4 border-t border-gray/50">
-                                Reconnected. Some posts may be missing above.
+                                ${i18n("Reconnected. Some posts may be missing above.")}
                             </div>`
                         )[0]
                     );
@@ -335,7 +328,7 @@ export class Chat extends LitElement {
             await bskyClient.deletePost(post.uri);
         } catch (e) {
             console.error("Couldn't delete post.", e);
-            alert("Couldn't delete post.");
+            alert(i18n("Couldn't delete post"));
         }
         postDom.remove();
     }
@@ -345,7 +338,7 @@ export class Chat extends LitElement {
         try {
             if (!AppBskyFeedPost.isRecord(post.record)) return;
             const postDom = dom(
-                html`<div class="border-t border-gray/50">
+                html`<div class="border-t border-gray/50 px-4 py-2">
                     <post-view
                         animation=${animation}
                         .post=${post}
@@ -370,14 +363,14 @@ export class Chat extends LitElement {
         let initialOffset = this.postSearch?.offset;
         const olderPosts = await this.postSearch!.next();
         if (olderPosts instanceof Error || olderPosts.length == 0) {
-            load.innerText = "No older posts";
+            load.innerText = i18n("No older posts");
             load.classList.remove("animate-pulse");
             this.loadingOlder = false;
             return;
         }
 
         for (const post of olderPosts) {
-            const postDom = dom(html`<div class="border-t border-gray/50">
+            const postDom = dom(html`<div class="border-t border-gray/50 px-4 py-2">
                 <post-view
                     .post=${post}
                     .quoteCallback=${(post: PostView) => this.editor?.setQuote(post)}
@@ -412,7 +405,7 @@ export class Chat extends LitElement {
     }
 
     logout() {
-        if (confirm("Log out?")) {
+        if (confirm(i18n("Log out?"))) {
             logout();
             location.href = "/";
         }

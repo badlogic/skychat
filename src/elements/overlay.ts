@@ -148,7 +148,7 @@ export abstract class Overlay extends LitElement {
             @click=${() => this.close()}
             class="ml-auto bg-primary text-white px-2 rounded disabled:bg-gray/70 disabled:text-white/70"
         >
-            Close
+            ${i18n("Close")}
         </button>`;
     }
 }
@@ -172,14 +172,15 @@ export abstract class HashNavOverlay extends Overlay {
 
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
+import { Messages, i18n } from "../i18n";
 
-export function renderTopbar(title: string, buttons?: TemplateResult | HTMLElement) {
+export function renderTopbar(title: keyof Messages, buttons?: TemplateResult | HTMLElement) {
     return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-10">
-            <a class="flex items-center text-primary font-bold text-center" href="/client.html"
+            <a class="flex items-center text-primary font-bold text-center" href="/"
                 ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
             >
             <button class="text-primary font-bold pl-2 relative pr-2">
-                <span>${title}</span>
+                <span>${i18n(title)}</span>
             </button>
             ${buttons}
         </div>

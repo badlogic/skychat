@@ -3,6 +3,7 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { contentLoader, dom, onVisibleOnce } from "../utils";
 import { map } from "lit/directives/map.js";
 import { bskyClient } from "../bsky";
+import { i18n } from "../i18n";
 
 export type Cursor = any;
 
@@ -57,7 +58,7 @@ export abstract class ItemsList<C, T> extends LitElement {
                 }
                 this.items.push(...result.items);
             } catch (e: any) {
-                this.error = e instanceof Error ? e.message : "Could not load list";
+                this.error = e instanceof Error ? e.message : i18n("Could not load list");
             } finally {
                 this.initialItemsLoaded = true;
             }
@@ -133,7 +134,7 @@ export abstract class ItemsList<C, T> extends LitElement {
 
         const itemsDom = dom(html`<div id="items" class="flex flex-col">
             ${map(this.items, (item) => this.internalRenderItem(item))}
-            <div id="loader" class="w-full text-center p-4 animate-pulse">Loading more items</div>
+            <div id="loader" class="w-full text-center p-4 animate-pulse">${contentLoader}</div>
         </div>`)[0];
         const loader = itemsDom.querySelector("#loader") as HTMLElement;
         let loading = false;
@@ -148,7 +149,7 @@ export abstract class ItemsList<C, T> extends LitElement {
                     return;
                 }
                 if (result.items.length == 0) {
-                    loader.innerText = "No more items";
+                    loader.innerText = i18n("No more items");
                     loader.classList.remove("animate-pulse");
                     return;
                 }
@@ -167,7 +168,7 @@ export abstract class ItemsList<C, T> extends LitElement {
                 onVisibleOnce(loader, loadMore);
             } catch (e) {
                 if (!loader.isConnected) itemsDom.append(loader);
-                loader.innerText = e instanceof Error ? e.message : "Could not load more items";
+                loader.innerText = e instanceof Error ? e.message : i18n("Could not load more items");
             } finally {
                 loading = false;
             }

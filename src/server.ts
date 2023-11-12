@@ -44,6 +44,7 @@ for (const quote in quotes) {
 }
 let numSaves = 0;
 let saveTime = 0;
+let numDidWebRequests = 0;
 
 (async () => {
     const app = express();
@@ -201,66 +202,103 @@ let saveTime = 0;
     }, 2000);
 
     app.get("/api/register", async (req, res) => {
-        const token = req.query.token;
-        const did = req.query.did;
-        if (!token || !did || token.length == 0 || did.length == 0 || typeof token != "string" || typeof did != "string") {
-            console.error("Invalid token or did, token: " + token + ", did: " + did);
-            res.status(400).send();
-            return;
+        try {
+            const token = req.query.token;
+            const did = req.query.did;
+            if (!token || !did || token.length == 0 || did.length == 0 || typeof token != "string" || typeof did != "string") {
+                console.error("Invalid token or did, token: " + token + ", did: " + did);
+                res.status(400).send();
+                return;
+            }
+            console.log("Registration: " + token + ", " + did);
+            const tokens = registrations[did] ?? [];
+            if (tokens.indexOf(token) == -1) tokens.push(token);
+            registrations[did] = tokens;
+            console.log(`${did}: ${tokens.length} tokens`);
+            res.send();
+        } catch (e) {
+            res.status(400).json(e);
         }
-        console.log("Registration: " + token + ", " + did);
-        const tokens = registrations[did] ?? [];
-        if (tokens.indexOf(token) == -1) tokens.push(token);
-        registrations[did] = tokens;
-        console.log(`${did}: ${tokens.length} tokens`);
-        res.send();
     });
 
     app.get("/api/status", (req, res) => {
-        const regs: Record<string, number> = {};
-        for (const did in registrations) {
-            regs[did] = registrations[did].length;
-        }
+        try {
+            const regs: Record<string, number> = {};
+            for (const did in registrations) {
+                regs[did] = registrations[did].length;
+            }
 
-        const uptime = getTimeDifference(serverStart.getTime());
-        res.json({
-            serverStart,
-            uptime,
-            queue,
-            registrations: regs,
-            isStreaming,
-            numStreamEvents,
-            numStreamEventsPerSecond: numStreamEvents / ((performance.now() - streamStartNano) / 1000),
-            numStreamRestarts,
-            streamErrors,
-            numPushMessages,
-            numQuotes,
-            numQuotedPosts: Object.keys(quotes).length,
-            numSaves,
-            saveTime: saveTime.toFixed(2) + " secs",
-            quotesFileSize: formatFileSize(fsSync.statSync(quotesFile).size),
-            registrationsFileSize: formatFileSize(fsSync.statSync(registrationsFile).size),
-        });
+            const uptime = getTimeDifference(serverStart.getTime());
+            res.json({
+                serverStart,
+                uptime,
+                queue,
+                registrations: regs,
+                isStreaming,
+                numStreamEvents,
+                numStreamEventsPerSecond: numStreamEvents / ((performance.now() - streamStartNano) / 1000),
+                numStreamRestarts,
+                streamErrors,
+                numPushMessages,
+                numQuotes,
+                numQuotedPosts: Object.keys(quotes).length,
+                numSaves,
+                saveTime: saveTime.toFixed(2) + " secs",
+                quotesFileSize: formatFileSize(fsSync.statSync(quotesFile).size),
+                registrationsFileSize: formatFileSize(fsSync.statSync(registrationsFile).size),
+                numDidWebRequests,
+            });
+        } catch (e) {
+            res.status(400).json(e);
+        }
     });
 
     app.get("/api/numquotes", (req, res) => {
-        const uris: string[] | string = req.query.uri as string[] | string;
-        const quotesPerUri: Record<string, number> = {};
-        if (Array.isArray(uris)) {
-            uris.forEach((uri) => {
-                quotesPerUri[uri] = quotes[uri]?.length ?? 0;
-            });
-        } else if (uris) {
-            quotesPerUri[uris] = quotes[uris]?.length ?? 0;
+        try {
+            const uris: string[] | string = req.query.uri as string[] | string;
+            const quotesPerUri: Record<string, number> = {};
+            if (Array.isArray(uris)) {
+                uris.forEach((uri) => {
+                    quotesPerUri[uri] = quotes[uri]?.length ?? 0;
+                });
+            } else if (uris) {
+                quotesPerUri[uris] = quotes[uris]?.length ?? 0;
+            }
+            res.json(quotesPerUri);
+        } catch (e) {
+            res.status(400).json(e);
         }
-        res.json(quotesPerUri);
     });
 
     app.get("/api/quotes", (req, res) => {
-        res.json(quotes[req.query.uri as string] ?? []);
+        try {
+            res.json(quotes[req.query.uri as string] ?? []);
+        } catch (e) {
+            res.status(400).json(e);
+        }
     });
 
-    const server = http.createServer(app).listen(port, () => {
+    app.get("/api/resolve-did-web", async (req, res) => {
+        numDidWebRequests++;
+        try {
+            const did = req.query.did as string;
+            if (!did.startsWith("did:web:")) {
+                res.status(400).json({ error: "Not a did:web" });
+                return;
+            }
+            const didDocUrl = "https://" + did.replace("did:web:", "") + "/.well-known/did.json";
+            const response = await fetch(didDocUrl);
+            if (!response.ok) {
+                res.status(400).json({ error: "Couldn't fetch did.json" });
+                return;
+            }
+            res.json(await response.json());
+        } catch (e) {
+            res.status(400).json(e);
+        }
+    });
+
+    http.createServer(app).listen(port, () => {
         console.log(`App listening on port ${port}`);
     });
 })();

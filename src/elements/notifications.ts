@@ -15,10 +15,11 @@ import { map } from "lit/directives/map.js";
 import { bskyClient, loadPosts } from "../bsky";
 import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
 import { Store } from "../store";
-import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, renderAuthor, apiBaseUrl } from "../utils";
+import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, renderAuthor, apiBaseUrl, contentLoader } from "../utils";
 import { HashNavOverlay, renderTopbar } from "./overlay";
 import { renderEmbed, renderPostText } from "./postview";
 import { cacheQuotes } from "../cache";
+import { i18n } from "../i18n";
 
 type NotificationType = "like" | "repost" | "follow" | "mention" | "reply" | "quote" | (string & {});
 
@@ -54,6 +55,7 @@ export class NotificationsOverlay extends HashNavOverlay {
 
         let loading = false;
         const checkNewNotifications = async () => {
+            // FIXME should probably display an error if new notifications couldn't be loaded for some reason.
             if (loading) return;
             if (!bskyClient) return;
             const firstNode = this.notificationsDom?.children[0];
@@ -147,7 +149,7 @@ export class NotificationsOverlay extends HashNavOverlay {
     renderContent(): TemplateResult {
         return html`${this.isLoading
             ? html`<div class="animate-fade flex-grow flex flex-col">
-                  <div class="align-top"><div id="loader" class="w-full text-center p-4 animate-pulse">Loading notifications</div></div>
+                  <div class="align-top"><div id="loader" class="w-full text-center p-4 animate-pulse">${contentLoader}</div></div>
               </div>`
             : this.renderNotifications()}`;
     }
@@ -266,7 +268,7 @@ export class NotificationsOverlay extends HashNavOverlay {
             await bskyClient.deletePost(post.uri);
         } catch (e) {
             console.error("Couldn't delete post.", e);
-            alert("Couldn't delete post.");
+            alert(i18n("Couldn't delete post"));
         }
         postDom.remove();
     }
@@ -278,7 +280,7 @@ export class NotificationsOverlay extends HashNavOverlay {
 
         const notificationsDom = dom(html`<div id="notifications" class="flex flex-col">
             ${map(this.lastNotifications.notifications, (notification) => this.renderNotification(notification))}
-            <div id="loader" class="w-full text-center p-4 animate-pulse">Loading notifications</div>
+            <div id="loader" class="w-full text-center p-4 animate-pulse">${contentLoader}</div>
         </div>`)[0];
 
         const loader = notificationsDom.querySelector("#loader") as HTMLElement;
@@ -286,7 +288,7 @@ export class NotificationsOverlay extends HashNavOverlay {
             await this.loadNotifications();
             loader?.remove();
             if (!this.lastNotifications || this.lastNotifications.notifications.length == 0) {
-                loader.innerText = "No more notifications";
+                loader.innerText = i18n("No more notifications");
                 return;
             }
 

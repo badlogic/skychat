@@ -13,6 +13,7 @@ import { renderPostText } from "./postview";
 import { PopupMenu } from "./popup";
 import { moreIcon } from "../icons";
 import { ActorTimelineFilter, actorTimelineLoader } from "./feed";
+import { Messages, i18n } from "../i18n";
 
 @customElement("profile-overlay")
 export class ProfileOverlay extends HashNavOverlay {
@@ -31,18 +32,33 @@ export class ProfileOverlay extends HashNavOverlay {
     @state()
     filter: ActorTimelineFilter = "posts_no_replies";
 
+    @state()
+    blockedBy = false;
+
+    @state()
+    blocking = false;
+
+    @state()
+    muted = false;
+
     async load() {
+        const errorMessage = "Couldn't load profile of " + this.did;
         try {
             if (!bskyClient || !this.did) {
-                this.error = "Couldn't load profile";
+                this.error = errorMessage;
                 return;
             }
             await cacheProfile(bskyClient, this.did);
             this.profile = profileCache[this.did];
             if (!this.profile) {
-                this.error = "Couldn't load profile";
+                this.error = errorMessage;
                 return;
             }
+            if (this.profile.viewer?.blockedBy) this.blockedBy = true;
+            if (this.profile.viewer?.blocking || this.profile.viewer?.blockingByList) this.blocking = true;
+            if (this.profile.viewer?.muted || this.profile.viewer?.mutedByList) this.muted = true;
+        } catch (e) {
+            this.error = errorMessage;
         } finally {
             this.isLoading = false;
         }
@@ -63,7 +79,7 @@ export class ProfileOverlay extends HashNavOverlay {
 
     renderContent(): TemplateResult {
         if (this.isLoading || this.error || !this.profile)
-            return html`<div class="align-top pt-[40px]">${this.error ? this.error : contentLoader}</div>`;
+            return html`<div class="align-top pt-[40px] p-4">${this.error ? this.error : contentLoader}</div>`;
 
         const user = Store.getUser();
         const profile = this.profile;
@@ -76,7 +92,7 @@ export class ProfileOverlay extends HashNavOverlay {
             document.body.append(
                 dom(
                     html`<profile-list-overlay
-                        title="Followers"
+                        title="${i18n("Followers")}"
                         .hash=${`followers/${profile.did}`}
                         .loader=${followersLoader(profile.did)}
                     ></profile-list-overlay>`
@@ -90,7 +106,7 @@ export class ProfileOverlay extends HashNavOverlay {
             document.body.append(
                 dom(
                     html`<profile-list-overlay
-                        title="Following"
+                        title="${i18n("Following")}"
                         .hash=${`following/${profile.did}`}
                         .loader=${followingLoader(profile.did)}
                     ></profile-list-overlay>`
@@ -100,11 +116,11 @@ export class ProfileOverlay extends HashNavOverlay {
 
         return html`<div>
             ${this.profile.banner
-                ? html`<img src="${profile.banner}" class="h-[150px] w-full object-cover" />`
+                ? html`<img src="${profile.banner}" class="${this.blockedBy || this.blocking ? "blur" : ""} h-[150px] w-full object-cover" />`
                 : html`<div class="bg-blue-500 h-[150px] w-full"></div>`}
             <div class="flex px-4 mt-[-48px] items-end">
                 ${profile.avatar
-                    ? html`<img class="w-24 h-24 rounded-full" src="${profile.avatar}" />`
+                    ? html`<img class="${this.blockedBy || this.blocking ? "blur" : ""} w-24 h-24 rounded-full" src="${profile.avatar}" />`
                     : html`<i class="icon w-24 h-24">${defaultAvatar}</i>`}
                 <div class="ml-auto flex items-center gap-2">
                     ${profile.did != user?.profile.did
@@ -115,50 +131,74 @@ export class ProfileOverlay extends HashNavOverlay {
                         : nothing}
                 </div>
             </div>
-            <div class="px-4">
-                <div class="text-2xl">${this.profile.displayName ?? this.profile.handle}</div>
-                <div class="flex items-center gap-2 mt-2">
-                    ${profile.viewer?.followedBy ? html`<span class="p-1 text-xs rounded bg-gray/50 text-white">Follows you</span>` : nothing}
-                    <span class="text-gray dark:text-lightgray text-sm">${profile.handle}</span>
-                </div>
-                <div class="mt-2 text-sm flex gap-2">
-                    <a href="" target="_blank" @click=${showFollowers}
-                        ><span class="font-bold">${getNumber(profile.followersCount)}</span> followers</a
-                    >
-                    <a href="" target="_blank" @click=${showFollowing}><span class="font-bold">${getNumber(profile.followsCount)}</span> following</a>
-                    <span><span class="font-bold">${getNumber(profile.postsCount)}</span> posts</span>
-                </div>
-                <div class="mt-1 leading-tight whitespace-pre-wrap">${renderPostText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
+            <div class="text-2xl px-4">${this.profile.displayName ?? this.profile.handle}</div>
+            <div class="flex items-center gap-2 mt-2 px-4">
+                ${profile.viewer?.followedBy ? html`<span class="p-1 text-xs rounded bg-gray/50 text-white">${i18n("Follows you")}</span>` : nothing}
+                <span class="text-gray dark:text-lightgray text-sm">${profile.handle}</span>
             </div>
-            <div class="mt-4 border-b border-gray/50">
+            <div class="mt-2 text-sm flex flex-col gap-2 px-4">
+                ${!(this.blockedBy || this.blocking)
+                    ? html`
+                            <div class="flex gap-2">
+                            <a href="" target="_blank" @click=${showFollowers}
+                                ><span class="font-bold">${getNumber(profile.followersCount)}</span> ${i18n("followers")}</a
+                            >
+                            <a href="" target="_blank" @click=${showFollowing}><span class="font-bold">${getNumber(
+                          profile.followsCount
+                      )}</span> ${i18n("following")}</a>
+                            <span><span class="font-bold">${getNumber(profile.postsCount)}</span> ${i18n("posts")}</span>
+                            </div>
+                        </div>
+                        <div class="mt-1 leading-tight whitespace-pre-wrap">${renderPostText({
+                            text: rt.text,
+                            facets: rt.facets,
+                            createdAt: "",
+                        })}</div>`
+                    : nothing}
+                ${this.blockedBy ? html`<span>${i18n("You are blocked by the user.")}</span>` : nothing}
+                ${this.blocking ? html`<span>${i18n("You are blocking the user.")}</span>` : nothing}
+            </div>
+            <div class="overflow-x-auto flex flex-nowrap border-b border-gray/50">
                 <button
-                    class="${this.filter == "posts_no_replies" ? "border-b-2 border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
+                    class="whitespace-nowrap ${this.filter == "posts_no_replies"
+                        ? "border-b-2 border-primary font-bold"
+                        : "text-gray dark:text-lightgray"} px-2 py-2"
                     @click=${() => (this.filter = "posts_no_replies")}
                 >
-                    Posts
+                    ${i18n("Posts")}
                 </button>
                 <button
-                    class="${this.filter == "posts_with_replies" ? "border-b-2 border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
+                    class="whitespace-nowrap ${this.filter == "posts_with_replies"
+                        ? "border-b-2 border-primary font-bold"
+                        : "text-gray dark:text-lightgray"} px-2 py-2"
                     @click=${() => (this.filter = "posts_with_replies")}
                 >
-                    Posts & Replies
+                    ${i18n("Posts & Replies")}
                 </button>
                 <button
-                    class="${this.filter == "posts_with_media" ? "border-b-2 border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
+                    class="whitespace-nowrap ${this.filter == "posts_with_media"
+                        ? "border-b-2 border-primary font-bold"
+                        : "text-gray dark:text-lightgray"} px-2 py-2"
                     @click=${() => (this.filter = "posts_with_media")}
                 >
-                    Media
+                    ${i18n("Media")}
                 </button>
                 <button
-                    class="${this.filter == "likes" ? "border-b-2 border-primary font-bold" : "text-gray dark:text-lightgray"} px-2 py-2"
+                    class="whitespace-nowrap ${this.filter == "likes"
+                        ? "border-b-2 border-primary font-bold"
+                        : "text-gray dark:text-lightgray"} px-2 py-2"
                     @click=${() => (this.filter = "likes")}
                 >
-                    Likes
+                    ${i18n("Likes")}
                 </button>
             </div>
-            ${dom(
-                html`<div class="min-h-[100dvh]"><skychat-feed .feedLoader=${actorTimelineLoader(profile.did, this.filter)}></skychat-feed></div>`
-            )[0]}
+            ${!(this.blockedBy || this.blocking)
+                ? dom(
+                      html`<div class="min-h-[100dvh]">
+                          <skychat-feed .feedLoader=${actorTimelineLoader(profile.did, this.filter)}></skychat-feed>
+                      </div>`
+                  )[0]
+                : html`<div class="p-4 text-center">${i18n("Nothing to show")}</div>`}
         </div>`;
     }
 }
@@ -184,8 +224,9 @@ export class ProfileOptionsElement extends PopupMenu {
             </button>`;
         };
 
-        return html` ${createButton(html`<span>Add to List</span>`, () => {})} ${createButton(html`<span>Mute</span>`, () => {})}
-        ${createButton(html`<span>Block</span>`, () => {})} ${createButton(html`<span>Report</span>`, () => {})}`;
+        return html` ${createButton(html`<span>${i18n("Add to List")}</span>`, () => {})}
+        ${createButton(html`<span>${i18n("Mute")}</span>`, () => {})} ${createButton(html`<span>${i18n("Block")}</span>`, () => {})}
+        ${createButton(html`<span>${i18n("Report")}</span>`, () => {})}`;
     }
 }
 
@@ -225,12 +266,12 @@ export class ProfileViewElement extends LitElement {
                     <div class="flex flex-col">
                         ${renderAuthor(this.profile)}
                         ${this.profile.viewer?.followedBy
-                            ? html`<div class="mt-1"><span class="p-1 text-xs rounded bg-gray/50 text-white">Follows you</span></div>`
+                            ? html`<div class="mt-1"><span class="p-1 text-xs rounded bg-gray/50 text-white">${i18n("Follows you")}</span></div>`
                             : nothing}
                     </div>
                     ${this.profile.did != user?.profile.did
                         ? html`<button class="${this.following ? "bg-gray/50" : "bg-primary"} text-white rounded-full px-4 py-1 ml-auto">
-                              ${this.following ? "Unfollow" : "Follow"}
+                              ${this.following ? i18n("Unfollow") : i18n("Follow")}
                           </button>`
                         : nothing}
                 </div>
@@ -282,7 +323,7 @@ export class ProfileListOverlay extends HashNavOverlay {
     }
 
     renderHeader(): TemplateResult {
-        return html` ${renderTopbar(this.title, this.closeButton())}`;
+        return html` ${renderTopbar(this.title as keyof Messages, this.closeButton())}`;
     }
 
     renderContent(): TemplateResult {
@@ -292,11 +333,11 @@ export class ProfileListOverlay extends HashNavOverlay {
 
 export function likesLoader(postUri?: string): ItemsListLoader<string, ProfileView> {
     return async (cursor?: string) => {
-        if (!bskyClient) return new Error("Not connected");
-        if (!postUri) return new Error("No post given");
+        if (!bskyClient) return new Error(i18n("Not connected"));
+        if (!postUri) return new Error(i18n("No post given"));
         const result = await bskyClient.getLikes({ cursor, uri: postUri });
         if (!result.success) {
-            return new Error("Could not load likes");
+            return new Error(i18n("Couldn't load likes"));
         }
         return { cursor: result.data.cursor, items: result.data.likes.map((like) => like.actor) };
     };
@@ -304,11 +345,11 @@ export function likesLoader(postUri?: string): ItemsListLoader<string, ProfileVi
 
 export function repostLoader(postUri?: string): ItemsListLoader<string, ProfileView> {
     return async (cursor?: string) => {
-        if (!bskyClient) return new Error("Not connected");
-        if (!postUri) return new Error("No post given");
+        if (!bskyClient) return new Error(i18n("Not connected"));
+        if (!postUri) return new Error(i18n("No post given"));
         const result = await bskyClient.getRepostedBy({ cursor, uri: postUri });
         if (!result.success) {
-            return new Error("Could not load reposts");
+            return new Error(i18n("Could not load reposts"));
         }
         return { cursor: result.data.cursor, items: result.data.repostedBy };
     };
@@ -316,11 +357,11 @@ export function repostLoader(postUri?: string): ItemsListLoader<string, ProfileV
 
 export function followersLoader(did: string): ItemsListLoader<string, ProfileView> {
     return async (cursor?: string) => {
-        if (!bskyClient) return new Error("Not connected");
-        if (!did) return new Error("No account given");
+        if (!bskyClient) return new Error(i18n("Not connected"));
+        if (!did) return new Error(i18n("No account given"));
         const result = await bskyClient.getFollowers({ cursor, actor: did });
         if (!result.success) {
-            return new Error("Could not load followers");
+            return new Error(i18n("Could not load followers"));
         }
         return { cursor: result.data.cursor, items: result.data.followers };
     };
@@ -328,11 +369,11 @@ export function followersLoader(did: string): ItemsListLoader<string, ProfileVie
 
 export function followingLoader(did: string): ItemsListLoader<string, ProfileView> {
     return async (cursor?: string) => {
-        if (!bskyClient) return new Error("Not connected");
-        if (!did) return new Error("No account given");
+        if (!bskyClient) return new Error(i18n("Not connected"));
+        if (!did) return new Error(i18n("No account given"));
         const result = await bskyClient.getFollows({ cursor, actor: did });
         if (!result.success) {
-            return new Error("Could not load followings");
+            return new Error(i18n("Could not load followings"));
         }
         return { cursor: result.data.cursor, items: result.data.follows };
     };

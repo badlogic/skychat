@@ -23,7 +23,7 @@ self.addEventListener("notificationclick", (event: any) => {
             client.postMessage("notifications");
         }
         if (clientList.length == 0) {
-            self.clients.openWindow("/client.html#notifications");
+            self.clients.openWindow("/#notifications");
         }
     };
     event.waitUntil(click());
@@ -44,6 +44,8 @@ const firebaseConfig = {
 type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow"; fromDid: string; toDid: string; token: string };
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
+
+// FIXME i18n
 onBackgroundMessage(messaging, async (payload) => {
     console.log("Background message received. ", payload);
     if (payload.data && payload.data.type && payload.data.fromDid) {

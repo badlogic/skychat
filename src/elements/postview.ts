@@ -33,6 +33,7 @@ import { PopupMenu } from "./popup";
 import { likesLoader, repostLoader } from "./profile";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { quotesLoader } from "./feed";
+import { i18n } from "../i18n";
 
 export function renderPostText(record: AppBskyFeedPost.Record) {
     if (!record.facets) {
@@ -219,7 +220,7 @@ export function renderRecord(
         ${replyToProfile && showReplyto
             ? html`<div class="flex gap-1 text-xs items-center text-gray dark:text-lightgray">
                   <i class="icon fill-gray dark:fill-lightgray">${replyIcon}</i>
-                  <span>Replying to</span>
+                  <span>${i18n("Replying to")}</span>
                   <a class="line-clamp-1 hover:underline" href="${getProfileUrl(replyToAuthorDid ?? "")}" target="_blank"
                       >${replyToProfile.displayName ?? replyToProfile.handle}</a
                   >
@@ -492,10 +493,10 @@ export class ThreadOverlay extends HashNavOverlay {
     }
 
     async load() {
-        const notFoundMessage = "Thread not found. The post may have been deleted, or you were blocked by the user.";
+        const notFoundMessage = i18n("Thread not found. The post may have been deleted, or you were blocked by the user.");
         try {
             if (!bskyClient) {
-                this.error = "No connection.";
+                this.error = i18n("Not connected");
                 return;
             }
             if (!this.postUri) {
@@ -509,7 +510,7 @@ export class ThreadOverlay extends HashNavOverlay {
                 return;
             }
             if (postResponse.data.thread.blocked) {
-                this.error = "You have blocked the author or the author has blocked you.";
+                this.error = i18n("You have blocked the author or the author has blocked you.");
                 return;
             }
             if (postResponse.data.thread.notFound) {
@@ -621,14 +622,14 @@ export class ThreadOverlay extends HashNavOverlay {
                 await bskyClient.deletePost(post.uri);
             } catch (e) {
                 console.error("Couldn't delete post.", e);
-                alert("Couldn't delete post.");
+                alert(i18n("Couldn't delete post"));
             }
             postDom.remove();
         };
 
         const postDom = dom(html`<div>
             ${AppBskyFeedDefs.isNotFoundPost(thread.parent)
-                ? html`<div class="bg-lightgray text-white px-4 py-2 mb-2 rounded">Deleted post.</div>`
+                ? html`<div class="bg-lightgray text-white px-4 py-2 mb-2 rounded">${i18n("Deleted post")}</div>`
                 : nothing}
             <div
                 class="${thread.post.uri == uri ? animation : ""} min-w-[250px] mb-2 ${!isRoot || (thread.post.uri == uri && isRoot)
@@ -659,6 +660,6 @@ export class ThreadOverlay extends HashNavOverlay {
                 postViewDom?.scrollIntoView({ behavior: "smooth", block: "center" });
             }, 500);
         }
-        return postDom; //
+        return postDom;
     }
 }

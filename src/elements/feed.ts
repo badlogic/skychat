@@ -1,14 +1,15 @@
-import { AppBskyFeedDefs, AppBskyFeedPost, BskyAgent } from "@atproto/api";
-import { FeedViewPost, PostView, isFeedViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { AppBskyFeedDefs, BskyAgent } from "@atproto/api";
+import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { bskyClient, loadPosts } from "../bsky";
-import { reblogIcon } from "../icons";
 import { cacheProfiles, cacheQuotes } from "../cache";
+import { reblogIcon } from "../icons";
 import { Store } from "../store";
 import { apiBaseUrl, dom, getProfileUrl, splitAtUri } from "../utils";
 import { ItemListLoaderResult, ItemsList, ItemsListLoader } from "./list";
 import { Overlay, renderTopbar } from "./overlay";
+import { i18n } from "../i18n";
 
 @customElement("skychat-feed")
 export class Feed extends ItemsList<string, FeedViewPost | PostView> {
@@ -20,7 +21,7 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
     }
 
     async loadItems(cursor?: string | undefined): Promise<ItemListLoaderResult<string, FeedViewPost | PostView>> {
-        if (!bskyClient) return new Error("Not connected");
+        if (!bskyClient) return new Error(i18n("Not connected"));
         const result = await this.feedLoader(cursor);
         if (result instanceof Error) return result;
 
@@ -77,8 +78,8 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
         try {
             await bskyClient.deletePost(post.uri);
         } catch (e) {
-            console.error("Couldn't delete post.", e);
-            alert("Couldn't delete post.");
+            console.error("Couldn't delete post", e);
+            alert("Couldn't delete post");
         }
         postDom.parentElement!.remove();
     }
@@ -140,7 +141,7 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
 @customElement("skychat-feed-overlay")
 export class FeedOverlay extends Overlay {
     @property()
-    title: string = "Home";
+    title: string = i18n("Home");
 
     @property()
     feedLoader: ItemsListLoader<string, FeedViewPost | PostView> = homeTimelineLoader;
@@ -163,9 +164,9 @@ export class FeedOverlay extends Overlay {
 }
 
 export const homeTimelineLoader = async (cursor?: string) => {
-    if (!bskyClient) return new Error("Couldn't load feed");
+    if (!bskyClient) return new Error("Couldn't load home timeline");
     const result = await bskyClient.app.bsky.feed.getTimeline({ cursor });
-    if (!result.success) return new Error("Couldn't load feed");
+    if (!result.success) return new Error("Couldn't load home timeline");
     return { cursor: result.data.cursor, items: result.data.feed };
 };
 
@@ -194,9 +195,16 @@ export const actorTimelineLoader = (did: string, filter: ActorTimelineFilter): I
                 if (!result.success) return new Error("Couldn't load likes");
                 return { cursor: result.data.cursor, items: result.data.feed };
             } else {
-                const repoResult = await bskyClient.com.atproto.repo.describeRepo({ repo: did });
-                if (!repoResult.success) return new Error("Couldn't load likes");
-                const didDoc: any = repoResult.data.didDoc;
+                let repoResult: Response;
+                if (did.includes("did:plc")) {
+                    repoResult = await fetch("https://plc.directory/" + did);
+                } else {
+                    repoResult = await fetch(apiBaseUrl() + `api/resolve-did-web?did=${encodeURIComponent(did)}`);
+                }
+                if (!repoResult.ok) {
+                    return new Error("Couldn't load likes");
+                }
+                const didDoc: any = await repoResult.json();
                 let pdsUrl: string | undefined;
                 if (!didDoc.service) return new Error("Couldn't load likes");
                 for (const service of didDoc.service) {
@@ -212,6 +220,7 @@ export const actorTimelineLoader = (did: string, filter: ActorTimelineFilter): I
                 for (const record of result.data.records) {
                     postUris.push((record.value as any).subject.uri);
                 }
+                if (postUris.length == 0) return { items: [] };
                 const postsResult = await bskyClient.getPosts({ uris: postUris });
                 if (!postsResult.success) return new Error("Couldn't load likes");
                 return { cursor: result.data.cursor, items: postsResult.data.posts };

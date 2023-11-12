@@ -22,6 +22,7 @@ import { Store } from "../store";
 import { ImageInfo, dom, downloadImage, downscaleImage, loadImageFile, loadImageFiles, splitAtUri } from "../utils";
 import { renderEmbed, renderRecord } from "./postview";
 import { CloseableElement, Overlay, renderTopbar } from "./overlay";
+import { i18n } from "../i18n";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -114,53 +115,59 @@ export class PostEditor extends LitElement {
 
         let placeholder = "";
         if (this.quote) {
-            placeholder = this.hashtag ? `Write your quote. It will be added to your thread about ${this.hashtag!}.` : "Write your quote.";
+            placeholder = this.hashtag
+                ? i18n("Write your quote. It will be added to your thread about ${this.hashtag!}.")(this.hashtag!)
+                : i18n("Write your quote post.");
         } else if (this.replyTo) {
             placeholder = this.hashtag
-                ? `Write your reply. It will be added to the thread by ${this.replyTo.author.displayName ?? this.replyTo.author.handle}.`
-                : "Write your reply";
+                ? i18n("Write your reply. It will be added to the thread by ${this.replyTo.author.displayName ?? this.replyTo.author.handle}.")(
+                      this.replyTo.author.displayName ?? this.replyTo.author.handle
+                  )
+                : i18n("Write your reply");
         } else {
-            placeholder = this.hashtag ? `Add a post to your thread about ${this.hashtag!}. The hashtag will be added automatically.` : "What's up?";
+            placeholder = this.hashtag
+                ? i18n("Add a post to your thread about ${this.hashtag!}. The hashtag will be added automatically.")(this.hashtag!)
+                : i18n("What's up?");
         }
 
         return html` <div class="flex max-w-[600px] bg-white dark:bg-black">
-            <div class="flex max-w-full flex-col flex-grow relative"
+            <div
+                class="flex max-w-full flex-col flex-grow relative"
                 @drop=${(ev: DragEvent) => this.pasteImage(ev)}
-                @dragover=${(ev: DragEvent) => ev.preventDefault()}>
-                ${
-                    this.replyTo
-                        ? html`<div class="flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
-                              ${renderRecord(
-                                  this.replyTo.author,
-                                  splitAtUri(this.replyTo.uri).rkey,
-                                  this.replyTo.record as AppBskyFeedPost.Record,
-                                  this.replyTo.embed,
-                                  true,
-                                  false,
-                                  "Replying to",
-                                  undefined,
-                                  undefined,
-                                  false,
-                                  false
-                              )}
-                              <button
-                                  class="absolute right-4 top-4 bg-black rounded-full p-1"
-                                  @click=${(ev: Event) => {
-                                      if (!ev.currentTarget) return;
-                                      const target = ev.currentTarget as HTMLElement;
-                                      target.parentElement?.classList.add("animate-jump-out");
+                @dragover=${(ev: DragEvent) => ev.preventDefault()}
+            >
+                ${this.replyTo
+                    ? html`<div class="flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
+                          ${renderRecord(
+                              this.replyTo.author,
+                              splitAtUri(this.replyTo.uri).rkey,
+                              this.replyTo.record as AppBskyFeedPost.Record,
+                              this.replyTo.embed,
+                              true,
+                              false,
+                              i18n("Replying to"),
+                              undefined,
+                              undefined,
+                              false,
+                              false
+                          )}
+                          <button
+                              class="absolute right-4 top-4 bg-black rounded-full p-1"
+                              @click=${(ev: Event) => {
+                                  if (!ev.currentTarget) return;
+                                  const target = ev.currentTarget as HTMLElement;
+                                  target.parentElement?.classList.add("animate-jump-out");
 
-                                      setTimeout(() => {
-                                          this.replyTo = undefined;
-                                      }, 500);
-                                  }}
-                                  ?disabled=${this.isSending}
-                              >
-                                  <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
-                              </button>
-                          </div>`
-                        : nothing
-                }
+                                  setTimeout(() => {
+                                      this.replyTo = undefined;
+                                  }, 500);
+                              }}
+                              ?disabled=${this.isSending}
+                          >
+                              <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
+                          </button>
+                      </div>`
+                    : nothing}
                 <textarea
                     id="message"
                     @input=${this.input}
@@ -168,113 +175,112 @@ export class PostEditor extends LitElement {
                     placeholder="${placeholder}"
                     ?disabled=${this.isSending}
                 ></textarea>
-                ${
-                    !this.embed && this.imagesToUpload.length == 0 && (this.cardSuggestions?.length ?? 0 > 0)
-                        ? html`<div class="flex flex-col my-2 mx-2 gap-2">
-                              ${map(
-                                  this.cardSuggestions,
-                                  (card) =>
-                                      html`<button
-                                          @click=${() => this.addLinkCard(card)}
-                                          class="border border-gray rounded py-1 px-4 flex gap-2"
-                                          ?disabled=${this.isSending}
-                                      >
-                                          <div class="min-w-[70px]">Add card</div>
-                                          <div class="text-left truncate text-blue-500">${card.uri}</div>
-                                      </button>`
-                              )}
-                          </div>`
-                        : nothing
-                }
-                ${
-                    AppBskyEmbedExternal.isMain(this.embed)
-                        ? html`<div class="flex relative px-2">
-                              <div class="w-full">${renderEmbed(this.embed, false)}</div>
-                              <button
-                                  class="absolute right-4 top-4"
-                                  @click=${(ev: Event) => {
-                                      if (!ev.currentTarget) return;
-                                      const target = ev.currentTarget as HTMLElement;
-                                      target.parentElement?.classList.add("animate-jump-out");
+                ${!this.embed && this.imagesToUpload.length == 0 && (this.cardSuggestions?.length ?? 0 > 0)
+                    ? html`<div class="flex flex-col my-2 mx-2 gap-2">
+                          ${map(
+                              this.cardSuggestions,
+                              (card) =>
+                                  html`<button
+                                      @click=${() => this.addLinkCard(card)}
+                                      class="border border-gray rounded py-1 px-4 flex gap-2"
+                                      ?disabled=${this.isSending}
+                                  >
+                                      <div class="min-w-[70px]">${i18n("Add link card")}</div>
+                                      <div class="text-left truncate text-blue-500">${card.uri}</div>
+                                  </button>`
+                          )}
+                      </div>`
+                    : nothing}
+                ${AppBskyEmbedExternal.isMain(this.embed)
+                    ? html`<div class="flex relative px-2">
+                          <div class="w-full">${renderEmbed(this.embed, false)}</div>
+                          <button
+                              class="absolute right-4 top-4"
+                              @click=${(ev: Event) => {
+                                  if (!ev.currentTarget) return;
+                                  const target = ev.currentTarget as HTMLElement;
+                                  target.parentElement?.classList.add("animate-jump-out");
 
-                                      setTimeout(() => {
-                                          this.embed = undefined;
-                                          this.checkCanPost();
-                                      }, 500);
-                                  }}
-                                  ?disabled=${this.isSending}
-                              >
-                                  <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
-                              </button>
-                          </div>`
-                        : nothing
-                }
-                ${
-                    this.imagesToUpload.length > 0
-                        ? html`<div class="flex mx-2">
-                              ${map(
-                                  this.imagesToUpload,
-                                  (image) => html`<div class="w-1/4 relative">
-                                      <img src="${image.dataUri}" class="animate-jump-in px-1 w-full h-[100px] object-cover" /><button
-                                          class="absolute right-2 top-2 bg-black rounded-full p-1"
-                                          @click=${(ev: Event) => {
-                                              if (!ev.currentTarget) return;
-                                              const target = ev.currentTarget as HTMLElement;
-                                              this.imagesToUpload = this.imagesToUpload.filter((other) => image != other);
-                                          }}
-                                          ?disabled=${this.isSending}
-                                      >
-                                          <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
-                                      </button>
-                                      <button
-                                          class="absolute left-2 top-2 bg-black rounded-full p-1"
-                                          @click=${() => {
-                                              document.body.append(dom(html`<image-editor .image=${image}></image-editor>`)[0]);
-                                          }}
-                                          ?disabled=${this.isSending}
-                                      >
-                                          <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${editIcon}</i>
-                                      </button>
-                                  </div>`
-                              )}
-                          </div>`
-                        : nothing
-                }
-                ${
-                    this.quote
-                        ? html`<div class="relative flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
-                              ${renderRecord(
-                                  this.quote.author,
-                                  splitAtUri(this.quote.uri).rkey,
-                                  this.quote.record as AppBskyFeedPost.Record,
-                                  this.quote.embed,
-                                  true,
-                                  false,
-                                  "Quoting",
-                                  undefined,
-                                  undefined,
-                                  false,
-                                  false
-                              )}
-                              <button
-                                  class="absolute right-2 top-2 bg-black rounded-full p-1"
-                                  @click=${(ev: Event) => {
-                                      if (!ev.currentTarget) return;
-                                      const target = ev.currentTarget as HTMLElement;
-                                      target.parentElement?.classList.add("animate-jump-out");
+                                  setTimeout(() => {
+                                      this.embed = undefined;
+                                      this.checkCanPost();
+                                  }, 500);
+                              }}
+                              ?disabled=${this.isSending}
+                          >
+                              <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
+                          </button>
+                      </div>`
+                    : nothing}
+                ${this.imagesToUpload.length > 0
+                    ? html`<div class="flex mx-2">
+                          ${map(
+                              this.imagesToUpload,
+                              (image) => html`<div class="w-1/4 relative">
+                                  <img src="${image.dataUri}" class="animate-jump-in px-1 w-full h-[100px] object-cover" /><button
+                                      class="absolute right-2 top-2 bg-black rounded-full p-1"
+                                      @click=${(ev: Event) => {
+                                          if (!ev.currentTarget) return;
+                                          const target = ev.currentTarget as HTMLElement;
+                                          this.imagesToUpload = this.imagesToUpload.filter((other) => image != other);
+                                      }}
+                                      ?disabled=${this.isSending}
+                                  >
+                                      <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
+                                  </button>
+                                  <button
+                                      class="absolute left-2 top-2 bg-black rounded-full p-1"
+                                      @click=${() => {
+                                          document.body.append(dom(html`<image-editor .image=${image}></image-editor>`)[0]);
+                                      }}
+                                      ?disabled=${this.isSending}
+                                  >
+                                      <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${editIcon}</i>
+                                  </button>
+                              </div>`
+                          )}
+                      </div>`
+                    : nothing}
+                ${this.quote
+                    ? html`<div class="relative flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
+                          ${renderRecord(
+                              this.quote.author,
+                              splitAtUri(this.quote.uri).rkey,
+                              this.quote.record as AppBskyFeedPost.Record,
+                              this.quote.embed,
+                              true,
+                              false,
+                              i18n("Quoting"),
+                              undefined,
+                              undefined,
+                              false,
+                              false
+                          )}
+                          <button
+                              class="absolute right-2 top-2 bg-black rounded-full p-1"
+                              @click=${(ev: Event) => {
+                                  if (!ev.currentTarget) return;
+                                  const target = ev.currentTarget as HTMLElement;
+                                  target.parentElement?.classList.add("animate-jump-out");
 
-                                      setTimeout(() => {
-                                          this.quote = undefined;
-                                      }, 500);
-                                  }}
-                                  ?disabled=${this.isSending}
-                              >
-                                  <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
-                              </button>
-                          </div>`
-                        : nothing
-                }
-                <div class="flex items-center">
+                                  setTimeout(() => {
+                                      this.quote = undefined;
+                                  }, 500);
+                              }}
+                              ?disabled=${this.isSending}
+                          >
+                              <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
+                          </button>
+                      </div>`
+                    : nothing}
+                ${this.isSending
+                    ? html`<div class="flex items-center min-h-[48px]">
+                          <div class="mx-auto flex items-center">
+                              <span class="text-center">${i18n("Sending post")}</span>
+                              <i class="ml-2 icon w-6 h-6 animate-spin">${spinnerIcon}</i>
+                          </div>
+                      </div>`
+                    : html`<div class="flex items-center min-h-[48px]">
                     <button class="p-2 disabled:fill-gray" @click=${this.addImage} ?disabled=${this.embed || this.isSending}>
                         <i class="icon w-6 h-6 ${this.embed || this.isSending ? "fill-gray" : ""}">${imageIcon}</i>
                     </button>
@@ -285,14 +291,6 @@ export class PostEditor extends LitElement {
                             : nothing
                     }
                     </button>
-                    ${
-                        this.isSending
-                            ? html`<div class="ml-4 flex items-center">
-                                  <span class="text-center">Sending post</span>
-                                  <i class="ml-2 icon w-6 h-6 animate-spin">${spinnerIcon}</i>
-                              </div>`
-                            : nothing
-                    }
                      <span
                         class="ml-auto bg-transparent dark:text-gray text-end text-xs flex items-center ${
                             this.count > totalCount ? "text-red dark:text-red" : ""
@@ -307,18 +305,17 @@ export class PostEditor extends LitElement {
                                       this.cancled();
                                   }}
                                   class="ml-2 bg-gray text-white my-2 mr-2 px-2 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
-                                  ?disabled=${this.isSending}
                               >
-                                  Cancel
+                                  ${i18n("Cancel")}
                               </button>`
                             : nothing
                     }
                     <button
                         @click=${this.sendPost}
                         class="ml-2 bg-primary text-white my-2 mr-2 px-2 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
-                        ?disabled=${!this.canPost || this.isSending}
+                        ?disabled=${!this.canPost}
                     >
-                        Post
+                        ${i18n("Post")}
                     </button>
                 </div>
                 ${
@@ -343,6 +340,7 @@ export class PostEditor extends LitElement {
                           </div>`
                         : nothing
                 }
+            </div>`}
             </div>
         </div>`;
     }
@@ -381,7 +379,7 @@ export class PostEditor extends LitElement {
         if (!file) return;
         const image = await loadImageFile(file);
         if (this.imagesToUpload.length == 4) {
-            alert("You can only upload 4 images per post");
+            alert(i18n("You can only upload 4 images per post"));
             return;
         }
         this.imagesToUpload = [...this.imagesToUpload, image];
@@ -390,7 +388,7 @@ export class PostEditor extends LitElement {
 
     async addImage() {
         if (this.imagesToUpload.length == 4) {
-            alert("You can only upload 4 images per post");
+            alert(i18n("You can only upload 4 images per post"));
             return;
         }
         const input = dom(html`<input type="file" id="file" accept=".jpg, .jpeg, .png" class="hidden" multiple />`)[0] as HTMLInputElement;
@@ -399,7 +397,7 @@ export class PostEditor extends LitElement {
             if (!input.files || input.files.length == 0) return;
             const files = input.files;
             if (this.imagesToUpload.length + (files?.length ?? 0) > 4) {
-                alert("You can only upload 4 images per post");
+                alert(i18n("You can only upload 4 images per post"));
                 return;
             }
             const images = await loadImageFiles(files);
@@ -629,7 +627,7 @@ export class PostEditor extends LitElement {
             const response = await bskyClient.post(record);
             const postResponse = await bskyClient.getPosts({ uris: [response.uri] });
             if (!postResponse.success) {
-                throw Error("Couldn't post.");
+                throw Error(i18n("Couldn't send post"));
             }
             this.sent(postResponse.data.posts[0]);
 
@@ -657,7 +655,7 @@ export class PostEditor extends LitElement {
             }
         } catch (e) {
             console.error(e);
-            alert("Couldn't publish post!");
+            alert(i18n("Couldn't send post"));
         } finally {
             this.canPost = true;
             this.isSending = false;
@@ -690,7 +688,7 @@ export class ImageEditor extends Overlay {
                     }
                 }}
                 class="flex-1 max-h-[11.5em] resize-none outline-none bg-transparent drop:bg-white dark:text-white disabled:text-gray dark:disabled:text-gray px-2 pt-2"
-                placeholder="Add alt text to your image"
+                placeholder="${i18n("Add alt text to your image")}"
             >
 ${alt}</textarea
             >`;
