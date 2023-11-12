@@ -260,7 +260,14 @@ let saveTime = 0;
         res.json(quotes[req.query.uri as string] ?? []);
     });
 
-    http.createServer(app).listen(port, () => {
+    const server = http.createServer(app).listen(port, () => {
         console.log(`App listening on port ${port}`);
+    });
+
+    process.on("SIGTERM", () => {
+        console.log("SIGTERM received, shutting down gracefully");
+        server.close(() => {
+            console.log("HTTP server closed");
+        });
     });
 })();

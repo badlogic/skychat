@@ -37,7 +37,7 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
                 postUris.push(post.uri);
             }
         }
-        await Promise.all([cacheProfiles(bskyClient, dids), await cacheQuotes(bskyClient, postUris)]);
+        await Promise.all([cacheProfiles(bskyClient, dids), cacheQuotes(bskyClient, postUris)]);
         return result;
     }
 
