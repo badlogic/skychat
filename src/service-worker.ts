@@ -106,10 +106,17 @@ onBackgroundMessage(messaging, async (payload) => {
         }
 
         if (postText.length > 0) message += `\n${postText}`;
-        self.registration.showNotification("New notification", {
-            body: message,
-            icon: "./logo.png",
-            badge: "./logo.png",
-        });
+
+        if (navigator.userAgent.toLowerCase().includes("android")) {
+            self.registration.showNotification(message, {
+                body: postText,
+                icon: "./logo.png",
+            } as any);
+        } else {
+            self.registration.showNotification("New notification", {
+                body: postText.length > 0 ? message + `\n${postText}` : message,
+                icon: "./logo.png",
+            } as any);
+        }
     }
 });
