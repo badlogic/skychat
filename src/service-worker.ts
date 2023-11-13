@@ -29,10 +29,15 @@ self.addEventListener("notificationclick", (event: any) => {
     event.waitUntil(click());
 });
 
-import { AppBskyFeedDefs, AppBskyFeedPost, BskyAgent } from "@atproto/api";
+self.addEventListener("message", (event: any) => {
+    console.log("Got worker message: " + JSON.stringify(event.data));
+});
+
+import { BskyAgent } from "@atproto/api";
 import { initializeApp } from "firebase/app";
 import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
-import { splitAtUri } from "./utils";
+import { IndexedDBStorage } from "./indexeddb";
+import { User } from "./store";
 const firebaseConfig = {
     apiKey: "AIzaSyAZ2nH3qKCFqFhQSdeNH91SNAfTHl-nP7s",
     authDomain: "skychat-733ab.firebaseapp.com",
@@ -49,6 +54,13 @@ const messaging = getMessaging(app);
 onBackgroundMessage(messaging, async (payload) => {
     console.log("Background message received. ", payload);
     if (payload.data && payload.data.type && payload.data.fromDid) {
+        const db = new IndexedDBStorage("skychat", 1);
+        const user = (await db.get("user")) as User | undefined;
+        if (!user || user.profile.did != payload.data.toDid) {
+            console.error("Received notification for other user, or not logged in.");
+            return;
+        }
+
         const notification = payload.data as Notification;
         const bskyClient = new BskyAgent({ service: "https://api.bsky.app" });
         let from = "Someone";

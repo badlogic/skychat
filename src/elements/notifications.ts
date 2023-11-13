@@ -1,25 +1,18 @@
-import {
-    AppBskyFeedDefs,
-    AppBskyFeedLike,
-    AppBskyFeedPost,
-    AppBskyFeedRepost,
-    AppBskyGraphFollow,
-    AppBskyNotificationListNotifications,
-} from "@atproto/api";
+import { AppBskyFeedLike, AppBskyFeedPost, AppBskyFeedRepost, AppBskyGraphFollow, AppBskyNotificationListNotifications } from "@atproto/api";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { FirebaseOptions, initializeApp } from "firebase/app";
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { getMessaging, getToken } from "firebase/messaging";
 import { PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { bskyClient, loadPosts } from "../bsky";
-import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
-import { Store } from "../store";
-import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, apiBaseUrl, contentLoader } from "../utils";
-import { HashNavOverlay, renderTopbar } from "./overlay";
-import { renderEmbed, renderPostText } from "./posts";
 import { cacheQuotes } from "../cache";
 import { i18n } from "../i18n";
+import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
+import { Store } from "../store";
+import { apiBaseUrl, contentLoader, dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, supportsNotifications } from "../utils";
+import { HashNavOverlay, renderTopbar } from "./overlay";
+import { renderEmbed, renderPostText } from "./posts";
 import { renderProfile } from "./profiles";
 
 type NotificationType = "like" | "repost" | "follow" | "mention" | "reply" | "quote" | (string & {});
@@ -305,10 +298,15 @@ export class NotificationsOverlay extends HashNavOverlay {
     }
 }
 
-export async function setupWorkerNotifications() {
+export async function setupPushNotifications() {
     try {
-        if (Notification.permission != "granted" || !Store.getUser()) {
-            console.log("Can not setup push notifications, permission not granted or not logged in.");
+        if (!supportsNotifications()) {
+            console.error("Push notifications not supported");
+            return;
+        }
+        const user = Store.getUser();
+        if (Notification.permission != "granted" || !user) {
+            console.error("Can not setup push notifications, permission not granted or not logged in.");
             return;
         }
         const firebaseConfig: FirebaseOptions = {
@@ -326,19 +324,16 @@ export async function setupWorkerNotifications() {
             vapidKey: "BIqRsppm0-uNKJoRjVCzu5ZYtT-Jo6jyjDXVuqLbudGvpRTuGwptZ9x5ueu5imL7xdjVA989bJOJYcx_Pvf-AYM",
         });
 
-        const response = await fetch(
-            apiBaseUrl() + `api/register?token=${encodeURIComponent(token)}&did=${encodeURIComponent(Store.getUser()?.profile.did ?? "")}`
-        );
+        const response = await fetch(apiBaseUrl() + `api/register?token=${encodeURIComponent(token)}&did=${encodeURIComponent(user.profile.did)}`);
         if (!response.ok) {
             console.error("Couldn't register push token.");
             return;
         }
-        console.log("Initialized notifications: ");
-        console.log(token);
-        onMessage(messaging, (ev) => {
-            console.log("Received message in app");
-            console.log(ev.data);
-        });
+
+        user.pushToken = token;
+        Store.setUser(user);
+
+        console.log("Initialized push notifications, token:\n" + token);
         navigator.serviceWorker.addEventListener("message", (ev) => {
             if (ev.data && ev.data == "notifications") {
                 if (location.hash.replace("#", "") != "notifications") {

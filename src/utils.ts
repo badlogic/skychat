@@ -1,5 +1,6 @@
 import { TemplateResult, html, render, svg } from "lit";
 import { i18n } from "./i18n";
+import { User } from "./store";
 
 export function getNumber(num: number | undefined): string {
     if (num == undefined) return "0";
@@ -252,22 +253,6 @@ export function hasLinkOrButtonParent(el: Element | HTMLElement | null) {
     return false;
 }
 
-export function waitForServiceWorkerActivation(registration: ServiceWorkerRegistration): Promise<ServiceWorker | undefined> {
-    return new Promise<ServiceWorker | undefined>((resolve, reject) => {
-        if (registration.active) {
-            resolve(registration.active);
-        } else {
-            registration.addEventListener("activate", (event) => {
-                if (event.target instanceof ServiceWorkerRegistration && event.target.active) {
-                    resolve(event.target.active);
-                } else {
-                    reject(new Error("Service Worker activation failed"));
-                }
-            });
-        }
-    });
-}
-
 export type AtUri = { repo: string; type: string; rkey: string };
 
 export function splitAtUri(uri: string): AtUri {
@@ -292,5 +277,9 @@ export function formatFileSize(size: number): string {
 }
 
 export function apiBaseUrl() {
-    return location.href.includes("localhost") || location.href.includes("192.168.1") ? "http://localhost:3333/" : "/";
+    return location.href.includes("localhost") || location.href.includes("192.168.1") ? `http://${location.hostname}:3333/` : "/";
+}
+
+export function supportsNotifications() {
+    return "PushManager" in window && "Notification" in window && "indexedDB" in window && "serviceWorker" in navigator;
 }

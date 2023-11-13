@@ -1,6 +1,7 @@
 import { AppBskyFeedGetPosts, AtpSessionData, AtpSessionEvent, BskyAgent } from "@atproto/api";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { Store } from "./store";
+import { Store, User } from "./store";
+import { apiBaseUrl } from "./utils";
 
 type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow"; fromDid: string; toDid: string; token: string };
 
@@ -116,12 +117,12 @@ export async function login(account?: string, password?: string): Promise<void |
         let user = Store.getUser();
         let resumeSuccess = false;
         if (user && user.account == account && user.password == password && user.session) {
-            /*try {
+            try {
                 const resume = await bskyClient.resumeSession(user.session);
                 resumeSuccess = resume.success;
             } catch (e) {
                 // no-op in case resume didn't work.
-            }*/
+            }
         }
 
         if (!resumeSuccess) {
@@ -141,13 +142,14 @@ export async function login(account?: string, password?: string): Promise<void |
             bskyClient = undefined;
             throw new Error();
         }
-        Store.setUser({
+        const newUser: User = {
             account,
             password,
             session,
             profile: profileResponse.data,
             hashTagThreads: user && user.account == account ? user.hashTagThreads ?? {} : {},
-        });
+        };
+        Store.setUser(newUser);
     } catch (e) {
         Store.setUser(undefined);
         bskyClient = undefined;
@@ -156,6 +158,19 @@ export async function login(account?: string, password?: string): Promise<void |
 }
 
 export function logout() {
+    (async () => {
+        const user = Store.getUser();
+        if (user && user.pushToken) {
+            const response = await fetch(
+                apiBaseUrl() + `api/unregister?token=${encodeURIComponent(user.pushToken)}&did=${encodeURIComponent(user.profile.did)}`
+            );
+            if (!response.ok) {
+                console.error("Couldn't unregister push token.");
+                return;
+            }
+        }
+    })();
+
     Store.setUser(undefined);
     bskyClient = undefined;
 }

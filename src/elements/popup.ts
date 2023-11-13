@@ -1,6 +1,5 @@
-import { LitElement, TemplateResult, html, css, nothing } from "lit";
-import { customElement, query, state } from "lit/decorators.js";
-import { globalStyles } from "./styles";
+import { LitElement, TemplateResult, html, nothing } from "lit";
+import { query, state } from "lit/decorators.js";
 
 export abstract class PopupMenu extends LitElement {
     @state()
@@ -10,10 +9,6 @@ export abstract class PopupMenu extends LitElement {
     content?: HTMLElement;
 
     mouseY = 0;
-
-    constructor() {
-        super();
-    }
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;

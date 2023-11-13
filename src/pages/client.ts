@@ -2,16 +2,14 @@ import { LitElement, PropertyValueMap, html, nothing } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { bellIcon, editIcon } from "../icons";
-import { contentLoader, defaultAvatar, dom, waitForServiceWorkerActivation } from "../utils";
+import { contentLoader, defaultAvatar, dom } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import { bskyClient, login, logout } from "../bsky";
-import { Store } from "../store";
-import { FirebaseOptions, initializeApp } from "firebase/app";
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { setupPushNotifications } from "../elements/notifications";
 import { routeHash } from "../elements/routing";
-import { setupWorkerNotifications } from "../elements/notifications";
 import { i18n } from "../i18n";
+import { Store } from "../store";
 
 @customElement("skychat-client")
 class SkychatClient extends LitElement {
@@ -194,7 +192,7 @@ class SkychatClient extends LitElement {
                 Store.setUser(undefined);
                 return;
             }
-            setupWorkerNotifications();
+            setupPushNotifications();
             this.setupCheckNotifications();
         } catch (e) {
             console.error(e);
@@ -261,7 +259,7 @@ class SkychatClient extends LitElement {
 
                         let response = await Notification.requestPermission();
                         if (response == "granted") {
-                            setupWorkerNotifications();
+                            setupPushNotifications();
                         }
                     }}
                     class="relative flex"

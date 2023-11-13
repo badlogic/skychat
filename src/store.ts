@@ -1,5 +1,6 @@
 import { AtpSessionData } from "@atproto/api";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { IndexedDBStorage } from "./indexeddb";
 
 export type PostRef = { cid: string; uri: string };
 export type HashTagThread = { parent: PostRef; root: PostRef };
@@ -9,21 +10,25 @@ export type User = {
     session?: AtpSessionData;
     profile: ProfileViewDetailed;
     hashTagThreads: Record<string, HashTagThread>;
+    pushToken?: string;
 };
 export type StoreKey = "user" | "theme";
 export type Theme = "dark" | "light";
 
 export class Store {
-    private static get<T>(key: StoreKey): T | undefined {
-        const value = localStorage.getItem(key);
-        return value ? (JSON.parse(value) as T) : undefined;
+    static db = new IndexedDBStorage("skychat", 1);
+
+    private static get<T>(key: StoreKey) {
+        return localStorage.getItem(key) ? (JSON.parse(localStorage.getItem(key)!) as T) : undefined;
     }
 
-    private static set<T>(key: StoreKey, value: T | undefined): T | undefined {
+    private static set<T>(key: StoreKey, value: T | undefined) {
         if (value == undefined) {
             localStorage.removeItem(key);
+            Store.db.remove(key);
         } else {
             localStorage.setItem(key, JSON.stringify(value));
+            Store.db.set(key, value);
         }
         return value;
     }

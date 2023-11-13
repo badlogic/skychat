@@ -222,6 +222,23 @@ let numDidWebRequests = 0;
         }
     });
 
+    app.get("/api/unregister", async (req, res) => {
+        try {
+            const token = req.query.token;
+            const did = req.query.did;
+            if (!token || !did || token.length == 0 || did.length == 0 || typeof token != "string" || typeof did != "string" || !registrations[did]) {
+                console.error("Invalid token or did, or token not registered. token: " + token + ", did: " + did);
+                res.status(400).send();
+                return;
+            }
+            registrations[did] = registrations[did].filter((regToken) => regToken != token);
+            console.log(`Removed token for ${did}: ${registrations[did].length} tokens`);
+            res.send();
+        } catch (e) {
+            res.status(400).json(e);
+        }
+    });
+
     app.get("/api/status", (req, res) => {
         try {
             const regs: Record<string, number> = {};

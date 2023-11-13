@@ -33417,6 +33417,107 @@ if (cid) {
   }
   registerMessagingInSw();
 
+  // src/indexeddb.ts
+  var IndexedDBStorage = class {
+    constructor(dbName, dbVersion) {
+      this.db = null;
+      this.dbName = dbName;
+      this.dbVersion = dbVersion;
+    }
+    openDatabase() {
+      return __async(this, null, function* () {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(this.dbName, this.dbVersion);
+          request.onupgradeneeded = (event) => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains("store")) {
+              db.createObjectStore("store");
+            }
+          };
+          request.onsuccess = (event) => {
+            this.db = request.result;
+            resolve(this.db);
+          };
+          request.onerror = (event) => {
+            reject(request.error);
+          };
+        });
+      });
+    }
+    set(key, value) {
+      return __async(this, null, function* () {
+        if (!this.db) {
+          yield this.openDatabase();
+        }
+        return new Promise((resolve, reject) => {
+          const transaction = this.db.transaction(["store"], "readwrite");
+          const objectStore = transaction.objectStore("store");
+          const request = objectStore.put(value, key);
+          request.onsuccess = () => {
+            resolve();
+          };
+          request.onerror = (event) => {
+            reject(request.error);
+          };
+        });
+      });
+    }
+    get(key) {
+      return __async(this, null, function* () {
+        if (!this.db) {
+          yield this.openDatabase();
+        }
+        return new Promise((resolve, reject) => {
+          const transaction = this.db.transaction(["store"], "readonly");
+          const objectStore = transaction.objectStore("store");
+          const request = objectStore.get(key);
+          request.onsuccess = () => {
+            resolve(request.result);
+          };
+          request.onerror = (event) => {
+            reject(request.error);
+          };
+        });
+      });
+    }
+    remove(key) {
+      return __async(this, null, function* () {
+        if (!this.db) {
+          yield this.openDatabase();
+        }
+        return new Promise((resolve, reject) => {
+          const transaction = this.db.transaction(["store"], "readwrite");
+          const objectStore = transaction.objectStore("store");
+          const request = objectStore.delete(key);
+          request.onsuccess = () => {
+            resolve();
+          };
+          request.onerror = (event) => {
+            reject(request.error);
+          };
+        });
+      });
+    }
+    clear() {
+      return __async(this, null, function* () {
+        if (!this.db) {
+          yield this.openDatabase();
+        }
+        return new Promise((resolve, reject) => {
+          const transaction = this.db.transaction(["store"], "readwrite");
+          const objectStore = transaction.objectStore("store");
+          const request = objectStore.clear();
+          request.onsuccess = () => {
+            resolve();
+          };
+          request.onerror = (event) => {
+            reject(request.error);
+          };
+        });
+      });
+    }
+  };
+
   // src/service-worker.ts
   self.addEventListener("install", (event) => {
     self.skipWaiting();
@@ -33444,6 +33545,9 @@ if (cid) {
     });
     event.waitUntil(click());
   });
+  self.addEventListener("message", (event) => {
+    console.log("Got worker message: " + JSON.stringify(event.data));
+  });
   var firebaseConfig = {
     apiKey: "AIzaSyAZ2nH3qKCFqFhQSdeNH91SNAfTHl-nP7s",
     authDomain: "skychat-733ab.firebaseapp.com",
@@ -33458,6 +33562,12 @@ if (cid) {
     var _a, _b;
     console.log("Background message received. ", payload);
     if (payload.data && payload.data.type && payload.data.fromDid) {
+      const db = new IndexedDBStorage("skychat", 1);
+      const user = yield db.get("user");
+      if (!user || user.profile.did != payload.data.toDid) {
+        console.error("Received notification for other user, or not logged in.");
+        return;
+      }
       const notification = payload.data;
       const bskyClient = new import_api.BskyAgent({ service: "https://api.bsky.app" });
       let from = "Someone";
@@ -33507,7 +33617,8 @@ ${postText}`;
       self.registration.showNotification("New notification", {
         body: message,
         icon: "./logo.png",
-        badge: "./logo.png"
+        badge: "./logo.png",
+        tag: "skychat"
       });
     }
   }));
