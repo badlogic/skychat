@@ -14,23 +14,13 @@ import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { bskyClient } from "../bsky";
-import { moreIcon, quoteIcon, replyIcon } from "../icons";
+import { blockIcon, deleteIcon, heartIcon, moreIcon, muteIcon, quoteIcon, reblogIcon, replyIcon, shieldIcon } from "../icons";
 import { cacheQuotes, profileCache, quotesCache } from "../cache";
 import { Store } from "../store";
-import {
-    combineAtUri,
-    contentLoader,
-    dom,
-    getDateString,
-    getProfileUrl,
-    getTimeDifference,
-    hasLinkOrButtonParent,
-    renderAuthor,
-    splitAtUri,
-} from "../utils";
+import { combineAtUri, contentLoader, dom, getDateString, getTimeDifference, hasLinkOrButtonParent, splitAtUri } from "../utils";
 import { IconToggle } from "./icontoggle";
 import { PopupMenu } from "./popup";
-import { likesLoader, repostLoader } from "./profile";
+import { getProfileUrl, likesLoader, renderProfile, repostLoader } from "./profiles";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { quotesLoader } from "./feed";
 import { i18n } from "../i18n";
@@ -188,6 +178,7 @@ export function renderRecord(
     return html`<div
         class="w-full h-full ${openOnClick ? "cursor-pointer" : ""}"
         @click=${(ev: Event) => {
+            if (window.getSelection() && window.getSelection()?.toString().length != 0) return;
             if (!openOnClick) return;
             if (!bskyClient) return;
             if (hasLinkOrButtonParent(ev.target as HTMLElement)) return;
@@ -196,11 +187,13 @@ export function renderRecord(
         }}
     >
         ${showHeader
-            ? html`<div class="w-full flex items-center gap-2">
-                      ${prefix ? html`<span class="mr-1 font-bold">${prefix}</span>` : nothing} ${renderAuthor(author, smallAvatar)}
+            ? html`<div class="w-full flex items-center">
+                      ${prefix ? html`<span class="mr-1 font-bold">${prefix}</span>` : nothing} ${renderProfile(author, smallAvatar)}
                       ${prefix == undefined
                           ? html`<a
-                                class="${shortTime ? "" : "ml-auto"} text-right text-xs text-gray whitespace-nowrap hover:underline"
+                                class="${shortTime
+                                    ? "ml-2 mt-1 self-start"
+                                    : "ml-auto"} text-right text-xs text-gray whitespace-nowrap hover:underline"
                                 href="https://bsky.app/profile/${author.did}/post/${rkey}"
                                 target="_blank"
                                 @click=${(ev: Event) => {
@@ -221,7 +214,16 @@ export function renderRecord(
             ? html`<div class="flex gap-1 text-xs items-center text-gray dark:text-lightgray">
                   <i class="icon fill-gray dark:fill-lightgray">${replyIcon}</i>
                   <span>${i18n("Replying to")}</span>
-                  <a class="line-clamp-1 hover:underline" href="${getProfileUrl(replyToAuthorDid ?? "")}" target="_blank"
+                  <a
+                      class="line-clamp-1 hover:underline"
+                      href="${getProfileUrl(replyToAuthorDid ?? "")}"
+                      target="_blank"
+                      @click=${(ev: Event) => {
+                          if (!bskyClient) return;
+                          ev.preventDefault();
+                          ev.stopPropagation();
+                          document.body.append(dom(html`<profile-overlay .did=${replyToAuthorDid}></profile-overlay>`)[0]);
+                      }}
                       >${replyToProfile.displayName ?? replyToProfile.handle}</a
                   >
               </div>`
@@ -263,6 +265,9 @@ export class PostViewElement extends LitElement {
     @property()
     shortTime = false;
 
+    @property()
+    unmuted = false;
+
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
@@ -272,6 +277,16 @@ export class PostViewElement extends LitElement {
             return html`<div class="px-4 py-2">
                 ${contentLoader}
                 </div>
+            </div>`;
+        }
+
+        if ((this.post.author.viewer?.muted || this.post.author.viewer?.mutedByList) && !this.unmuted) {
+            return html`<div
+                class="bg-lightgray dark:bg-gray text-white px-4 py-2 rounded flex items-center cursor-pointer"
+                @click=${() => (this.unmuted = true)}
+            >
+                <i class="icon w-6 h-6 fill-white">${shieldIcon}</i><span class="ml-2 text-white">${i18n("Post by muted user")}</span>
+                <span class="ml-2 text-xs">(${i18n("Click to view")})</span>
             </div>`;
         }
 
@@ -309,11 +324,7 @@ export class PostViewElement extends LitElement {
                         >${this.post.likeCount ?? 0}</icon-toggle
                     >
                 </div>
-                <post-options
-                    class="${this.shortTime ? "" : "ml-auto"}"
-                    .post=${this.post}
-                    .handleOption=${(option: PostOptions) => this.handleOption(option)}
-                ></post-options>
+                <post-options .post=${this.post} .handleOption=${(option: PostOptions) => this.handleOption(option)}></post-options>
             </div>
         </div>`;
     }
@@ -388,7 +399,8 @@ export class AltText extends Overlay {
     }
 }
 
-type PostOptions = "delete" | "likes" | "quotes" | "reposts" | "mute";
+type PostOptions = "likes" | "quotes" | "reposts" | "mute_user" | "mute_thread" | "block_user" | "delete";
+type PostOptionsButton = { option: PostOptions; text: string; icon: TemplateResult; click: () => void; enabled: boolean };
 
 @customElement("post-options")
 export class PostOptionsElement extends PopupMenu {
@@ -396,71 +408,118 @@ export class PostOptionsElement extends PopupMenu {
     post?: PostView;
 
     @property()
-    handleOption: (option: PostOptions) => void = () => {};
+    handleOption: (option: "mute_user" | "mute_thread" | "block_user" | "delete") => void = () => {};
 
     protected renderButton(): TemplateResult {
-        return html`<i slot="buttonText" class="icon w-[1.2em] h-[1.2em] fill-gray">${moreIcon}</i>`;
+        return html`<i slot="buttonText" class="icon w-6 h-6 fill-gray">${moreIcon}</i>`;
     }
 
     protected renderContent(): TemplateResult {
+        if (!this.post) return html`${nothing}`;
         const did = Store.getUser()?.profile.did;
-        let options: PostOptions[] = ["quotes", "reposts", "likes", "mute"];
-        const labels = ["Show Quotes", "Show Reposts", "Show Likes", "Mute Thread"];
-        return html` ${map(
-            options,
-            (option, index) => html`<button class="border-b border-gray/50 py-2 px-2 hover:bg-primary" @click=${() => this._handleOption(option)}>
-                ${labels[index]}
-            </button>`
-        )}
-        ${did && this.post?.uri.includes(did)
-            ? html`<button
-                  class="border-b border-gray/50 py-2 px-2 hover:bg-primary"
-                  @click=${() => {
-                      this.handleOption("delete");
-                      this.close();
-                  }}
-              >
-                  Delete Post
-              </button>`
-            : nothing}`;
-    }
+        const buttons: PostOptionsButton[] = [
+            {
+                option: "quotes",
+                text: i18n("Quotes"),
+                icon: html`${quoteIcon}`,
+                enabled: quotesCache[this.post.uri] != undefined && quotesCache[this.post.uri] > 0,
+                click: () => {
+                    document.body.append(
+                        dom(html`<skychat-feed-overlay title="Quotes" .feedLoader=${quotesLoader(this.post?.uri!)}></skychat-feed-overlay>`)[0]
+                    );
+                    this.close();
+                },
+            },
+            {
+                option: "reposts",
+                text: i18n("Reposts"),
+                icon: html`${reblogIcon}`,
+                enabled: (this.post.repostCount ?? 0) > 0,
+                click: () => {
+                    document.body.append(
+                        dom(
+                            html`<profile-list-overlay
+                                title="Reposts"
+                                .hash=${`reposts/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
+                                .loader=${repostLoader(this.post?.uri)}
+                            ></profile-list-overlay>`
+                        )[0]
+                    );
+                    this.close();
+                },
+            },
+            {
+                option: "likes",
+                text: i18n("Likes"),
+                icon: html`${heartIcon}`,
+                enabled: (this.post.likeCount ?? 0) > 0,
+                click: () => {
+                    document.body.append(
+                        dom(
+                            html`<profile-list-overlay
+                                title="Likes"
+                                .hash=${`likes/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
+                                .loader=${likesLoader(this.post?.uri)}
+                            ></profile-list-overlay>`
+                        )[0]
+                    );
+                    this.close();
+                },
+            },
+            {
+                option: "mute_thread",
+                text: i18n("Mute Thread"),
+                icon: html`${muteIcon}`,
+                enabled: true,
+                click: () => {
+                    this.handleOption("mute_thread");
+                    this.close();
+                },
+            },
+            {
+                option: "mute_user",
+                text: i18n("Mute User"),
+                icon: html`${muteIcon}`,
+                enabled: did != this.post.author.did,
+                click: () => {
+                    this.handleOption("mute_user");
+                    this.close();
+                },
+            },
+            {
+                option: "block_user",
+                text: i18n("Block User"),
+                icon: html`${blockIcon}`,
+                enabled: did != this.post.author.did,
+                click: () => {
+                    this.handleOption("block_user");
+                    this.close();
+                },
+            },
+            {
+                option: "delete",
+                text: i18n("Delete Post"),
+                icon: html`${deleteIcon}`,
+                enabled: did != undefined && this.post.uri.includes(did),
+                click: () => {
+                    this.handleOption("delete");
+                    this.close();
+                },
+            },
+        ];
 
-    async _handleOption(option: PostOptions) {
-        switch (option) {
-            case "delete":
-                break;
-            case "likes":
-                document.body.append(
-                    dom(
-                        html`<profile-list-overlay
-                            title="Likes"
-                            .hash=${`likes/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
-                            .loader=${likesLoader(this.post?.uri)}
-                        ></profile-list-overlay>`
-                    )[0]
-                );
-                break;
-            case "quotes":
-                document.body.append(
-                    dom(html`<skychat-feed-overlay title="Quotes" .feedLoader=${quotesLoader(this.post?.uri!)}></skychat-feed-overlay>`)[0]
-                );
-                break;
-            case "reposts":
-                document.body.append(
-                    dom(
-                        html`<profile-list-overlay
-                            title="Reposts"
-                            .hash=${`reposts/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
-                            .loader=${repostLoader(this.post?.uri)}
-                        ></profile-list-overlay>`
-                    )[0]
-                );
-                break;
-            case "mute":
-                break;
-        }
-        this.handleOption(option);
-        this.close();
+        const renderButton = (button: PostOptionsButton) => {
+            if (!button.enabled) return html``;
+            return html`<button
+                class="py-2 px-4 hover:bg-primary hover:text-white hover:fill-white flex items-center gap-4"
+                @click=${() => button.click()}
+            >
+                <i class="icon w-5 h-5 fill-black dark:fill-white">${button.icon}</i>
+                <span class="flex-grow text-left">${button.text}</span>
+            </button>`;
+        };
+
+        return html` ${map(buttons, (button, index) => renderButton(button))}`;
     }
 }
 
@@ -555,7 +614,7 @@ export class ThreadOverlay extends HashNavOverlay {
                 }
             };
             collectPostUris(response.data.thread);
-            await cacheQuotes(bskyClient, postUris);
+            await cacheQuotes(postUris);
             this.thread = response.data.thread;
         } catch (e) {
             this.error = notFoundMessage;
@@ -584,7 +643,7 @@ export class ThreadOverlay extends HashNavOverlay {
 
         const animation = "animate-shake animate-delay-500";
         const insertNewPost = (post: PostView, repliesDom: HTMLElement) => {
-            const newPost = dom(html`<div class="min-w-[250px] mb-2 pl-2 border-l border-primary ${animation}">
+            const newPost = dom(html`<div class="min-w-[350px] mb-2 pl-2 border-l border-primary ${animation}">
                 <post-view
                     .post=${post}
                     .quoteCallback=${(post: PostView) => quote(post, newPost.querySelector("#replies")!)}
@@ -632,7 +691,7 @@ export class ThreadOverlay extends HashNavOverlay {
                 ? html`<div class="bg-lightgray text-white px-4 py-2 mb-2 rounded">${i18n("Deleted post")}</div>`
                 : nothing}
             <div
-                class="${thread.post.uri == uri ? animation : ""} min-w-[250px] mb-2 ${!isRoot || (thread.post.uri == uri && isRoot)
+                class="${thread.post.uri == uri ? animation : ""} min-w-[350px] mb-2 ${!isRoot || (thread.post.uri == uri && isRoot)
                     ? "pl-2"
                     : ""} ${thread.post.uri == uri ? "border-l border-primary" : ""}"
             >

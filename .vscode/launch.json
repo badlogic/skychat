@@ -8,7 +8,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "chat",
-            "url": "http://localhost:8080",
+            "url": "http://localhost:8080/chat-login.html",
             "webRoot": "${workspaceFolder}/html"
         },
         {
@@ -16,7 +16,7 @@
             "request": "launch",
             "name": "client",
             // "url": "http://localhost:8080/client.html#profile/did:plc:u5zbvzswo2j4xkxkua64o6ju",
-            "url": "http://localhost:8080/client.html",
+            "url": "http://localhost:8080/",
             "webRoot": "${workspaceFolder}/html"
         }
     ]

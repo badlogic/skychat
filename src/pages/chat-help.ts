@@ -15,23 +15,24 @@ class ChatHelp extends LitElement {
     render() {
         const helpDom = dom(html`<main class="flex flex-col justify-between m-auto max-w-[500px] px-4 h-full leading-5">
             <theme-toggle></theme-toggle>
-            <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
-                ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
+            <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/chat-login.html"
+                ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat Live Live</span></a
             >
             <div id="index"></div>
             <div class="content help flex-grow flex flex-col">
-                <h1>What is Skychat?</h1>
+                <h1>What is Skycha Live?</h1>
                 <p>
-                    Skychat allows you to explore and create BlueSky posts associated with a specific
+                    Skychat Live Live allows you to explore and create BlueSky posts associated with a specific
                     <a href="https://en.wikipedia.org/wiki/Hashtag" target="_blank">hashtag</a>, like
-                    <a href="/?hashtag=%23zib2" target="_blank">#zib2</a>, the hashtag commonly used in posts related to a popular Austrian news show.
+                    <a href="/chat.html?hashtag=%23zib2" target="_blank">#zib2</a>, the hashtag commonly used in posts related to a popular Austrian
+                    news show.
                 </p>
                 <p>
                     It is designed for the specific purpose of engaging in live discussions on BlueSky, whether it's the airing of a new TV show
                     episode or an election event.
                 </p>
                 <h1>Making Participation Easy</h1>
-                <p>Skychat aims to address various challenges that arise when trying to engage in live discussions on BlueSky.</p>
+                <p>Skychat Live Live aims to address various challenges that arise when trying to engage in live discussions on BlueSky.</p>
                 <h2>Real-Time Updates</h2>
                 <p>
                     Monitoring live posts for a hashtag on BlueSky can be cumbersome. You would typically need to create a
@@ -56,24 +57,24 @@ class ChatHelp extends LitElement {
                 <h1>A Chat Room for Hashtags</h1>
                 <img src="img/chat.png" />
                 <p>
-                    When you enter a hashtag and click "Go live" on <a href="/">Skychat's landing page</a>, you enter a virtual chat room dedicated to
-                    that hashtag. Think of the hashtag as the chat room's name. Once you enter the "chat room" for a hashtag, you can access all
-                    BlueSky posts containing that hashtag, arranged chronologically.
+                    When you enter a hashtag and click "Go live" on <a href="/chat-login.html">Skychat's landing page</a>, you enter a virtual chat
+                    room dedicated to that hashtag. Think of the hashtag as the chat room's name. Once you enter the "chat room" for a hashtag, you
+                    can access all BlueSky posts containing that hashtag, arranged chronologically.
                 </p>
                 <p>
                     As new posts with the hashtag are published on BlueSky, they automatically appear in the "chat room," eliminating the need for
                     manual refreshing. By scrolling up, you can also view older posts that include the hashtag.
                 </p>
                 <p>
-                    If you provide Skychat with your BlueSky user name and an
-                    <a href="https://bsky.app/settings/app-passwords">app password</a>, you can also write posts. Skychat will automatically create a
-                    thread out of all the posts you write with it, and also include the hashtag in each post so you don't have to. Of course you can
-                    also add images, alt texts, and link cards to your posts, just like in the BlueSky app.
+                    If you provide Skychat Live with your BlueSky user name and an
+                    <a href="https://bsky.app/settings/app-passwords">app password</a>, you can also write posts. Skychat Live will automatically
+                    create a thread out of all the posts you write with it, and also include the hashtag in each post so you don't have to. Of course
+                    you can also add images, alt texts, and link cards to your posts, just like in the BlueSky app.
                 </p>
                 <p>
                     You can also directly reply to or quote other people's posts, and repost and like them, just like in the BlueSky app. This way,
-                    you can stay inside Skychat to discuss a topic in real-time, instead of having to switch back and forth between Skychat and the
-                    BlueSky app.
+                    you can stay inside Skychat Live to discuss a topic in real-time, instead of having to switch back and forth between Skychat Live
+                    and the BlueSky app.
                 </p>
 
                 <h1>How to</h1>
@@ -90,7 +91,7 @@ class ChatHelp extends LitElement {
                 <img src="img/add.png" />
                 <p>
                     Click the post editor at the bottom. Enter the text of the post, then click "Post". Your post will be added to the bottom of your
-                    thread for the hashtag. Skychat will automatically add the hashtag to the text of your post.
+                    thread for the hashtag. Skychat Live will automatically add the hashtag to the text of your post.
                 </p>
 
                 <h2>Add images to your post</h2>
@@ -141,7 +142,7 @@ class ChatHelp extends LitElement {
 
                 <h2>Show older posts</h2>
                 <img src="img/old.png" />
-                <p>Scroll to the top. Skychat will automatically load and display older posts.</p>
+                <p>Scroll to the top. Skychat Live will automatically load and display older posts.</p>
 
                 <h2>Switch between the light and dark theme</h2>
                 <img src="img/theme1.png" />
@@ -156,15 +157,15 @@ class ChatHelp extends LitElement {
                 <h2>Reuse an existing thread</h2>
                 <img src="img/reuse.png" />
                 <p>
-                    If you have previously written a thread for a hashtag via Skychat and re-open the chat room, Skychat will ask you if you want to
-                    add new posts to the existing thread, or start a new thread.
+                    If you have previously written a thread for a hashtag via Skychat Live and re-open the chat room, Skychat Live will ask you if you
+                    want to add new posts to the existing thread, or start a new thread.
                 </p>
 
                 <h2>Reconnect</h2>
                 <img src="img/reconnect.png" />
                 <p>
-                    When your internet connection is interrupted, or the BlueSky servers temporarily don't respond, Skychat will try to automatically
-                    reconnect. In this case, some posts may not be shown.
+                    When your internet connection is interrupted, or the BlueSky servers temporarily don't respond, Skychat Live will try to
+                    automatically reconnect. In this case, some posts may not be shown.
                 </p>
                 <p>To fully refresh the posts in the chat, reload the page</p>
 

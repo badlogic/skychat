@@ -195,7 +195,7 @@ let numDidWebRequests = 0;
                         })
                         .catch((reason) => {
                             console.error("Couldn't send notification, removing token", reason);
-                            registrations[notification.toDid] = registrations[notification.toDid].filter((regToken) => regToken == token);
+                            registrations[notification.toDid] = registrations[notification.toDid].filter((regToken) => regToken != token);
                         });
                 } catch (e) {}
             }

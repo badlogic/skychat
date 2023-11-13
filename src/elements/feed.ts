@@ -1,4 +1,4 @@
-import { AppBskyFeedDefs, BskyAgent } from "@atproto/api";
+import { AppBskyFeedDefs, AppBskyFeedPost, BskyAgent } from "@atproto/api";
 import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
@@ -6,10 +6,11 @@ import { bskyClient, loadPosts } from "../bsky";
 import { cacheProfiles, cacheQuotes } from "../cache";
 import { reblogIcon } from "../icons";
 import { Store } from "../store";
-import { apiBaseUrl, dom, getProfileUrl, splitAtUri } from "../utils";
+import { apiBaseUrl, dom, splitAtUri } from "../utils";
 import { ItemListLoaderResult, ItemsList, ItemsListLoader } from "./list";
 import { Overlay, renderTopbar } from "./overlay";
-import { i18n } from "../i18n";
+import { Messages, i18n } from "../i18n";
+import { getProfileUrl } from "./profiles";
 
 @customElement("skychat-feed")
 export class Feed extends ItemsList<string, FeedViewPost | PostView> {
@@ -30,15 +31,17 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
         for (const post of result.items) {
             if (Feed.isFeedViewPost(post)) {
                 if (post.reply && AppBskyFeedDefs.isPostView(post.reply.parent)) {
+                    if (AppBskyFeedPost.isRecord(post.reply.parent.record) && post.reply.parent.record.reply?.parent) {
+                        dids.push(splitAtUri(post.reply.parent.record.reply?.parent.uri).repo);
+                    }
                     postUris.push(post.reply.parent.uri);
-                    dids.push(splitAtUri(post.reply.parent.uri).repo);
                 }
                 postUris.push(post.post.uri);
             } else {
                 postUris.push(post.uri);
             }
         }
-        await Promise.all([cacheProfiles(bskyClient, dids), cacheQuotes(bskyClient, postUris)]);
+        await Promise.all([cacheProfiles(bskyClient, dids), cacheQuotes(postUris)]);
         return result;
     }
 
@@ -120,6 +123,7 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
                         .quoteCallback=${this.quote}
                         .replyCallback=${this.reply}
                         .deleteCallback=${(post: PostView) => this.deletePost(post, postDom)}
+                        .showReplyTo=${false}
                     ></post-view>
                 </div>`)[0];
                 return html`<div class="flex flex-col w-full">${parentDom}${postDom}</div>`;
@@ -141,7 +145,7 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
 @customElement("skychat-feed-overlay")
 export class FeedOverlay extends Overlay {
     @property()
-    title: string = i18n("Home");
+    title: keyof Messages = "Home";
 
     @property()
     feedLoader: ItemsListLoader<string, FeedViewPost | PostView> = homeTimelineLoader;
@@ -175,13 +179,18 @@ export const quotesLoader = (postUri: string): ItemsListLoader<string, FeedViewP
     return async (cursor?: string) => {
         if (cursor == "end") return { cursor: "end", items: [] };
         if (!bskyClient) return new Error("Couldn't load quotes");
-        const result = await fetch(apiBaseUrl() + `api/quotes?uri=${encodeURIComponent(postUri)}`);
-        if (!result.ok) throw new Error("Couldn't load quotes");
-        const quotes = (await result.json()) as string[];
-        const posts = new Map<string, PostView>();
-        await loadPosts(quotes, posts);
-        const loadedPosts = quotes.map((quote) => posts.get(quote)!).filter((post) => post != undefined);
-        return { cursor: "end", items: loadedPosts };
+        try {
+            const result = await fetch(apiBaseUrl() + `api/quotes?uri=${encodeURIComponent(postUri)}`);
+            if (!result.ok) throw new Error("Couldn't load quotes");
+            const quotes = (await result.json()) as string[];
+            const posts = new Map<string, PostView>();
+            await loadPosts(quotes, posts);
+            const loadedPosts = quotes.map((quote) => posts.get(quote)!).filter((post) => post != undefined);
+            return { cursor: "end", items: loadedPosts };
+        } catch (e) {
+            console.error("Couldn't fetch quotes", e);
+            return new Error("Couldn't load quotes");
+        }
     };
 };
 
@@ -199,7 +208,12 @@ export const actorTimelineLoader = (did: string, filter: ActorTimelineFilter): I
                 if (did.includes("did:plc")) {
                     repoResult = await fetch("https://plc.directory/" + did);
                 } else {
-                    repoResult = await fetch(apiBaseUrl() + `api/resolve-did-web?did=${encodeURIComponent(did)}`);
+                    try {
+                        repoResult = await fetch(apiBaseUrl() + `api/resolve-did-web?did=${encodeURIComponent(did)}`);
+                    } catch (e) {
+                        console.log("Couldn't resolve did:web", e);
+                        return new Error("Couldn't resolve did:web");
+                    }
                 }
                 if (!repoResult.ok) {
                     return new Error("Couldn't load likes");

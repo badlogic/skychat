@@ -71,8 +71,8 @@ class Trending extends LitElement {
     render() {
         return html`<main class="flex flex-col justify-between m-auto max-w-[728px] px-4 h-full leading-5">
             <theme-toggle></theme-toggle>
-            <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
-                ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
+            <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/chat-login.html"
+                ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat Live</span></a
             >
             <div class="flex-grow flex flex-col gap-3">
                 <h1 class="text-center text-xl text-primary font-bold">What's trending</h1>
@@ -83,7 +83,7 @@ class Trending extends LitElement {
                 ${map(
                     this.tags.slice(0, 100),
                     (tag) =>
-                        html`<a class="text-center text-primary" target="_blank" href="/?hashtag=${encodeURIComponent(tag.name)}"
+                        html`<a class="text-center text-primary" target="_blank" href="/chat.html?hashtag=${encodeURIComponent(tag.name)}"
                             ><span>${tag.name}</span> (${tag.count})</a
                         >`
                 )}

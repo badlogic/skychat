@@ -1,7 +1,4 @@
-import { AppBskyActorDefs, AtpSessionData, AtpSessionEvent, BskyAgent } from "@atproto/api";
 import { TemplateResult, html, render, svg } from "lit";
-import { bskyClient } from "./bsky";
-import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { i18n } from "./i18n";
 
 export function getNumber(num: number | undefined): string {
@@ -243,29 +240,6 @@ export function hasHashtag(text: string, hashtag: string) {
         }
     }
     return false;
-}
-
-export function renderAuthor(author: ProfileView, smallAvatar = false) {
-    return html`<a
-        class="flex items-center gap-2"
-        href="${getProfileUrl(author.handle ?? author.did)}"
-        target="_blank"
-        @click=${(ev: Event) => {
-            if (!bskyClient) return;
-            ev.preventDefault();
-            ev.stopPropagation();
-            document.body.append(dom(html`<profile-overlay .did=${author.did}></profile-overlay>`)[0]);
-        }}
-    >
-        ${author.avatar
-            ? html`<img loading="lazy" class="${smallAvatar ? "w-[1em] h-[1em]" : "w-[2em] h-[2em]"} rounded-full" src="${author.avatar}" />`
-            : defaultAvatar}
-        <span class="${smallAvatar ? "text-sm" : ""} font-bold line-clamp-1 hover:underline">${author.displayName ?? author.handle}</span>
-    </a>`;
-}
-
-export function getProfileUrl(account: ProfileView | string) {
-    return `https://bsky.app/profile/${typeof account == "string" ? account : account.did}`;
 }
 
 export function hasLinkOrButtonParent(el: Element | HTMLElement | null) {

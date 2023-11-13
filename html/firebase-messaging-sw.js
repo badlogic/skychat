@@ -33511,7 +33511,6 @@ ${postText}`;
       });
     }
   }));
-  console.log("Initialized worker messaging.");
 })();
 /*! Bundled license information:
 

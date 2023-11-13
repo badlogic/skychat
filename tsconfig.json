@@ -5,6 +5,7 @@
         "strict": true,
         "lib": ["es2021", "dom", "WebWorker"],
         "esModuleInterop": true,
-        "experimentalDecorators": true
+        "experimentalDecorators": true,
+        "skipLibCheck": true
     }
 }

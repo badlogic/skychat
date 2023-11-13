@@ -144,11 +144,8 @@ export abstract class Overlay extends LitElement {
     abstract renderContent(): TemplateResult;
 
     closeButton(): TemplateResult {
-        return html`<button
-            @click=${() => this.close()}
-            class="ml-auto bg-primary text-white px-2 rounded disabled:bg-gray/70 disabled:text-white/70"
-        >
-            ${i18n("Close")}
+        return html`<button @click=${() => this.close()} class="ml-auto px-2">
+            <i class="icon w-6 h-6">${closeIcon}</i>
         </button>`;
     }
 }
@@ -173,6 +170,7 @@ export abstract class HashNavOverlay extends Overlay {
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import { Messages, i18n } from "../i18n";
+import { closeIcon } from "../icons";
 
 export function renderTopbar(title: keyof Messages, buttons?: TemplateResult | HTMLElement) {
     return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-10">

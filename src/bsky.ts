@@ -157,4 +157,5 @@ export async function login(account?: string, password?: string): Promise<void |
 
 export function logout() {
     Store.setUser(undefined);
+    bskyClient = undefined;
 }

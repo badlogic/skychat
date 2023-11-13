@@ -45,7 +45,7 @@ type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow"; fr
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
-// FIXME i18n
+// FIXME i18n, notifications from muted accounts
 onBackgroundMessage(messaging, async (payload) => {
     console.log("Background message received. ", payload);
     if (payload.data && payload.data.type && payload.data.fromDid) {
@@ -101,4 +101,3 @@ onBackgroundMessage(messaging, async (payload) => {
         });
     }
 });
-console.log("Initialized worker messaging.");

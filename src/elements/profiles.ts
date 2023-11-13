@@ -6,10 +6,10 @@ import { customElement, property, state } from "lit/decorators.js";
 import { bskyClient } from "../bsky";
 import { cacheProfile, profileCache } from "../cache";
 import { Store } from "../store";
-import { contentLoader, defaultAvatar, dom, getNumber, getProfileUrl, hasLinkOrButtonParent, renderAuthor } from "../utils";
+import { contentLoader, defaultAvatar, dom, getNumber, hasLinkOrButtonParent } from "../utils";
 import { ItemListLoaderResult, ItemsList, ItemsListLoader } from "./list";
 import { HashNavOverlay, renderTopbar } from "./overlay";
-import { renderPostText } from "./postview";
+import { renderPostText } from "./posts";
 import { PopupMenu } from "./popup";
 import { moreIcon } from "../icons";
 import { ActorTimelineFilter, actorTimelineLoader } from "./feed";
@@ -264,13 +264,14 @@ export class ProfileViewElement extends LitElement {
             <div class="flex flex-col">
                 <div class="flex items-center">
                     <div class="flex flex-col">
-                        ${renderAuthor(this.profile)}
+                        ${renderProfile(this.profile)}
                         ${this.profile.viewer?.followedBy
                             ? html`<div class="mt-1"><span class="p-1 text-xs rounded bg-gray/50 text-white">${i18n("Follows you")}</span></div>`
                             : nothing}
                     </div>
+
                     ${this.profile.did != user?.profile.did
-                        ? html`<button class="${this.following ? "bg-gray/50" : "bg-primary"} text-white rounded-full px-4 py-1 ml-auto">
+                        ? html`<button class="${this.following ? "bg-gray/50" : "bg-primary"} self-start text-white rounded-full px-4 py-1 ml-auto">
                               ${this.following ? i18n("Unfollow") : i18n("Follow")}
                           </button>`
                         : nothing}
@@ -377,4 +378,30 @@ export function followingLoader(did: string): ItemsListLoader<string, ProfileVie
         }
         return { cursor: result.data.cursor, items: result.data.follows };
     };
+}
+
+export function renderProfile(profile: ProfileView, smallAvatar = false) {
+    return html`<a
+        class="flex items-center gap-2"
+        href="${getProfileUrl(profile.handle ?? profile.did)}"
+        target="_blank"
+        @click=${(ev: Event) => {
+            if (!bskyClient) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            document.body.append(dom(html`<profile-overlay .did=${profile.did}></profile-overlay>`)[0]);
+        }}
+    >
+        ${profile.avatar
+            ? html`<img loading="lazy" class="${smallAvatar ? "w-[1em] h-[1em]" : "w-[2em] h-[2em]"} rounded-full" src="${profile.avatar}" />`
+            : defaultAvatar}
+        <div class="flex flex-col">
+            <span class="${smallAvatar ? "text-sm" : ""} font-bold line-clamp-1 hover:underline">${profile.displayName ?? profile.handle}</span>
+            ${profile.displayName && !smallAvatar ? html`<span class="text-xs text-gray -mt-1">${profile.handle}</span>` : nothing}
+        </div>
+    </a>`;
+}
+
+export function getProfileUrl(account: ProfileView | string) {
+    return `https://bsky.app/profile/${typeof account == "string" ? account : account.did}`;
 }

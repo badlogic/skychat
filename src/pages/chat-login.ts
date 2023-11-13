@@ -80,15 +80,25 @@ export class ChatLogin extends LitElement {
                     ${user ? html`<button class="text-sm text-primary" @click=${this.logout}>${i18n("Log out")}</button>` : nothing}
                 </div>
                 <a class="text-xl text-primary text-center font-bold mt-16" href="chat-help.html">${i18n("How does it work?")}</a>
+                <iframe
+                    width="560"
+                    height="315"
+                    src="https://www.youtube.com/embed/Y0Dze0GTi8I?si=C_IFSY3m024TQdiH"
+                    title="YouTube video player"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen
+                    class="mt-2"
+                ></iframe>
                 <a class="text-xl text-primary text-center font-bold mt-8" href="trending.html">${i18n("Trending hashtags")}</a>`;
         }
 
         return html` <main class="flex flex-col justify-between m-auto max-w-[728px] px-4 h-full leading-5">
             <theme-toggle></theme-toggle>
-            <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
-                ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
+            <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/chat-login.html"
+                ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat Live</span></a
             >
-            <div class="flex-grow flex flex-col">${content}</div>
+            <div class="flex-grow flex flex-col items-center">${content}</div>
             <div class="text-center text-xs italic my-4 pb-4">${i18n("footer")}</div>
         </main>`;
     }

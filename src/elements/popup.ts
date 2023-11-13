@@ -31,12 +31,12 @@ export abstract class PopupMenu extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        document.addEventListener("click", (ev) => this.handleDocumentClick(ev));
+        document.addEventListener("mousedown", (ev) => this.handleDocumentClick(ev));
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
-        document.removeEventListener("click", (ev) => this.handleDocumentClick(ev));
+        document.removeEventListener("mousedown", (ev) => this.handleDocumentClick(ev));
     }
 
     handleDocumentClick(event: Event) {
@@ -60,9 +60,9 @@ export abstract class PopupMenu extends LitElement {
         if (this.show) checkInBounds();
 
         return html`<div class="relative">
-            <div @click=${this.handleButtonClick}>${this.renderButton()}</div>
+            <div @mousedown=${this.handleButtonClick}>${this.renderButton()}</div>
             ${this.show
-                ? html`<div id="content" class="whitespace-nowrap flex flex-col bg-white dark:bg-black border border-gray rounded ${
+                ? html`<div id="content" class="animate-fade animate-duration-300 whitespace-nowrap flex flex-col bg-white dark:bg-black border border-gray rounded-md shadow-md dark:shadow-none ${
                       this.show ? "enable-pointer-events" : "hidden"
                   } absolute right-0 z-20">
                       ${this.renderContent()}

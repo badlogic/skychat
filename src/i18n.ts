@@ -9,7 +9,6 @@ export interface Messages {
     "Could not load more items": string;
     Notifications: string;
     "No more notifications": string;
-    Close: string;
     "Write your quote. It will be added to your thread about ${this.hashtag!}.": (hashtag: string) => string;
     "Write your quote post.": string;
     "Write your reply. It will be added to the thread by ${this.replyTo.author.displayName ?? this.replyTo.author.handle}.": (
@@ -91,6 +90,14 @@ export interface Messages {
     "The better BlueSky app": string;
     "Sign in": string;
     "Invalid account or password.": string;
+    Quotes: string;
+    Reposts: string;
+    "Mute Thread": string;
+    "Mute User": string;
+    "Block User": string;
+    "Delete Post": string;
+    "Post by muted user": string;
+    "Click to view": string;
 }
 
 const english: Messages = {
@@ -102,7 +109,6 @@ const english: Messages = {
     "Could not load more items": "Could not load more items",
     Notifications: "Notifications",
     "No more notifications": "No more notifications",
-    Close: "Close",
     "Write your quote. It will be added to your thread about ${this.hashtag!}.": (hashtag: string) =>
         `Write your quote post. It will be added to your thread about ${hashtag}`,
     "Write your quote post.": "Write your quote post.",
@@ -195,6 +201,14 @@ const english: Messages = {
     "The better BlueSky app": "The better BlueSky app",
     "Sign in": "Sign in",
     "Invalid account or password.": "Invalid account or password.",
+    Quotes: "Quotes",
+    Reposts: "Reposts",
+    "Mute Thread": "Mute Thread",
+    "Mute User": "Mute User",
+    "Block User": "Block User",
+    "Delete Post": "Delete Post",
+    "Post by muted user": "Post by muted user",
+    "Click to view": "Click to view",
 };
 
 const german: Messages = {
@@ -206,7 +220,6 @@ const german: Messages = {
     "Could not load more items": "Konnte weitere Einträge nicht laden",
     Notifications: "Notifikationen",
     "No more notifications": "Keine weiteren Notifikationen",
-    Close: "Schließen",
     "Write your quote. It will be added to your thread about ${this.hashtag!}.": (hashtag: string) =>
         `Schreibe dein Zitier-Post. Es wird am Ende deines Threads für das Hashtag ${hashtag} hinzugefügt`,
     "Write your quote post.": "Schreibe dein Zitier-Post.",
@@ -272,7 +285,7 @@ const german: Messages = {
     "Go live!": "Los geht's!",
     "Your credentials will only be stored on your device.": "Deine Benutzerdaten werden nur auf deinem Gerät gespeichert.",
     "Log out": "Ausloggen",
-    "How does it work?": "Wie funktioniert es? (Englisch)",
+    "How does it work?": "Wie funktioniert es?",
     "Trending hashtags": "Hashtag Trends",
     footer: html`<a class="text-primary" href="https://skychat.social" target="_blank">Skychat</a>
         wird liebevoll von
@@ -301,6 +314,14 @@ const german: Messages = {
     "The better BlueSky app": "Die bessere BlueSky App",
     "Sign in": "Einloggen",
     "Invalid account or password.": "Invalider Benutzername oder Passwort.",
+    Quotes: "Zitate",
+    Reposts: "Reposts",
+    "Mute Thread": "Thread ",
+    "Mute User": "Benutzerin stummschalten",
+    "Block User": "Benutzerin blockieren",
+    "Delete Post": "Post löschen",
+    "Post by muted user": "Post einer stummgeschaltenen Benutzerin",
+    "Click to view": "Zum Anzeigen klicken",
 };
 
 export type LanguageCode = "en" | "de";

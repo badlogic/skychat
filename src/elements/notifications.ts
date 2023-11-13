@@ -15,11 +15,12 @@ import { map } from "lit/directives/map.js";
 import { bskyClient, loadPosts } from "../bsky";
 import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
 import { Store } from "../store";
-import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, renderAuthor, apiBaseUrl, contentLoader } from "../utils";
+import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, apiBaseUrl, contentLoader } from "../utils";
 import { HashNavOverlay, renderTopbar } from "./overlay";
-import { renderEmbed, renderPostText } from "./postview";
+import { renderEmbed, renderPostText } from "./posts";
 import { cacheQuotes } from "../cache";
 import { i18n } from "../i18n";
+import { renderProfile } from "./profiles";
 
 type NotificationType = "like" | "repost" | "follow" | "mention" | "reply" | "quote" | (string & {});
 
@@ -124,7 +125,7 @@ export class NotificationsOverlay extends HashNavOverlay {
                     postsToLoad.push(notification.uri);
                 }
             }
-            await Promise.all([loadPosts(postsToLoad, this.posts), cacheQuotes(bskyClient, postsToLoad)]);
+            await Promise.all([loadPosts(postsToLoad, this.posts), cacheQuotes(postsToLoad)]);
             this.lastNotifications = listResponse.data;
             const updateReponse = await bskyClient.updateSeenNotifications();
             if (!updateReponse.success) console.error("Couldn't update seen notifications");
@@ -203,7 +204,7 @@ export class NotificationsOverlay extends HashNavOverlay {
                     const parent = this.posts.get((notification.record as any).reply.parent.uri);
                     postContent = html`${parent && profile && AppBskyFeedPost.isRecord(parent.record)
                             ? html`<div class="border border-gray/50 rounded p-2 mb-2">
-                                  <div class="dark:text-white/50 text-black/50">${renderAuthor(parent.author, true)}</div>
+                                  <div class="dark:text-white/50 text-black/50">${renderProfile(parent.author, true)}</div>
                                   <div class="mt-1 mb-1 break-words dark:text-white/50 text-black/50 leading-tight">
                                       <div class="whitespace-pre-wrap">${renderPostText(parent.record)}</div>
                                   </div>
@@ -242,12 +243,12 @@ export class NotificationsOverlay extends HashNavOverlay {
         }
 
         notificationDom = dom(html`<div
-            class="flex flex-col border-t border-gray/20 ${notification.isRead ? "" : "bg-[#cbdaff] dark:bg-[#001040]"} px-4 py-2"
+            class="flex flex-col border-t border-gray/20 ${notification.isRead ? "" : "bg-[#d8e4ff] dark:bg-[#001040]"} px-4 py-2"
         >
             <div class="flex items-center gap-2">
                 <i class="icon w-5 h-5">${icons[notification.reason] ?? ""}</i>
-                ${renderAuthor(notification.author, false)}
-                <span class="text-xs text-gray">${getTimeDifference(date.getTime())}</span>
+                ${renderProfile(notification.author, false)}
+                <span class="ml-auto text-xs text-gray">${getTimeDifference(date.getTime())}</span>
             </div>
             ${postContent ? html`<div class="mt-1">${postContent}</div>` : nothing}
         </div>`)[0];
@@ -324,6 +325,7 @@ export async function setupWorkerNotifications() {
         const token = await getToken(messaging, {
             vapidKey: "BIqRsppm0-uNKJoRjVCzu5ZYtT-Jo6jyjDXVuqLbudGvpRTuGwptZ9x5ueu5imL7xdjVA989bJOJYcx_Pvf-AYM",
         });
+
         const response = await fetch(
             apiBaseUrl() + `api/register?token=${encodeURIComponent(token)}&did=${encodeURIComponent(Store.getUser()?.profile.did ?? "")}`
         );

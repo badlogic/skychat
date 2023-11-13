@@ -20,7 +20,7 @@ import { bskyClient, extractLinkCard } from "../bsky";
 import { deleteIcon, editIcon, imageIcon, spinnerIcon } from "../icons";
 import { Store } from "../store";
 import { ImageInfo, dom, downloadImage, downscaleImage, loadImageFile, loadImageFiles, splitAtUri } from "../utils";
-import { renderEmbed, renderRecord } from "./postview";
+import { renderEmbed, renderRecord } from "./posts";
 import { CloseableElement, Overlay, renderTopbar } from "./overlay";
 import { i18n } from "../i18n";
 

@@ -60,7 +60,7 @@ export class Chat extends LitElement {
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         if (this.hashtag) this.load();
         else {
-            location.href = "/";
+            location.href = "/chat-login.html";
         }
     }
 
@@ -75,7 +75,7 @@ export class Chat extends LitElement {
             const loginResponse = await login(user?.account, user?.password);
             if (loginResponse instanceof Error) {
                 alert(i18n("Couldn't log in with your BlueSky credentials"));
-                location.href = "/";
+                location.href = "/chat-login.html";
                 return;
             }
             this.postSearch = new PostSearch(this.hashtag.replace("#", ""));
@@ -107,7 +107,7 @@ export class Chat extends LitElement {
     renderHeader() {
         const user = Store.getUser();
         return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-10">
-            <a class="flex items-center text-primary font-bold text-center" href="/"
+            <a class="flex items-center text-primary font-bold text-center" href="/chat-login.html"
                 ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
             >
             <a class="flex-grow text-primary font-bold pl-2 truncate" href="/chat.html?hashtag=${encodeURIComponent(this.hashtag!)}"
@@ -196,7 +196,7 @@ export class Chat extends LitElement {
 
         return html` <main class="flex flex-col justify-between m-auto max-w-[600px] px-4 pt-[40px] h-full leading-5">
             <theme-toggle></theme-toggle>
-            <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
+            <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/chat-login.html"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat Live</span></a
             >
             <div class="flex-grow flex flex-col">
@@ -337,8 +337,10 @@ export class Chat extends LitElement {
         if (!this.liveDom || !this.editor) return;
         try {
             if (!AppBskyFeedPost.isRecord(post.record)) return;
+            const isAnswer =
+                post.record.reply?.parent.uri.includes(Store.getUser()?.profile.did ?? "") && !post.uri.includes(Store.getUser()?.profile.did ?? "");
             const postDom = dom(
-                html`<div class="border-t border-gray/50 px-4 py-2">
+                html`<div class="border-t border-gray/50 px-4 py-2 ${isAnswer ? "bg-[#d8e4ff] dark:bg-[#001040]" : ""}">
                     <post-view
                         animation=${animation}
                         .post=${post}
@@ -407,7 +409,7 @@ export class Chat extends LitElement {
     logout() {
         if (confirm(i18n("Log out?"))) {
             logout();
-            location.href = "/";
+            location.href = "/chat-login.html";
         }
     }
 }

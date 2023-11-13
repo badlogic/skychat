@@ -5,7 +5,7 @@ import bookmarkIconSvg from "remixicon/icons/Business/bookmark-line.svg";
 // @ts-ignore
 import addIconSvg from "remixicon/icons/System/add-circle-line.svg";
 // @ts-ignore
-import closeIconSvg from "remixicon/icons/System/close-circle-line.svg";
+import closeIconSvg from "remixicon/icons/System/close-line.svg";
 // @ts-ignore
 import commentIconSvg from "remixicon/icons/Communication/chat-4-line.svg";
 // @ts-ignore
@@ -44,6 +44,10 @@ import moreIconSvg from "remixicon/icons/System/more-line.svg";
 import spinnerIconSvg from "remixicon/icons/System/loader-3-line.svg";
 // @ts-ignore
 import settings2IconSvg from "remixicon/icons/Media/equalizer-line.svg";
+// @ts-ignore
+import muteIconSvg from "remixicon/icons/Media/volume-mute-line.svg";
+// @ts-ignore
+import blockIconSvg from "remixicon/icons/User & Faces/user-forbid-line.svg";
 
 import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 import { html } from "lit";
@@ -71,6 +75,8 @@ export const followIcon = unsafeHTML(followIconSvg);
 export const homeIcon = unsafeHTML(homeIconSvg);
 export const moreIcon = unsafeHTML(moreIconSvg);
 export const spinnerIcon = unsafeHTML(spinnerIconSvg);
+export const muteIcon = unsafeHTML(muteIconSvg);
+export const blockIcon = unsafeHTML(blockIconSvg);
 
 export function icon(svg: string) {
     return html`<i class="flex w-[1.2em] h-[1.2em] border-white fill-primary">${unsafeHTML(svg)}</i>`;
