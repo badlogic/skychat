@@ -98,6 +98,12 @@ export interface Messages {
     "Delete Post": string;
     "Post by muted user": string;
     "Click to view": string;
+    Settings: string;
+    Theme: string;
+    Dark: string;
+    Light: string;
+    System: string;
+    "Logged in as": string;
 }
 
 const english: Messages = {
@@ -209,6 +215,12 @@ const english: Messages = {
     "Delete Post": "Delete Post",
     "Post by muted user": "Post by muted user",
     "Click to view": "Click to view",
+    Settings: "Settings",
+    Theme: "Theme",
+    Dark: "Dark",
+    Light: "Light",
+    System: "System",
+    "Logged in as": "Logged in as",
 };
 
 const german: Messages = {
@@ -276,7 +288,7 @@ const german: Messages = {
     Connecting: "Verbinde",
     "Explore & create hashtag threads in real-time on BlueSky": "Hashtag Threads auf BlueSky folgen und erstellen",
     "Hashtag, e.g. #imzentrum": "Hashtag, z.B. #imzentrum",
-    "You are logged in as": "Eingeloggt",
+    "You are logged in as": "Angemeldet als ",
     "Want to post and reply to other posts? Enter your username and an app password below. (optional)": html`Willst du selbst einen Hashtag Thread
         schreiben und auf Posts anderer Benutzerinnen antworten können? Dann gib deinen BlueSky Benutzernamen und ein
         <a class="text-primary" href="https://bsky.app/settings/app-passwords">App Passwort</a> an. (Optional)`,
@@ -284,7 +296,7 @@ const german: Messages = {
     "App password": "App Passwort",
     "Go live!": "Los geht's!",
     "Your credentials will only be stored on your device.": "Deine Benutzerdaten werden nur auf deinem Gerät gespeichert.",
-    "Log out": "Ausloggen",
+    "Log out": "Abmelden",
     "How does it work?": "Wie funktioniert es?",
     "Trending hashtags": "Hashtag Trends",
     footer: html`<a class="text-primary" href="https://skychat.social" target="_blank">Skychat</a>
@@ -295,9 +307,9 @@ const german: Messages = {
     "Please specify a hashtag": "Bitte gib ein Hashtag ein",
     "Please specify an app password for your account. You can get one in your BlueSky app's settings.":
         "Bitte gib ein App Passwort für deinen BlueSky Account ein. Du kannst App Passwörter in den Einstellungen der offiziellen BlueSky App erstellen.",
-    "Log out?": "Ausloggen?",
+    "Log out?": "Abmelden?",
     "No hashtag given": "Hashtag fehlt",
-    "Couldn't log in with your BlueSky credentials": "Login mit deinen BlueSky Benutzerdaten fehlgeschlagen",
+    "Couldn't log in with your BlueSky credentials": "Anmeldung mit deinen BlueSky Benutzerdaten fehlgeschlagen",
     "You have an existing thread for ": (rootUrl: string, hashtag: string) =>
         html`Du hast für den Hashtag ${hashtag} bereits einen bestehenden <a href="${rootUrl}" class="text-primary">Thread</a>`,
     "Do you want to add new posts to the existing thread, or start a new thread?":
@@ -312,7 +324,7 @@ const german: Messages = {
     "trend description":
         "Unten siehst du Hashtags sortiert nach der Anzahl and Posts in denen sie vorkommen seit du diese Seite geladen hast. Wird in Echtzeit erhoben. Je länger du die Seite offen lässt, desto representativer werden die Statistiken.",
     "The better BlueSky app": "Die bessere BlueSky App",
-    "Sign in": "Einloggen",
+    "Sign in": "Anmelden",
     "Invalid account or password.": "Invalider Benutzername oder Passwort.",
     Quotes: "Zitate",
     Reposts: "Reposts",
@@ -322,6 +334,12 @@ const german: Messages = {
     "Delete Post": "Post löschen",
     "Post by muted user": "Post einer stummgeschaltenen Benutzerin",
     "Click to view": "Zum Anzeigen klicken",
+    Settings: "Einstellungen",
+    Theme: "Design",
+    Dark: "Dunkel",
+    Light: "Hell",
+    System: "System",
+    "Logged in as": "Angemeldet als",
 };
 
 export type LanguageCode = "en" | "de";

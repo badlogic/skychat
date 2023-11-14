@@ -90,6 +90,13 @@ export async function routeHash(hash: string) {
                     )[0]
                 );
             }
+            if (tokens[0] == "settings") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "SETTINGS-OVERLAY") {
+                    return;
+                }
+                document.body.append(dom(html`<settings-overlay></settings-overlay>`)[0]);
+            }
         }
     }
 }

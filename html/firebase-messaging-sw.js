@@ -33614,12 +33614,18 @@ if (cid) {
       if (postText.length > 0)
         message += `
 ${postText}`;
-      self.registration.showNotification("New notification", {
-        body: message,
-        icon: "./logo.png",
-        badge: "./logo.png",
-        tag: "skychat"
-      });
+      if (navigator.userAgent.toLowerCase().includes("android")) {
+        self.registration.showNotification(message, {
+          body: postText,
+          icon: "./logo.png"
+        });
+      } else {
+        self.registration.showNotification("New notification", {
+          body: postText.length > 0 ? message + `
+${postText}` : message,
+          icon: "./logo.png"
+        });
+      }
     }
   }));
 })();

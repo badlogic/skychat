@@ -1,12 +1,8 @@
-// @ts-ignore
-import sunIconSvg from "remixicon/icons/Weather/sun-line.svg";
-// @ts-ignore
-import moonIconSvg from "remixicon/icons/Weather/moon-line.svg";
 import { html, LitElement } from "lit";
 import { customElement, state, property } from "lit/decorators.js";
 import { globalStyles } from "./styles";
-import { icon } from "../icons";
 import { Store, Theme } from "../store";
+import { moonIcon, sunIcon } from "../icons";
 
 @customElement("theme-toggle")
 export class ThemeToggle extends LitElement {
@@ -16,7 +12,11 @@ export class ThemeToggle extends LitElement {
     theme: Theme = "dark";
 
     @property()
-    absolute = true;
+    absolute = false;
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
 
     connectedCallback(): void {
         super.connectedCallback();
@@ -36,14 +36,11 @@ export class ThemeToggle extends LitElement {
     }
 
     render() {
-        const moonIcon = icon(moonIconSvg);
-        const sunIcon = icon(sunIconSvg);
-
         return html`<button
-            class="${this.absolute == true ? "absolute top-0 right-0 p-4 fill-primary" : "flex items-center p4 fill-primary"}"
+            class="flex items-center justify-center w-10 h-10 fill-primary ${this.absolute == true ? "absolute top-0 right-0" : ""}"
             @click=${this.toggleTheme}
         >
-            ${this.theme == "dark" ? moonIcon : sunIcon}
+            <i class="icon w-6 h-6">${this.theme == "dark" ? moonIcon : sunIcon}</i>
         </button>`;
     }
 }

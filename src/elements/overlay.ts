@@ -1,5 +1,5 @@
 import { LitElement, PropertyValueMap, TemplateResult, html } from "lit";
-import { property } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { pushHash } from "./routing";
 
@@ -16,7 +16,7 @@ class BaseGuard<T> {
         this.callbacks = this.callbacks.filter((cb) => cb !== callback);
     }
 
-    protected getTop(): T | undefined {
+    getTop(): T | undefined {
         return this.callbacks[this.callbacks.length - 1];
     }
 }
@@ -26,6 +26,7 @@ export type NavigationCallback = () => void;
 class NavigationGuard extends BaseGuard<NavigationCallback> {
     private popStateListener;
     private inPopState = false;
+    afterNextPopstate: (() => void)[] = [];
     _call = true;
     set call(value: boolean) {
         this._call = value;
@@ -44,6 +45,11 @@ class NavigationGuard extends BaseGuard<NavigationCallback> {
                 this._call = true;
             }
             this.inPopState = false;
+            const funcs = [...this.afterNextPopstate];
+            this.afterNextPopstate = [];
+            for (const func of funcs) {
+                func();
+            }
         };
         window.addEventListener("popstate", this.popStateListener);
     }
@@ -144,7 +150,7 @@ export abstract class Overlay extends LitElement {
     abstract renderContent(): TemplateResult;
 
     closeButton(): TemplateResult {
-        return html`<button @click=${() => this.close()} class="ml-auto px-2">
+        return html`<button @click=${() => this.close()} class="ml-auto flex items-center justify-center w-10 h-10">
             <i class="icon w-6 h-6">${closeIcon}</i>
         </button>`;
     }
@@ -172,15 +178,32 @@ import logoSvg from "../../html/logo.svg";
 import { Messages, i18n } from "../i18n";
 import { closeIcon } from "../icons";
 
-export function renderTopbar(title: keyof Messages, buttons?: TemplateResult | HTMLElement) {
-    return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-10">
-            <a class="flex items-center text-primary font-bold text-center" href="/"
-                ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
-            >
-            <button class="text-primary font-bold pl-2 relative pr-2">
-                <span>${i18n(title)}</span>
-            </button>
-            ${buttons}
-        </div>
-        <div class="min-h-[40px] max-h-[40px]"></div>`;
+export function renderTopbar(title: keyof Messages | HTMLElement, buttons?: TemplateResult | HTMLElement) {
+    return html`<top-bar .heading=${title instanceof HTMLElement ? title : i18n(title)} .buttons=${buttons}> </top-bar>`;
+}
+
+@customElement("top-bar")
+export class Topbar extends LitElement {
+    @property()
+    heading?: TemplateResult;
+
+    @property()
+    buttons?: TemplateResult;
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    render() {
+        return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex h-[40px] px-2 items-center bg-white dark:bg-black z-10">
+                <a class="flex items-center justify-center text-primary font-bold text-center w-10 h-10" href="/"
+                    ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
+                >
+                <button class="text-primary font-bold relative">
+                    <span>${this.heading}</span>
+                </button>
+                ${this.buttons}
+            </div>
+            <div class="min-h-[40px] max-h-[40px]"></div>`;
+    }
 }

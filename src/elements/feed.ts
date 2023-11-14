@@ -12,6 +12,30 @@ import { Overlay, renderTopbar } from "./overlay";
 import { Messages, i18n } from "../i18n";
 import { getProfileUrl } from "./profiles";
 
+const printPage = async (cursor: string) => {
+    if (!bskyClient) return;
+    const response = await bskyClient.app.bsky.feed.getTimeline({
+        cursor,
+    });
+    if (!response.success) throw new Error("Doesn't work");
+    console.log("====================================================");
+    for (const item of response.data.feed) {
+        console.log(
+            (item.post.author.displayName ?? item.post.author.handle) +
+                ": " +
+                item.post.cid +
+                ", " +
+                new Date((item as any).post.record.createdAt).getTime() +
+                ", " +
+                (item as any).post.record.createdAt
+        );
+    }
+};
+
+//if (this.items.length > 0) {
+// printPage(1699996937529 + 5 * 60 * 1000 + "::bafyreifgsikehexlv3vfzkqrk5b5uoqrbdzd36i7qjmegpd5llptqp5bfi");
+//}
+
 @customElement("skychat-feed")
 export class Feed extends ItemsList<string, FeedViewPost | PostView> {
     @property()
@@ -68,12 +92,20 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
         }
     }
 
+    sentPost(post: PostView) {
+        document.body.append(dom(html`<thread-overlay .postUri=${post.uri}></post-editor-overly>`)[0]);
+    }
+
     quote(post: PostView) {
-        document.body.append(dom(html`<post-editor-overlay .quote=${post}></post-editor-overly>`)[0]);
+        document.body.append(
+            dom(html`<post-editor-overlay .quote=${post} .sent=${(post: PostView) => this.sentPost(post)}></post-editor-overly>`)[0]
+        );
     }
 
     reply(post: PostView) {
-        document.body.append(dom(html`<post-editor-overlay .replyTo=${post}></post-editor-overly>`)[0]);
+        document.body.append(
+            dom(html`<post-editor-overlay .replyTo=${post} .sent=${(post: PostView) => this.sentPost(post)}></post-editor-overly>`)[0]
+        );
     }
 
     async deletePost(post: PostView, postDom: HTMLElement) {
@@ -104,8 +136,8 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
                     ${repostedBy}
                     <post-view
                         .post=${post.post}
-                        .quoteCallback=${this.quote}
-                        .replyCallback=${this.reply}
+                        .quoteCallback=${(post: PostView) => this.quote(post)}
+                        .replyCallback=${(post: PostView) => this.reply(post)}
                         .deleteCallback=${(post: PostView) => this.deletePost(post, postDom)}
                     ></post-view>
                 </div>`)[0];
@@ -113,15 +145,15 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
             } else {
                 const parentDom = dom(html`<post-view
                     .post=${post.reply.parent}
-                    .quoteCallback=${this.quote}
-                    .replyCallback=${this.reply}
+                    .quoteCallback=${(post: PostView) => this.quote(post)}
+                    .replyCallback=${(post: PostView) => this.reply(post)}
                     .deleteCallback=${(post: PostView) => this.deletePost(post, parentDom)}
                 ></post-view>`)[0];
                 const postDom = dom(html`<div class="ml-2 pl-2 mt-2 border-l border-l-primary">
                     <post-view
                         .post=${post.post}
-                        .quoteCallback=${this.quote}
-                        .replyCallback=${this.reply}
+                        .quoteCallback=${(post: PostView) => this.quote(post)}
+                        .replyCallback=${(post: PostView) => this.reply(post)}
                         .deleteCallback=${(post: PostView) => this.deletePost(post, postDom)}
                         .showReplyTo=${false}
                     ></post-view>
@@ -132,8 +164,8 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
             const postDom = dom(html`<div>
                 <post-view
                     .post=${post}
-                    .quoteCallback=${this.quote}
-                    .replyCallback=${this.reply}
+                    .quoteCallback=${(post: PostView) => this.quote(post)}
+                    .replyCallback=${(post: PostView) => this.reply(post)}
                     .deleteCallback=${(post: PostView) => this.deletePost(post, postDom)}
                 ></post-view>
             </div>`)[0];

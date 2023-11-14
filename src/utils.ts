@@ -283,3 +283,7 @@ export function apiBaseUrl() {
 export function supportsNotifications() {
     return "PushManager" in window && "Notification" in window && "indexedDB" in window && "serviceWorker" in navigator;
 }
+
+export function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}

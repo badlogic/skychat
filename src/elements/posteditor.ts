@@ -21,7 +21,7 @@ import { deleteIcon, editIcon, imageIcon, spinnerIcon } from "../icons";
 import { Store } from "../store";
 import { ImageInfo, dom, downloadImage, downscaleImage, loadImageFile, loadImageFiles, splitAtUri } from "../utils";
 import { renderEmbed, renderRecord } from "./posts";
-import { CloseableElement, Overlay, renderTopbar } from "./overlay";
+import { CloseableElement, Overlay, navigationGuard, renderTopbar } from "./overlay";
 import { i18n } from "../i18n";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
@@ -304,7 +304,7 @@ export class PostEditor extends LitElement {
                                       this.remove();
                                       this.cancled();
                                   }}
-                                  class="ml-2 bg-gray text-white my-2 mr-2 px-2 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
+                                  class="ml-2 text-gray/80 dark:text-white/80 my-2 mr-2 px-2 py-1"
                               >
                                   ${i18n("Cancel")}
                               </button>`
@@ -312,7 +312,7 @@ export class PostEditor extends LitElement {
                     }
                     <button
                         @click=${this.sendPost}
-                        class="ml-2 bg-primary text-white my-2 mr-2 px-2 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
+                        class="bg-primary text-white my-2 mr-2 px-2 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
                         ?disabled=${!this.canPost}
                     >
                         ${i18n("Post")}
@@ -625,11 +625,19 @@ export class PostEditor extends LitElement {
             }
 
             const response = await bskyClient.post(record);
-            const postResponse = await bskyClient.getPosts({ uris: [response.uri] });
-            if (!postResponse.success) {
-                throw Error(i18n("Couldn't send post"));
+            let post: PostView | undefined;
+            while (true) {
+                const postResponse = await bskyClient.getPosts({ uris: [response.uri] });
+                if (!postResponse.success) {
+                    throw Error(i18n("Couldn't send post"));
+                }
+                if (postResponse.data.posts.length == 0) {
+                    console.error("Sent post, but received null response, retrying");
+                    continue;
+                }
+                post = postResponse.data.posts[0];
+                break;
             }
-            this.sent(postResponse.data.posts[0]);
 
             if (!this.replyTo && this.hashtag) {
                 if (!hashTagThread) {
@@ -650,9 +658,10 @@ export class PostEditor extends LitElement {
             this.replyTo = undefined;
             this.quote = undefined;
             if (this.cancelable) {
-                this.remove();
                 this.cancled();
+                this.remove();
             }
+            this.sent(post);
         } catch (e) {
             console.error(e);
             alert(i18n("Couldn't send post"));
@@ -723,7 +732,7 @@ export class PostEditorOverlay extends CloseableElement {
                 .cancled=${() => this.close()}
                 .quote=${this.quote}
                 .replyTo=${this.replyTo}
-                .sent=${(post: PostView) => this.sent(post)}
+                .sent=${(post: PostView) => navigationGuard.afterNextPopstate.push(() => this.sent(post))}
             ></post-editor>
         </div>`;
     }

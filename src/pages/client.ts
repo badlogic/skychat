@@ -1,7 +1,6 @@
 import { LitElement, PropertyValueMap, html, nothing } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { bellIcon, editIcon } from "../icons";
 import { contentLoader, defaultAvatar, dom } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
@@ -10,6 +9,9 @@ import { setupPushNotifications } from "../elements/notifications";
 import { routeHash } from "../elements/routing";
 import { i18n } from "../i18n";
 import { Store } from "../store";
+import { renderTopbar } from "../elements/overlay";
+import { searchIcon, settings2Icon, settingsIcon } from "../icons";
+import { FeedsButton, NotificationsButton, OpenPostEditorButton, UpButton } from "../elements";
 
 @customElement("skychat-client")
 class SkychatClient extends LitElement {
@@ -25,14 +27,20 @@ class SkychatClient extends LitElement {
     @query("#password")
     passwordElement?: HTMLInputElement;
 
-    @query("#bell")
-    bell?: HTMLElement;
-
     @query("#notifications")
     notifications?: HTMLElement;
 
-    @query("#ping")
-    ping?: HTMLElement;
+    @query("#up")
+    upButton?: UpButton;
+
+    @query("#feeds")
+    feedsButton?: FeedsButton;
+
+    @query("#notifications")
+    notificationsButton?: NotificationsButton;
+
+    @query("#post")
+    postButton?: OpenPostEditorButton;
 
     lastAccount = "";
     lastPassword = "";
@@ -87,7 +95,6 @@ class SkychatClient extends LitElement {
             </div>`;
 
         return html` <main class="flex flex-col justify-between m-auto max-w-[728px] px-4 h-full leading-5">
-            <theme-toggle></theme-toggle>
             <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
             >
@@ -98,7 +105,6 @@ class SkychatClient extends LitElement {
 
     renderConnecting() {
         return html` <main class="flex flex-col justify-between m-auto max-w-[728px] px-4 h-full leading-5">
-            <theme-toggle></theme-toggle>
             <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
             >
@@ -116,42 +122,33 @@ class SkychatClient extends LitElement {
         if (!bskyClient) return html`<div>${i18n("Not connected")}</div>`;
         if (location.hash && location.hash.length > 0) {
             const hash = location.hash;
+            const newHref = location.href;
             history.replaceState(null, "", location.href.split("#")[0]);
+            history.pushState(null, "", newHref);
             routeHash(hash);
         }
 
         const mainDom = dom(html`<main class="w-full h-full overflow-auto">
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
                 ${this.renderTopbar()}<skychat-feed
-                    class="pt-[40px]"
                     .poll=${true}
                     .newItems=${() => {
                         if (document.querySelector("main")!.scrollTop > 0) {
-                            this.ping?.classList.remove("hidden");
+                            if (!this.upButton) return;
+                            this.upButton.classList.remove("hidden");
+                            this.upButton.highlight = true;
                         }
                     }}
                 ></skychat-feed>
-                <div class="fixed bottom-4 transform translate-x-[calc(min(100vw,600px)-4em)]">
-                    <button
-                        class="flex justify-center items-center w-12 h-12 border-primary bg-primary rounded-full"
-                        @click=${() => this.showPostEditor()}
-                    >
-                        <i class="icon w-6 h-6 fill-white">${editIcon}</i>
-                    </button>
-                </div>
+                <open-post-editor-button id="post"></open-post-editor-button>
+                <notifications-button id="notifications"></notifications-button>
+                <feeds-button id="feeds"></feeds-button>
+                <search-button id="search"></search-button>
+                <up-button id="up" @click=${() => mainDom.scrollTo({ top: 0, behavior: "smooth" })}></up-button>
             </div>
         </main>`)[0];
 
-        mainDom.addEventListener("scroll", () => {
-            if (mainDom.scrollTop < 100) {
-                this.ping?.classList.add("hidden");
-            }
-        });
         return mainDom;
-    }
-
-    showPostEditor() {
-        document.body.append(dom(html`<post-editor-overlay></post-editor-overly>`)[0]);
     }
 
     async login() {
@@ -193,7 +190,6 @@ class SkychatClient extends LitElement {
                 return;
             }
             setupPushNotifications();
-            this.setupCheckNotifications();
         } catch (e) {
             console.error(e);
         } finally {
@@ -201,77 +197,39 @@ class SkychatClient extends LitElement {
         }
     }
 
-    setupCheckNotifications() {
-        const checkNotifications = async () => {
-            try {
-                if (!bskyClient?.session) return;
-                const response = await bskyClient?.countUnreadNotifications();
-                if (!response || !response.success) {
-                    return;
-                }
-                if (response.data?.count > 0) {
-                    this.bell?.classList.add("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
-                    this.notifications?.classList.remove("hidden");
-                    this.notifications!.innerText = "" + response.data.count;
-                } else {
-                    this.bell?.classList.remove("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
-                    this.notifications?.classList.add("hidden");
-                }
-            } finally {
-                setTimeout(checkNotifications, 5000);
-            }
-        };
-        checkNotifications();
-    }
-
     logout() {
-        if (confirm("Log out?")) {
-            logout();
-            navigator.serviceWorker.controller?.postMessage("logout");
-            location.reload();
-        }
+        logout();
+        location.reload();
     }
 
     renderTopbar() {
         const user = Store.getUser();
-        return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-10">
-            <a class="flex items-center text-primary font-bold text-center" href="/"
-                ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
+        const feed = dom(html`<button class="text-primary font-bold relative pr-2" @click=${() => (this.querySelector("main")!.scrollTop = 0)}>
+            <span class="text-left">${i18n("Home")}</span>
+        </button>`)[0];
+        const buttons = html`<div class="ml-auto flex">
+            <button
+                class="flex items-center justify-center w-10 h-10"
+                @click=${() => document.body.append(dom(html`<search-overlay></search-overlay>`)[0])}
             >
-            <button class="text-primary font-bold pl-2 relative pr-2" @click=${() => (this.querySelector("main")!.scrollTop = 0)}>
-                <span>${i18n("Home")}</span>
-                <div
-                    id="ping"
-                    class="hidden animate-ping absolute top-0 right-0 rounded-full bg-primary text-white text-xs w-2 h-2 text-center"
-                ></div>
+                <i class="icon w-5 h-5">${searchIcon}</i>
             </button>
-            <div class="ml-auto flex gap-2 ml-2">
-                <button @click=${this.logout}>
-                    ${user?.profile.avatar
-                        ? html`<img class="w-6 max-w-[none] h-6 rounded-full" src="${user.profile.avatar}" />`
-                        : html`<i class="icon w-6 h-6">${defaultAvatar}</i>`}
-                </button>
-                <button
-                    @click=${async () => {
-                        document.body.append(dom(html`<notifications-overlay></notifications-overlay>`)[0]);
-                        this.bell?.classList.remove("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
-                        this.notifications?.classList.add("hidden");
-
-                        let response = await Notification.requestPermission();
-                        if (response == "granted") {
-                            setupPushNotifications();
-                        }
-                    }}
-                    class="relative flex"
-                >
-                    <i id="bell" class="icon w-6 h-6">${bellIcon}</i>
-                    <div
-                        id="notifications"
-                        class="hidden absolute right-[-0.5em] rounded-full bg-primary text-white text-xs w-4 h-4 text-center"
-                    ></div>
-                </button>
-            </div>
-            <theme-toggle class="ml-2" absolute="false"></theme-toggle>
-        </div>`;
+            <button
+                class="flex items-center justify-center w-10 h-10"
+                @click=${() => document.body.append(dom(html`<settings-overlay></settings-overlay>`)[0])}
+            >
+                <i class="icon w-5 h-5">${settingsIcon}</i>
+            </button>
+            <theme-toggle></theme-toggle>
+            <button
+                class="flex items-center justify-center w-10 h-10"
+                @click=${() => document.body.append(dom(html`<profile-overlay .did=${user?.profile.did}></profile-overlay>`)[0])}
+            >
+                ${user?.profile.avatar
+                    ? html`<img class="w-8 max-w-[none] h-8 rounded-full" src="${user.profile.avatar}" />`
+                    : html`<i class="icon w-8 h-8">${defaultAvatar}</i>`}
+            </button>
+        </div> `;
+        return renderTopbar(feed, buttons);
     }
 }

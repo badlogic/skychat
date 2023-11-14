@@ -125,6 +125,7 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
 }
 
 export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
+    // FIXME implement support for app.bsky.graph.list and app.bsky.feed.generator
     if (!AppBskyEmbedRecord.isViewRecord(recordEmbed.record)) return nothing;
     if (!AppBskyFeedPost.isRecord(recordEmbed.record.value)) return nothing;
     const record = recordEmbed.record.value;
@@ -213,7 +214,7 @@ export function renderRecord(
         ${replyToProfile && showReplyto
             ? html`<div class="flex gap-1 text-xs items-center text-gray dark:text-lightgray">
                   <i class="icon fill-gray dark:fill-lightgray">${replyIcon}</i>
-                  <span>${i18n("Replying to")}</span>
+                  <span class="whitespace-nowrap">${i18n("Replying to")}</span>
                   <a
                       class="line-clamp-1 hover:underline"
                       href="${getProfileUrl(replyToAuthorDid ?? "")}"
@@ -395,7 +396,7 @@ export class AltText extends Overlay {
     }
 
     renderContent(): TemplateResult {
-        return html`<div class="overflow-auto flex-1 whitespace-pre-wrap">${this.alt}</div>`;
+        return html`<div class="overflow-auto flex-1 whitespace-pre-wrap px-4">${this.alt}</div>`;
     }
 }
 
@@ -511,10 +512,10 @@ export class PostOptionsElement extends PopupMenu {
         const renderButton = (button: PostOptionsButton) => {
             if (!button.enabled) return html``;
             return html`<button
-                class="py-2 px-4 hover:bg-primary hover:text-white hover:fill-white flex items-center gap-4"
+                class="px-4 h-10 hover:bg-primary hover:text-white hover:fill-white flex items-center gap-4"
                 @click=${() => button.click()}
             >
-                <i class="icon w-5 h-5 fill-black dark:fill-white">${button.icon}</i>
+                <i class="icon w-6 h-6 fill-black dark:fill-white">${button.icon}</i>
                 <span class="flex-grow text-left">${button.text}</span>
             </button>`;
         };

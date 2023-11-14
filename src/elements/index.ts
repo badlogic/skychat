@@ -1,5 +1,6 @@
 export * from "./overlay";
 export * from "./feed";
+export * from "./buttons";
 export * from "./icontoggle";
 export * from "./list";
 export * from "./notifications";
@@ -7,5 +8,6 @@ export * from "./popup";
 export * from "./posteditor";
 export * from "./posts";
 export * from "./profiles";
+export * from "./settings";
 export * from "./styles";
 export * from "./themetoggle";

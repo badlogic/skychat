@@ -6,7 +6,7 @@ let watch = process.argv.length >= 3 && process.argv[2] == "--watch";
 
 const config = {
     entryPoints: {
-        server: "src/server.ts",
+        server: "src/server/server.ts",
         "firehose-live": "src/tools/firehose-live.ts",
         playground: "src/tools/playground.ts",
     },

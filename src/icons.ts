@@ -48,6 +48,18 @@ import settings2IconSvg from "remixicon/icons/Media/equalizer-line.svg";
 import muteIconSvg from "remixicon/icons/Media/volume-mute-line.svg";
 // @ts-ignore
 import blockIconSvg from "remixicon/icons/User & Faces/user-forbid-line.svg";
+// @ts-ignore
+import cloudIconSvg from "remixicon/icons/Business/cloud-line.svg";
+// @ts-ignore
+import searchIconSvg from "remixicon/icons/System/search-line.svg";
+// @ts-ignore
+import arrowUpIconSvg from "remixicon/icons/Arrows/arrow-up-s-line.svg";
+// @ts-ignore
+import arrowUpDoubleIconSvg from "remixicon/icons/Arrows/arrow-up-double-line.svg";
+// @ts-ignore
+import sunIconSvg from "remixicon/icons/Weather/sun-line.svg";
+// @ts-ignore
+import moonIconSvg from "remixicon/icons/Weather/moon-line.svg";
 
 import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 import { html } from "lit";
@@ -77,6 +89,12 @@ export const moreIcon = unsafeHTML(moreIconSvg);
 export const spinnerIcon = unsafeHTML(spinnerIconSvg);
 export const muteIcon = unsafeHTML(muteIconSvg);
 export const blockIcon = unsafeHTML(blockIconSvg);
+export const cloudIcon = unsafeHTML(cloudIconSvg);
+export const searchIcon = unsafeHTML(searchIconSvg);
+export const arrowUpIcon = unsafeHTML(arrowUpIconSvg);
+export const arrowUpDoubleIcon = unsafeHTML(arrowUpDoubleIconSvg);
+export const moonIcon = unsafeHTML(moonIconSvg);
+export const sunIcon = unsafeHTML(sunIconSvg);
 
 export function icon(svg: string) {
     return html`<i class="flex w-[1.2em] h-[1.2em] border-white fill-primary">${unsafeHTML(svg)}</i>`;

@@ -1,5 +1,5 @@
 import { RichText } from "@atproto/api";
-import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { ProfileView, ProfileViewDetailed, ViewerState } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -11,7 +11,7 @@ import { ItemListLoaderResult, ItemsList, ItemsListLoader } from "./list";
 import { HashNavOverlay, renderTopbar } from "./overlay";
 import { renderPostText } from "./posts";
 import { PopupMenu } from "./popup";
-import { moreIcon } from "../icons";
+import { moreIcon, spinnerIcon } from "../icons";
 import { ActorTimelineFilter, actorTimelineLoader } from "./feed";
 import { Messages, i18n } from "../i18n";
 
@@ -32,15 +32,6 @@ export class ProfileOverlay extends HashNavOverlay {
     @state()
     filter: ActorTimelineFilter = "posts_no_replies";
 
-    @state()
-    blockedBy = false;
-
-    @state()
-    blocking = false;
-
-    @state()
-    muted = false;
-
     async load() {
         const errorMessage = "Couldn't load profile of " + this.did;
         try {
@@ -48,15 +39,13 @@ export class ProfileOverlay extends HashNavOverlay {
                 this.error = errorMessage;
                 return;
             }
+            delete profileCache[this.did];
             await cacheProfile(bskyClient, this.did);
             this.profile = profileCache[this.did];
             if (!this.profile) {
                 this.error = errorMessage;
                 return;
             }
-            if (this.profile.viewer?.blockedBy) this.blockedBy = true;
-            if (this.profile.viewer?.blocking || this.profile.viewer?.blockingByList) this.blocking = true;
-            if (this.profile.viewer?.muted || this.profile.viewer?.mutedByList) this.muted = true;
         } catch (e) {
             this.error = errorMessage;
         } finally {
@@ -78,8 +67,7 @@ export class ProfileOverlay extends HashNavOverlay {
     }
 
     renderContent(): TemplateResult {
-        if (this.isLoading || this.error || !this.profile)
-            return html`<div class="align-top pt-[40px] p-4">${this.error ? this.error : contentLoader}</div>`;
+        if (this.isLoading || this.error || !this.profile) return html`<div class="align-top p-4">${this.error ? this.error : contentLoader}</div>`;
 
         const user = Store.getUser();
         const profile = this.profile;
@@ -116,18 +104,28 @@ export class ProfileOverlay extends HashNavOverlay {
 
         return html`<div>
             ${this.profile.banner
-                ? html`<img src="${profile.banner}" class="${this.blockedBy || this.blocking ? "blur" : ""} h-[150px] w-full object-cover" />`
+                ? html`<img
+                      src="${profile.banner}"
+                      class="${this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList
+                          ? "blur"
+                          : ""} h-[150px] w-full object-cover"
+                  />`
                 : html`<div class="bg-blue-500 h-[150px] w-full"></div>`}
             <div class="flex px-4 mt-[-48px] items-end">
                 ${profile.avatar
-                    ? html`<img class="${this.blockedBy || this.blocking ? "blur" : ""} w-24 h-24 rounded-full" src="${profile.avatar}" />`
+                    ? html`<img
+                          class="${this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList
+                              ? "blur"
+                              : ""} w-24 h-24 rounded-full"
+                          src="${profile.avatar}"
+                      />`
                     : html`<i class="icon w-24 h-24">${defaultAvatar}</i>`}
                 <div class="ml-auto flex items-center gap-2">
                     ${profile.did != user?.profile.did
-                        ? html`<button class="${profile.viewer?.following ? "bg-gray/50" : "bg-primary"} text-white rounded-full px-4 py-1 ml-auto">
-                                  ${profile.viewer?.following ? "Unfollow" : "Follow"}
-                              </button>
-                              <profile-options .profile=${profile}></profile-options>`
+                        ? html`<profile-action-button
+                              .profile=${this.profile}
+                              @change=${(ev: CustomEvent) => this.profileChanged(ev.detail)}
+                          ></profile-action-button>`
                         : nothing}
                 </div>
             </div>
@@ -137,7 +135,7 @@ export class ProfileOverlay extends HashNavOverlay {
                 <span class="text-gray dark:text-lightgray text-sm">${profile.handle}</span>
             </div>
             <div class="mt-2 text-sm flex flex-col gap-2 px-4">
-                ${!(this.blockedBy || this.blocking)
+                ${!(this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList)
                     ? html`
                             <div class="flex gap-2">
                             <a href="" target="_blank" @click=${showFollowers}
@@ -155,14 +153,16 @@ export class ProfileOverlay extends HashNavOverlay {
                             createdAt: "",
                         })}</div>`
                     : nothing}
-                ${this.blockedBy ? html`<span>${i18n("You are blocked by the user.")}</span>` : nothing}
-                ${this.blocking ? html`<span>${i18n("You are blocking the user.")}</span>` : nothing}
+                ${this.profile.viewer?.blockedBy ? html`<span>${i18n("You are blocked by the user.")}</span>` : nothing}
+                ${this.profile.viewer?.blocking || this.profile.viewer?.blockingByList
+                    ? html`<span>${i18n("You are blocking the user.")}</span>`
+                    : nothing}
             </div>
             <div class="overflow-x-auto flex flex-nowrap border-b border-gray/50">
                 <button
                     class="whitespace-nowrap ${this.filter == "posts_no_replies"
                         ? "border-b-2 border-primary font-bold"
-                        : "text-gray dark:text-lightgray"} px-2 py-2"
+                        : "text-gray dark:text-lightgray"} px-2 h-10"
                     @click=${() => (this.filter = "posts_no_replies")}
                 >
                     ${i18n("Posts")}
@@ -170,7 +170,7 @@ export class ProfileOverlay extends HashNavOverlay {
                 <button
                     class="whitespace-nowrap ${this.filter == "posts_with_replies"
                         ? "border-b-2 border-primary font-bold"
-                        : "text-gray dark:text-lightgray"} px-2 py-2"
+                        : "text-gray dark:text-lightgray"} px-2 h-10"
                     @click=${() => (this.filter = "posts_with_replies")}
                 >
                     ${i18n("Posts & Replies")}
@@ -178,7 +178,7 @@ export class ProfileOverlay extends HashNavOverlay {
                 <button
                     class="whitespace-nowrap ${this.filter == "posts_with_media"
                         ? "border-b-2 border-primary font-bold"
-                        : "text-gray dark:text-lightgray"} px-2 py-2"
+                        : "text-gray dark:text-lightgray"} px-2 h-10"
                     @click=${() => (this.filter = "posts_with_media")}
                 >
                     ${i18n("Media")}
@@ -186,20 +186,24 @@ export class ProfileOverlay extends HashNavOverlay {
                 <button
                     class="whitespace-nowrap ${this.filter == "likes"
                         ? "border-b-2 border-primary font-bold"
-                        : "text-gray dark:text-lightgray"} px-2 py-2"
+                        : "text-gray dark:text-lightgray"} px-2 h-10"
                     @click=${() => (this.filter = "likes")}
                 >
                     ${i18n("Likes")}
                 </button>
             </div>
-            ${!(this.blockedBy || this.blocking)
+            ${!(this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList)
                 ? dom(
                       html`<div class="min-h-[100dvh]">
-                          <skychat-feed .feedLoader=${actorTimelineLoader(profile.did, this.filter)}></skychat-feed>
+                          <skychat-feed .feedLoader=${actorTimelineLoader(this.profile.did, this.filter)}></skychat-feed>
                       </div>`
                   )[0]
                 : html`<div class="p-4 text-center">${i18n("Nothing to show")}</div>`}
         </div>`;
+    }
+
+    profileChanged(profile: ProfileViewDetailed) {
+        this.profile = profile;
     }
 }
 
@@ -235,9 +239,6 @@ export class ProfileViewElement extends LitElement {
     @property()
     profile?: ProfileView;
 
-    @property()
-    following = false;
-
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
@@ -271,9 +272,7 @@ export class ProfileViewElement extends LitElement {
                     </div>
 
                     ${this.profile.did != user?.profile.did
-                        ? html`<button class="${this.following ? "bg-gray/50" : "bg-primary"} self-start text-white rounded-full px-4 py-1 ml-auto">
-                              ${this.following ? i18n("Unfollow") : i18n("Follow")}
-                          </button>`
+                        ? html`<profile-action-button class="self-start ml-auto" .profile=${this.profile}></profile-action-button>`
                         : nothing}
                 </div>
                 <div class="mt-1 leading-tight whitespace-pre-wrap">${renderPostText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
@@ -298,7 +297,7 @@ export class ProfileList extends ItemsList<string, ProfileView> {
     }
 
     renderItem(item: ProfileView): TemplateResult {
-        return html`<profile-view .profile=${item} .following=${item.viewer?.following}></profile-view>`;
+        return html`<profile-view .profile=${item}></profile-view>`;
     }
 }
 
@@ -404,4 +403,80 @@ export function renderProfile(profile: ProfileView, smallAvatar = false) {
 
 export function getProfileUrl(account: ProfileView | string) {
     return `https://bsky.app/profile/${typeof account == "string" ? account : account.did}`;
+}
+
+@customElement("profile-action-button")
+export class ProfileActionButton extends LitElement {
+    @property()
+    profile?: ProfileView;
+
+    @state()
+    isUpdating = false;
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    render() {
+        if (!this.profile) return html`${nothing}`;
+        if (this.profile?.did == Store.getUser()?.profile.did) return html`${nothing}`;
+
+        if (this.isUpdating) {
+            return html`<button class="flex items-center justify-center min-w-[80px] w-[80px] bg-gray/50 text-white rounded-full h-8"><i class="icon w-6 h-6 fill-gray animate-spin">${spinnerIcon}</i></div>`;
+        }
+
+        const viewer = this.profile.viewer;
+        let action = i18n("Follow");
+        if (viewer?.following) action = i18n("Unfollow");
+        if (viewer?.blocking) action = i18n("Unblock");
+        return html`<button
+            @click=${() => this.handleClick(action)}
+            class="${action != i18n("Follow") ? "bg-gray/50" : "bg-primary"} text-white rounded-full px-4 h-8"
+        >
+            ${action}
+        </button>`;
+    }
+
+    async handleClick(action: string) {
+        const user = Store.getUser();
+        if (!user) return;
+        if (!this.profile) return;
+        if (!bskyClient) return;
+
+        this.isUpdating = true;
+        if (action == i18n("Unblock")) {
+            const rkey = this.profile!.viewer!.blocking!.split("/").pop()!;
+            await bskyClient.app.bsky.graph.block.delete({ repo: user.profile.did, rkey }, {});
+            // Need to refetch in this case, as following info in viewer isn't set when blocked.
+            delete profileCache[this.profile.did];
+            for (let i = 0; i < 2; i++) {
+                const response = await bskyClient.getProfile({ actor: this.profile.did });
+                if (response.success) {
+                    this.profile = response.data;
+                }
+            }
+        }
+        if (action == i18n("Unfollow")) {
+            const rkey = this.profile!.viewer!.following!.split("/").pop();
+            const result = await bskyClient.app.bsky.graph.follow.delete({ repo: user.profile.did, rkey }, {});
+            this.profile.viewer!.following = undefined;
+        }
+        if (action == i18n("Follow")) {
+            const result = await bskyClient.app.bsky.graph.follow.create(
+                { repo: user.profile.did },
+                { subject: this.profile.did, createdAt: new Date().toISOString() }
+            );
+            this.profile.viewer!.following = result.uri;
+        }
+
+        this.profile = { ...this.profile };
+        this.isUpdating = false;
+        this.requestUpdate();
+
+        this.dispatchEvent(
+            new CustomEvent("change", {
+                detail: this.profile,
+            })
+        );
+    }
 }
