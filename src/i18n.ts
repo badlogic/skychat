@@ -18,7 +18,7 @@ export interface Messages {
     "Add a post to your thread about ${this.hashtag!}. The hashtag will be added automatically.": (hashtag: string) => string;
     "What's up?": string;
     "Replying to": string;
-    "Add link card": string;
+    "Add card": string;
     Quoting: string;
     "Sending post": string;
     Cancel: string;
@@ -126,7 +126,7 @@ const english: Messages = {
         `Add a post to your thread about ${hashtag}. The hashtag will be added automatically.`,
     "What's up?": "What's up?",
     "Replying to": "Replying to",
-    "Add link card": "Add link card",
+    "Add card": "Add card",
     Quoting: "Quoting",
     "Sending post": "Sending post",
     Cancel: "Cancel",
@@ -244,7 +244,7 @@ const german: Messages = {
         `Füge ein Post zu deinem Thread über ${hashtag} hinzu. Das Hashtag wird automatisch zum Text hinzugefügt.`,
     "What's up?": "Was gibt's Neues?",
     "Replying to": "Antwort auf",
-    "Add link card": "Link-Karte hinzufügen",
+    "Add card": "Karte hinzufügen",
     Quoting: "Zitiere",
     "Sending post": "Sende Post",
     Cancel: "Abbrechen",

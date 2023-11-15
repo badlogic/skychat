@@ -95,7 +95,3 @@ export const arrowUpIcon = unsafeHTML(arrowUpIconSvg);
 export const arrowUpDoubleIcon = unsafeHTML(arrowUpDoubleIconSvg);
 export const moonIcon = unsafeHTML(moonIconSvg);
 export const sunIcon = unsafeHTML(sunIconSvg);
-
-export function icon(svg: string) {
-    return html`<i class="flex w-[1.2em] h-[1.2em] border-white fill-primary">${unsafeHTML(svg)}</i>`;
-}

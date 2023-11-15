@@ -22,6 +22,12 @@ export abstract class FloatingButton extends LitElement {
     highlight = false;
 
     @property()
+    highlightAnimation = "animate-wiggle-more";
+
+    @property()
+    highlightAnimationIcon = "";
+
+    @property()
     hide = false;
 
     @property()
@@ -75,10 +81,15 @@ export abstract class FloatingButton extends LitElement {
             style="transform: ${this.translateX(this.getOffset())};"
         >
             <button
-                class="${this.highlight ? highlightStyle + " animate-wiggle-more animate-infinite animate-ease-in-out " : normalStyle}"
+                class="${this.highlight ? highlightStyle + " " + this.highlightAnimation + " animate-infinite animate-ease-in-out " : normalStyle}"
                 @click=${() => this.handleClick()}
             >
-                <i class="icon w-6 h-6 ${this.highlight ? "fill-white" : "fill-gray dark:fill-white"}">${this.getIcon()}</i>
+                <i
+                    class="icon w-6 h-6 ${this.highlight
+                        ? `fill-white ${this.highlightAnimationIcon} animate-infinite animate-ease-in-out`
+                        : "fill-gray dark:fill-white"}"
+                    >${this.getIcon()}</i
+                >
             </button>
             <div
                 class="${this.highlight && this.value
@@ -103,7 +114,9 @@ export class UpButton extends FloatingButton {
     constructor() {
         super();
         this.hide = true;
-        this.translateX = () => "translate(16px)";
+        this.highlightAnimation = "";
+        this.highlightAnimationIcon = "animate-pulse";
+        this.translateX = () => "translate(1em)";
     }
 
     handleClick(): void {
@@ -226,7 +239,7 @@ export class SelectButton extends LitElement {
     }
 
     render() {
-        return html`<div class="flex w-full h-8">
+        return html`<div class="flex h-8">
             ${map(this.values, (value, index) => {
                 let rounded = "";
                 if (index == 0) rounded = "rounded-l-lg";

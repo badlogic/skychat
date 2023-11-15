@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=1" />
+        <title>Skychat</title>
+        <meta name="description" content="A better BlueSky client" />
+        <meta property="og:title" content="Skychat" />
+        <meta property="og:type" content="article" />
+        <meta property="og:description" content="A better BlueSky client" />
+        <meta property="og:image" content="https://skychat.social/logo512.png" />
+        <meta property="og:url" content="https://skychat.social" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta property="twitter:domain" content="skychat.social" />
+        <meta property="twitter:url" content="https://skychat.social" />
+        <meta name="twitter:title" content="Skychat" />
+        <meta name="twitter:description" content="A better BlueSky client" />
+        <meta name="twitter:image" content="https://skychat.social/logo512.png" />
+        <link rel="stylesheet" href="build/styles-bundle.css" />
+        <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+        <link rel="icon" type="image/png" href="favicon.png" />
+        <link rel="manifest" href="manifest.client.json" />
+        <!-- meta -->
+    </head>
+    <body class="h-[100dvh] pwa:h-[100svh] dark:bg-black dark:text-white no-touch-highlight">
+        <div class="fixed top-0 w-full h-full overflow-none backdrop-blur z-10">
+            <div class="flex justify-center max-w-[600px] mx-auto">
+                <post-editor class="animate-fade animate-duration-[250ms] w-[600px]"
+                    ><!---->
+                    <div class="flex max-w-[600px] h-full bg-white dark:bg-black">
+                        <div class="flex flex-col flex-grow relative">
+                            <!--?lit$277303566$-->
+                            <textarea
+                                id="message"
+                                class="flex-grow resize-none outline-none bg-transparent dark:text-white disabled:text-gray dark:disabled:text-gray p-2 break-words"
+                                placeholder="What's up?"
+                            ></textarea>
+                            <!--?lit$277303566$-->
+                            <div class="flex flex-col my-2 mx-2 gap-2">
+                                <!--?lit$277303566$--><!----><button class="border border-gray rounded py-1 px-4 flex items-center gap-2">
+                                    <div class="whitespace-nowrap"><!--?lit$277303566$-->Add link card</div>
+                                    <div class="overflow-auto">
+                                        <!--?lit$277303566$-->https://chat.openai.com/c/4f044ea5-2bba-49b6-9798-6e4a045ffb7a
+                                    </div></button
+                                ><!---->
+                            </div>
+                            <!--?lit$277303566$-->
+                            <!--?lit$277303566$-->
+                            <!--?lit$277303566$-->
+                            <!--?lit$277303566$-->
+                            <div class="flex items-center min-h-[48px]">
+                                <button class="p-2 disabled:fill-gray">
+                                    <i class="icon w-6 h-6"
+                                        ><!--?lit$277303566$--><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path
+                                                d="M2.9918 21C2.44405 21 2 20.5551 2 20.0066V3.9934C2 3.44476 2.45531 3 2.9918 3H21.0082C21.556 3 22 3.44495 22 3.9934V20.0066C22 20.5552 21.5447 21 21.0082 21H2.9918ZM20 15V5H4V19L14 9L20 15ZM20 17.8284L14 11.8284L6.82843 19H20V17.8284ZM8 11C6.89543 11 6 10.1046 6 9C6 7.89543 6.89543 7 8 7C9.10457 7 10 7.89543 10 9C10 10.1046 9.10457 11 8 11Z"
+                                            ></path></svg
+                                    ></i>
+                                </button>
+                                <!--?lit$277303566$-->
+
+                                <span class="ml-auto mr-2 bg-transparent dark:text-gray text-end text-xs flex items-center"
+                                    ><!--?lit$277303566$-->62/<!--?lit$277303566$-->299</span
+                                >
+                                <!--?lit$277303566$--><button class="ml-2 text-gray/80 dark:text-white/80 my-2 mr-2 px-2 py-1">
+                                    <!--?lit$277303566$-->Cancel
+                                </button>
+                                <button class="bg-primary text-white my-2 mr-2 px-4 py-1 rounded disabled:bg-gray/70 disabled:text-white/70">
+                                    <!--?lit$277303566$-->Post
+                                </button>
+                            </div>
+                            <!--?lit$277303566$-->
+                        </div>
+                    </div></post-editor
+                >
+            </div>
+        </div>
+    </body>
+    <script src="build/app.js" async></script>
+</html>

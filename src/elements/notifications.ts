@@ -143,7 +143,7 @@ export class NotificationsOverlay extends HashNavOverlay {
     renderContent(): TemplateResult {
         return html`${this.isLoading
             ? html`<div class="animate-fade flex-grow flex flex-col">
-                  <div class="align-top"><div id="loader" class="w-full text-center p-4 animate-pulse">${contentLoader}</div></div>
+                  <div class="align-top"><div id="loader" class="text-center p-4 animate-pulse">${contentLoader}</div></div>
               </div>`
             : this.renderNotifications()}`;
     }
@@ -274,7 +274,7 @@ export class NotificationsOverlay extends HashNavOverlay {
 
         const notificationsDom = dom(html`<div id="notifications" class="flex flex-col">
             ${map(this.lastNotifications.notifications, (notification) => this.renderNotification(notification))}
-            <div id="loader" class="w-full text-center p-4 animate-pulse">${contentLoader}</div>
+            <div id="loader" class="text-center p-4 animate-pulse">${contentLoader}</div>
         </div>`)[0];
 
         const loader = notificationsDom.querySelector("#loader") as HTMLElement;

@@ -77,6 +77,9 @@ export class PostEditor extends LitElement {
     cardSuggestions?: AppBskyRichtextFacet.Link[];
 
     @state()
+    isLoadingCard = false;
+
+    @state()
     embed?: AppBskyEmbedExternal.Main;
 
     @state()
@@ -160,7 +163,7 @@ export class PostEditor extends LitElement {
 
         return html` <div class="flex max-w-[600px] ${this.fullscreen ? "h-full" : ""} bg-white dark:bg-black">
             <div
-                class="flex max-w-full flex-col flex-grow relative"
+                class="flex flex-col flex-grow relative"
                 @drop=${(ev: DragEvent) => this.pasteImage(ev)}
                 @dragover=${(ev: DragEvent) => ev.preventDefault()}
             >
@@ -208,24 +211,25 @@ export class PostEditor extends LitElement {
                     ?disabled=${this.isSending}
                 ></textarea>
                 ${!this.embed && this.imagesToUpload.length == 0 && (this.cardSuggestions?.length ?? 0 > 0)
-                    ? html`<div class="flex flex-col my-2 mx-2 gap-2 max-w-full">
+                    ? html`<div class="flex flex-col my-2 mx-2 gap-2">
                           ${map(
                               this.cardSuggestions,
                               (card) =>
                                   html`<button
                                       @click=${() => this.addLinkCard(card)}
-                                      class="border border-gray rounded py-1 px-4 flex gap-2"
+                                      class="border border-gray rounded py-1 px-4 flex items-center gap-2"
                                       ?disabled=${this.isSending}
                                   >
-                                      <div class="whitespace-nowrap">${i18n("Add link card")}</div>
-                                      <div class="overflow-auto">${card.uri}</div>
+                                      <div class="whitespace-nowrap text-blue-500">${i18n("Add card")}</div>
+                                      <div class="overflow-auto">${card.uri.length > 25 ? card.uri.substring(0, 25) + "..." : card.uri}</div>
                                   </button>`
                           )}
                       </div>`
                     : nothing}
                 ${AppBskyEmbedExternal.isMain(this.embed)
-                    ? html`<div class="flex relative px-2">
+                    ? html`<div class="flex relative px-2 items-center justify-center">
                           <div class="w-full">${renderEmbed(this.embed, false)}</div>
+                          ${this.isLoadingCard ? html`<i class="absolute ml-2 icon w-6 h-6 animate-spin">${spinnerIcon}</i>` : nothing}
                           <button
                               class="absolute right-4 top-4"
                               @click=${(ev: Event) => {
@@ -240,7 +244,7 @@ export class PostEditor extends LitElement {
                               }}
                               ?disabled=${this.isSending}
                           >
-                              <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
+                              ${this.isLoadingCard ? nothing : html`<i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>`}
                           </button>
                       </div>`
                     : nothing}
@@ -360,8 +364,8 @@ export class PostEditor extends LitElement {
                                       class="flex items-center gap-2 p-2 border-bottom border-gray hover:bg-primary hover:text-white"
                                   >
                                       ${suggestion.avatar
-                                          ? html`<img class="w-[1.5em] h-[1.5em] rounded-full" src="${suggestion.avatar}" />`
-                                          : html`<i class="icon w-[1.5em] h-[1.5em]">${defaultAvatar}</i>`}
+                                          ? html`<img class="w-6 h-6 rounded-full" src="${suggestion.avatar}" />`
+                                          : html`<i class="icon w-6 h-6">${defaultAvatar}</i>`}
                                       <span class="truncate">${suggestion.displayName ?? suggestion.handle}</span>
                                       <span class="ml-auto text-gray text-sm">${suggestion.displayName ? suggestion.handle : ""}</span>
                                   </button>`
@@ -448,43 +452,50 @@ export class PostEditor extends LitElement {
             },
         };
         this.embed = cardEmbed;
-        const linkCard = await extractLinkCard(card.uri);
-        if (linkCard instanceof Error) return;
-        let imageBlob: BlobRef | undefined;
-        if (linkCard.image && linkCard.image.length > 0) {
-            const originalImageData = await downloadImage(linkCard.image);
-            if (originalImageData instanceof Error) {
-                console.error(originalImageData);
-            } else {
-                const imageData = await downscaleImage(originalImageData);
-                if (imageData instanceof Error) console.error(imageData);
-                else {
-                    try {
-                        const response = await bskyClient.com.atproto.repo.uploadBlob(imageData.data, {
-                            headers: { "Content-Type": imageData.mimeType },
-                            encoding: "",
-                        });
-                        if (response.success) {
-                            imageBlob = response.data.blob;
+        this.isLoadingCard = true;
+        try {
+            const linkCard = await extractLinkCard(card.uri);
+            if (linkCard instanceof Error) return;
+            let imageBlob: BlobRef | undefined;
+            if (linkCard.image && linkCard.image.length > 0) {
+                const originalImageData = await downloadImage(linkCard.image);
+                if (originalImageData instanceof Error) {
+                    console.error(originalImageData);
+                } else {
+                    const imageData = await downscaleImage(originalImageData);
+                    if (imageData instanceof Error) console.error(imageData);
+                    else {
+                        try {
+                            const response = await bskyClient.com.atproto.repo.uploadBlob(imageData.data, {
+                                headers: { "Content-Type": imageData.mimeType },
+                                encoding: "",
+                            });
+                            if (response.success) {
+                                imageBlob = response.data.blob;
+                            }
+                        } catch (e) {
+                            linkCard.image = "";
                         }
-                    } catch (e) {
-                        linkCard.image = "";
                     }
                 }
             }
+            cardEmbed = {
+                $type: "app.bsky.embed.external",
+                external: {
+                    uri: card.uri,
+                    title: linkCard.title,
+                    description: linkCard.description,
+                    thumb: imageBlob,
+                    image: linkCard.image,
+                } as AppBskyEmbedExternal.External,
+            };
+            this.embed = cardEmbed;
+            this.canPost = true;
+        } catch (e) {
+            console.log("Couldn't load card", e);
+        } finally {
+            this.isLoadingCard = false;
         }
-        cardEmbed = {
-            $type: "app.bsky.embed.external",
-            external: {
-                uri: card.uri,
-                title: linkCard.title,
-                description: linkCard.description,
-                thumb: imageBlob,
-                image: linkCard.image,
-            } as AppBskyEmbedExternal.External,
-        };
-        this.embed = cardEmbed;
-        this.canPost = true;
     }
 
     isInHandle(text: string, cursorPosition: number, found: (match: string, start: number, end: number) => void, notFound: () => void) {

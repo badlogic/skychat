@@ -28,7 +28,7 @@ export class IconToggle extends LitElement {
                 : "text-gray dark:text-white/50"}"
             @click=${this.toggle}
         >
-            <i class="icon w-full h-full ${this.value ? "fill-primary dark:fill-primary" : "fill-gray"}"
+            <i class="icon w-5 h-5 ${this.value ? "fill-primary dark:fill-primary" : "fill-gray"}"
                 >${icons[this.icon as "reblog" | "heart" | "shield"] ?? ""}</i
             ><slot></slot>
         </div>`;

@@ -141,7 +141,7 @@ export abstract class ItemsList<C, T> extends LitElement {
 
         const itemsDom = dom(html`<div id="items" class="flex flex-col">
             ${map(this.items, (item) => this.internalRenderItem(item))}
-            <div id="loader" class="w-full text-center p-4 animate-pulse">${contentLoader}</div>
+            <div id="loader" class="text-center p-4 animate-pulse">${contentLoader}</div>
         </div>`)[0];
         const loader = itemsDom.querySelector("#loader") as HTMLElement;
         let loading = false;

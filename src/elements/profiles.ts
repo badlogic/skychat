@@ -108,9 +108,9 @@ export class ProfileOverlay extends HashNavOverlay {
                       src="${profile.banner}"
                       class="${this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList
                           ? "blur"
-                          : ""} h-[150px] w-full object-cover"
+                          : ""} h-[150px] object-cover"
                   />`
-                : html`<div class="bg-blue-500 h-[150px] w-full"></div>`}
+                : html`<div class="bg-blue-500 h-[150px]"></div>`}
             <div class="flex px-4 mt-[-48px] items-end">
                 ${profile.avatar
                     ? html`<img
@@ -213,7 +213,7 @@ export class ProfileOptionsElement extends PopupMenu {
     profile?: ProfileView;
 
     protected renderButton(): TemplateResult {
-        return html`<i slot="buttonText" class="icon w-[1.2em] h-[1.2em] fill-gray">${moreIcon}</i>`;
+        return html`<i slot="buttonText" class="icon w-5 h-5 fill-gray">${moreIcon}</i>`;
     }
     protected renderContent(): TemplateResult {
         const createButton = (label: TemplateResult, click: () => void) => {
@@ -392,7 +392,7 @@ export function renderProfile(profile: ProfileView, smallAvatar = false) {
         }}
     >
         ${profile.avatar
-            ? html`<img loading="lazy" class="${smallAvatar ? "w-[1em] h-[1em]" : "w-[2em] h-[2em]"} rounded-full" src="${profile.avatar}" />`
+            ? html`<img loading="lazy" class="${smallAvatar ? "w-4 h-4" : "w-8 h-8"} rounded-full" src="${profile.avatar}" />`
             : defaultAvatar}
         <div class="flex flex-col">
             <span class="${smallAvatar ? "text-sm" : ""} font-bold line-clamp-1 hover:underline">${profile.displayName ?? profile.handle}</span>

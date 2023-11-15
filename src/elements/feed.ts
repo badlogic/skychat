@@ -253,7 +253,7 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
                         .showReplyTo=${false}
                     ></post-view>
                 </div>`)[0];
-                return html`<div class="flex flex-col w-full">${repostedBy}${parentDom}${postDom}</div>`;
+                return html`<div class="flex flex-col">${repostedBy}${parentDom}${postDom}</div>`;
             }
         } else {
             const postDom = dom(html`<div>

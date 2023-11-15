@@ -67,12 +67,12 @@ export function renderPostText(record: AppBskyFeedPost.Record) {
 
 export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External) {
     const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
-    return html`<a class="w-full border rounded border-gray/50 flex mb-2" target="_blank" href="${cardEmbed.uri}">
+    return html`<a class="border rounded border-gray/50 flex" target="_blank" href="${cardEmbed.uri}">
         ${thumb ? html`<img src="${thumb}" class="rounded-l w-[100px] object-cover" />` : nothing}
-        <div class="flex flex-col p-2 w-full">
+        <div class="flex flex-col p-2">
             <span class="text-gray text-xs">${new URL(cardEmbed.uri).host}</span>
-            <span class="font-bold text-sm">${cardEmbed.title}</span>
-            <div class="text-sm line-clamp-2 break-any">${cardEmbed.description}</div>
+            <span class="font-bold text-sm line-clamp-2">${cardEmbed.title}</span>
+            <div class="text-sm line-clamp-2 break-words">${cardEmbed.description}</div>
         </div>
     </a>`;
 }
@@ -177,7 +177,7 @@ export function renderRecord(
     const replyToAuthorDid = record.reply ? splitAtUri(record.reply?.parent.uri).repo : undefined;
     const replyToProfile = replyToAuthorDid ? profileCache[replyToAuthorDid] : undefined;
     return html`<div
-        class="w-full h-full ${openOnClick ? "cursor-pointer" : ""}"
+        class="${openOnClick ? "cursor-pointer" : ""}"
         @click=${(ev: Event) => {
             if (window.getSelection() && window.getSelection()?.toString().length != 0) return;
             if (!openOnClick) return;
@@ -188,7 +188,7 @@ export function renderRecord(
         }}
     >
         ${showHeader
-            ? html`<div class="w-full flex items-center">
+            ? html`<div class="flex items-center">
                       ${prefix ? html`<span class="mr-1 font-bold">${prefix}</span>` : nothing} ${renderProfile(author, smallAvatar)}
                       ${prefix == undefined
                           ? html`<a
@@ -310,10 +310,10 @@ export class PostViewElement extends LitElement {
             )}
             <div class="flex items-center gap-4 mt-1">
                 <button @click=${() => this.replyCallback(this.post!)} class="flex gap-1 items-center text-gray">
-                    <i class="icon w-[1.2em] h-[1.2em] fill-gray">${replyIcon}</i><span class="text-gray">${this.post.replyCount}</span>
+                    <i class="icon w-5 h-5 fill-gray">${replyIcon}</i><span class="text-gray">${this.post.replyCount}</span>
                 </button>
                 <button @click=${() => this.quoteCallback(this.post!)} class="flex gap-1 items-center text-gray">
-                    <i class="icon w-[1.2em] h-[1.2em] fill-gray">${quoteIcon}</i><span class="text-gray">${quotesCache[this.post.uri] ?? 0}</span>
+                    <i class="icon w-5 h-5 fill-gray">${quoteIcon}</i><span class="text-gray">${quotesCache[this.post.uri] ?? 0}</span>
                 </button>
                 <div class="flex gap-1 items-center text-gray">
                     <icon-toggle @change=${this.toggleRepost} icon="reblog" class="h-4" .value=${this.post.viewer?.repost ?? false}
