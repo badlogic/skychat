@@ -362,9 +362,11 @@ export const actorTimelineLoader = (did: string, filter: ActorTimelineFilter): I
                     postUris.push((record.value as any).subject.uri);
                 }
                 if (postUris.length == 0) return { items: [] };
-                const postsResult = await bskyClient.getPosts({ uris: postUris });
-                if (!postsResult.success) return new Error("Couldn't load likes");
-                return { cursor: result.data.cursor, items: postsResult.data.posts };
+                const postsMap = new Map<string, PostView>();
+                const postsResult = await loadPosts(postUris, postsMap);
+                const loadedPosts = postUris.map((uri) => postsMap.get(uri)).filter((post) => post != undefined) as PostView[];
+                if (postsResult instanceof Error) return new Error("Couldn't load likes");
+                return { cursor: result.data.cursor, items: loadedPosts };
             }
         } else {
             const result = await bskyClient.app.bsky.feed.getAuthorFeed({ cursor, limit, actor: did, filter });

@@ -95,7 +95,7 @@ export async function routeHash(hash: string) {
                 if (child.tagName == "SETTINGS-OVERLAY") {
                     return;
                 }
-                document.body.append(dom(html`<settings-overlay></settings-overlay>`)[0]);
+                document.body.append(dom(html`<settings-overlay .pushState=${false}></settings-overlay>`)[0]);
             }
         }
     }
