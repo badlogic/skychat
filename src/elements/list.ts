@@ -8,7 +8,7 @@ import { i18n } from "../i18n";
 export type Cursor = any;
 
 export type ItemListLoaderResult<C, T> = { cursor?: C; items: T[] } | Error;
-export type ItemsListLoader<C, T> = (cursor?: C) => Promise<ItemListLoaderResult<C, T>>;
+export type ItemsListLoader<C, T> = (cursor?: C, limit?: number) => Promise<ItemListLoaderResult<C, T>>;
 
 export abstract class ItemsList<C, T> extends LitElement {
     @property()
@@ -31,7 +31,7 @@ export abstract class ItemsList<C, T> extends LitElement {
 
     cursor?: C;
     items: T[] = [];
-    seenItems = new Map<String, T>();
+    seenItems = new Map<string, T>();
     intervalId: any = -1;
 
     protected createRenderRoot(): Element | ShadowRoot {
@@ -66,55 +66,62 @@ export abstract class ItemsList<C, T> extends LitElement {
         loadInitial();
 
         if (this.poll) {
-            let polling = false;
-            const poll = async () => {
-                if (polling) return;
-                polling = true;
-                try {
-                    if (!bskyClient) return;
-                    if (!this.initialItemsLoaded) return;
-                    let lastResult: ItemListLoaderResult<C, T> | undefined;
-                    let done = false;
-                    const items: T[] = [];
-                    while (!done) {
-                        const result = await this.loadItems(!(lastResult instanceof Error) ? lastResult?.cursor ?? undefined : undefined);
-                        if (result instanceof Error) break;
-                        if (result.items.length == 0) break;
-                        for (const item of result.items) {
-                            const itemKey = this.getItemKey(item);
-                            if (this.seenItems.has(itemKey)) {
-                                done = true;
-                                break;
-                            }
-                            items.push(item);
-                        }
-                        lastResult = result;
-                    }
+            this.intervalId = setInterval(() => this.pollNewItems(), this.pollingInterval);
+        }
+    }
 
-                    if (items.length == 0 || !this.itemsDom) return;
-                    const insertNode = this.itemsDom.children[0];
-                    const itemsDom = this.itemsDom;
-                    if (!insertNode) {
-                        for (const item of items) {
-                            this.seenItems.set(this.getItemKey(item), item);
-                            itemsDom.append(dom(html`<div class="animate-fade">${this.internalRenderItem(item)}</div>`)[0]);
-                        }
-                    } else {
-                        items.reverse();
-                        for (const item of items) {
-                            this.seenItems.set(this.getItemKey(item), item);
-                            itemsDom.insertBefore(dom(html`<div class="animate-fade">${this.internalRenderItem(item)}</div>`)[0], insertNode);
-                        }
+    insertNewItems(items: T[]) {
+        if (items.length == 0 || !this.itemsDom) return;
+        const insertNode = this.itemsDom.children[0];
+        const itemsDom = this.itemsDom;
+        if (!insertNode) {
+            for (const item of items) {
+                this.seenItems.set(this.getItemKey(item), item);
+                itemsDom.append(dom(html`<div class="animate-fade">${this.internalRenderItem(item)}</div>`)[0]);
+            }
+        } else {
+            items.reverse();
+            for (const item of items) {
+                this.seenItems.set(this.getItemKey(item), item);
+                itemsDom.insertBefore(dom(html`<div class="animate-fade">${this.internalRenderItem(item)}</div>`)[0], insertNode);
+            }
+        }
+        this.items = [...items, ...this.items];
+        if (this.newItems) this.newItems(items, this.items);
+    }
+
+    polling = false;
+    async pollNewItems() {
+        if (this.polling) return;
+        this.polling = true;
+        try {
+            if (!bskyClient) return;
+            if (!this.initialItemsLoaded) return;
+            let lastResult: ItemListLoaderResult<C, T> | undefined;
+            let done = false;
+            const items: T[] = [];
+            let cursor = await this.getPollStartCursor();
+            if (cursor instanceof Error) throw cursor;
+            while (!done) {
+                const result = await this.loadItems(cursor);
+                if (result instanceof Error) throw cursor;
+                if (result.items.length == 0) break;
+                for (const item of result.items) {
+                    const itemKey = this.getItemKey(item);
+                    if (this.seenItems.has(itemKey)) {
+                        done = true;
+                        break;
                     }
-                    this.items = [...items, ...this.items];
-                    if (this.newItems) this.newItems(items, this.items);
-                } catch (e) {
-                    console.error(e);
-                } finally {
-                    polling = false;
+                    items.push(item);
                 }
-            };
-            this.intervalId = setInterval(poll, this.pollingInterval);
+                lastResult = result;
+            }
+            this.insertNewItems(items);
+        } catch (e) {
+            this.error = i18n("Could not load newer items");
+            console.error(e);
+        } finally {
+            this.polling = false;
         }
     }
 
@@ -177,7 +184,10 @@ export abstract class ItemsList<C, T> extends LitElement {
         return itemsDom;
     }
 
-    abstract loadItems(cursor?: C): Promise<ItemListLoaderResult<C, T>>;
+    abstract loadItems(cursor?: C, limit?: number): Promise<ItemListLoaderResult<C, T>>;
     abstract getItemKey(item: T): string;
     abstract renderItem(item: T): TemplateResult;
+    async getPollStartCursor(): Promise<C | undefined> {
+        return undefined;
+    }
 }

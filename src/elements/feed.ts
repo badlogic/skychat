@@ -1,5 +1,5 @@
 import { AppBskyFeedDefs, AppBskyFeedPost, BskyAgent } from "@atproto/api";
-import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { FeedViewPost, PostView, isFeedViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { bskyClient, loadPosts } from "../bsky";
@@ -12,30 +12,6 @@ import { Overlay, renderTopbar } from "./overlay";
 import { Messages, i18n } from "../i18n";
 import { getProfileUrl } from "./profiles";
 
-const printPage = async (cursor: string) => {
-    if (!bskyClient) return;
-    const response = await bskyClient.app.bsky.feed.getTimeline({
-        cursor,
-    });
-    if (!response.success) throw new Error("Doesn't work");
-    console.log("====================================================");
-    for (const item of response.data.feed) {
-        console.log(
-            (item.post.author.displayName ?? item.post.author.handle) +
-                ": " +
-                item.post.cid +
-                ", " +
-                new Date((item as any).post.record.createdAt).getTime() +
-                ", " +
-                (item as any).post.record.createdAt
-        );
-    }
-};
-
-//if (this.items.length > 0) {
-// printPage(1699996937529 + 5 * 60 * 1000 + "::bafyreifgsikehexlv3vfzkqrk5b5uoqrbdzd36i7qjmegpd5llptqp5bfi");
-//}
-
 @customElement("skychat-feed")
 export class Feed extends ItemsList<string, FeedViewPost | PostView> {
     @property()
@@ -45,14 +21,16 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
         return (post as any).post != undefined;
     }
 
-    async loadItems(cursor?: string | undefined): Promise<ItemListLoaderResult<string, FeedViewPost | PostView>> {
+    async loadItems(cursor?: string | undefined, limit?: number): Promise<ItemListLoaderResult<string, FeedViewPost | PostView>> {
         if (!bskyClient) return new Error(i18n("Not connected"));
-        const result = await this.feedLoader(cursor);
+        const loadTime = new Date().getTime();
+        const result = await this.feedLoader(cursor, limit);
         if (result instanceof Error) return result;
 
         const dids: string[] = [];
         const postUris: string[] = [];
         for (const post of result.items) {
+            post.__loadTime = loadTime;
             if (Feed.isFeedViewPost(post)) {
                 if (post.reply && AppBskyFeedDefs.isPostView(post.reply.parent)) {
                     if (AppBskyFeedPost.isRecord(post.reply.parent.record) && post.reply.parent.record.reply?.parent) {
@@ -71,24 +49,141 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
 
     getItemKey(post: FeedViewPost | PostView): string {
         if (Feed.isFeedViewPost(post)) {
-            let replyKey = "";
-            if (post.reply) {
-                if (
-                    AppBskyFeedDefs.isPostView(post.reply.parent) ||
-                    AppBskyFeedDefs.isNotFoundPost(post.reply.parent) ||
-                    AppBskyFeedDefs.isBlockedPost(post.reply.parent)
-                )
-                    replyKey += post.reply.parent.uri;
-                if (
-                    AppBskyFeedDefs.isPostView(post.reply.root) ||
-                    AppBskyFeedDefs.isNotFoundPost(post.reply.root) ||
-                    AppBskyFeedDefs.isBlockedPost(post.reply.root)
-                )
-                    replyKey += post.reply.root.uri;
-            }
-            return post.post.uri + (AppBskyFeedDefs.isReasonRepost(post.reason) ? post.reason.by.did : "") + replyKey;
+            return post.post.uri + (AppBskyFeedDefs.isReasonRepost(post.reason) ? post.reason.by.did : "");
         } else {
             return post.uri;
+        }
+    }
+
+    async pollNewItems() {
+        const fortyEightHours = 48 * 60 * 60 * 1000;
+
+        const getRecord = (post: FeedViewPost | PostView) => {
+            if (Feed.isFeedViewPost(post)) {
+                if (AppBskyFeedPost.isRecord(post.post.record)) return post.post.record;
+                throw new Error("Couldn't load record from post");
+            } else {
+                if (AppBskyFeedPost.isRecord(post.record)) return post.record;
+                throw new Error("Couldn't load record from post");
+            }
+        };
+
+        const getDate = (post: FeedViewPost | PostView) => {
+            let rec = getRecord(post);
+            if (AppBskyFeedDefs.isReasonRepost(post.reason)) return new Date(post.reason.indexedAt);
+            return new Date(rec.createdAt);
+        };
+
+        const getCid = (post: FeedViewPost | PostView) => {
+            if (Feed.isFeedViewPost(post)) {
+                return post.post.cid;
+            } else {
+                return post.cid;
+            }
+        };
+
+        const loadNewerPosts = async (
+            startCid: string,
+            startTimestamp: number,
+            seenPostKeys: Map<string, FeedViewPost | PostView>,
+            minNumPosts = 10,
+            maxTimeDifference = fortyEightHours
+        ): Promise<{ posts: (FeedViewPost | PostView)[]; numRequests: number; exceededMaxTimeDifference: boolean } | Error> => {
+            let timeIncrement = 15 * 60 * 1000;
+            let time = startTimestamp + timeIncrement;
+            let cid = startCid;
+            let newerPosts: (FeedViewPost | PostView)[] = [];
+            let lastCursor: string | undefined;
+            let foundSeenPost = false;
+            let numRequests = 0;
+            let seenNewPosts = new Map<string, FeedViewPost | PostView>();
+            let exceededMaxTimeDifference = false;
+
+            // Fetch the latest posts and see if its our latest post.
+            const response = await this.loadItems(undefined);
+            numRequests++;
+            if (response instanceof Error) return response;
+            if (getCid(response.items[0]) == startCid) return { posts: [], numRequests, exceededMaxTimeDifference: false };
+
+            // Adjust maxTimeDifference down if possible, results in fewer fetches.
+            maxTimeDifference = Math.min(maxTimeDifference, getDate(response.items[0])!.getTime() - startTimestamp);
+            if (maxTimeDifference < 0) maxTimeDifference = fortyEightHours;
+
+            // FIrst pass, try to collect minNumPosts new posts. This may overshoot, so there's
+            // a gap between the startPost and the last post in newPosts. We'll resolve the missing
+            // posts in the next loop below.
+            while (true) {
+                const response = await this.loadItems(time + "::" + cid);
+                if (response instanceof Error) return response;
+                lastCursor = response.cursor;
+                const fetchedPosts = response.items;
+                let uniquePosts = fetchedPosts.filter(
+                    (post) => !seenPostKeys.has(this.getItemKey(post)) && (getDate(post)?.getTime() ?? 0) > startTimestamp
+                );
+                uniquePosts = uniquePosts.filter((post) => !seenNewPosts.has(this.getItemKey(post)));
+                uniquePosts.forEach((post) => seenNewPosts.set(this.getItemKey(post), post));
+                foundSeenPost = fetchedPosts.some((post) => seenPostKeys.has(this.getItemKey(post)));
+                numRequests++;
+                // If we haven't found any new posts, we need to look further into the future
+                // but not too far.
+                if (uniquePosts.length == 0) {
+                    foundSeenPost = false;
+                    timeIncrement *= 1.75; // Make us jump a little further than last time
+                    time += timeIncrement;
+                    // If we searched to far into the future, give up
+                    if (time - startTimestamp > maxTimeDifference) {
+                        exceededMaxTimeDifference = seenNewPosts.size > 0;
+                        break;
+                    }
+                    continue;
+                }
+
+                // If we found minNumPosts, we don't need to load any more posts
+                // We might end up having to load older posts though, until we
+                // find a seen post.
+                newerPosts = [...uniquePosts, ...newerPosts];
+                if (newerPosts.length >= minNumPosts) break;
+            }
+
+            // There's a gap between the new posts and the start post. Resolve
+            // the posts in-between.
+            if (!foundSeenPost && newerPosts.length > 0) {
+                while (!foundSeenPost) {
+                    const response = await this.loadItems(lastCursor);
+                    if (response instanceof Error) return response;
+                    lastCursor = response.cursor;
+                    const fetchedPosts = response.items;
+                    const uniquePosts = fetchedPosts.filter(
+                        (post) => !seenPostKeys.has(this.getItemKey(post)) && (getDate(post)?.getTime() ?? 0) > startTimestamp
+                    );
+                    newerPosts = [...newerPosts, ...uniquePosts];
+                    foundSeenPost = fetchedPosts.some((post) => seenPostKeys.has(this.getItemKey(post)));
+                    numRequests++;
+                }
+            }
+
+            return { posts: newerPosts, numRequests, exceededMaxTimeDifference };
+        };
+
+        if (this.polling) return;
+        this.polling = true;
+        try {
+            if (!bskyClient) return;
+            if (!this.initialItemsLoaded) return;
+            if (this.items.length == 0) {
+                this.polling = false;
+                super.pollNewItems();
+                return;
+            }
+            const lastPost = this.items[0];
+            const result = await loadNewerPosts(getCid(lastPost), getDate(lastPost).getTime(), this.seenItems);
+            if (result instanceof Error) throw result;
+            this.insertNewItems(result.posts.reverse());
+        } catch (e) {
+            this.error = i18n("Could not load newer items");
+            console.error(e);
+        } finally {
+            this.polling = false;
         }
     }
 
@@ -120,18 +215,18 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
     }
 
     renderItem(post: FeedViewPost | PostView) {
+        const repostedBy = AppBskyFeedDefs.isReasonRepost(post.reason)
+            ? html`<div class="mb-1 flex items-center gap-2 text-gray dark:text-lightgray text-xs"><i class="icon w-4 h-4 fill-gray dark:fill-lightgray">${reblogIcon}</i><a class="hover:underline truncate" href="${getProfileUrl(
+                  post.reason.by
+              )}" @click=${(ev: Event) => {
+                  if (!AppBskyFeedDefs.isReasonRepost(post.reason)) return;
+                  ev.preventDefault();
+                  ev.stopPropagation();
+                  document.body.append(dom(html`<profile-overlay .did=${post.reason.by.did}></profile-overlay>`)[0]);
+              }}>${post.reason.by.displayName ?? post.reason.by.handle}</div>`
+            : nothing;
         if (Feed.isFeedViewPost(post)) {
             if (!post.reply) {
-                const repostedBy = AppBskyFeedDefs.isReasonRepost(post.reason)
-                    ? html`<div class="mb-1 flex items-center gap-2 text-gray dark:text-lightgray text-xs"><i class="icon w-4 h-4 fill-gray dark:fill-lightgray">${reblogIcon}</i><a class="hover:underline truncate" href="${getProfileUrl(
-                          post.reason.by
-                      )}" @click=${(ev: Event) => {
-                          if (!AppBskyFeedDefs.isReasonRepost(post.reason)) return;
-                          ev.preventDefault();
-                          ev.stopPropagation();
-                          document.body.append(dom(html`<profile-overlay .did=${post.reason.by.did}></profile-overlay>`)[0]);
-                      }}>${post.reason.by.displayName ?? post.reason.by.handle}</div>`
-                    : nothing;
                 const postDom = dom(html`<div>
                     ${repostedBy}
                     <post-view
@@ -158,7 +253,7 @@ export class Feed extends ItemsList<string, FeedViewPost | PostView> {
                         .showReplyTo=${false}
                     ></post-view>
                 </div>`)[0];
-                return html`<div class="flex flex-col w-full">${parentDom}${postDom}</div>`;
+                return html`<div class="flex flex-col w-full">${repostedBy}${parentDom}${postDom}</div>`;
             }
         } else {
             const postDom = dom(html`<div>
@@ -199,16 +294,16 @@ export class FeedOverlay extends Overlay {
     }
 }
 
-export const homeTimelineLoader = async (cursor?: string) => {
+export const homeTimelineLoader = async (cursor?: string, limit?: number) => {
     if (!bskyClient) return new Error("Couldn't load home timeline");
-    const result = await bskyClient.app.bsky.feed.getTimeline({ cursor });
+    const result = await bskyClient.app.bsky.feed.getTimeline({ cursor, limit });
     if (!result.success) return new Error("Couldn't load home timeline");
     return { cursor: result.data.cursor, items: result.data.feed };
 };
 
 export const quotesLoader = (postUri: string): ItemsListLoader<string, FeedViewPost | PostView> => {
     // FIXME introduce cursor
-    return async (cursor?: string) => {
+    return async (cursor?: string, limit?: number) => {
         if (cursor == "end") return { cursor: "end", items: [] };
         if (!bskyClient) return new Error("Couldn't load quotes");
         try {
@@ -228,11 +323,11 @@ export const quotesLoader = (postUri: string): ItemsListLoader<string, FeedViewP
 
 export type ActorTimelineFilter = "posts_with_replies" | "posts_no_replies" | "posts_with_media" | "likes";
 export const actorTimelineLoader = (did: string, filter: ActorTimelineFilter): ItemsListLoader<string, FeedViewPost | PostView> => {
-    return async (cursor?: string) => {
+    return async (cursor?: string, limit?: number) => {
         if (!bskyClient) return new Error("Couldn't load feed");
         if (filter == "likes") {
             if (did == Store.getUser()?.profile.did) {
-                const result = await bskyClient.app.bsky.feed.getActorLikes({ cursor, actor: did });
+                const result = await bskyClient.app.bsky.feed.getActorLikes({ cursor, limit, actor: did });
                 if (!result.success) return new Error("Couldn't load likes");
                 return { cursor: result.data.cursor, items: result.data.feed };
             } else {
@@ -260,7 +355,7 @@ export const actorTimelineLoader = (did: string, filter: ActorTimelineFilter): I
                 }
                 if (!pdsUrl) return new Error("Couldn't load likes");
                 const client = new BskyAgent({ service: pdsUrl });
-                const result = await client.com.atproto.repo.listRecords({ cursor, repo: did, collection: "app.bsky.feed.like", limit: 25 });
+                const result = await client.com.atproto.repo.listRecords({ cursor, limit, repo: did, collection: "app.bsky.feed.like" });
                 if (!result.success) return new Error("Couldn't load likes");
                 const postUris: string[] = [];
                 for (const record of result.data.records) {
@@ -272,7 +367,7 @@ export const actorTimelineLoader = (did: string, filter: ActorTimelineFilter): I
                 return { cursor: result.data.cursor, items: postsResult.data.posts };
             }
         } else {
-            const result = await bskyClient.app.bsky.feed.getAuthorFeed({ cursor, actor: did, filter });
+            const result = await bskyClient.app.bsky.feed.getAuthorFeed({ cursor, limit, actor: did, filter });
             if (!result.success) return new Error("Couldn't load feed");
             return { cursor: result.data.cursor, items: result.data.feed };
         }

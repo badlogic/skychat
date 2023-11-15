@@ -22,7 +22,10 @@ export class SettingsOverlay extends HashNavOverlay {
                 ? html`<h2>${i18n("Logged in as")}</h2>
                       <div class="flex gap-4 mt-2">
                           ${renderProfile(user.profile)}
-                          <button class="ml-auto text-primary h-8 bg-primary text-white rounded-md px-4 whitespace-nowrap" @click=${this.logout}>
+                          <button
+                              class="ml-auto text-primary h-8 bg-primary text-white rounded-md px-4 whitespace-nowrap text-sm"
+                              @click=${this.logout}
+                          >
                               ${i18n("Log out")}
                           </button>
                       </div>`

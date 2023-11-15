@@ -116,7 +116,7 @@ export class PostEditor extends LitElement {
             const caret: Caret = this.messageElement
                 ? getCaretCoordinates(this.messageElement, this.messageElement.selectionEnd)
                 : { top: 0, left: 0, height: 32 };
-            this.handlesElement.style.top = caret.top + caret.height + "px";
+            this.handlesElement.style.top = caret.top + 32 + "px";
         }
     }
 
@@ -203,12 +203,12 @@ export class PostEditor extends LitElement {
                     @mouseup=${this.input}
                     class="${this.fullscreen
                         ? "flex-grow"
-                        : ""} resize-none outline-none bg-transparent dark:text-white disabled:text-gray dark:disabled:text-gray p-2"
+                        : "min-h-[120px]"} resize-none outline-none bg-transparent dark:text-white disabled:text-gray dark:disabled:text-gray p-2 break-words"
                     placeholder="${placeholder}"
                     ?disabled=${this.isSending}
                 ></textarea>
                 ${!this.embed && this.imagesToUpload.length == 0 && (this.cardSuggestions?.length ?? 0 > 0)
-                    ? html`<div class="flex flex-col my-2 mx-2 gap-2">
+                    ? html`<div class="flex flex-col my-2 mx-2 gap-2 max-w-full">
                           ${map(
                               this.cardSuggestions,
                               (card) =>
@@ -217,8 +217,8 @@ export class PostEditor extends LitElement {
                                       class="border border-gray rounded py-1 px-4 flex gap-2"
                                       ?disabled=${this.isSending}
                                   >
-                                      <div class="min-w-[70px]">${i18n("Add link card")}</div>
-                                      <div class="text-left truncate text-blue-500">${card.uri}</div>
+                                      <div class="whitespace-nowrap">${i18n("Add link card")}</div>
+                                      <div class="overflow-auto">${card.uri}</div>
                                   </button>`
                           )}
                       </div>`
@@ -727,7 +727,7 @@ export class ImageEditor extends Overlay {
                         this.image.alt = (ev.target as HTMLInputElement)!.value;
                     }
                 }}
-                class="flex-1 max-h-[11.5em] resize-none outline-none bg-transparent drop:bg-white dark:text-white disabled:text-gray dark:disabled:text-gray px-2 pt-2"
+                class="flex-1 break-words max-h-[11.5em] resize-none outline-none bg-transparent drop:bg-white dark:text-white disabled:text-gray dark:disabled:text-gray px-2 pt-2"
                 placeholder="${i18n("Add alt text to your image")}"
             >
 ${alt}</textarea
@@ -760,19 +760,19 @@ export class PostEditorOverlay extends CloseableElement {
 
     connectedCallback(): void {
         super.connectedCallback();
-        visualViewport?.addEventListener("resize", this.resizeInner);
+        if (isMobileBrowser()) visualViewport?.addEventListener("resize", this.resizeInner);
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
-        visualViewport?.removeEventListener("resize", this.resizeInner);
+        if (isMobileBrowser()) visualViewport?.removeEventListener("resize", this.resizeInner);
     }
 
     protected render() {
         const user = Store.getUser();
         if (!user || !bskyClient) return nothing;
         return html`<div class="fixed top-0 w-full h-full overflow-none backdrop-blur z-10">
-            <div class="flex ${isMobileBrowser() ? "" : "border border-rounded-md border-gray/20"} justify-center max-w-[600px] mx-auto">
+            <div class="flex ${isMobileBrowser() ? "" : "mt-1 border border-gray/20 rounded-md"} justify-center max-w-[600px] mx-auto">
                 <post-editor
                     class="animate-fade animate-duration-[250ms] w-[600px]"
                     .cancelable=${true}

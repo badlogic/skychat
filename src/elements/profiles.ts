@@ -332,10 +332,10 @@ export class ProfileListOverlay extends HashNavOverlay {
 }
 
 export function likesLoader(postUri?: string): ItemsListLoader<string, ProfileView> {
-    return async (cursor?: string) => {
+    return async (cursor?: string, limit?: number) => {
         if (!bskyClient) return new Error(i18n("Not connected"));
         if (!postUri) return new Error(i18n("No post given"));
-        const result = await bskyClient.getLikes({ cursor, uri: postUri });
+        const result = await bskyClient.getLikes({ cursor, limit, uri: postUri });
         if (!result.success) {
             return new Error(i18n("Couldn't load likes"));
         }
@@ -344,10 +344,10 @@ export function likesLoader(postUri?: string): ItemsListLoader<string, ProfileVi
 }
 
 export function repostLoader(postUri?: string): ItemsListLoader<string, ProfileView> {
-    return async (cursor?: string) => {
+    return async (cursor?: string, limit?: number) => {
         if (!bskyClient) return new Error(i18n("Not connected"));
         if (!postUri) return new Error(i18n("No post given"));
-        const result = await bskyClient.getRepostedBy({ cursor, uri: postUri });
+        const result = await bskyClient.getRepostedBy({ cursor, limit, uri: postUri });
         if (!result.success) {
             return new Error(i18n("Could not load reposts"));
         }
@@ -356,10 +356,10 @@ export function repostLoader(postUri?: string): ItemsListLoader<string, ProfileV
 }
 
 export function followersLoader(did: string): ItemsListLoader<string, ProfileView> {
-    return async (cursor?: string) => {
+    return async (cursor?: string, limit?: number) => {
         if (!bskyClient) return new Error(i18n("Not connected"));
         if (!did) return new Error(i18n("No account given"));
-        const result = await bskyClient.getFollowers({ cursor, actor: did });
+        const result = await bskyClient.getFollowers({ cursor, limit, actor: did });
         if (!result.success) {
             return new Error(i18n("Could not load followers"));
         }
@@ -368,10 +368,10 @@ export function followersLoader(did: string): ItemsListLoader<string, ProfileVie
 }
 
 export function followingLoader(did: string): ItemsListLoader<string, ProfileView> {
-    return async (cursor?: string) => {
+    return async (cursor?: string, limit?: number) => {
         if (!bskyClient) return new Error(i18n("Not connected"));
         if (!did) return new Error(i18n("No account given"));
-        const result = await bskyClient.getFollows({ cursor, actor: did });
+        const result = await bskyClient.getFollows({ cursor, limit, actor: did });
         if (!result.success) {
             return new Error(i18n("Could not load followings"));
         }
@@ -431,7 +431,7 @@ export class ProfileActionButton extends LitElement {
         if (viewer?.blocking) action = i18n("Unblock");
         return html`<button
             @click=${() => this.handleClick(action)}
-            class="${action != i18n("Follow") ? "bg-gray/50" : "bg-primary"} text-white rounded-full px-4 h-8"
+            class="${action != i18n("Follow") ? "bg-gray/50" : "bg-primary"} text-white text-sm rounded-full px-4 h-8"
         >
             ${action}
         </button>`;

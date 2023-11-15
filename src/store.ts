@@ -19,7 +19,13 @@ export class Store {
     static db = new IndexedDBStorage("skychat", 1);
 
     private static get<T>(key: StoreKey) {
-        return localStorage.getItem(key) ? (JSON.parse(localStorage.getItem(key)!) as T) : undefined;
+        try {
+            return localStorage.getItem(key) ? (JSON.parse(localStorage.getItem(key)!) as T) : undefined;
+        } catch (e) {
+            localStorage.removeItem(key);
+            this.db.remove(key);
+            return undefined;
+        }
     }
 
     private static set<T>(key: StoreKey, value: T | undefined) {

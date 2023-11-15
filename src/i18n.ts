@@ -104,6 +104,7 @@ export interface Messages {
     Light: string;
     System: string;
     "Logged in as": string;
+    "Could not load newer items": string;
 }
 
 const english: Messages = {
@@ -221,6 +222,7 @@ const english: Messages = {
     Light: "Light",
     System: "System",
     "Logged in as": "Logged in as",
+    "Could not load newer items": "Could not load newer items",
 };
 
 const german: Messages = {
@@ -340,6 +342,7 @@ const german: Messages = {
     Light: "Hell",
     System: "System",
     "Logged in as": "Angemeldet als",
+    "Could not load newer items": "Could not load newer items",
 };
 
 export type LanguageCode = "en" | "de";

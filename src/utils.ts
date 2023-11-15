@@ -9,11 +9,12 @@ export function getNumber(num: number | undefined): string {
     return (num / 1000000).toFixed(1) + "M";
 }
 
-export function getDateString(inputDateTime: Date): string {
+export function getDateString(inputDateTime: Date, forceYear = false): string {
     const hours = inputDateTime.getHours();
     const minutes = inputDateTime.getMinutes();
     const seconds = inputDateTime.getSeconds();
 
+    const paddedHours = String(hours).padStart(2, "0");
     const paddedMinutes = String(minutes).padStart(2, "0");
     const paddedSeconds = String(seconds).padStart(2, "0");
 
@@ -25,9 +26,10 @@ export function getDateString(inputDateTime: Date): string {
     const printYear =
         currDate.getFullYear() != inputDateTime.getFullYear() ||
         currDate.getMonth() != inputDateTime.getMonth() ||
-        currDate.getDay() != inputDateTime.getDay();
+        currDate.getDay() != inputDateTime.getDay() ||
+        forceYear;
 
-    return hours + ":" + paddedMinutes + ":" + paddedSeconds + (printYear ? ` ${year}-${month}-${day}` : "");
+    return paddedHours + ":" + paddedMinutes + ":" + paddedSeconds + (printYear ? ` ${year}-${month}-${day}` : "");
 }
 
 export function dom(template: TemplateResult, container?: HTMLElement | DocumentFragment): HTMLElement[] {
