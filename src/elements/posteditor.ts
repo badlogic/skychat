@@ -19,7 +19,18 @@ import { map } from "lit/directives/map.js";
 import { bskyClient, extractLinkCard } from "../bsky";
 import { deleteIcon, editIcon, imageIcon, spinnerIcon } from "../icons";
 import { Store } from "../store";
-import { ImageInfo, dom, downloadImage, downscaleImage, loadImageFile, loadImageFiles, splitAtUri } from "../utils";
+import {
+    Caret,
+    ImageInfo,
+    dom,
+    downloadImage,
+    downscaleImage,
+    getCaretCoordinates,
+    isMobileBrowser,
+    loadImageFile,
+    loadImageFiles,
+    splitAtUri,
+} from "../utils";
 import { renderEmbed, renderRecord } from "./posts";
 import { CloseableElement, Overlay, navigationGuard, renderTopbar } from "./overlay";
 import { i18n } from "../i18n";
@@ -46,6 +57,9 @@ export class PostEditor extends LitElement {
     @property()
     hashtag?: string;
 
+    @property()
+    fullscreen = false;
+
     @state()
     count = 0;
 
@@ -71,6 +85,9 @@ export class PostEditor extends LitElement {
     @query("#message")
     messageElement?: HTMLTextAreaElement;
 
+    @query("#handles")
+    handlesElement?: HTMLTextAreaElement;
+
     message: string = "";
 
     sensitive = false;
@@ -91,6 +108,16 @@ export class PostEditor extends LitElement {
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         this.messageElement?.focus();
+        this.querySelector("#handles");
+    }
+
+    protected updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        if (this.handlesElement) {
+            const caret: Caret = this.messageElement
+                ? getCaretCoordinates(this.messageElement, this.messageElement.selectionEnd)
+                : { top: 0, left: 0, height: 32 };
+            this.handlesElement.style.top = caret.top + caret.height + "px";
+        }
     }
 
     render() {
@@ -111,6 +138,7 @@ export class PostEditor extends LitElement {
             this.message = this.messageElement?.value;
             this.handleSuggestions = [];
             this.insert = undefined;
+            this.messageElement.focus();
         };
 
         let placeholder = "";
@@ -130,7 +158,7 @@ export class PostEditor extends LitElement {
                 : i18n("What's up?");
         }
 
-        return html` <div class="flex max-w-[600px] bg-white dark:bg-black">
+        return html` <div class="flex max-w-[600px] ${this.fullscreen ? "h-full" : ""} bg-white dark:bg-black">
             <div
                 class="flex max-w-full flex-col flex-grow relative"
                 @drop=${(ev: DragEvent) => this.pasteImage(ev)}
@@ -171,7 +199,11 @@ export class PostEditor extends LitElement {
                 <textarea
                     id="message"
                     @input=${this.input}
-                    class="resize-none outline-none bg-transparent dark:text-white disabled:text-gray dark:disabled:text-gray p-2"
+                    @selectionchanged=${this.input}
+                    @mouseup=${this.input}
+                    class="${this.fullscreen
+                        ? "flex-grow"
+                        : ""} resize-none outline-none bg-transparent dark:text-white disabled:text-gray dark:disabled:text-gray p-2"
                     placeholder="${placeholder}"
                     ?disabled=${this.isSending}
                 ></textarea>
@@ -292,7 +324,7 @@ export class PostEditor extends LitElement {
                     }
                     </button>
                      <span
-                        class="ml-auto bg-transparent dark:text-gray text-end text-xs flex items-center ${
+                        class="ml-auto mr-2 bg-transparent dark:text-gray text-end text-xs flex items-center ${
                             this.count > totalCount ? "text-red dark:text-red" : ""
                         }"
                         >${this.count}/${totalCount}</span
@@ -312,7 +344,7 @@ export class PostEditor extends LitElement {
                     }
                     <button
                         @click=${this.sendPost}
-                        class="bg-primary text-white my-2 mr-2 px-2 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
+                        class="bg-primary text-white my-2 mr-2 px-4 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
                         ?disabled=${!this.canPost}
                     >
                         ${i18n("Post")}
@@ -320,10 +352,7 @@ export class PostEditor extends LitElement {
                 </div>
                 ${
                     this.handleSuggestions && this.handleSuggestions.length > 0
-                        ? html`<div
-                              class="mx-auto flex flex-col bg-white dark:bg-black border border-gray rounded absolute max-w-[100vw]"
-                              style="top: calc(${this.handleSuggestions.length} * -2.5em);"
-                          >
+                        ? html`<div id="handles" class="mx-auto flex flex-col bg-white dark:bg-black border border-gray rounded fixed max-w-[100vw]">
                               ${map(
                                   this.handleSuggestions,
                                   (suggestion) => html` <button
@@ -489,8 +518,10 @@ export class PostEditor extends LitElement {
         const message = ev.target as HTMLTextAreaElement;
         this.count = message.value.length;
         this.checkCanPost();
-        message.style.height = "auto";
-        message.style.height = Math.min(16 * 15, message.scrollHeight) + "px";
+        if (!this.fullscreen) {
+            message.style.height = "auto";
+            message.style.height = Math.min(16 * 15, message.scrollHeight) + "px";
+        }
 
         this.isInHandle(
             message.value,
@@ -722,18 +753,36 @@ export class PostEditorOverlay extends CloseableElement {
         return this;
     }
 
+    resizeInner = (ev: any) => {
+        (this.renderRoot.querySelector("post-editor") as HTMLElement).style.height = visualViewport?.height + "px";
+    };
+    reszie = (ev: any) => this.resizeInner(ev);
+
+    connectedCallback(): void {
+        super.connectedCallback();
+        visualViewport?.addEventListener("resize", this.resizeInner);
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        visualViewport?.removeEventListener("resize", this.resizeInner);
+    }
+
     protected render() {
         const user = Store.getUser();
         if (!user || !bskyClient) return nothing;
-        return html`<div class="fixed flex items-end top-0 w-full h-[100svh] backdrop-blur z-10">
-            <post-editor
-                class="border border-gray/50 animate-fade animate-duration-[250ms] mx-auto w-[600px]"
-                .cancelable=${true}
-                .cancled=${() => this.close()}
-                .quote=${this.quote}
-                .replyTo=${this.replyTo}
-                .sent=${(post: PostView) => navigationGuard.afterNextPopstate.push(() => this.sent(post))}
-            ></post-editor>
+        return html`<div class="fixed top-0 w-full h-full overflow-none backdrop-blur z-10">
+            <div class="flex ${isMobileBrowser() ? "" : "border border-rounded-md border-gray/20"} justify-center max-w-[600px] mx-auto">
+                <post-editor
+                    class="animate-fade animate-duration-[250ms] w-[600px]"
+                    .cancelable=${true}
+                    .cancled=${() => this.close()}
+                    .quote=${this.quote}
+                    .replyTo=${this.replyTo}
+                    .sent=${(post: PostView) => navigationGuard.afterNextPopstate.push(() => this.sent(post))}
+                    .fullscreen=${isMobileBrowser()}
+                ></post-editor>
+            </div>
         </div>`;
     }
 }

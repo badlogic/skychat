@@ -70,6 +70,10 @@
     .break-any {
         overflow-wrap: anywhere;
     }
+
+    .no-scroll {
+        overflow: hidden !important;
+    }
 }
 
 @layer icon {
