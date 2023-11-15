@@ -25,9 +25,23 @@ import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { quotesLoader } from "./feed";
 import { i18n } from "../i18n";
 
-export function renderPostText(record: AppBskyFeedPost.Record) {
+function splitTextAndCreateSpans(text: string): TemplateResult[] {
+    const segments = text.split("\n");
+    const results: TemplateResult[] = [];
+    segments.forEach((segment, index) => {
+        if (segment) {
+            results.push(html`<span>${unsafeHTML(segment)}</span>`);
+        }
+        if (index < segments.length - 1) {
+            results.push(html`<br />`);
+        }
+    });
+    return results;
+}
+
+export function renderPostText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {
-        return record.text;
+        return html`<span>${splitTextAndCreateSpans(record.text)}</span>`;
     }
 
     const rt = new RichText({
@@ -58,7 +72,7 @@ export function renderPostText(record: AppBskyFeedPost.Record) {
         } else if (segment.isTag()) {
             segments.push(html`<span class="text-blue-500">${segment.text}</span>`);
         } else {
-            segments.push(html`${unsafeHTML(segment.text)}`);
+            segments.push(...splitTextAndCreateSpans(segment.text));
         }
     }
     const result = html`${map(segments, (segment) => segment)}`;
