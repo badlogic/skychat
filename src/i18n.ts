@@ -106,6 +106,7 @@ export interface Messages {
     "Logged in as": string;
     "Could not load newer items": string;
     "You can not add an image if you already have a link card": string;
+    Mutuals: string;
 }
 
 const english: Messages = {
@@ -225,6 +226,7 @@ const english: Messages = {
     "Logged in as": "Logged in as",
     "Could not load newer items": "Could not load newer items",
     "You can not add an image if you already have a link card": "You can not add an image if you already have a link card",
+    Mutuals: "Mutuals",
 };
 
 const german: Messages = {
@@ -346,6 +348,7 @@ const german: Messages = {
     "Logged in as": "Angemeldet als",
     "Could not load newer items": "Could not load newer items",
     "You can not add an image if you already have a link card": "Kann kein Bild hinzufügen wenn Link-Karte bereits angefügt ist.",
+    Mutuals: "Mutuals", // FIXME
 };
 
 export type LanguageCode = "en" | "de";

@@ -22,7 +22,7 @@ import { IconToggle } from "./icontoggle";
 import { PopupMenu } from "./popup";
 import { getProfileUrl, likesLoader, renderProfile, repostLoader } from "./profiles";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
-import { quotesLoader } from "./feed";
+import { quotesLoader } from "./feeds";
 import { i18n } from "../i18n";
 
 function splitTextAndCreateSpans(text: string): TemplateResult[] {
@@ -41,7 +41,7 @@ function splitTextAndCreateSpans(text: string): TemplateResult[] {
 
 export function renderPostText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {
-        return html`<span>${splitTextAndCreateSpans(record.text)}</span>`;
+        return html`<span>${record.text}</span>`;
     }
 
     const rt = new RichText({
@@ -72,7 +72,7 @@ export function renderPostText(record: AppBskyFeedPost.Record | RichText) {
         } else if (segment.isTag()) {
             segments.push(html`<span class="text-blue-500">${segment.text}</span>`);
         } else {
-            segments.push(...splitTextAndCreateSpans(segment.text));
+            segments.push(html`<span>${segment.text}</span>`);
         }
     }
     const result = html`${map(segments, (segment) => segment)}`;

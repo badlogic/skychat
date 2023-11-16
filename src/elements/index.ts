@@ -1,5 +1,5 @@
 export * from "./overlay";
-export * from "./feed";
+export * from "./feeds";
 export * from "./buttons";
 export * from "./icontoggle";
 export * from "./list";

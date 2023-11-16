@@ -167,9 +167,9 @@ export class PostEditor extends LitElement {
                 : i18n("What's up?");
         }
 
-        return html` <div class="flex max-w-[600px] ${this.fullscreen ? "h-full" : ""} bg-white dark:bg-black">
+        return html` <div class="flex max-w-[600px] ${this.fullscreen ? "h-full max-h-full" : ""} bg-white dark:bg-black">
             <div
-                class="flex flex-col flex-grow relative"
+                class="flex flex-col flex-grow relative "
                 @drop=${(ev: DragEvent) => this.pasteImage(ev)}
                 @dragover=${(ev: DragEvent) => ev.preventDefault()}
             >
@@ -207,7 +207,7 @@ export class PostEditor extends LitElement {
                     : nothing}
                 <text-editor
                     id="message"
-                    class="${this.fullscreen ? "flex-grow" : "min-h-[120px]"}"
+                    class="${this.fullscreen ? "flex-grow" : "min-h-[64px]"} max-w-[100vw]"
                     .onInput=${(ev: any) => this.input(ev)}
                     .fullscreen=${this.fullscreen}
                 ></text-editor>
@@ -831,15 +831,15 @@ export class TextEditor extends LitElement {
 
     render() {
         return html`
-            <div class="relative flex ${this.fullscreen ? "w-full h-full" : "min-h-[120px]"}">
+            <div class="relative flex ${this.fullscreen ? "w-full h-full" : "min-h-[64px]"}">
                 <div
                     id="highlights"
-                    class="w-full h-full outline-none overflow-auto bg-transparent dark:text-white disabled:text-gray dark:disabled:text-gray p-4 break-words"
+                    class="whitespace-pre-wrap flex-grow overflow-auto outline-none bg-transparent dark:text-white p-4 break-words"
                     aria-hidden="true"
                 ></div>
                 <textarea
                     id="editable"
-                    class="absolute top-0 left-0 w-full h-full overflow-hidden resize-none outline-none bg-transparent color-transparent text-transparent caret-black dark:caret-white p-4 break-words"
+                    class="absolute overflow-none top-0 left-0 w-full h-full resize-none outline-none bg-transparent text-transparent caret-black dark:caret-white p-4 break-words"
                     @input=${(ev: any) => this.handleInput(ev)}
                     @selectionchanged=${(ev: any) => this.handleInput(ev)}
                     @mouseup=${(ev: any) => this.handleInput(ev)}
@@ -857,6 +857,10 @@ export class TextEditor extends LitElement {
     }
 
     renderHighlights(text: string) {
+        if (text[text.length - 1] == "\n") {
+            // If the last character is a newline character
+            text += " "; // Add a placeholder space character to the final line
+        }
         const rt = new RichText({ text });
         rt.detectFacetsWithoutResolution();
         if (this.highlights) {
@@ -870,9 +874,8 @@ export class TextEditor extends LitElement {
 
     protected updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         if (this.highlights && this.editable) {
-            this.highlights.scrollTop = this.editable.scrollTop;
-            this.highlights.style.height = this.editable.style.height;
             this.renderHighlights(this.editable.value);
+            this.syncScroll();
         }
     }
 

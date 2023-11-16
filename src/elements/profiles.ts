@@ -1,19 +1,18 @@
 import { RichText } from "@atproto/api";
-import { ProfileView, ProfileViewDetailed, ViewerState } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { bskyClient } from "../bsky";
 import { cacheProfile, profileCache } from "../cache";
+import { Messages, i18n } from "../i18n";
+import { moreIcon, spinnerIcon } from "../icons";
 import { Store } from "../store";
 import { contentLoader, defaultAvatar, dom, getNumber, hasLinkOrButtonParent } from "../utils";
+import { ActorTimelineFilter, actorTimelineLoader } from "./feeds";
 import { ItemListLoaderResult, ItemsList, ItemsListLoader } from "./list";
 import { HashNavOverlay, renderTopbar } from "./overlay";
-import { renderPostText } from "./posts";
 import { PopupMenu } from "./popup";
-import { moreIcon, spinnerIcon } from "../icons";
-import { ActorTimelineFilter, actorTimelineLoader } from "./feed";
-import { Messages, i18n } from "../i18n";
+import { renderPostText } from "./posts";
 
 @customElement("profile-overlay")
 export class ProfileOverlay extends HashNavOverlay {
@@ -193,11 +192,9 @@ export class ProfileOverlay extends HashNavOverlay {
                 </button>
             </div>
             ${!(this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList)
-                ? dom(
-                      html`<div class="min-h-[100dvh]">
-                          <skychat-feed .feedLoader=${actorTimelineLoader(this.profile.did, this.filter)}></skychat-feed>
-                      </div>`
-                  )[0]
+                ? html`<div class="min-h-[100dvh]">
+                      <skychat-feed .feedLoader=${actorTimelineLoader(this.profile.did, this.filter)}></skychat-feed>
+                  </div>`
                 : html`<div class="p-4 text-center">${i18n("Nothing to show")}</div>`}
         </div>`;
     }
