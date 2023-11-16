@@ -107,7 +107,7 @@ export class ProfileOverlay extends HashNavOverlay {
                       src="${profile.banner}"
                       class="${this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList
                           ? "blur"
-                          : ""} h-[150px] object-cover"
+                          : ""} w-full h-[150px] object-cover"
                   />`
                 : html`<div class="bg-blue-500 h-[150px]"></div>`}
             <div class="flex px-4 mt-[-48px] items-end">

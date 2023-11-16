@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <link rel="stylesheet" href="build/styles-bundle.css" />
+    </head>
+    <body class="flex flex-col w-full h-full">
+        <main class="max-w-[600px] w-full overflow-none mx-auto bg-red/20 flex flex-col">
+            <div id="posts" class="flex flex-col w-full">
+                <button id="loader" class="bg-green-100 flex items-center justify-center flex flex-col">
+                    <div id="spacer" class="h-[56px] w-full bg-blue-100"></div>
+                    <span class="h-8">Load more posts</span>
+                </button>
+            </div>
+        </main>
+        <div id="measurementContainer" style="position: absolute; visibility: hidden; overflow: hidden"></div>
+    </body>
+    <script>
+        const main = document.documentElement;
+        const postsDom = document.querySelector("#posts");
+        const loader = document.querySelector("#loader");
+
+        function dom(html) {
+            const div = document.createElement(`div`);
+            div.innerHTML = html;
+            const children = [];
+            for (let i = 0; i < div.children.length; i++) {
+                children.push(div.children[i]);
+            }
+            return children;
+        }
+
+        function onVisibleOnce(target, callback) {
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            callback();
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                },
+                {
+                    root: null,
+                    rootMargin: "200px",
+                    threshold: 0.01,
+                }
+            );
+            observer.observe(target);
+        }
+
+        const renderPost = (post) => {
+            return dom(`<div class="flex flex-col w-full border-t border-gray/50 p-4">
+                    <span class="font-bold">${post.title}</span>
+                    <span>${post.date}</span>
+                    <p>${post.text}</p>
+                    <div class="flex items-center justify-center"><img src="${post.img}" class="max-h-[30vh]"></div>
+                </div>`)[0];
+        };
+
+        let id = 0;
+        function generatePost() {
+            let text =
+                "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.";
+            return {
+                title: "Mario",
+                date: id++,
+                text: text.substring(0, (text.length * (1 - 0.8 * Math.random())) | 0),
+                img: `https://picsum.photos/${300 + ((200 * Math.random()) | 0)}/${300 + ((200 * Math.random()) | 0)}`,
+            };
+        }
+
+        function loadPosts() {
+            const posts = [];
+            for (let i = 0; i < 10; i++) posts.push(generatePost());
+            prependPosts(posts);
+        }
+
+        function prependPosts(posts) {
+            let fragment = dom(`<div></div>`)[0];
+            posts.forEach((post) => {
+                fragment.appendChild(renderPost(post));
+            });
+
+            postsDom.insertBefore(fragment, postsDom.firstChild);
+            main.scrollTop = loader.offsetTop;
+            postsDom.insertBefore(loader, postsDom.firstChild);
+        }
+
+        document.querySelector("#loader").addEventListener("click", () => loadPosts());
+        loadPosts();
+    </script>
+</html>

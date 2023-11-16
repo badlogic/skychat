@@ -26,7 +26,7 @@ import {
     dom,
     downloadImage,
     downscaleImage,
-    getCaretCoordinates,
+    getCaretPosition,
     isMobileBrowser,
     loadImageFile,
     loadImageFiles,
@@ -116,10 +116,8 @@ export class PostEditor extends LitElement {
 
     protected updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         if (this.handlesElement) {
-            const caret: Caret = this.messageElement
-                ? getCaretCoordinates(this.messageElement.editable!, this.messageElement.editable!.selectionEnd)
-                : { top: 0, left: 0, height: 32 };
-            this.handlesElement.style.top = caret.top + 32 + "px";
+            const caret = this.messageElement ? getCaretPosition(this.messageElement.editable!) : { x: 0, y: 0 };
+            this.handlesElement.style.top = caret.y + 32 + "px";
         }
     }
 
@@ -167,7 +165,7 @@ export class PostEditor extends LitElement {
                 : i18n("What's up?");
         }
 
-        return html` <div class="flex max-w-[600px] ${this.fullscreen ? "h-full max-h-full" : ""} bg-white dark:bg-black">
+        return html` <div class="flex max-w-[600px] ${this.fullscreen ? "h-full max-h-full" : ""}">
             <div
                 class="flex flex-col flex-grow relative "
                 @drop=${(ev: DragEvent) => this.pasteImage(ev)}
@@ -789,7 +787,11 @@ export class PostEditorOverlay extends CloseableElement {
         const user = Store.getUser();
         if (!user || !bskyClient) return nothing;
         return html`<div class="fixed top-0 w-full h-full overflow-none backdrop-blur z-10">
-            <div class="flex ${isMobileBrowser() ? "h-full" : "mt-1 border border-gray/20 rounded-md"} justify-center max-w-[600px] mx-auto">
+            <div
+                class="flex ${isMobileBrowser()
+                    ? "h-full"
+                    : "mt-1 border border-gray/20 rounded-md"} justify-center max-w-[600px] mx-auto bg-white dark:bg-black"
+            >
                 <post-editor
                     class="animate-fade animate-duration-[250ms] w-[600px]"
                     .cancelable=${true}
@@ -857,10 +859,7 @@ export class TextEditor extends LitElement {
     }
 
     renderHighlights(text: string) {
-        if (text[text.length - 1] == "\n") {
-            // If the last character is a newline character
-            text += " "; // Add a placeholder space character to the final line
-        }
+        if (text[text.length - 1] == "\n") text += " ";
         const rt = new RichText({ text });
         rt.detectFacetsWithoutResolution();
         if (this.highlights) {

@@ -9,9 +9,9 @@ import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import "../elements";
-import { PostEditor } from "../elements";
+import { PostEditor, renderTopbar } from "../elements";
 import { routeHash } from "../elements/routing";
-import { bellIcon, homeIcon } from "../icons";
+import { bellIcon, homeIcon, spinnerIcon } from "../icons";
 import { cacheProfile } from "../cache";
 import { Store } from "../store";
 import { i18n } from "../i18n";
@@ -106,46 +106,44 @@ export class Chat extends LitElement {
 
     renderHeader() {
         const user = Store.getUser();
-        return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex p-2 items-center bg-white dark:bg-black z-10">
-            <a class="flex items-center text-primary font-bold text-center" href="/chat-login.html"
-                ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
-            >
-            <a class="flex-grow text-primary font-bold pl-2 truncate" href="/chat.html?hashtag=${encodeURIComponent(this.hashtag!)}"
-                >${this.hashtag}</a
-            >
-            ${user
-                ? html`<div class="flex gap-2 ml-2">
-                      <button @click=${this.logout}>
-                          ${user.profile.avatar
-                              ? html`<img class="w-6 max-w-[none] h-6 rounded-full" src="${user.profile.avatar}" />`
-                              : html`<i class="icon w-6 h-6">${defaultAvatar}</i>`}
-                      </button>
-                      <button
-                          @click=${() => {
-                              document.body.append(dom(html`<skychat-feed-overlay></skychat-feed-overlay>`)[0]);
-                          }}
-                          class="relative flex"
-                      >
-                          <i class="icon w-6 h-6">${homeIcon}</i>
-                      </button>
-                      <button
-                          @click=${() => {
-                              document.body.append(dom(html`<notifications-overlay></notifications-overlay>`)[0]);
-                              this.bell?.classList.remove("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
-                              this.numNotifications?.classList.add("hidden");
-                          }}
-                          class="relative flex"
-                      >
-                          <i id="bell" class="icon w-6 h-6">${bellIcon}</i>
-                          <div
-                              id="notifications"
-                              class="hidden absolute right-[-0.5em] rounded-full bg-primary text-white text-xs w-4 h-4 text-center"
-                          ></div>
-                      </button>
-                  </div>`
-                : nothing}
-            <theme-toggle class="ml-2" absolute="false"></theme-toggle>
-        </div>`;
+        const title = dom(html`<a
+            class="flex-grow text-primary font-bold pl-2 truncate"
+            href="/chat.html?hashtag=${encodeURIComponent(this.hashtag!)}"
+            >${this.hashtag}</a
+        >`)[0];
+        const buttons = html`${user
+            ? html`<div class="flex items-center ml-auto">
+                  <button
+                      @click=${() => {
+                          document.body.append(dom(html`<skychat-feed-overlay></skychat-feed-overlay>`)[0]);
+                      }}
+                      class="relative flex w-10 h-10 items-center justify-center"
+                  >
+                      <i class="icon w-6 h-6">${homeIcon}</i>
+                  </button>
+                  <button
+                      @click=${() => {
+                          document.body.append(dom(html`<notifications-overlay></notifications-overlay>`)[0]);
+                          this.bell?.classList.remove("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
+                          this.numNotifications?.classList.add("hidden");
+                      }}
+                      class="relative flex w-10 h-10 items-center justify-center"
+                  >
+                      <i id="bell" class="icon w-6 h-6">${bellIcon}</i>
+                      <div
+                          id="notifications"
+                          class="hidden absolute right-1 top-1 rounded-full bg-primary text-white text-xs w-4 h-4 text-center"
+                      ></div>
+                  </button>
+                  <theme-toggle absolute="false"></theme-toggle>
+                  <button @click=${this.logout} class="flex w-10 h-10 items-center justify-center">
+                      ${user.profile.avatar
+                          ? html`<img class="w-6 max-w-[none] h-6 rounded-full" src="${user.profile.avatar}" />`
+                          : html`<i class="icon w-6 h-6">${defaultAvatar}</i>`}
+                  </button>
+              </div>`
+            : nothing}`;
+        return renderTopbar(title, buttons);
     }
 
     render() {
@@ -163,7 +161,7 @@ export class Chat extends LitElement {
                 return html`<div class="w-full max-w-[600px] mx-auto h-full flex flex-col">
                     ${this.renderHeader()}
                     <div class="flex flex-col px-4">
-                        <p class="text-center pt-[40px] mt-4">${i18n("You have an existing thread for ")(rootUrl, this.hashtag!)}</p>
+                        <p class="text-center pt-[56px] mt-4">${i18n("You have an existing thread for ")(rootUrl, this.hashtag!)}</p>
                         <p class="text-center mt-4">${i18n("Do you want to add new posts to the existing thread, or start a new thread?")}</p>
                         <div class="flex flex-col mx-auto gap-4 mt-4">
                             <button
@@ -194,8 +192,7 @@ export class Chat extends LitElement {
             }
         }
 
-        return html` <main class="flex flex-col justify-between m-auto max-w-[600px] px-4 pt-[40px] h-full leading-5">
-            <theme-toggle></theme-toggle>
+        return html` <main class="flex flex-col justify-between m-auto max-w-[600px] px-4 h-full leading-5">
             <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/chat-login.html"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat Live</span></a
             >
@@ -212,11 +209,20 @@ export class Chat extends LitElement {
         const liveDom = dom(html`<main id="livedom" class="w-full h-full overflow-auto">
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
                 ${this.renderHeader()}
-                <div id="posts" class="flex-grow pt-[40px]">
-                    <div id="loadOlderPosts" class="w-full text-center p-4 animate-pulse">${contentLoader}</div>
+                <div id="posts" class="flex-grow">
+                    <div id="loadOlderPosts" class="flex items-center justify-center flex flex-col">
+                        <div class="w-full flex items-center justify-center h-8">
+                            <i class="icon w-5 h-5 animate-spin">${spinnerIcon}</i>
+                        </div>
+                    </div>
                 </div>
                 ${user
-                    ? html` <post-editor class="sticky bottom-0 border-t border-primary border-dashed" .hashtag=${this.hashtag}></post-editor> `
+                    ? html`
+                          <post-editor
+                              class="sticky bottom-0 border-t border-primary border-dashed bg-white dark:bg-black"
+                              .hashtag=${this.hashtag}
+                          ></post-editor>
+                      `
                     : nothing}
             </div>
             <div id="catchup" class="bg-gray hidden fixed flex items-center">
@@ -362,7 +368,7 @@ export class Chat extends LitElement {
         this.loadingOlder = true;
         const posts = this.liveDom.querySelector("#posts")!;
         const load = posts.querySelector("#loadOlderPosts")! as HTMLElement;
-        let initialOffset = this.postSearch?.offset;
+        let isFirstLoad = this.postSearch?.cursor == undefined;
         const olderPosts = await this.postSearch!.next();
         if (olderPosts instanceof Error || olderPosts.length == 0) {
             load.innerText = i18n("No older posts");
@@ -371,8 +377,9 @@ export class Chat extends LitElement {
             return;
         }
 
+        const fragment = dom(html`<div></div>`)[0];
         for (const post of olderPosts) {
-            const postDom = dom(html`<div class="border-t border-gray/50 px-4 py-2">
+            const postDom = dom(html`<div class="border-t border-gray/50 px-4 py-2 animate-fade">
                 <post-view
                     .post=${post}
                     .quoteCallback=${(post: PostView) => this.editor?.setQuote(post)}
@@ -381,27 +388,11 @@ export class Chat extends LitElement {
                     class="border-t border-gray/50"
                 ></post-view>
             </div>`)[0];
-            posts.insertBefore(postDom, load);
+            fragment.appendChild(postDom);
         }
-
-        const loaderHeight = load.clientHeight;
-        if (posts.children.length > 0) {
-            load.remove();
-            posts.insertBefore(load, posts.children[0]);
-        }
-
-        const initialScrollHeight = this.liveDom.scrollHeight;
-        const adjustScroll = () => {
-            if (!this.liveDom) return;
-            if (this.liveDom.scrollHeight != initialScrollHeight) {
-                this.liveDom.scrollTop = this.liveDom.scrollHeight - initialScrollHeight - (initialOffset == 0 ? 0 : loaderHeight);
-                this.loadingOlder = false;
-            } else {
-                requestAnimationFrame(adjustScroll);
-            }
-        };
-        adjustScroll();
-
+        posts.insertBefore(fragment, posts.firstChild);
+        this.liveDom.scrollTop = load.offsetTop;
+        posts.insertBefore(load, posts.firstChild);
         this.loadingOlder = false;
         onVisibleOnce(load! as HTMLElement, () => this.loadOlderPosts());
     }

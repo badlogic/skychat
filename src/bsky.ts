@@ -6,46 +6,40 @@ import { apiBaseUrl } from "./utils";
 type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow"; fromDid: string; toDid: string; token: string };
 
 type SearchPost = {
-    tid: string;
-    cid: string;
-    user: {
-        did: string;
-        handle: string;
-    };
-    post: {
-        createdAt: number;
-        text: string;
-        user: string;
-    };
+    uri: string;
 };
 
 export class PostSearch {
-    offset = 0;
-    constructor(public readonly query: string) {}
+    cursor?: string;
+    constructor(public readonly query: string, readonly limit = 25) {}
 
     async next() {
         if (!bskyClient) return Error("Not connected");
         try {
-            const response = await fetch(`https://search.bsky.social/search/posts?q=${encodeURIComponent(this.query)}&offset=${this.offset}`);
+            const response = await fetch(
+                `https://palomar.bsky.social/xrpc/app.bsky.unspecced.searchPostsSkeleton?q=${encodeURIComponent(this.query)}&limit=${this.limit}${
+                    this.cursor ? `&cursor=${this.cursor}` : ""
+                }`
+            );
             if (response.status != 200) {
-                return Error(`Couldn't load posts for query ${this.query}, offset ${this.offset}`);
+                return Error(`Couldn't load posts for query ${this.query}, cursor ${this.cursor}`);
             }
-            const rawPosts = (await response.json()) as SearchPost[];
+            const result = (await response.json()) as { cursor: string; totalHitt: number; posts: SearchPost[] };
             const posts: PostView[] = [];
-            while (rawPosts.length > 0) {
-                const uris = rawPosts.splice(0, 25).map((rawPost) => `at://${rawPost.user.did}/${rawPost.tid}`);
+            while (result.posts.length > 0) {
+                const uris = result.posts.splice(0, 25).map((post) => post.uri);
                 const postsResponse = await bskyClient.app.bsky.feed.getPosts({
                     uris,
                 });
                 if (!postsResponse.success) {
-                    return Error(`Couldn't load posts for query ${this.query}, offset ${this.offset}`);
+                    return Error(`Couldn't load posts for query ${this.query}, offset ${this.cursor}`);
                 }
                 posts.push(...postsResponse.data.posts);
             }
-            this.offset += posts.length;
+            this.cursor = result.cursor;
             return posts.reverse();
         } catch (e) {
-            return Error(`Couldn't load posts for query ${this.query}, offset ${this.offset}`);
+            return Error(`Couldn't load posts for query ${this.query}, offset ${this.cursor}`);
         }
     }
 }
