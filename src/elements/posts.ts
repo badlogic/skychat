@@ -8,7 +8,7 @@ import {
     RichText,
 } from "@atproto/api";
 import { ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { PostView, ThreadViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { FeedViewPost, PostView, ThreadViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
@@ -23,6 +23,7 @@ import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { i18n } from "../i18n";
 import { State } from "../state";
 import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
+import { deletePost, quote, reply } from "./posteditor";
 
 function splitTextAndCreateSpans(text: string): TemplateResult[] {
     const segments = text.split("\n");
@@ -731,5 +732,62 @@ export class ThreadOverlay extends HashNavOverlay {
             }, 500);
         }
         return postDom;
+    }
+}
+
+@customElement("feed-view-post-view")
+export class FeewViewPostElement extends LitElement {
+    @property()
+    feedViewPost?: FeedViewPost;
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    render() {
+        if (!this.feedViewPost) return html`${nothing}`;
+        const feedViewPost = this.feedViewPost;
+        const post = feedViewPost.post;
+        const repostedBy = AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)
+            ? html`<div class="mb-1 flex items-center gap-2 text-gray dark:text-lightgray text-xs"><i class="icon w-4 h-4 fill-gray dark:fill-lightgray">${reblogIcon}</i><a class="hover:underline truncate" href="${getProfileUrl(
+                  feedViewPost.reason.by
+              )}" @click=${(ev: Event) => {
+                  if (!AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)) return;
+                  ev.preventDefault();
+                  ev.stopPropagation();
+                  document.body.append(dom(html`<profile-overlay .did=${feedViewPost.reason.by.did}></profile-overlay>`)[0]);
+              }}>${feedViewPost.reason.by.displayName ?? feedViewPost.reason.by.handle}</div>`
+            : nothing;
+
+        let postDom: HTMLElement;
+        if (!feedViewPost.reply) {
+            postDom = dom(html`<div>
+                ${repostedBy}
+                <post-view
+                    .post=${feedViewPost.post}
+                    .quoteCallback=${(post: PostView) => quote(post)}
+                    .replyCallback=${(post: PostView) => reply(post)}
+                    .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
+                ></post-view>
+            </div>`)[0];
+        } else {
+            const parentDom = dom(html`<post-view
+                .post=${feedViewPost.reply.parent}
+                .quoteCallback=${(post: PostView) => quote(post)}
+                .replyCallback=${(post: PostView) => reply(post)}
+                .deleteCallback=${(post: PostView) => deletePost(post, parentDom)}
+            ></post-view>`)[0];
+            postDom = dom(html`<div class="ml-2 pl-2 mt-2 border-l border-l-primary">
+                <post-view
+                    .post=${feedViewPost.post}
+                    .quoteCallback=${(post: PostView) => quote(post)}
+                    .replyCallback=${(post: PostView) => reply(post)}
+                    .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
+                    .showReplyTo=${false}
+                ></post-view>
+            </div>`)[0];
+            postDom = dom(html`<div class="flex flex-col">${repostedBy}${parentDom}${postDom}</div>`)[0];
+        }
+        return html`<div class="px-4 py-2 border-t border-gray/20">${postDom}</div>`;
     }
 }

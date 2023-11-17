@@ -10,6 +10,7 @@ import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs"
 import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
+import { date } from "../bsky";
 import { Messages, i18n } from "../i18n";
 import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
 import { State } from "../state";
@@ -19,6 +20,7 @@ import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, spinner }
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { renderEmbed, renderPostText } from "./posts";
 import { getProfileUrl, renderProfile } from "./profiles";
+import { deletePost, quote, reply } from "./posteditor";
 
 export abstract class StreamView<T> extends LitElement {
     @property()
@@ -102,10 +104,7 @@ export abstract class StreamView<T> extends LitElement {
     }
 
     internalRenderItem(item: T) {
-        return html`<div class="px-4 py-2 border-t border-gray/20">
-            ${this.renderItem(item)}
-            <div></div>
-        </div>`;
+        return html`<div class="px-4 py-2 border-t border-gray/20">${this.renderItem(item)}</div>`;
     }
 
     render() {
@@ -119,28 +118,6 @@ export abstract class StreamView<T> extends LitElement {
 
     abstract getItemKey(item: T): string;
     abstract renderItem(item: T): TemplateResult;
-}
-
-function showPost(post: PostView) {
-    document.body.append(dom(html`<thread-overlay .postUri=${post.uri}></post-editor-overly>`)[0]);
-}
-
-function quote(post: PostView) {
-    document.body.append(dom(html`<post-editor-overlay .quote=${post} .sent=${(post: PostView) => showPost(post)}></post-editor-overly>`)[0]);
-}
-
-function reply(post: PostView) {
-    document.body.append(dom(html`<post-editor-overlay .replyTo=${post} .sent=${(post: PostView) => showPost(post)}></post-editor-overly>`)[0]);
-}
-
-async function deletePost(post: PostView, postDom: HTMLElement) {
-    if (!State.isConnected()) return;
-    const result = await State.deletePost(post.uri);
-    if (result instanceof Error) {
-        alert(i18n("Couldn't delete post"));
-        return;
-    }
-    postDom.remove();
 }
 
 @customElement("posts-stream-view")
@@ -180,51 +157,17 @@ export class PostsStreamOverlay extends Overlay {
 
 @customElement("feed-stream-view")
 export class FeedStreamView extends StreamView<FeedViewPost> {
+    constructor() {
+        super();
+        this.wrapItem = false;
+    }
+
     getItemKey(post: FeedViewPost): string {
         return post.post.uri + (AppBskyFeedDefs.isReasonRepost(post.reason) ? post.reason.by.did : "");
     }
 
-    renderItem(post: FeedViewPost): TemplateResult {
-        const repostedBy = AppBskyFeedDefs.isReasonRepost(post.reason)
-            ? html`<div class="mb-1 flex items-center gap-2 text-gray dark:text-lightgray text-xs"><i class="icon w-4 h-4 fill-gray dark:fill-lightgray">${reblogIcon}</i><a class="hover:underline truncate" href="${getProfileUrl(
-                  post.reason.by
-              )}" @click=${(ev: Event) => {
-                  if (!AppBskyFeedDefs.isReasonRepost(post.reason)) return;
-                  ev.preventDefault();
-                  ev.stopPropagation();
-                  document.body.append(dom(html`<profile-overlay .did=${post.reason.by.did}></profile-overlay>`)[0]);
-              }}>${post.reason.by.displayName ?? post.reason.by.handle}</div>`
-            : nothing;
-
-        if (!post.reply) {
-            const postDom = dom(html`<div>
-                ${repostedBy}
-                <post-view
-                    .post=${post.post}
-                    .quoteCallback=${(post: PostView) => quote(post)}
-                    .replyCallback=${(post: PostView) => reply(post)}
-                    .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
-                ></post-view>
-            </div>`)[0];
-            return html`${postDom}`;
-        } else {
-            const parentDom = dom(html`<post-view
-                .post=${post.reply.parent}
-                .quoteCallback=${(post: PostView) => quote(post)}
-                .replyCallback=${(post: PostView) => reply(post)}
-                .deleteCallback=${(post: PostView) => deletePost(post, parentDom)}
-            ></post-view>`)[0];
-            const postDom = dom(html`<div class="ml-2 pl-2 mt-2 border-l border-l-primary">
-                <post-view
-                    .post=${post.post}
-                    .quoteCallback=${(post: PostView) => quote(post)}
-                    .replyCallback=${(post: PostView) => reply(post)}
-                    .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
-                    .showReplyTo=${false}
-                ></post-view>
-            </div>`)[0];
-            return html`<div class="flex flex-col">${repostedBy}${parentDom}${postDom}</div>`;
-        }
+    renderItem(feedViewPost: FeedViewPost): TemplateResult {
+        return html`<feed-view-post-view .feedViewPost=${feedViewPost}></feed-view-post-view>`;
     }
 }
 

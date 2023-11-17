@@ -9,7 +9,7 @@ import {
 } from "@atproto/api";
 import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { Store, User } from "./store";
-import { assertNever, error, fetchApi } from "./utils";
+import { assertNever, error, fetchApi, splitAtUri } from "./utils";
 import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
 export interface Quote {
@@ -127,27 +127,32 @@ export class State {
         this.objects[event]?.delete(id);
     }
 
-    static async getPosts(uris: string[]): Promise<Error | PostView[]> {
+    static async getPosts(uris: string[], cacheProfilesAndQuotes = true): Promise<Error | PostView[]> {
         if (!State.bskyClient) return new Error("Not connected");
-        uris = [...uris];
+        const urisToFetch = Array.from(new Set<string>(uris));
         const posts: PostView[] = [];
+        const postsMap = new Map<string, PostView>();
         try {
-            while (uris.length > 0) {
-                const urisToFetch = uris.splice(0, 25);
-                const response = await State.bskyClient.app.bsky.feed.getPosts({ uris: urisToFetch });
+            const promises: Promise<any>[] = [];
+            while (urisToFetch.length > 0) {
+                const batch = urisToFetch.splice(0, 25);
+                const response = await State.bskyClient.app.bsky.feed.getPosts({ uris: batch });
                 if (!response.success) throw new Error();
                 posts.push(...response.data.posts);
+
                 const profilesToFetch: string[] = [];
                 for (const post of response.data.posts) {
                     profilesToFetch.push(post.author.did);
+                    postsMap.set(post.uri, post);
                 }
-                const promises = await Promise.all([this.getQuotes(urisToFetch), this.getProfiles(profilesToFetch)]);
-                for (const promise of promises) {
-                    if (promise instanceof Error) throw promise;
-                }
+                if (cacheProfilesAndQuotes) promises.push(this.getQuotes(batch), this.getProfiles(profilesToFetch));
+            }
+
+            for (const promise of promises) {
+                if (promise instanceof Error) throw promise;
             }
             this.notifyBatch("post", "updated", posts);
-            return posts;
+            return uris.map((uri) => postsMap.get(uri)!);
         } catch (e) {
             return error("Couldn't load posts", e);
         }
@@ -192,19 +197,28 @@ export class State {
 
     static async getQuotes(postUris: string[]): Promise<Error | Quote[]> {
         try {
-            postUris = [...postUris];
-            const quoteList: Quote[] = [];
-            while (postUris.length > 0) {
-                const batch = postUris.splice(0, 15);
+            const postUrisToFetch = Array.from(new Set<string>(postUris).keys());
+            const quotesMap = new Map<string, number>();
+
+            while (postUrisToFetch.length > 0) {
+                const batch = postUrisToFetch.splice(0, 15);
                 const response = await fetchApi("numquotes?" + batch.map((uri) => `uri=${encodeURIComponent(uri)}&`).join(""));
                 if (!response.ok) throw new Error();
                 const quotes = (await response.json()) as Record<string, number>;
                 for (const uri of batch) {
-                    quoteList.push({ postUri: uri, numQuotes: quotes[uri] });
+                    quotesMap.set(uri, quotes[uri]);
                 }
             }
-            this.notifyBatch("quote", "updated", quoteList);
-            return quoteList;
+
+            const quotesList: Quote[] = [];
+            for (const postUri of postUrisToFetch) {
+                quotesList.push({ postUri, numQuotes: quotesMap.get(postUri)! });
+            }
+
+            this.notifyBatch("quote", "updated", quotesList);
+            return postUris.map((postUri) => {
+                return { postUri: postUri, numQuotes: quotesMap.get(postUri)! };
+            });
         } catch (e) {
             return error("Couldn't load quotes", e);
         }
@@ -213,23 +227,25 @@ export class State {
     static async getProfiles(dids: string[]): Promise<Error | ProfileViewDetailed[]> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
-            dids = [...dids];
+            const didsToFetch = Array.from(new Set<string>(dids));
             const promises = [];
-            while (dids.length > 0) {
-                const batch = dids.splice(0, 10);
+            while (didsToFetch.length > 0) {
+                const batch = didsToFetch.splice(0, 10);
                 promises.push(State.bskyClient.app.bsky.actor.getProfiles({ actors: batch }));
             }
             const results = await Promise.all(promises);
 
             const profiles: ProfileViewDetailed[] = [];
+            const profilesMap = new Map<string, ProfileViewDetailed>();
             for (const result of results) {
                 if (!result.success) throw new Error();
                 for (const profile of result.data.profiles) {
                     profiles.push(profile);
+                    profilesMap.set(profile.did, profile);
                 }
             }
             this.notifyBatch("profile", "updated", profiles);
-            return profiles;
+            return dids.map((did) => profilesMap.get(did)!);
         } catch (e) {
             return error("Couldn't load profiles", e);
         }
@@ -250,26 +266,36 @@ export class State {
         if (!State.bskyClient) return new Error("Not connected");
 
         try {
-            const listResponse = await State.bskyClient.listNotifications({ cursor });
+            const listResponse = await State.bskyClient.listNotifications({ cursor, limit: 25 });
             if (!listResponse.success) throw new Error();
 
             const postsToLoad: string[] = [];
+            const quotesToLoad: string[] = [];
+            const profilesToLoad: string[] = [];
             for (const notification of listResponse.data.notifications) {
                 if (notification.reasonSubject && notification.reasonSubject.includes("app.bsky.feed.post")) {
                     postsToLoad.push(notification.reasonSubject);
+                    profilesToLoad.push(splitAtUri(notification.reasonSubject).repo);
                 }
                 if (AppBskyFeedPost.isRecord(notification.record) && notification.record.reply) {
                     postsToLoad.push(notification.record.reply.parent.uri);
+                    profilesToLoad.push(splitAtUri(notification.record.reply.parent.uri).repo);
+                    quotesToLoad.push(notification.uri);
                 }
                 if (notification.uri.includes("app.bsky.feed.post")) {
                     postsToLoad.push(notification.uri);
+                    profilesToLoad.push(splitAtUri(notification.uri).repo);
                 }
             }
-            const result = await Promise.all([State.getPosts(postsToLoad), State.getQuotes(postsToLoad)]);
-            if (result[0] instanceof Error) return result[0];
-            if (result[1] instanceof Error) return result[1];
-            const updateResponse = await State.bskyClient.updateSeenNotifications();
-            if (!updateResponse.success) throw new Error();
+            const promises = await Promise.all([
+                State.getPosts(postsToLoad, false),
+                State.getQuotes(quotesToLoad),
+                State.getProfiles(profilesToLoad),
+            ]);
+            for (const promise of promises) {
+                if (promise instanceof Error) throw promise;
+            }
+            State.bskyClient.updateSeenNotifications(); // Not important to wait for this one.
             return { cursor: listResponse.data.cursor, items: listResponse.data.notifications };
         } catch (e) {
             return error("Couldn't load notifications", e);
@@ -303,20 +329,26 @@ export class State {
             }
             const posts: PostView[] = [];
             const profilesToFetch: string[] = [];
+            const postUrisToFetch: string[] = [];
             for (const feedViewPost of data.items) {
                 posts.push(feedViewPost.post);
+                postUrisToFetch.push(feedViewPost.post.uri);
                 profilesToFetch.push(feedViewPost.post.author.did);
+
                 if (feedViewPost.reply) {
                     if (AppBskyFeedDefs.isPostView(feedViewPost.reply.parent)) {
                         posts.push(feedViewPost.reply.parent);
+                        postUrisToFetch.push(feedViewPost.reply.parent.uri);
                     }
                 }
                 if (AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)) {
                     profilesToFetch.push(feedViewPost.reason.by.did);
                 }
             }
-            const profiles = await State.getProfiles(profilesToFetch);
-            if (profiles instanceof Error) throw profiles;
+            const promises = await Promise.all([State.getProfiles(profilesToFetch), State.getQuotes(postUrisToFetch)]);
+            for (const promise of promises) {
+                if (promise instanceof Error) throw promise;
+            }
             this.notifyBatch("post", "updated", posts);
             return data;
         } catch (e) {

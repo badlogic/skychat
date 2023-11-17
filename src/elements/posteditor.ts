@@ -870,3 +870,25 @@ export class TextEditor extends LitElement {
         }
     }
 }
+
+export function showPost(post: PostView) {
+    document.body.append(dom(html`<thread-overlay .postUri=${post.uri}></post-editor-overly>`)[0]);
+}
+
+export function quote(post: PostView) {
+    document.body.append(dom(html`<post-editor-overlay .quote=${post} .sent=${(post: PostView) => showPost(post)}></post-editor-overly>`)[0]);
+}
+
+export function reply(post: PostView) {
+    document.body.append(dom(html`<post-editor-overlay .replyTo=${post} .sent=${(post: PostView) => showPost(post)}></post-editor-overly>`)[0]);
+}
+
+export async function deletePost(post: PostView, postDom: HTMLElement) {
+    if (!State.isConnected()) return;
+    const result = await State.deletePost(post.uri);
+    if (result instanceof Error) {
+        alert(i18n("Couldn't delete post"));
+        return;
+    }
+    postDom.remove();
+}
