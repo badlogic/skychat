@@ -2,7 +2,7 @@ import { html } from "lit";
 import { ProfileOverlay, ThreadOverlay } from ".";
 import { dom, splitAtUri, combineAtUri } from "../utils";
 import { i18n } from "../i18n";
-import { FollowersStream, FollowingStream, PostLikesStream } from "../streams";
+import { FollowersStream, FollowingStream, PostLikesStream, PostRepostsStream } from "../streams";
 
 export async function routeHash(hash: string) {
     hash = hash.replace("#", "");
@@ -59,6 +59,22 @@ export async function routeHash(hash: string) {
                     )[0]
                 );
             }
+            if (tokens[0] == "reposts") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "PROFILES-STREAM-OVERLAY") {
+                    return;
+                }
+                document.body.append(
+                    dom(
+                        html`<profiles-stream-overlay
+                            title="${i18n("Reposts")}"
+                            .hash=${`reposts/${tokens[1]}/${tokens[2]}`}
+                            .stream=${new PostRepostsStream(combineAtUri(tokens[1], tokens[2]))}
+                            .pushState=${false}
+                        ></profiles-stream-overlay>`
+                    )[0]
+                );
+            }
             if (tokens[0] == "following") {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "PROFILES-STREAM-OVERLAY") {
@@ -82,7 +98,7 @@ export async function routeHash(hash: string) {
                 }
                 document.body.append(
                     dom(
-                        html`<profile-stream-overlay
+                        html`<profiles-stream-overlay
                             title="${i18n("Followers")}"
                             .hash=${`followers/${tokens[1]}`}
                             .stream=${new FollowersStream(tokens[1])}

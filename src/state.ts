@@ -137,10 +137,14 @@ export class State {
                 const response = await State.bskyClient.app.bsky.feed.getPosts({ uris: urisToFetch });
                 if (!response.success) throw new Error();
                 posts.push(...response.data.posts);
-                await this.getQuotes(urisToFetch);
-                // FIXME notify new profiles as well? We only get ProfileViewBasic from this
-                // But we also get viewerState, so maybe just update that? We used to cache
-                // all profiles on post loads.
+                const profilesToFetch: string[] = [];
+                for (const post of response.data.posts) {
+                    profilesToFetch.push(post.author.did);
+                }
+                const promises = await Promise.all([this.getQuotes(urisToFetch), this.getProfiles(profilesToFetch)]);
+                for (const promise of promises) {
+                    if (promise instanceof Error) throw promise;
+                }
             }
             this.notifyBatch("post", "updated", posts);
             return posts;
@@ -209,15 +213,18 @@ export class State {
     static async getProfiles(dids: string[]): Promise<Error | ProfileViewDetailed[]> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
-            const profiles: ProfileViewDetailed[] = [];
             dids = [...dids];
+            const promises = [];
             while (dids.length > 0) {
-                const batch = dids.splice(0, 25);
-                const response = await State.bskyClient.app.bsky.actor.getProfiles({
-                    actors: batch,
-                });
-                if (!response.success) throw new Error();
-                for (const profile of response.data.profiles) {
+                const batch = dids.splice(0, 10);
+                promises.push(State.bskyClient.app.bsky.actor.getProfiles({ actors: batch }));
+            }
+            const results = await Promise.all(promises);
+
+            const profiles: ProfileViewDetailed[] = [];
+            for (const result of results) {
+                if (!result.success) throw new Error();
+                for (const profile of result.data.profiles) {
                     profiles.push(profile);
                 }
             }
@@ -295,14 +302,21 @@ export class State {
                 }
             }
             const posts: PostView[] = [];
+            const profilesToFetch: string[] = [];
             for (const feedViewPost of data.items) {
                 posts.push(feedViewPost.post);
+                profilesToFetch.push(feedViewPost.post.author.did);
                 if (feedViewPost.reply) {
                     if (AppBskyFeedDefs.isPostView(feedViewPost.reply.parent)) {
                         posts.push(feedViewPost.reply.parent);
                     }
                 }
+                if (AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)) {
+                    profilesToFetch.push(feedViewPost.reason.by.did);
+                }
             }
+            const profiles = await State.getProfiles(profilesToFetch);
+            if (profiles instanceof Error) throw profiles;
             this.notifyBatch("post", "updated", posts);
             return data;
         } catch (e) {
@@ -380,7 +394,7 @@ export class State {
             const result = await State.bskyClient.getLikes({ uri: postUri, cursor, limit });
             if (!result.success) throw new Error();
             const profiles = result.data.likes.map((like) => like.actor);
-            this.notifyBatch("profile", "updated", profiles); // FIXME this is not a detail view!
+            this.notifyBatch("profile", "updated", profiles);
             return { cursor: result.data.cursor, items: profiles };
         } catch (e) {
             return error("Couldn't load post likes", e);
@@ -393,7 +407,7 @@ export class State {
             const result = await State.bskyClient.getRepostedBy({ uri: postUri, cursor, limit });
             if (!result.success) throw new Error();
             const profiles = result.data.repostedBy;
-            this.notifyBatch("profile", "updated", profiles); // FIXME this is not a detail view!
+            this.notifyBatch("profile", "updated", profiles);
             return { cursor: result.data.cursor, items: profiles };
         } catch (e) {
             return error("Couldn't load post resposts", e);
@@ -406,7 +420,7 @@ export class State {
             const result = await State.bskyClient.getFollowers({ actor: did, cursor, limit });
             if (!result.success) throw new Error();
             const profiles = result.data.followers;
-            this.notifyBatch("profile", "updated", profiles); // FIXME this is not a detail view!
+            this.notifyBatch("profile", "updated", profiles);
             return { cursor: result.data.cursor, items: profiles };
         } catch (e) {
             return error("Couldn't load followers", e);
@@ -419,7 +433,7 @@ export class State {
             const result = await State.bskyClient.getFollows({ actor: did, cursor, limit });
             if (!result.success) throw new Error();
             const profiles = result.data.follows;
-            this.notifyBatch("profile", "updated", profiles); // FIXME this is not a detail view!
+            this.notifyBatch("profile", "updated", profiles);
             return { cursor: result.data.cursor, items: profiles };
         } catch (e) {
             return error("Couldn't load following", e);
