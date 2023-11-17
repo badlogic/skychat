@@ -19,6 +19,9 @@ export class IconToggle extends LitElement {
     value = false;
 
     @property()
+    text = "";
+
+    @property()
     icon?: string;
 
     render() {
@@ -26,11 +29,11 @@ export class IconToggle extends LitElement {
             class="h-full flex items-center cursor-pointer gap-1 ${this.value
                 ? "text-primary dark:text-primary animate-jump"
                 : "text-gray dark:text-white/50"}"
-            @click=${this.toggle}
+            @click=${() => this.toggle()}
         >
             <i class="icon w-5 h-5 ${this.value ? "fill-primary dark:fill-primary" : "fill-gray"}"
                 >${icons[this.icon as "reblog" | "heart" | "shield"] ?? ""}</i
-            ><slot></slot>
+            ><span>${this.text}</span>
         </div>`;
     }
 

@@ -396,6 +396,10 @@ export class PostEditor extends LitElement {
     }
 
     pasteImage = async (ev: ClipboardEvent | DragEvent) => {
+        if (ev instanceof ClipboardEvent && ev.clipboardData?.types.includes("text/plain")) {
+            return;
+        }
+
         if (this.embed) {
             alert(i18n("You can not add an image if you already have a link card"));
             ev.preventDefault();
@@ -876,11 +880,11 @@ export function showPost(post: PostView) {
 }
 
 export function quote(post: PostView) {
-    document.body.append(dom(html`<post-editor-overlay .quote=${post} .sent=${(post: PostView) => showPost(post)}></post-editor-overly>`)[0]);
+    document.body.append(dom(html`<post-editor-overlay .quote=${post} .sent=${(newPost: PostView) => showPost(newPost)}></post-editor-overly>`)[0]);
 }
 
 export function reply(post: PostView) {
-    document.body.append(dom(html`<post-editor-overlay .replyTo=${post} .sent=${(post: PostView) => showPost(post)}></post-editor-overly>`)[0]);
+    document.body.append(dom(html`<post-editor-overlay .replyTo=${post} .sent=${(newPost: PostView) => showPost(newPost)}></post-editor-overly>`)[0]);
 }
 
 export async function deletePost(post: PostView, postDom: HTMLElement) {

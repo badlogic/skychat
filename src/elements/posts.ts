@@ -15,13 +15,13 @@ import { map } from "lit/directives/map.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { blockIcon, deleteIcon, heartIcon, moreIcon, muteIcon, quoteIcon, reblogIcon, replyIcon, shieldIcon } from "../icons";
 import { Store } from "../store";
-import { combineAtUri, contentLoader, dom, getDateString, getTimeDifference, hasLinkOrButtonParent, spinner, splitAtUri } from "../utils";
+import { combineAtUri, contentLoader, dom, error, getDateString, getTimeDifference, hasLinkOrButtonParent, spinner, splitAtUri } from "../utils";
 import { IconToggle } from "./icontoggle";
 import { PopupMenu } from "./popup";
 import { getProfileUrl, renderProfile } from "./profiles";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { i18n } from "../i18n";
-import { State } from "../state";
+import { EventAction, State } from "../state";
 import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
 import { deletePost, quote, reply } from "./posteditor";
 
@@ -279,8 +279,30 @@ export class PostViewElement extends LitElement {
     @property()
     unmuted = false;
 
+    unsubscribe: () => void = () => {};
+
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
+    }
+
+    connectedCallback(): void {
+        super.connectedCallback();
+        if (!this.post) {
+            error("Can not subscribe for post updates, post not set");
+            return;
+        }
+        this.unsubscribe = State.subscribe("post", (action, post) => this.handleUpdate(action, post), this.post.uri);
+    }
+
+    handleUpdate(action: EventAction, post: PostView): void {
+        if (action == "updated") {
+            this.post = { ...post };
+        }
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        this.unsubscribe();
     }
 
     render() {
@@ -327,14 +349,22 @@ export class PostViewElement extends LitElement {
                     ><span class="text-gray">${State.getObject("quote", this.post.uri)?.numQuotes ?? 0}</span>
                 </button>
                 <div class="flex gap-1 items-center text-gray">
-                    <icon-toggle @change=${this.toggleRepost} icon="reblog" class="h-4" .value=${this.post.viewer?.repost ?? false}
-                        >${this.post.repostCount ?? 0}</icon-toggle
-                    >
+                    <icon-toggle
+                        @change=${(ev: CustomEvent) => this.toggleRepost(ev)}
+                        icon="reblog"
+                        class="h-4"
+                        .value=${this.post.viewer?.repost ?? false}
+                        .text=${"" + this.post.repostCount ?? 0}
+                    ></icon-toggle>
                 </div>
                 <div class="flex gap-1 items-center text-gray">
-                    <icon-toggle @change=${this.toggleLike} icon="heart" class="h-4" .value=${this.post.viewer?.like ?? false}
-                        >${this.post.likeCount ?? 0}</icon-toggle
-                    >
+                    <icon-toggle
+                        @change=${(ev: CustomEvent) => this.toggleLike(ev)}
+                        icon="heart"
+                        class="h-4"
+                        .value=${this.post.viewer?.like ?? false}
+                        .text=${"" + this.post.likeCount ?? 0}
+                    ></icon-toggle>
                 </div>
                 <post-options .post=${this.post} .handleOption=${(option: PostOptions) => this.handleOption(option)}></post-options>
             </div>
@@ -369,12 +399,15 @@ export class PostViewElement extends LitElement {
             toggle.innerText = (Number.parseInt(toggle.innerText) + 1).toString();
             const response = await State.bskyClient!.repost(this.post.uri, this.post.cid);
             this.post.viewer.repost = response.uri;
+            this.post.repostCount = this.post.repostCount ? this.post.repostCount + 1 : 1;
         } else {
             toggle.value = false;
             toggle.innerText = (Number.parseInt(toggle.innerText) - 1).toString();
             if (this.post.viewer.repost) State.bskyClient?.deleteRepost(this.post.viewer.repost);
-            this.post.viewer.repost = undefined;
+            delete this.post.viewer.repost;
+            this.post.repostCount = this.post.repostCount ? this.post.repostCount - 1 : 0;
         }
+        State.notify("post", "updated", this.post);
     }
 
     likeUri: string | undefined;
@@ -388,12 +421,15 @@ export class PostViewElement extends LitElement {
             toggle.innerText = (Number.parseInt(toggle.innerText) + 1).toString();
             const response = await State.bskyClient!.like(this.post.uri, this.post.cid);
             this.post.viewer.like = response.uri;
+            this.post.likeCount = this.post.likeCount ? this.post.likeCount + 1 : 1;
         } else {
             toggle.value = false;
             toggle.innerText = (Number.parseInt(toggle.innerText) - 1).toString();
             if (this.post.viewer.like) await State.bskyClient?.deleteLike(this.post.viewer.like);
-            this.post.viewer.like = undefined;
+            delete this.post.viewer.like;
+            this.post.likeCount = this.post.likeCount ? this.post.likeCount - 1 : 0;
         }
+        State.notify("post", "updated", this.post);
     }
 }
 
@@ -654,12 +690,14 @@ export class ThreadOverlay extends HashNavOverlay {
         }
         let uri = this.postUri;
 
+        // FIXME if the post gets deleted and its the root, close the overlay
+
         const animation = "animate-shake animate-delay-500";
         const insertNewPost = (post: PostView, repliesDom: HTMLElement) => {
             const newPost = dom(html`<div class="min-w-[350px] mb-2 pl-2 border-l border-primary ${animation}">
                 <post-view
                     .post=${post}
-                    .quoteCallback=${(post: PostView) => quote(post, newPost.querySelector("#replies")!)}
+                    .quoteCallback=${(post: PostView) => quote(post)}
                     .replyCallback=${(post: PostView) => reply(post, newPost.querySelector("#replies")!)}
                     .deleteCallback=${(post: PostView) => deletePost(post, newPost)}
                     .showReplyTo=${false}
@@ -678,24 +716,10 @@ export class ThreadOverlay extends HashNavOverlay {
             }, 500);
         };
 
-        const quote = (post: PostView, repliesDom: HTMLElement) => {
-            document.body.append(dom(html`<post-editor-overlay .quote=${post}></post-editor-overly>`)[0]);
-        };
-
         const reply = (post: PostView, repliesDom: HTMLElement) => {
             document.body.append(
                 dom(html`<post-editor-overlay .replyTo=${post} .sent=${(post: PostView) => insertNewPost(post, repliesDom)}></post-editor-overly>`)[0]
             );
-        };
-
-        const deletePost = async (post: PostView, postDom: HTMLElement) => {
-            if (!State.isConnected()) return;
-            const result = await State.deletePost(post.uri);
-            if (result instanceof Error) {
-                alert(i18n("Couldn't delete post"));
-                return;
-            }
-            postDom.remove();
         };
 
         const postDom = dom(html`<div>
@@ -709,7 +733,7 @@ export class ThreadOverlay extends HashNavOverlay {
             >
                 <post-view
                     .post=${thread.post}
-                    .quoteCallback=${(post: PostView) => quote(post, repliesDom)}
+                    .quoteCallback=${(post: PostView) => quote(post)}
                     .replyCallback=${(post: PostView) => reply(post, repliesDom)}
                     .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
                     .showReplyTo=${false}

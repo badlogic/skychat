@@ -82,7 +82,7 @@ export class Chat extends LitElement {
             this.postSearch = new PostSearch(this.hashtag.replace("#", ""));
             this.isLoading = false;
             this.isLive = true;
-            this.unsubscribe = State.subscribe("unreadNotifications", (count) => {
+            this.unsubscribe = State.subscribe("unreadNotifications", (action, count) => {
                 if (count > 0) {
                     this.bell?.classList.add("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
                     this.numNotifications?.classList.remove("hidden");

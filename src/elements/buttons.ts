@@ -208,7 +208,7 @@ export class NotificationsButton extends FloatingButton {
 
     connectedCallback(): void {
         super.connectedCallback();
-        this.unsub = State.subscribe("unreadNotifications", (count) => {
+        this.unsub = State.subscribe("unreadNotifications", (action, count) => {
             if (count > 0) {
                 this.value = count.toString();
                 this.highlight = true;

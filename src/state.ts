@@ -29,12 +29,13 @@ export type EventAction = "updated" | "deleted";
 export type ActorFeedType = "home" | "posts_with_replies" | "posts_no_replies" | "posts_with_media";
 
 export class State {
+    static DEBUG = true;
     static bskyClient?: BskyAgent;
     private static objects: { [K in keyof Events]?: Map<string, Events[K]> } = {};
-    private static generalListeners: { [K in keyof Events]?: ((payload: Events[K]) => void)[] } = {};
-    private static idSpecificListeners: { [K in keyof Events]?: Map<string, ((payload: Events[K]) => void)[]> } = {};
+    private static generalListeners: { [K in keyof Events]?: ((action: EventAction, payload: Events[K]) => void)[] } = {};
+    private static idSpecificListeners: { [K in keyof Events]?: Map<string, ((action: EventAction, payload: Events[K]) => void)[]> } = {};
 
-    static subscribe<K extends keyof Events>(event: K, listener: (payload: Events[K]) => void, id?: string): () => void {
+    static subscribe<K extends keyof Events>(event: K, listener: (action: EventAction, payload: Events[K]) => void, id?: string): () => void {
         if (id) {
             this.idSpecificListeners[event] = this.idSpecificListeners[event] || new Map();
             const listeners = this.idSpecificListeners[event]!.get(id) || [];
@@ -62,7 +63,7 @@ export class State {
 
     static notify<K extends keyof Events>(event: K, action: EventAction, payload: Events[K]) {
         this.storeObject(event, payload);
-        this.generalListeners[event]?.forEach((listener) => listener(payload));
+        this.generalListeners[event]?.forEach((listener) => listener(action, payload));
         let id: string | undefined;
 
         switch (event) {
@@ -81,8 +82,10 @@ export class State {
                 assertNever(event);
         }
 
+        console.log(`notify - ${event} ${action} ${id}`);
+
         if (id) {
-            this.idSpecificListeners[event]?.get(id)?.forEach((listener) => listener(payload));
+            this.idSpecificListeners[event]?.get(id)?.forEach((listener) => listener(action, payload));
         }
     }
 
@@ -178,6 +181,7 @@ export class State {
         try {
             const response = await State.bskyClient.post(record);
             let post: PostView | undefined;
+            const start = performance.now();
             while (true) {
                 const postResponse = await State.getPosts([response.uri]);
                 if (postResponse instanceof Error) throw postResponse;
@@ -186,7 +190,7 @@ export class State {
                     continue;
                 }
                 post = postResponse[0];
-                break;
+                if (post || (performance.now() - start) / 1000 > 5) break;
             }
             if (!post) return new Error("Couldn't retrieve post after creating record");
             return post;

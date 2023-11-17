@@ -196,6 +196,7 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
         super();
         this.stream = new NotificationsStream();
         this.wrapItem = false;
+        State.notify("unreadNotifications", "updated", 0);
     }
 
     getItemKey(notification: AppBskyNotificationListNotifications.Notification): string {
