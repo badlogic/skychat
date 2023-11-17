@@ -154,6 +154,91 @@ export class QuotesStream implements Stream<PostView> {
 }
 
 /*
+const loadNewerPosts = async (
+            startCid: string,
+            startTimestamp: number,
+            seenPostKeys: Map<string, FeedViewPost | PostView>,
+            minNumPosts = 10,
+            maxTimeDifference = fortyEightHours
+        ): Promise<{ posts: (FeedViewPost | PostView)[]; numRequests: number; exceededMaxTimeDifference: boolean } | Error> => {
+            let timeIncrement = 15 * 60 * 1000;
+            let time = startTimestamp + timeIncrement;
+            let cid = startCid;
+            let newerPosts: (FeedViewPost | PostView)[] = [];
+            let lastCursor: string | undefined;
+            let foundSeenPost = false;
+            let numRequests = 0;
+            let seenNewPosts = new Map<string, FeedViewPost | PostView>();
+            let exceededMaxTimeDifference = false;
+
+            // Fetch the latest posts and see if its our latest post.
+            const response = await this.loadItems(undefined);
+            numRequests++;
+            if (response instanceof Error) return response;
+            if (getCid(response.items[0]) == startCid) return { posts: [], numRequests, exceededMaxTimeDifference: false };
+
+            // Adjust maxTimeDifference down if possible, results in fewer fetches.
+            maxTimeDifference = Math.min(maxTimeDifference, getDate(response.items[0])!.getTime() - startTimestamp);
+            if (maxTimeDifference < 0) maxTimeDifference = fortyEightHours;
+
+            // FIrst pass, try to collect minNumPosts new posts. This may overshoot, so there's
+            // a gap between the startPost and the last post in newPosts. We'll resolve the missing
+            // posts in the next loop below.
+            while (true) {
+                const response = await this.loadItems(time + "::" + cid);
+                if (response instanceof Error) return response;
+                lastCursor = response.cursor;
+                const fetchedPosts = response.items;
+                let uniquePosts = fetchedPosts.filter(
+                    (post) => !seenPostKeys.has(this.getItemKey(post)) && (getDate(post)?.getTime() ?? 0) > startTimestamp
+                );
+                uniquePosts = uniquePosts.filter((post) => !seenNewPosts.has(this.getItemKey(post)));
+                uniquePosts.forEach((post) => seenNewPosts.set(this.getItemKey(post), post));
+                foundSeenPost = fetchedPosts.some((post) => seenPostKeys.has(this.getItemKey(post)));
+                numRequests++;
+                // If we haven't found any new posts, we need to look further into the future
+                // but not too far.
+                if (uniquePosts.length == 0) {
+                    foundSeenPost = false;
+                    timeIncrement *= 1.75; // Make us jump a little further than last time
+                    time += timeIncrement;
+                    // If we searched to far into the future, give up
+                    if (time - startTimestamp > maxTimeDifference) {
+                        exceededMaxTimeDifference = seenNewPosts.size > 0;
+                        break;
+                    }
+                    continue;
+                }
+
+                // If we found minNumPosts, we don't need to load any more posts
+                // We might end up having to load older posts though, until we
+                // find a seen post.
+                newerPosts = [...uniquePosts, ...newerPosts];
+                if (newerPosts.length >= minNumPosts) break;
+            }
+
+            // There's a gap between the new posts and the start post. Resolve
+            // the posts in-between.
+            if (!foundSeenPost && newerPosts.length > 0) {
+                while (!foundSeenPost) {
+                    const response = await this.loadItems(lastCursor);
+                    if (response instanceof Error) return response;
+                    lastCursor = response.cursor;
+                    const fetchedPosts = response.items;
+                    const uniquePosts = fetchedPosts.filter(
+                        (post) => !seenPostKeys.has(this.getItemKey(post)) && (getDate(post)?.getTime() ?? 0) > startTimestamp
+                    );
+                    newerPosts = [...newerPosts, ...uniquePosts];
+                    foundSeenPost = fetchedPosts.some((post) => seenPostKeys.has(this.getItemKey(post)));
+                    numRequests++;
+                }
+            }
+
+            return { posts: newerPosts, numRequests, exceededMaxTimeDifference };
+        };
+        */
+
+/*
 let loading = false;
         const checkNewNotifications = async () => {
             // FIXME should probably display an error if new notifications couldn't be loaded for some reason.

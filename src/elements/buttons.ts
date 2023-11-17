@@ -2,7 +2,7 @@ import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { arrowUpDoubleIcon, bellIcon, cloudIcon, editIcon } from "../icons";
+import { arrowUpDoubleIcon, bellIcon, cloudIcon, editIcon, spinnerIcon } from "../icons";
 import { dom } from "../utils";
 import { setupPushNotifications } from "./notifications";
 import { State } from "../state";
@@ -263,5 +263,88 @@ export class SelectButton extends LitElement {
                 },
             })
         );
+    }
+}
+
+@customElement("pull-to-refresh")
+export class PullToRefresh extends LitElement {
+    private startY: number = 0;
+    private isPulling: boolean = false;
+    private threshold = 100;
+
+    @property()
+    onRefresh: () => void = () => {};
+
+    @property()
+    distance = 0;
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        const scrollContainer = this.getScrollContainer();
+        if (scrollContainer) {
+            scrollContainer.addEventListener("scroll", this.handleScroll, { passive: false });
+            scrollContainer.addEventListener("touchstart", this.handleTouchStart, { passive: false });
+            scrollContainer.addEventListener("touchmove", this.handleTouchMove, { passive: false });
+            scrollContainer.addEventListener("touchend", this.handleTouchEnd, { passive: true });
+            this.isPulling = scrollContainer.scrollTop == 0;
+        }
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        const scrollContainer = this.getScrollContainer();
+        if (scrollContainer) {
+            scrollContainer.removeEventListener("scroll", this.handleScroll);
+            scrollContainer.removeEventListener("touchstart", this.handleTouchStart);
+            scrollContainer.removeEventListener("touchmove", this.handleTouchMove);
+            scrollContainer.removeEventListener("touchend", this.handleTouchEnd);
+        }
+    }
+
+    private getScrollContainer(): HTMLElement | null {
+        return this.parentElement;
+    }
+
+    private handleScroll = (event: Event) => {
+        const target = event.target as HTMLElement;
+        this.isPulling = target.scrollTop < 10;
+    };
+
+    private handleTouchStart = (event: TouchEvent) => {
+        if (this.isPulling) {
+            this.startY = event.touches[0].clientY;
+        }
+    };
+
+    private handleTouchMove = (event: TouchEvent) => {
+        if (!this.isPulling) return;
+
+        const touchY = event.touches[0].clientY;
+        let rawDistance = touchY - this.startY;
+        rawDistance = rawDistance / 4;
+        rawDistance = Math.max(0, Math.min(rawDistance, 300));
+        this.style.top = rawDistance + "px";
+    };
+
+    private handleTouchEnd = (event: TouchEvent) => {
+        if (!this.isPulling) return;
+
+        const currentDistance = event.changedTouches[0].clientY - this.startY;
+        if (currentDistance > this.threshold) {
+            this.onRefresh();
+        }
+
+        this.isPulling = this.getScrollContainer()?.scrollTop == 0;
+        this.style.top = 0 + "px";
+    };
+
+    render() {
+        return html`<div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+            <i class="icon w-8 h-8 animate-spin fill-white">${spinnerIcon}</i>
+        </div>`;
     }
 }
