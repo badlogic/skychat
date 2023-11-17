@@ -208,11 +208,7 @@ export class Chat extends LitElement {
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
                 ${this.renderHeader()}
                 <div id="posts" class="flex-grow">
-                    <div id="loadOlderPosts" class="flex items-center justify-center flex flex-col">
-                        <div class="w-full flex items-center justify-center h-8">
-                            <i class="icon w-5 h-5 animate-spin">${spinnerIcon}</i>
-                        </div>
-                    </div>
+                    <div id="loadOlderPosts" class="flex items-center justify-center flex flex-col">${spinner}</div>
                 </div>
                 ${user
                     ? html`
@@ -223,14 +219,14 @@ export class Chat extends LitElement {
                       `
                     : nothing}
             </div>
-            <div id="catchup" class="bg-gray hidden fixed flex items-center">
+            <div id="catchup" class="hidden fixed flex items-center">
                 <button
                     @click=${() => {
                         this.userScrolled = false;
                         catchup.classList.add("hidden");
                         scrollElement.scrollTo({ top: scrollElement.scrollHeight });
                     }}
-                    class="rounded bg-primary px-2 py-1 text-sm text-white"
+                    class="rounded-full bg-primary px-2 py-1 text-sm text-white"
                 >
                     ${i18n("↓ Catch up ↓")}
                 </button>
@@ -363,11 +359,10 @@ export class Chat extends LitElement {
         if (this.loadingOlder) return;
         if (!this.liveDom) return;
         this.loadingOlder = true;
-        const posts = this.liveDom.querySelector("#posts")!;
-        const load = posts.querySelector("#loadOlderPosts")! as HTMLElement;
-        let isFirstLoad = this.postSearch?.cursor == undefined;
-        const olderPosts = await this.postSearch!.next();
-        if (olderPosts instanceof Error || olderPosts.length == 0) {
+        const postsDom = this.liveDom.querySelector("#posts")!;
+        const load = postsDom.querySelector("#loadOlderPosts")! as HTMLElement;
+        const posts = await this.postSearch!.next();
+        if (posts instanceof Error || posts.length == 0) {
             load.innerText = i18n("No older posts");
             load.classList.remove("animate-pulse");
             this.loadingOlder = false;
@@ -375,7 +370,7 @@ export class Chat extends LitElement {
         }
 
         const fragment = dom(html`<div></div>`)[0];
-        for (const post of olderPosts) {
+        for (const post of posts) {
             const postDom = dom(html`<div class="border-t border-gray/50 px-4 py-2 animate-fade">
                 <post-view
                     .post=${post}
@@ -387,9 +382,9 @@ export class Chat extends LitElement {
             </div>`)[0];
             fragment.appendChild(postDom);
         }
-        posts.insertBefore(fragment, posts.firstChild);
-        this.liveDom.scrollTop = load.offsetTop;
-        posts.insertBefore(load, posts.firstChild);
+        postsDom.insertBefore(fragment, postsDom.firstChild);
+        this.liveDom.scrollTop = load.offsetTop - 2;
+        postsDom.insertBefore(load, postsDom.firstChild);
         this.loadingOlder = false;
         onVisibleOnce(load! as HTMLElement, () => this.loadOlderPosts());
     }
