@@ -1,20 +1,20 @@
 import { AppBskyFeedPost } from "@atproto/api";
+import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, html, nothing, svg } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { PostSearch, bskyClient, login, logout } from "../bsky";
+import { PostSearch } from "../bsky";
 import { FirehosePost, startEventStream } from "../firehose";
-import { contentLoader, dom, hasHashtag, onVisibleOnce, splitAtUri } from "../utils";
-import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { contentLoader, dom, hasHashtag, onVisibleOnce, spinner, splitAtUri } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import "../elements";
 import { PostEditor, renderTopbar } from "../elements";
 import { routeHash } from "../elements/routing";
-import { bellIcon, homeIcon, spinnerIcon } from "../icons";
-import { cacheProfile } from "../cache";
-import { Store } from "../store";
 import { i18n } from "../i18n";
+import { bellIcon, homeIcon, spinnerIcon } from "../icons";
+import { Store } from "../store";
+import { State } from "../state";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -47,6 +47,7 @@ export class Chat extends LitElement {
     loadingOlder = false;
     newNotifications = false;
     seenAt = new Date();
+    unsubscribe: () => void = () => {};
 
     constructor() {
         super();
@@ -72,7 +73,7 @@ export class Chat extends LitElement {
                 return;
             }
             const user = Store.getUser();
-            const loginResponse = await login(user?.account, user?.password);
+            const loginResponse = await State.login(user?.account, user?.password);
             if (loginResponse instanceof Error) {
                 alert(i18n("Couldn't log in with your BlueSky credentials"));
                 location.href = "/chat-login.html";
@@ -81,27 +82,24 @@ export class Chat extends LitElement {
             this.postSearch = new PostSearch(this.hashtag.replace("#", ""));
             this.isLoading = false;
             this.isLive = true;
-            const checkNotifications = async () => {
-                if (!Store.getUser()) return;
-                const response = await bskyClient?.countUnreadNotifications();
-                if (!response || !response.success) {
-                    console.log("No notifications");
-                    return;
-                }
-                if (response.data?.count > 0) {
+            this.unsubscribe = State.subscribe("unreadNotifications", (count) => {
+                if (count > 0) {
                     this.bell?.classList.add("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
                     this.numNotifications?.classList.remove("hidden");
-                    this.numNotifications!.innerText = "" + response.data.count;
+                    this.numNotifications!.innerText = "" + count;
                 } else {
                     this.bell?.classList.remove("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
                     this.numNotifications?.classList.add("hidden");
                 }
-            };
-            checkNotifications();
-            setInterval(checkNotifications, 15000);
+            });
         } finally {
             this.isLoading = false;
         }
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        this.unsubscribe();
     }
 
     renderHeader() {
@@ -115,7 +113,7 @@ export class Chat extends LitElement {
             ? html`<div class="flex items-center ml-auto">
                   <button
                       @click=${() => {
-                          document.body.append(dom(html`<skychat-feed-overlay></skychat-feed-overlay>`)[0]);
+                          document.body.append(dom(html`<feed-stream-overlay></feed-stream-overlay>`)[0]);
                       }}
                       class="relative flex w-10 h-10 items-center justify-center"
                   >
@@ -123,7 +121,7 @@ export class Chat extends LitElement {
                   </button>
                   <button
                       @click=${() => {
-                          document.body.append(dom(html`<notifications-overlay></notifications-overlay>`)[0]);
+                          document.body.append(dom(html`<notifications-stream-overlay></notifications-stream-overlay>`)[0]);
                           this.bell?.classList.remove("animate-wiggle-more", "animate-infinite", "animate-ease-in-out");
                           this.numNotifications?.classList.add("hidden");
                       }}
@@ -198,7 +196,7 @@ export class Chat extends LitElement {
             >
             <div class="flex-grow flex flex-col">
                 <p class="text-center">${i18n("Connecting")}</p>
-                <div class="align-top">${contentLoader}</div>
+                <div class="align-top">${spinner}</div>
             </div>
             <div class="text-center text-xs italic my-4 pb-4">${i18n("footer")}</div>
         </main>`;
@@ -291,15 +289,13 @@ export class Chat extends LitElement {
         const postHandler = async (firehosePost: FirehosePost) => {
             try {
                 if (!hasHashtag(firehosePost.text, this.hashtag!)) return;
-                const response = await bskyClient!.getPosts({
-                    uris: [firehosePost.uri],
-                });
-                if (!response.success) throw Error(`Couldn't get post for ${firehosePost.uri}`);
-                const post = response.data.posts[0];
+                const posts = await State.getPosts([firehosePost.uri]);
+                if (posts instanceof Error) throw new Error(`Couldn't get post for ${firehosePost.uri}`);
+                const post = posts[0];
                 if (AppBskyFeedPost.isRecord(post.record)) {
                     if (post.record.reply) {
                         const did = splitAtUri(post.record.reply.parent.uri).repo!;
-                        await cacheProfile(bskyClient!, did);
+                        await State.getProfiles([did]);
                     }
                 }
                 this.renderPost(post, "animate-fade-left");
@@ -329,13 +325,14 @@ export class Chat extends LitElement {
     }
 
     async deletePost(post: PostView, postDom: HTMLElement) {
-        if (!bskyClient) return;
-        try {
-            await bskyClient.deletePost(post.uri);
-        } catch (e) {
-            console.error("Couldn't delete post.", e);
+        if (!State.isConnected()) return;
+        const result = await State.deletePost(post.uri);
+        if (result instanceof Error) {
             alert(i18n("Couldn't delete post"));
+            return;
         }
+        // FIXME should probably just rely on the post-view getting
+        // notified about the delete and showing itself as "deleted"
         postDom.remove();
     }
 
@@ -399,7 +396,7 @@ export class Chat extends LitElement {
 
     logout() {
         if (confirm(i18n("Log out?"))) {
-            logout();
+            State.logout();
             location.href = "/chat-login.html";
         }
     }

@@ -13,17 +13,16 @@ import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { bskyClient } from "../bsky";
 import { blockIcon, deleteIcon, heartIcon, moreIcon, muteIcon, quoteIcon, reblogIcon, replyIcon, shieldIcon } from "../icons";
-import { cacheQuotes, profileCache, quotesCache } from "../cache";
 import { Store } from "../store";
-import { combineAtUri, contentLoader, dom, getDateString, getTimeDifference, hasLinkOrButtonParent, splitAtUri } from "../utils";
+import { combineAtUri, contentLoader, dom, getDateString, getTimeDifference, hasLinkOrButtonParent, spinner, splitAtUri } from "../utils";
 import { IconToggle } from "./icontoggle";
 import { PopupMenu } from "./popup";
-import { getProfileUrl, likesLoader, renderProfile, repostLoader } from "./profiles";
+import { getProfileUrl, renderProfile } from "./profiles";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
-import { quotesLoader } from "./feeds";
 import { i18n } from "../i18n";
+import { State } from "../state";
+import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
 
 function splitTextAndCreateSpans(text: string): TemplateResult[] {
     const segments = text.split("\n");
@@ -59,7 +58,6 @@ export function renderPostText(record: AppBskyFeedPost.Record | RichText) {
                     href="https://bsky.app/profile/${segment.mention?.did}"
                     target="_blank"
                     @click=${(ev: Event) => {
-                        if (!bskyClient) return;
                         ev.preventDefault();
                         ev.stopPropagation();
                         document.body.append(dom(html`<profile-overlay .did=${segment.mention?.did}></profile-overlay>`)[0]);
@@ -189,13 +187,12 @@ export function renderRecord(
     shortTime = false
 ): TemplateResult {
     const replyToAuthorDid = record.reply ? splitAtUri(record.reply?.parent.uri).repo : undefined;
-    const replyToProfile = replyToAuthorDid ? profileCache[replyToAuthorDid] : undefined;
+    const replyToProfile = replyToAuthorDid ? State.getObject("profile", replyToAuthorDid) : undefined;
     return html`<div
         class="${openOnClick ? "cursor-pointer" : ""}"
         @click=${(ev: Event) => {
             if (window.getSelection() && window.getSelection()?.toString().length != 0) return;
             if (!openOnClick) return;
-            if (!bskyClient) return;
             if (hasLinkOrButtonParent(ev.target as HTMLElement)) return;
             ev.stopPropagation();
             document.body.append(dom(html`<thread-overlay .postUri=${combineAtUri(author.did, rkey)}></thread-overlay>`)[0]);
@@ -212,7 +209,6 @@ export function renderRecord(
                                 href="https://bsky.app/profile/${author.did}/post/${rkey}"
                                 target="_blank"
                                 @click=${(ev: Event) => {
-                                    if (!bskyClient) return;
                                     ev.preventDefault();
                                     ev.stopPropagation();
                                     document.body.append(dom(html`<thread-overlay .postUri=${combineAtUri(author.did, rkey)}></thread-overlay>`)[0]);
@@ -234,7 +230,6 @@ export function renderRecord(
                       href="${getProfileUrl(replyToAuthorDid ?? "")}"
                       target="_blank"
                       @click=${(ev: Event) => {
-                          if (!bskyClient) return;
                           ev.preventDefault();
                           ev.stopPropagation();
                           document.body.append(dom(html`<profile-overlay .did=${replyToAuthorDid}></profile-overlay>`)[0]);
@@ -327,7 +322,8 @@ export class PostViewElement extends LitElement {
                     <i class="icon w-5 h-5 fill-gray">${replyIcon}</i><span class="text-gray">${this.post.replyCount}</span>
                 </button>
                 <button @click=${() => this.quoteCallback(this.post!)} class="flex gap-1 items-center text-gray">
-                    <i class="icon w-5 h-5 fill-gray">${quoteIcon}</i><span class="text-gray">${quotesCache[this.post.uri] ?? 0}</span>
+                    <i class="icon w-5 h-5 fill-gray">${quoteIcon}</i
+                    ><span class="text-gray">${State.getObject("quote", this.post.uri)?.numQuotes ?? 0}</span>
                 </button>
                 <div class="flex gap-1 items-center text-gray">
                     <icon-toggle @change=${this.toggleRepost} icon="reblog" class="h-4" .value=${this.post.viewer?.repost ?? false}
@@ -351,7 +347,7 @@ export class PostViewElement extends LitElement {
     }
 
     canInteract(toggle: IconToggle) {
-        if (bskyClient?.service.toString().includes("api")) {
+        if (!Store.getUser()) {
             if (confirm("Do you want to log-in to repost, like, and create posts?")) {
                 location.reload();
             }
@@ -370,12 +366,12 @@ export class PostViewElement extends LitElement {
         if (ev.detail.value) {
             toggle.value = true;
             toggle.innerText = (Number.parseInt(toggle.innerText) + 1).toString();
-            const response = await bskyClient!.repost(this.post.uri, this.post.cid);
+            const response = await State.bskyClient!.repost(this.post.uri, this.post.cid);
             this.post.viewer.repost = response.uri;
         } else {
             toggle.value = false;
             toggle.innerText = (Number.parseInt(toggle.innerText) - 1).toString();
-            if (this.post.viewer.repost) bskyClient?.deleteRepost(this.post.viewer.repost);
+            if (this.post.viewer.repost) State.bskyClient?.deleteRepost(this.post.viewer.repost);
             this.post.viewer.repost = undefined;
         }
     }
@@ -389,12 +385,12 @@ export class PostViewElement extends LitElement {
         if (ev.detail.value) {
             toggle.value = true;
             toggle.innerText = (Number.parseInt(toggle.innerText) + 1).toString();
-            const response = await bskyClient!.like(this.post.uri, this.post.cid);
+            const response = await State.bskyClient!.like(this.post.uri, this.post.cid);
             this.post.viewer.like = response.uri;
         } else {
             toggle.value = false;
             toggle.innerText = (Number.parseInt(toggle.innerText) - 1).toString();
-            if (this.post.viewer.like) await bskyClient?.deleteLike(this.post.viewer.like);
+            if (this.post.viewer.like) await State.bskyClient?.deleteLike(this.post.viewer.like);
             this.post.viewer.like = undefined;
         }
     }
@@ -432,15 +428,16 @@ export class PostOptionsElement extends PopupMenu {
     protected renderContent(): TemplateResult {
         if (!this.post) return html`${nothing}`;
         const did = Store.getUser()?.profile.did;
+        const quote = State.getObject("quote", this.post.uri);
         const buttons: PostOptionsButton[] = [
             {
                 option: "quotes",
                 text: i18n("Quotes"),
                 icon: html`${quoteIcon}`,
-                enabled: quotesCache[this.post.uri] != undefined && quotesCache[this.post.uri] > 0,
+                enabled: quote != undefined && quote.numQuotes > 0,
                 click: () => {
                     document.body.append(
-                        dom(html`<skychat-feed-overlay title="Quotes" .feedLoader=${quotesLoader(this.post?.uri!)}></skychat-feed-overlay>`)[0]
+                        dom(html`<posts-stream-overlay title="Quotes" .stream=${new QuotesStream(this.post?.uri!)}></posts-stream-overlay>`)[0]
                     );
                     this.close();
                 },
@@ -453,11 +450,11 @@ export class PostOptionsElement extends PopupMenu {
                 click: () => {
                     document.body.append(
                         dom(
-                            html`<profile-list-overlay
+                            html`<profiles-stream-overlay
                                 title="Reposts"
                                 .hash=${`reposts/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
-                                .loader=${repostLoader(this.post?.uri)}
-                            ></profile-list-overlay>`
+                                .stream=${new PostRepostsStream(this.post?.uri!)}
+                            ></profile-stream-overlay>`
                         )[0]
                     );
                     this.close();
@@ -471,11 +468,11 @@ export class PostOptionsElement extends PopupMenu {
                 click: () => {
                     document.body.append(
                         dom(
-                            html`<profile-list-overlay
+                            html`<profiles-stream-overlay
                                 title="Likes"
                                 .hash=${`likes/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
-                                .loader=${likesLoader(this.post?.uri)}
-                            ></profile-list-overlay>`
+                                .stream=${new PostLikesStream(this.post?.uri!)}
+                            ></profiles-stream-overlay>`
                         )[0]
                     );
                     this.close();
@@ -569,7 +566,7 @@ export class ThreadOverlay extends HashNavOverlay {
     async load() {
         const notFoundMessage = i18n("Thread not found. The post may have been deleted, or you were blocked by the user.");
         try {
-            if (!bskyClient) {
+            if (!State.bskyClient) {
                 this.error = i18n("Not connected");
                 return;
             }
@@ -578,7 +575,7 @@ export class ThreadOverlay extends HashNavOverlay {
                 return;
             }
             let uri = this.postUri;
-            const postResponse = await bskyClient.getPostThread({ uri });
+            const postResponse = await State.bskyClient.getPostThread({ uri });
             if (!postResponse.success) {
                 this.error = notFoundMessage;
                 return;
@@ -606,7 +603,7 @@ export class ThreadOverlay extends HashNavOverlay {
                 uri = post.record.reply.root.uri;
             }
 
-            const response = await bskyClient.getPostThread({
+            const response = await State.bskyClient.getPostThread({
                 depth: 1000,
                 parentHeight: 1000,
                 uri,
@@ -629,7 +626,7 @@ export class ThreadOverlay extends HashNavOverlay {
                 }
             };
             collectPostUris(response.data.thread);
-            await cacheQuotes(postUris);
+            await State.getQuotes(postUris);
             this.thread = response.data.thread;
         } catch (e) {
             this.error = notFoundMessage;
@@ -645,7 +642,7 @@ export class ThreadOverlay extends HashNavOverlay {
 
     renderContent() {
         return html`<div class="px-4">
-            ${this.isLoading ? html`<div>${contentLoader}</div>` : nothing} ${this.error ? html`<div>${this.error}</div>` : nothing}
+            ${this.isLoading ? html`<div>${spinner}</div>` : nothing} ${this.error ? html`<div>${this.error}</div>` : nothing}
             ${this.thread ? this.renderThreadPost(this.thread) : nothing}
         </div>`;
     }
@@ -691,12 +688,11 @@ export class ThreadOverlay extends HashNavOverlay {
         };
 
         const deletePost = async (post: PostView, postDom: HTMLElement) => {
-            if (!bskyClient) return;
-            try {
-                await bskyClient.deletePost(post.uri);
-            } catch (e) {
-                console.error("Couldn't delete post.", e);
+            if (!State.isConnected()) return;
+            const result = await State.deletePost(post.uri);
+            if (result instanceof Error) {
                 alert(i18n("Couldn't delete post"));
+                return;
             }
             postDom.remove();
         };

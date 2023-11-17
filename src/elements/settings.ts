@@ -2,8 +2,8 @@ import { TemplateResult, html, nothing } from "lit";
 import { customElement } from "lit/decorators.js";
 import { HashNavOverlay, renderProfile, renderTopbar } from ".";
 import { i18n } from "../i18n";
-import { logout } from "../bsky";
 import { Store, Theme } from "../store";
+import { State } from "../state";
 
 @customElement("settings-overlay")
 export class SettingsOverlay extends HashNavOverlay {
@@ -40,7 +40,7 @@ export class SettingsOverlay extends HashNavOverlay {
     }
 
     logout() {
-        logout();
+        State.logout();
         location.href = "/";
     }
 

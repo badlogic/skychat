@@ -2,17 +2,15 @@ import { RichText } from "@atproto/api";
 import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { bskyClient } from "../bsky";
-import { cacheProfile, profileCache } from "../cache";
 import { Messages, i18n } from "../i18n";
 import { moreIcon, spinnerIcon } from "../icons";
+import { ActorFeedType, State } from "../state";
 import { Store } from "../store";
-import { contentLoader, defaultAvatar, dom, getNumber, hasLinkOrButtonParent } from "../utils";
-import { ActorTimelineFilter, actorTimelineLoader } from "./feeds";
-import { ItemListLoaderResult, ItemsList, ItemsListLoader } from "./list";
+import { contentLoader, defaultAvatar, dom, error, getNumber, hasLinkOrButtonParent, spinner } from "../utils";
 import { HashNavOverlay, renderTopbar } from "./overlay";
 import { PopupMenu } from "./popup";
 import { renderPostText } from "./posts";
+import { ActorFeedStream, ActorLikesStream, FollowersStream, FollowingStream, LoggedInActorLikesStream } from "../streams";
 
 @customElement("profile-overlay")
 export class ProfileOverlay extends HashNavOverlay {
@@ -29,24 +27,19 @@ export class ProfileOverlay extends HashNavOverlay {
     error?: string;
 
     @state()
-    filter: ActorTimelineFilter = "posts_no_replies";
+    filter: ActorFeedType | "likes" = "posts_no_replies";
 
     async load() {
         const errorMessage = "Couldn't load profile of " + this.did;
         try {
-            if (!bskyClient || !this.did) {
-                this.error = errorMessage;
-                return;
-            }
-            delete profileCache[this.did];
-            await cacheProfile(bskyClient, this.did);
-            this.profile = profileCache[this.did];
-            if (!this.profile) {
-                this.error = errorMessage;
-                return;
-            }
+            if (!State.isConnected()) throw Error();
+            if (!this.did) throw Error();
+            const profiles = await State.getProfiles([this.did]);
+            if (profiles instanceof Error) throw profiles;
+            this.profile = profiles[0];
         } catch (e) {
             this.error = errorMessage;
+            error("Couldn't load profile", e);
         } finally {
             this.isLoading = false;
         }
@@ -66,7 +59,7 @@ export class ProfileOverlay extends HashNavOverlay {
     }
 
     renderContent(): TemplateResult {
-        if (this.isLoading || this.error || !this.profile) return html`<div class="align-top p-4">${this.error ? this.error : contentLoader}</div>`;
+        if (this.isLoading || this.error || !this.profile) return html`<div class="align-top p-4">${this.error ? this.error : spinner}</div>`;
 
         const user = Store.getUser();
         const profile = this.profile;
@@ -78,11 +71,11 @@ export class ProfileOverlay extends HashNavOverlay {
             ev.stopImmediatePropagation();
             document.body.append(
                 dom(
-                    html`<profile-list-overlay
+                    html`<profiles-stream-overlay
                         title="${i18n("Followers")}"
                         .hash=${`followers/${profile.did}`}
-                        .loader=${followersLoader(profile.did)}
-                    ></profile-list-overlay>`
+                        .stream=${new FollowersStream(profile.did)}
+                    ></profiles-stream-overlay>`
                 )[0]
             );
         };
@@ -92,14 +85,37 @@ export class ProfileOverlay extends HashNavOverlay {
             ev.stopImmediatePropagation();
             document.body.append(
                 dom(
-                    html`<profile-list-overlay
+                    html`<profiles-stream-overlay
                         title="${i18n("Following")}"
                         .hash=${`following/${profile.did}`}
-                        .loader=${followingLoader(profile.did)}
-                    ></profile-list-overlay>`
+                        .loader=${new FollowingStream(profile.did)}
+                    ></profiles-stream-overlayy>`
                 )[0]
             );
         };
+
+        let feed: HTMLElement;
+
+        if (this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList) {
+            feed = dom(html`<div class="p-4 text-center">${i18n("Nothing to show")}</div>`)[0];
+        } else {
+            switch (this.filter) {
+                case "posts_with_replies":
+                case "posts_no_replies":
+                case "posts_with_media":
+                    feed = dom(html`<feed-stream-view .stream=${new ActorFeedStream(this.filter, this.profile.did)}></feed-stream-view>`)[0];
+                    break;
+                case "likes":
+                    if (this.profile.did == Store.getUser()?.profile.did) {
+                        feed = dom(html`<feed-stream-view .stream=${new LoggedInActorLikesStream()}></feed-stream-view>`)[0];
+                    } else {
+                        feed = dom(html`<posts-stream-view .stream=${new ActorLikesStream(this.profile.did)}></posts-stream-view>`)[0];
+                    }
+                    break;
+                default:
+                    feed = dom(html`<div class="p-4 text-center">${i18n("Nothing to show")}</div>`)[0];
+            }
+        }
 
         return html`<div>
             ${this.profile.banner
@@ -191,11 +207,7 @@ export class ProfileOverlay extends HashNavOverlay {
                     ${i18n("Likes")}
                 </button>
             </div>
-            ${!(this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList)
-                ? html`<div class="min-h-[100dvh]">
-                      <skychat-feed .feedLoader=${actorTimelineLoader(this.profile.did, this.filter)}></skychat-feed>
-                  </div>`
-                : html`<div class="p-4 text-center">${i18n("Nothing to show")}</div>`}
+            <div class="min-h-screen">${feed}</div>
         </div>`;
     }
 
@@ -242,7 +254,7 @@ export class ProfileViewElement extends LitElement {
 
     render() {
         if (!this.profile) {
-            return html`<div class="align-top">${contentLoader}</div>`;
+            return html`<div class="align-top">${spinner}</div>`;
         }
 
         const user = Store.getUser();
@@ -252,7 +264,6 @@ export class ProfileViewElement extends LitElement {
         return html`<div
             class="cursor-pointer"
             @click=${(ev: Event) => {
-                if (!bskyClient) return;
                 if (!this.profile) return;
                 if (hasLinkOrButtonParent(ev.target as HTMLElement)) return;
                 ev.stopPropagation();
@@ -278,111 +289,12 @@ export class ProfileViewElement extends LitElement {
     }
 }
 
-@customElement("profile-list")
-export class ProfileList extends ItemsList<string, ProfileView> {
-    @property()
-    loader: (cursor?: string) => Promise<ItemListLoaderResult<string, ProfileView>> = async () => {
-        return { items: [] };
-    };
-
-    async loadItems(cursor?: string): Promise<ItemListLoaderResult<string, ProfileView>> {
-        return this.loader(cursor);
-    }
-
-    getItemKey(item: ProfileView): string {
-        return item.did;
-    }
-
-    renderItem(item: ProfileView): TemplateResult {
-        return html`<profile-view .profile=${item}></profile-view>`;
-    }
-}
-
-@customElement("profile-list-overlay")
-export class ProfileListOverlay extends HashNavOverlay {
-    @property()
-    title: string = "";
-
-    @property()
-    hash: string = "";
-
-    @property()
-    loader: (cursor?: string) => Promise<ItemListLoaderResult<string, ProfileView>> = async () => {
-        return { items: [] };
-    };
-
-    protected createRenderRoot(): Element | ShadowRoot {
-        return this;
-    }
-
-    getHash(): string {
-        return this.hash;
-    }
-
-    renderHeader(): TemplateResult {
-        return html` ${renderTopbar(this.title as keyof Messages, this.closeButton())}`;
-    }
-
-    renderContent(): TemplateResult {
-        return html`<profile-list .loader=${this.loader}></profile-list>`;
-    }
-}
-
-export function likesLoader(postUri?: string): ItemsListLoader<string, ProfileView> {
-    return async (cursor?: string, limit?: number) => {
-        if (!bskyClient) return new Error(i18n("Not connected"));
-        if (!postUri) return new Error(i18n("No post given"));
-        const result = await bskyClient.getLikes({ cursor, limit, uri: postUri });
-        if (!result.success) {
-            return new Error(i18n("Couldn't load likes"));
-        }
-        return { cursor: result.data.cursor, items: result.data.likes.map((like) => like.actor) };
-    };
-}
-
-export function repostLoader(postUri?: string): ItemsListLoader<string, ProfileView> {
-    return async (cursor?: string, limit?: number) => {
-        if (!bskyClient) return new Error(i18n("Not connected"));
-        if (!postUri) return new Error(i18n("No post given"));
-        const result = await bskyClient.getRepostedBy({ cursor, limit, uri: postUri });
-        if (!result.success) {
-            return new Error(i18n("Could not load reposts"));
-        }
-        return { cursor: result.data.cursor, items: result.data.repostedBy };
-    };
-}
-
-export function followersLoader(did: string): ItemsListLoader<string, ProfileView> {
-    return async (cursor?: string, limit?: number) => {
-        if (!bskyClient) return new Error(i18n("Not connected"));
-        if (!did) return new Error(i18n("No account given"));
-        const result = await bskyClient.getFollowers({ cursor, limit, actor: did });
-        if (!result.success) {
-            return new Error(i18n("Could not load followers"));
-        }
-        return { cursor: result.data.cursor, items: result.data.followers };
-    };
-}
-
-export function followingLoader(did: string): ItemsListLoader<string, ProfileView> {
-    return async (cursor?: string, limit?: number) => {
-        if (!bskyClient) return new Error(i18n("Not connected"));
-        if (!did) return new Error(i18n("No account given"));
-        const result = await bskyClient.getFollows({ cursor, limit, actor: did });
-        if (!result.success) {
-            return new Error(i18n("Could not load followings"));
-        }
-        return { cursor: result.data.cursor, items: result.data.follows };
-    };
-}
-
 export function renderProfile(profile: ProfileView, smallAvatar = false) {
     return html`<a
         class="flex items-center gap-2"
         href="${getProfileUrl(profile.handle ?? profile.did)}"
         target="_blank"
         @click=${(ev: Event) => {
-            if (!bskyClient) return;
             ev.preventDefault();
             ev.stopPropagation();
             document.body.append(dom(html`<profile-overlay .did=${profile.did}></profile-overlay>`)[0]);
@@ -438,16 +350,15 @@ export class ProfileActionButton extends LitElement {
         const user = Store.getUser();
         if (!user) return;
         if (!this.profile) return;
-        if (!bskyClient) return;
+        if (!State.bskyClient) return;
 
         this.isUpdating = true;
         if (action == i18n("Unblock")) {
             const rkey = this.profile!.viewer!.blocking!.split("/").pop()!;
-            await bskyClient.app.bsky.graph.block.delete({ repo: user.profile.did, rkey }, {});
+            await State.bskyClient.app.bsky.graph.block.delete({ repo: user.profile.did, rkey }, {});
             // Need to refetch in this case, as following info in viewer isn't set when blocked.
-            delete profileCache[this.profile.did];
             for (let i = 0; i < 2; i++) {
-                const response = await bskyClient.getProfile({ actor: this.profile.did });
+                const response = await State.bskyClient.getProfile({ actor: this.profile.did });
                 if (response.success) {
                     this.profile = response.data;
                 }
@@ -455,11 +366,11 @@ export class ProfileActionButton extends LitElement {
         }
         if (action == i18n("Unfollow")) {
             const rkey = this.profile!.viewer!.following!.split("/").pop();
-            const result = await bskyClient.app.bsky.graph.follow.delete({ repo: user.profile.did, rkey }, {});
+            const result = await State.bskyClient.app.bsky.graph.follow.delete({ repo: user.profile.did, rkey }, {});
             this.profile.viewer!.following = undefined;
         }
         if (action == i18n("Follow")) {
-            const result = await bskyClient.app.bsky.graph.follow.create(
+            const result = await State.bskyClient.app.bsky.graph.follow.create(
                 { repo: user.profile.did },
                 { subject: this.profile.did, createdAt: new Date().toISOString() }
             );

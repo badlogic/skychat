@@ -1,6 +1,7 @@
 import { TemplateResult, html, render, svg } from "lit";
 import { i18n } from "./i18n";
 import { User } from "./store";
+import { spinnerIcon } from "./icons";
 
 export function getNumber(num: number | undefined): string {
     if (num == undefined) return "0";
@@ -61,6 +62,10 @@ export const contentLoader = html`<div class="flex space-x-4 animate-pulse w-[80
             <div class="h-2 bg-gray/50 dark:bg-gray rounded"></div>
         </div>
     </div>
+</div>`;
+
+export const spinner = html`<div class="w-full py-4 flex items-center justify-center">
+    <i class="icon w-8 h-8 animate-spin">${spinnerIcon}</i>
 </div>`;
 
 export function getTimeDifference(utcTimestamp: number): string {
@@ -278,8 +283,12 @@ export function formatFileSize(size: number): string {
     }
 }
 
-export function apiBaseUrl() {
-    return location.href.includes("localhost") || location.href.includes("192.168.1") ? `http://${location.hostname}:3333/` : "/";
+function apiBaseUrl() {
+    return location.href.includes("localhost") || location.href.includes("192.168.1") ? `http://${location.hostname}:3333/api/` : "/api/";
+}
+
+export function fetchApi(endpoint: String) {
+    return fetch(apiBaseUrl() + endpoint);
 }
 
 export function supportsNotifications() {
@@ -383,4 +392,14 @@ export function getCaretPosition(textarea: HTMLTextAreaElement) {
     document.body.removeChild(dummyDiv);
 
     return caretPos;
+}
+
+export function assertNever(x: never) {
+    throw new Error("Unexpected object: " + x);
+}
+
+export function error(message: string, exception?: any) {
+    if (exception instanceof Error && exception.message.length == 0) exception = undefined;
+    console.error(message, exception);
+    return new Error(message);
 }

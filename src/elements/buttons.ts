@@ -1,12 +1,11 @@
+import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { dom, sleep } from "../utils";
-import { arrowUpDoubleIcon, arrowUpIcon, bellIcon, cloudIcon, editIcon, searchIcon } from "../icons";
-import { bskyClient } from "../bsky";
-import { setupPushNotifications } from "./notifications";
-import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { PostEditor, PostEditorOverlay, navigationGuard } from ".";
 import { map } from "lit/directives/map.js";
+import { arrowUpDoubleIcon, bellIcon, cloudIcon, editIcon } from "../icons";
+import { dom } from "../utils";
+import { setupPushNotifications } from "./notifications";
+import { State } from "../state";
 
 let normalStyle = "flex justify-center items-center w-12 h-12 bg-[#ccc] dark:bg-[#333] rounded-full";
 let highlightStyle = "flex justify-center items-center w-12 h-12 bg-primary rounded-full";
@@ -187,9 +186,12 @@ export class OpenPostEditorButton extends FloatingButton {
 
 @customElement("notifications-button")
 export class NotificationsButton extends FloatingButton {
+    unsub: () => void = () => {};
+
     async handleClick() {
-        document.body.append(dom(html`<notifications-overlay></notifications-overlay>`)[0]);
+        document.body.append(dom(html`<notifications-stream-overlay></notifications-stream-overlay>`)[0]);
         this.highlight = false;
+        // FIXME tell the user that they can have push notifications
         let response = await Notification.requestPermission();
         if (response == "granted") {
             setupPushNotifications();
@@ -204,25 +206,22 @@ export class NotificationsButton extends FloatingButton {
         return html`${bellIcon}`;
     }
 
-    protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
-        const checkNotifications = async () => {
-            try {
-                if (!bskyClient?.session) return;
-                const response = await bskyClient?.countUnreadNotifications();
-                if (!response || !response.success) {
-                    return;
-                }
-                if (response.data?.count > 0) {
-                    this.value = response.data.count.toString();
-                    this.highlight = true;
-                } else {
-                    this.highlight = false;
-                }
-            } finally {
-                setTimeout(checkNotifications, 5000);
+    connectedCallback(): void {
+        super.connectedCallback();
+        this.unsub = State.subscribe("unreadNotifications", (count) => {
+            if (count > 0) {
+                this.value = count.toString();
+                this.highlight = true;
+            } else {
+                this.highlight = false;
             }
-        };
-        checkNotifications();
+        });
+        this;
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        this.unsub();
     }
 }
 

@@ -1,10 +1,9 @@
 import { LitElement, PropertyValueMap, html, nothing } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { contentLoader, defaultAvatar, dom } from "../utils";
+import { contentLoader, defaultAvatar, dom, spinner } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
-import { bskyClient, login, logout } from "../bsky";
 import { setupPushNotifications } from "../elements/notifications";
 import { routeHash } from "../elements/routing";
 import { i18n } from "../i18n";
@@ -12,6 +11,8 @@ import { Store } from "../store";
 import { renderTopbar } from "../elements/overlay";
 import { searchIcon, settings2Icon, settingsIcon } from "../icons";
 import { FeedsButton, NotificationsButton, OpenPostEditorButton, UpButton } from "../elements";
+import { State } from "../state";
+import { ActorFeedStream } from "../streams";
 
 @customElement("skychat-client")
 class SkychatClient extends LitElement {
@@ -59,7 +60,7 @@ class SkychatClient extends LitElement {
 
     render() {
         if (this.isConnecting) return this.renderConnecting();
-        if (!bskyClient) {
+        if (!State.isConnected()) {
             if (Store.getUser()) {
                 return this.renderConnecting();
             } else {
@@ -111,7 +112,7 @@ class SkychatClient extends LitElement {
             <div class="flex-grow flex flex-col">
                 <div class="animate-fade flex-grow flex flex-col">
                     <p class="text-center">${i18n("Connecting")}</p>
-                    <div class="align-top">${contentLoader}</div>
+                    <div class="align-top">${spinner}</div>
                 </div>
             </div>
             <div class="text-center text-xs italic my-4 pb-4">${i18n("footer")}</div>
@@ -119,7 +120,7 @@ class SkychatClient extends LitElement {
     }
 
     renderMain() {
-        if (!bskyClient) return html`<div>${i18n("Not connected")}</div>`;
+        if (!State.isConnected()) return html`<div>${i18n("Not connected")}</div>`;
         if (location.hash && location.hash.length > 0) {
             const hash = location.hash;
             const newHref = location.href;
@@ -130,7 +131,7 @@ class SkychatClient extends LitElement {
 
         const mainDom = dom(html`<main class="w-full h-full overflow-auto">
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
-                ${this.renderTopbar()}<skychat-feed
+                ${this.renderTopbar()}<feed-stream-view
                     .poll=${true}
                     .newItems=${() => {
                         if (document.querySelector("main")!.scrollTop > 0) {
@@ -139,7 +140,8 @@ class SkychatClient extends LitElement {
                             this.upButton.highlight = true;
                         }
                     }}
-                ></skychat-feed>
+                    .stream=${new ActorFeedStream("home")}
+                ></feed-stream-view>
                 <open-post-editor-button id="post"></open-post-editor-button>
                 <notifications-button id="notifications"></notifications-button>
                 <feeds-button id="feeds"></feeds-button>
@@ -183,7 +185,7 @@ class SkychatClient extends LitElement {
             }
             this.lastAccount = account;
             this.lastPassword = password;
-            const response = await login(account, password);
+            const response = await State.login(account, password);
             if (response instanceof Error) {
                 this.error = response.message;
                 Store.setUser(undefined);
@@ -198,7 +200,7 @@ class SkychatClient extends LitElement {
     }
 
     logout() {
-        logout();
+        State.logout();
         location.reload();
     }
 

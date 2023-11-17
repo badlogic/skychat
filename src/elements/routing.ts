@@ -1,7 +1,8 @@
 import { html } from "lit";
-import { ProfileOverlay, ThreadOverlay, followersLoader, followingLoader, likesLoader } from ".";
+import { ProfileOverlay, ThreadOverlay } from ".";
 import { dom, splitAtUri, combineAtUri } from "../utils";
 import { i18n } from "../i18n";
+import { FollowersStream, FollowingStream, PostLikesStream } from "../streams";
 
 export async function routeHash(hash: string) {
     hash = hash.replace("#", "");
@@ -37,56 +38,56 @@ export async function routeHash(hash: string) {
             }
             if (tokens[0] == "notifications") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "NOTIFICATIONS-OVERLAY") {
+                if (child.tagName == "NOTIFICATIONS-STREAM-OVERLAY") {
                     return;
                 }
-                document.body.append(dom(html`<notifications-overlay .pushState=${false}></notifications-overlay>`)[0]);
+                document.body.append(dom(html`<notifications-stream-overlay .pushState=${false}></notifications-stream-overlay>`)[0]);
             }
             if (tokens[0] == "likes") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "PROFILE-LIST-OVERLAY") {
+                if (child.tagName == "PROFILES-STREAM-OVERLAY") {
                     return;
                 }
                 document.body.append(
                     dom(
-                        html`<profile-list-overlay
+                        html`<profiles-stream-overlay
                             title="${i18n("Likes")}"
                             .hash=${`likes/${tokens[1]}/${tokens[2]}`}
-                            .loader=${likesLoader(combineAtUri(tokens[1], tokens[2]))}
+                            .stream=${new PostLikesStream(combineAtUri(tokens[1], tokens[2]))}
                             .pushState=${false}
-                        ></profile-list-overlay>`
+                        ></profiles-stream-overlay>`
                     )[0]
                 );
             }
             if (tokens[0] == "following") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "PROFILE-LIST-OVERLAY") {
+                if (child.tagName == "PROFILES-STREAM-OVERLAY") {
                     return;
                 }
                 document.body.append(
                     dom(
-                        html`<profile-list-overlay
+                        html`<profiles-stream-overlay
                             title="${i18n("Following")}"
                             .hash=${`following/${tokens[1]}`}
-                            .loader=${followingLoader(tokens[1])}
+                            .stream=${new FollowingStream(tokens[1])}
                             .pushState=${false}
-                        ></profile-list-overlay>`
+                        ></profiles-stream-overlay>`
                     )[0]
                 );
             }
             if (tokens[0] == "followers") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "PROFILE-LIST-OVERLAY") {
+                if (child.tagName == "PROFILES-STREAM-OVERLAY") {
                     return;
                 }
                 document.body.append(
                     dom(
-                        html`<profile-list-overlay
+                        html`<profile-stream-overlay
                             title="${i18n("Followers")}"
                             .hash=${`followers/${tokens[1]}`}
-                            .loader=${followersLoader(tokens[1])}
+                            .stream=${new FollowersStream(tokens[1])}
                             .pushState=${false}
-                        ></profile-list-overlay>`
+                        ></profiles-stream-overlay>`
                     )[0]
                 );
             }

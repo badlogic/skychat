@@ -1,13 +1,13 @@
-import { LitElement, PropertyValueMap, html, nothing, svg } from "lit";
+import { LitElement, html, nothing, svg } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { contentLoader } from "../utils";
+import { spinner } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import "../elements";
-import { Store } from "../store";
-import { login, logout } from "../bsky";
 import { i18n } from "../i18n";
+import { State } from "../state";
+import { Store } from "../store";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -35,7 +35,7 @@ export class ChatLogin extends LitElement {
     render() {
         let content = html` <div class="animate-fade flex-grow flex flex-col">
             <p class="text-center">${i18n("Connecting")}</p>
-            <div class="align-top">${contentLoader}</div>
+            <div class="align-top">${spinner}</div>
         </div>`;
 
         if (!this.isLoading) {
@@ -135,9 +135,9 @@ export class ChatLogin extends LitElement {
                 account = undefined;
                 password = undefined;
             }
-            const bskyClient = await login(account, password);
-            if (bskyClient instanceof Error) {
-                this.error = bskyClient.message;
+            const result = await State.login(account, password);
+            if (result instanceof Error) {
+                this.error = result.message;
             } else {
                 location.href = "/chat.html?hashtag=" + encodeURIComponent(hashtag);
             }
@@ -148,7 +148,7 @@ export class ChatLogin extends LitElement {
 
     logout() {
         if (confirm(i18n("Log out?"))) {
-            logout();
+            State.logout();
             location.reload();
         }
     }

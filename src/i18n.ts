@@ -107,6 +107,9 @@ export interface Messages {
     "Could not load newer items": string;
     "You can not add an image if you already have a link card": string;
     Mutuals: string;
+    "Couldn't load notifications": string;
+    "Invalid stream": string;
+    "Sorry, an unknown error occured": string;
 }
 
 const english: Messages = {
@@ -227,6 +230,9 @@ const english: Messages = {
     "Could not load newer items": "Could not load newer items",
     "You can not add an image if you already have a link card": "You can not add an image if you already have a link card",
     Mutuals: "Mutuals",
+    "Couldn't load notifications": "Couldn't load notifications",
+    "Invalid stream": "Invalid stream",
+    "Sorry, an unknown error occured": "Sorry, an unknown error occured",
 };
 
 const german: Messages = {
@@ -349,6 +355,9 @@ const german: Messages = {
     "Could not load newer items": "Could not load newer items",
     "You can not add an image if you already have a link card": "Kann kein Bild hinzufügen wenn Link-Karte bereits angefügt ist.",
     Mutuals: "Mutuals", // FIXME
+    "Couldn't load notifications": "Konnte Notifikationen nicht laden",
+    "Invalid stream": "Unbekannter stream",
+    "Sorry, an unknown error occured": "Ein unbekannter Fehler ist aufgetreten",
 };
 
 export type LanguageCode = "en" | "de";

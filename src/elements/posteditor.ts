@@ -17,7 +17,7 @@ import { SelfLabels } from "@atproto/api/dist/client/types/com/atproto/label/def
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing, svg } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { bskyClient, extractLinkCard } from "../bsky";
+import { extractLinkCard } from "../bsky";
 import { deleteIcon, editIcon, imageIcon, spinnerIcon } from "../icons";
 import { Store } from "../store";
 import {
@@ -35,6 +35,7 @@ import {
 import { renderEmbed, renderPostText, renderRecord } from "./posts";
 import { CloseableElement, Overlay, navigationGuard, renderTopbar } from "./overlay";
 import { i18n } from "../i18n";
+import { State } from "../state";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -446,7 +447,7 @@ export class PostEditor extends LitElement {
     }
 
     async addLinkCard(card: AppBskyRichtextFacet.Link) {
-        if (!bskyClient) return;
+        if (!State.isConnected()) return;
         let cardEmbed: AppBskyEmbedExternal.Main = {
             $type: "app.bsky.embed.external",
             external: {
@@ -470,7 +471,7 @@ export class PostEditor extends LitElement {
                     if (imageData instanceof Error) console.error(imageData);
                     else {
                         try {
-                            const response = await bskyClient.com.atproto.repo.uploadBlob(imageData.data, {
+                            const response = await State.bskyClient!.com.atproto.repo.uploadBlob(imageData.data, {
                                 headers: { "Content-Type": imageData.mimeType },
                                 encoding: "",
                             });
@@ -543,7 +544,7 @@ export class PostEditor extends LitElement {
             message.selectionStart,
             async (match, start, end) => {
                 if (match.length == 0) return;
-                const response = await bskyClient?.app.bsky.actor.searchActorsTypeahead({
+                const response = await State.bskyClient?.app.bsky.actor.searchActorsTypeahead({
                     limit: 8,
                     q: match,
                 });
@@ -578,17 +579,13 @@ export class PostEditor extends LitElement {
     async sendPost() {
         const user = Store.getUser();
         if (!user) return;
-        if (!bskyClient) return;
+        if (!State.isConnected) return;
         try {
             this.isSending = true;
             this.canPost = false;
             this.requestUpdate();
             const richText = new RichText({ text: this.message + (this.hashtag ? ` ${this.hashtag}` : "") });
-            try {
-                await richText.detectFacets(bskyClient!);
-            } catch (e) {
-                // may explode if handles can't be resolved
-            }
+            await State.detectFacets(richText!);
 
             const imagesEmbed: AppBskyEmbedImages.Main = {
                 $type: "app.bsky.embed.images",
@@ -601,7 +598,7 @@ export class PostEditor extends LitElement {
                 console.log(
                     "Downscaling image took: " + (performance.now() - start) / 1000 + ", old: " + image.data.length + ", new: " + data.data.length
                 );
-                const response = await bskyClient.com.atproto.repo.uploadBlob(data.data, {
+                const response = await State.bskyClient!.com.atproto.repo.uploadBlob(data.data, {
                     headers: { "Content-Type": image.mimeType },
                     encoding: "",
                 });
@@ -670,27 +667,15 @@ export class PostEditor extends LitElement {
                 };
             }
 
-            const response = await bskyClient.post(record);
-            let post: PostView | undefined;
-            while (true) {
-                const postResponse = await bskyClient.getPosts({ uris: [response.uri] });
-                if (!postResponse.success) {
-                    throw Error(i18n("Couldn't send post"));
-                }
-                if (postResponse.data.posts.length == 0) {
-                    console.error("Sent post, but received null response, retrying");
-                    continue;
-                }
-                post = postResponse.data.posts[0];
-                break;
-            }
+            const post = await State.createPost(record);
+            if (post instanceof Error) throw post;
 
             if (!this.replyTo && this.hashtag) {
                 if (!hashTagThread) {
-                    hashTagThread = { root: response, parent: response };
+                    hashTagThread = { root: post, parent: post };
                     user.hashTagThreads[this.hashtag] = hashTagThread;
                 }
-                hashTagThread.parent = response;
+                hashTagThread.parent = post;
                 Store.setUser(user);
             }
             this.messageElement!.editable!.value = "";
@@ -785,7 +770,7 @@ export class PostEditorOverlay extends CloseableElement {
 
     protected render() {
         const user = Store.getUser();
-        if (!user || !bskyClient) return nothing;
+        if (!user || !State.isConnected()) return nothing;
         return html`<div class="fixed top-0 w-full h-full overflow-none backdrop-blur z-10">
             <div
                 class="flex ${isMobileBrowser()
