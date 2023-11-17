@@ -1,7 +1,7 @@
 import { LitElement, PropertyValueMap, html, nothing } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { contentLoader, defaultAvatar, dom, getDateString, spinner } from "../utils";
+import { contentLoader, defaultAvatar, dom, spinner } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import { setupPushNotifications } from "../elements/notifications";
@@ -13,8 +13,6 @@ import { searchIcon, settings2Icon, settingsIcon } from "../icons";
 import { FeedsButton, NotificationsButton, OpenPostEditorButton, UpButton } from "../elements";
 import { State } from "../state";
 import { ActorFeedStream } from "../streams";
-import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { author, text } from "../bsky";
 
 @customElement("skychat-client")
 class SkychatClient extends LitElement {
@@ -133,7 +131,17 @@ class SkychatClient extends LitElement {
 
         const mainDom = dom(html`<main class="w-full h-full overflow-auto">
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
-                ${this.renderTopbar()}
+                ${this.renderTopbar()}<feed-stream-view
+                    .poll=${true}
+                    .newItems=${() => {
+                        if (document.querySelector("main")!.scrollTop > 0) {
+                            if (!this.upButton) return;
+                            this.upButton.classList.remove("hidden");
+                            this.upButton.highlight = true;
+                        }
+                    }}
+                    .stream=${new ActorFeedStream("home")}
+                ></feed-stream-view>
                 <open-post-editor-button id="post"></open-post-editor-button>
                 <notifications-button id="notifications"></notifications-button>
                 <feeds-button id="feeds"></feeds-button>

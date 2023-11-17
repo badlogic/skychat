@@ -271,27 +271,19 @@ export class State {
 
             const postsToLoad: string[] = [];
             const quotesToLoad: string[] = [];
-            const profilesToLoad: string[] = [];
             for (const notification of listResponse.data.notifications) {
                 if (notification.reasonSubject && notification.reasonSubject.includes("app.bsky.feed.post")) {
                     postsToLoad.push(notification.reasonSubject);
-                    profilesToLoad.push(splitAtUri(notification.reasonSubject).repo);
                 }
                 if (AppBskyFeedPost.isRecord(notification.record) && notification.record.reply) {
                     postsToLoad.push(notification.record.reply.parent.uri);
-                    profilesToLoad.push(splitAtUri(notification.record.reply.parent.uri).repo);
                     quotesToLoad.push(notification.uri);
                 }
                 if (notification.uri.includes("app.bsky.feed.post")) {
                     postsToLoad.push(notification.uri);
-                    profilesToLoad.push(splitAtUri(notification.uri).repo);
                 }
             }
-            const promises = await Promise.all([
-                State.getPosts(postsToLoad, false),
-                State.getQuotes(quotesToLoad),
-                State.getProfiles(profilesToLoad),
-            ]);
+            const promises = await Promise.all([State.getPosts(postsToLoad, false), State.getQuotes(quotesToLoad)]);
             for (const promise of promises) {
                 if (promise instanceof Error) throw promise;
             }
@@ -485,6 +477,7 @@ export class State {
         return State.bskyClient != undefined;
     }
 
+    logoutUnsub: () => void = () => {};
     static async login(account?: string, password?: string): Promise<void | Error> {
         if (!account || !password) {
             State.bskyClient = new BskyAgent({ service: "https://api.bsky.app" });
@@ -536,6 +529,7 @@ export class State {
                 hashTagThreads: user && user.account == account ? user.hashTagThreads ?? {} : {},
             };
             Store.setUser(newUser);
+            State.notify("profile", "updated", newUser.profile);
             this.checkUnreadNotifications();
         } catch (e) {
             Store.setUser(undefined);
