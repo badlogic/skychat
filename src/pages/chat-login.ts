@@ -93,7 +93,7 @@ export class ChatLogin extends LitElement {
                 <a class="text-xl text-primary text-center font-bold mt-8" href="trending.html">${i18n("Trending hashtags")}</a>`;
         }
 
-        return html` <main class="flex flex-col justify-between m-auto max-w-[728px] px-4 h-full leading-5">
+        return html` <main class="flex flex-col justify-between m-auto max-w-[728px] px-4 h-full">
             <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/chat-login.html"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat Live</span></a
             >

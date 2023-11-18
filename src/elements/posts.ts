@@ -12,32 +12,17 @@ import { FeedViewPost, PostView, ThreadViewPost } from "@atproto/api/dist/client
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { unsafeHTML } from "lit/directives/unsafe-html.js";
+import { i18n } from "../i18n";
 import { blockIcon, deleteIcon, heartIcon, moreIcon, muteIcon, quoteIcon, reblogIcon, replyIcon, shieldIcon } from "../icons";
+import { EventAction, NumQuote, State } from "../state";
 import { Store } from "../store";
+import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
 import { combineAtUri, contentLoader, dom, error, getDateString, getTimeDifference, hasLinkOrButtonParent, spinner, splitAtUri } from "../utils";
 import { IconToggle } from "./icontoggle";
-import { PopupMenu } from "./popup";
-import { getProfileUrl, renderProfile } from "./profiles";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
-import { i18n } from "../i18n";
-import { EventAction, NumQuote, State } from "../state";
-import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
+import { PopupMenu } from "./popup";
 import { deletePost, quote, reply } from "./posteditor";
-
-function splitTextAndCreateSpans(text: string): TemplateResult[] {
-    const segments = text.split("\n");
-    const results: TemplateResult[] = [];
-    segments.forEach((segment, index) => {
-        if (segment) {
-            results.push(html`<span>${unsafeHTML(segment)}</span>`);
-        }
-        if (index < segments.length - 1) {
-            results.push(html`<br />`);
-        }
-    });
-    return results;
-}
+import { getProfileUrl, renderProfile } from "./profiles";
 
 export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {
@@ -80,8 +65,8 @@ export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
 
 export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External) {
     const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
-    return html`<a class="mt-2 border rounded border-gray/50 flex" target="_blank" href="${cardEmbed.uri}">
-        ${thumb ? html`<img src="${thumb}" class="rounded-l w-[100px] object-cover" />` : nothing}
+    return html`<a class="overflow-x-clip mt-2 border rounded border-gray/50 flex" target="_blank" href="${cardEmbed.uri}">
+        ${thumb ? html`<img src="${thumb}" class="w-[100px] object-cover" />` : nothing}
         <div class="flex flex-col p-2">
             <span class="text-gray text-xs">${new URL(cardEmbed.uri).host}</span>
             <span class="font-bold text-sm line-clamp-2">${cardEmbed.title}</span>
@@ -204,7 +189,7 @@ export function renderRecord(
                       ${prefix ? html`<span class="mr-1 font-bold">${prefix}</span>` : nothing} ${renderProfile(author, smallAvatar)}
                       ${prefix == undefined
                           ? html`<a
-                                class="ml-auto text-right text-xs text-lightgray whitespace-nowrap hover:underline"
+                                class="self-start ml-auto text-right text-xs text-lightgray whitespace-nowrap hover:underline"
                                 href="https://bsky.app/profile/${author.did}/post/${rkey}"
                                 target="_blank"
                                 @click=${(ev: Event) => {
@@ -281,7 +266,7 @@ export class PostViewElement extends LitElement {
     deleted = false;
 
     @property()
-    centerButtons = true;
+    centerButtons = false;
 
     unsubscribePost: () => void = () => {};
     unsubscribeQuote: () => void = () => {};
@@ -627,7 +612,6 @@ export class ThreadViewPostElement extends LitElement {
                     .showReplyTo=${false}
                     .openOnClick=${false}
                     .shortTime=${true}
-                    .centerButtons=${false}
                 ></post-view>
                 <div id="replies" class="${isRoot ? "ml-2" : "ml-4"}"></div>
             </div>`)[0];
@@ -664,7 +648,6 @@ export class ThreadViewPostElement extends LitElement {
                     .showReplyTo=${false}
                     .openOnClick=${false}
                     .shortTime=${true}
-                    .centerButtons=${false}
                 ></post-view>
             </div>
             <div id="replies" class="${isRoot ? "ml-2" : "ml-4"}">
@@ -845,7 +828,6 @@ export class FeewViewPostElement extends LitElement {
                 .replyCallback=${(post: PostView) => reply(post)}
                 .deleteCallback=${(post: PostView) => deletePost(post, parentDom)}
                 .shortTime=${true}
-                .centerButtons=${false}
             ></post-view>`)[0];
             postDom = dom(html`<div class="ml-2 pl-2 mt-2 border-l border-l-primary">
                 <post-view

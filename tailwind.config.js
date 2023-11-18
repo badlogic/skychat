@@ -14,6 +14,9 @@ module.exports = {
             screens: {
                 pwa: { raw: "(display-mode: standalone)" },
             },
+            overflow: {
+                "x-clip": "clip",
+            },
         },
     },
     plugins: [require("tailwindcss-animated")],

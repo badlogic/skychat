@@ -5,17 +5,26 @@ import { error, fetchApi } from "./utils";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 
 export interface Stream<T> {
-    onNewer(callback: (newerItems: Error | T[]) => void): void;
+    items: T[];
+    readonly pollNew: boolean;
+    addNewItemsListener(listener: (newerItems: Error | T[]) => void): void;
     next(): Promise<Error | T[]>;
+    poll(): void;
     close(): void;
 }
 
 export class PostSearchStream implements Stream<PostView> {
     cursor?: string;
+    items: PostView[] = [];
+    readonly pollNew = false;
     constructor(readonly query: string) {}
 
-    onNewer(callback: (newerItems: Error | PostView[]) => void): void {
-        throw new Error("PostSearchStream does not support polling");
+    addNewItemsListener(listener: (newItems: Error | PostView[]) => void): void {
+        throw new Error("Method not supported");
+    }
+
+    poll(): void {
+        throw new Error("Method not supported");
     }
 
     async next() {
@@ -42,10 +51,51 @@ export class PostSearchStream implements Stream<PostView> {
 
 export class CursorStream<C, T> implements Stream<T> {
     cursor?: C;
+    items: T[] = [];
+    closed = false;
+    timeoutId: any = undefined;
 
-    constructor(readonly provider: (cursor?: C) => Promise<Error | { cursor?: C; items: T[] }>) {}
+    constructor(
+        readonly provider: (cursor?: C, limit?: number) => Promise<Error | { cursor?: C; items: T[] }>,
+        public readonly pollNew = false,
+        readonly pollInterval = 5000
+    ) {}
 
-    onNewer(callback: (newerItems: Error | T[]) => void): void {}
+    isPolling = false;
+    async poll() {
+        if (this.isPolling) return;
+        this.isPolling = true;
+
+        try {
+            console.log("Polling");
+            const newItems = await this.provider(undefined, 1);
+            if (newItems instanceof Error) {
+                for (const listener of this.newItemslisteners) {
+                    listener(newItems);
+                }
+                throw newItems;
+            }
+            this.items = [...newItems.items, ...this.items];
+            for (const listener of this.newItemslisteners) {
+                listener(newItems.items);
+            }
+        } catch (e) {
+            error("Couldn't poll newer items", e);
+        } finally {
+            this.isPolling = false;
+            if (!this.closed) {
+                this.timeoutId = setTimeout(() => this.poll(), this.pollInterval);
+            }
+        }
+    }
+
+    newItemslisteners: ((newItems: Error | T[]) => void)[] = [];
+    addNewItemsListener(listener: (newItems: Error | T[]) => void): void {
+        this.newItemslisteners.push(listener);
+        if (this.pollNew) {
+            this.timeoutId = setTimeout(() => this.poll(), this.pollInterval);
+        }
+    }
 
     async next(): Promise<Error | T[]> {
         if (!State.isConnected()) return Error("Not connected");
@@ -60,81 +110,99 @@ export class CursorStream<C, T> implements Stream<T> {
         }
     }
 
-    close(): void {}
+    close(): void {
+        this.closed = true;
+        clearTimeout(this.timeoutId);
+    }
 }
 
 export class NotificationsStream extends CursorStream<string, AppBskyNotificationListNotifications.Notification> {
-    constructor() {
-        super((cursor?: string) => {
-            return State.getNotifications(cursor);
-        });
+    constructor(pollNew = false, pollInterval?: number) {
+        super(
+            (cursor?: string, limit?: number) => {
+                return State.getNotifications(cursor, limit);
+            },
+            pollNew,
+            pollInterval
+        );
     }
 }
 
 export class ActorFeedStream extends CursorStream<string, FeedViewPost> {
-    constructor(readonly type: ActorFeedType, readonly actor?: string) {
-        super((cursor?: string) => {
-            return State.getActorFeed(this.type, this.actor, cursor, 25);
-        });
+    constructor(readonly type: ActorFeedType, readonly actor?: string, pollNew = false, pollInterval?: number) {
+        super(
+            (cursor?: string, limit?: number) => {
+                return State.getActorFeed(this.type, this.actor, cursor, limit);
+            },
+            pollNew,
+            pollInterval
+        );
     }
 }
 
 export class LoggedInActorLikesStream extends CursorStream<string, FeedViewPost> {
     constructor() {
-        super((cursor?: string) => {
-            return State.getLoggedInActorLikes(cursor, 25);
+        super((cursor?: string, limit?: number) => {
+            return State.getLoggedInActorLikes(cursor, limit);
         });
     }
 }
 
 export class ActorLikesStream extends CursorStream<string, PostView> {
     constructor(readonly actor: string) {
-        super((cursor?: string) => {
-            return State.getActorLikes(actor, cursor, 20);
+        super((cursor?: string, limit?: number) => {
+            return State.getActorLikes(actor, cursor, limit);
         });
     }
 }
 
 export class PostLikesStream extends CursorStream<string, ProfileViewDetailed> {
     constructor(readonly postUri: string) {
-        super((cursor?: string) => {
-            return State.getPostLikes(postUri, cursor, 20);
+        super((cursor?: string, limit?: number) => {
+            return State.getPostLikes(postUri, cursor, limit);
         });
     }
 }
 
 export class PostRepostsStream extends CursorStream<string, ProfileViewDetailed> {
     constructor(readonly postUri: string) {
-        super((cursor?: string) => {
-            return State.getPostReposts(postUri, cursor, 20);
+        super((cursor?: string, limit?: number) => {
+            return State.getPostReposts(postUri, cursor, limit);
         });
     }
 }
 
 export class FollowersStream extends CursorStream<string, ProfileViewDetailed> {
     constructor(readonly did: string) {
-        super((cursor?: string) => {
-            return State.getFollowers(did, cursor, 20);
+        super((cursor?: string, limit?: number) => {
+            return State.getFollowers(did, cursor, limit);
         });
     }
 }
 
 export class FollowingStream extends CursorStream<string, ProfileViewDetailed> {
     constructor(readonly did: string) {
-        super((cursor?: string) => {
-            return State.getFollowing(did, cursor, 20);
+        super((cursor?: string, limit?: number) => {
+            return State.getFollowing(did, cursor, limit);
         });
     }
 }
 
 export class QuotesStream implements Stream<PostView> {
     quotes?: string[];
+    items: PostView[] = [];
+    pollNew = false;
 
     constructor(readonly postUri: string) {}
 
-    onNewer(callback: (newerItems: Error | PostView[]) => void): void {
-        throw new Error("Method not implemented.");
+    addNewItemsListener(listener: (newerItems: PostView[] | Error) => void): void {
+        throw new Error("Method not supported");
     }
+
+    poll() {
+        throw new Error("Method not supported");
+    }
+
     async next(): Promise<Error | PostView[]> {
         if (!State.isConnected()) return new Error("Couldn't load quotes");
         try {
@@ -153,7 +221,7 @@ export class QuotesStream implements Stream<PostView> {
         }
     }
     close(): void {
-        throw new Error("Method not implemented.");
+        throw new Error("Method not supported");
     }
 }
 

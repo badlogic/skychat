@@ -162,6 +162,22 @@ export class FeedStreamView extends StreamView<FeedViewPost> {
         this.wrapItem = false;
     }
 
+    protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        super.firstUpdated(_changedProperties);
+        if (this.stream?.pollNew)
+            this.stream?.addNewItemsListener((newItems: FeedViewPost[] | Error) => {
+                if (!this.stream) return;
+                if (newItems instanceof Error) {
+                    alert("Couldn't poll new items"); // FIXME
+                    return;
+                }
+                console.log("New items");
+                if (this.newItems) {
+                    this.newItems(newItems, this.stream.items);
+                }
+            });
+    }
+
     getItemKey(post: FeedViewPost): string {
         return post.post.uri + (AppBskyFeedDefs.isReasonRepost(post.reason) ? post.reason.by.did : "");
     }

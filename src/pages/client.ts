@@ -95,7 +95,7 @@ class SkychatClient extends LitElement {
                 ${user ? html`<button class="text-sm text-primary" @click=${this.logout}>${i18n("Log out")}</button>` : nothing}
             </div>`;
 
-        return html` <main class="flex flex-col justify-between m-auto max-w-[600px] px-4 h-full leading-5">
+        return html` <main class="flex flex-col justify-between m-auto max-w-[600px] px-4 h-full">
             <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
             >
@@ -105,7 +105,7 @@ class SkychatClient extends LitElement {
     }
 
     renderConnecting() {
-        return html` <main class="flex flex-col justify-between m-auto max-w-[600px] px-4 h-full leading-5">
+        return html` <main class="flex flex-col justify-between m-auto max-w-[600px] px-4 h-full">
             <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
             >
@@ -132,15 +132,14 @@ class SkychatClient extends LitElement {
         const mainDom = dom(html`<main class="w-full h-full overflow-auto">
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
                 ${this.renderTopbar()}<feed-stream-view
-                    .poll=${true}
                     .newItems=${() => {
-                        if (document.querySelector("main")!.scrollTop > 0) {
+                        if (mainDom.scrollTop > 0) {
                             if (!this.upButton) return;
                             this.upButton.classList.remove("hidden");
                             this.upButton.highlight = true;
                         }
                     }}
-                    .stream=${new ActorFeedStream("home")}
+                    .stream=${new ActorFeedStream("home", undefined, true)}
                 ></feed-stream-view>
                 <open-post-editor-button id="post"></open-post-editor-button>
                 <notifications-button id="notifications"></notifications-button>

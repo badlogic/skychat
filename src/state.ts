@@ -30,7 +30,7 @@ export type EventAction = "updated" | "deleted";
 export type ActorFeedType = "home" | "posts_with_replies" | "posts_no_replies" | "posts_with_media";
 
 export class State {
-    static DEBUG = true;
+    static DEBUG = false;
     static bskyClient?: BskyAgent;
     private static objects: { [K in keyof Events]?: Map<string, Events[K]> } = {};
     private static generalListeners: { [K in keyof Events]?: ((action: EventAction, payload: Events[K]) => void)[] } = {};
@@ -78,16 +78,16 @@ export class State {
                 id = (payload as NumQuote).postUri;
                 break;
             case "unreadNotifications":
-                console.log(`${getDateString(new Date())} - notify - ${event} ${action}`);
+                if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action}`);
                 return;
             case "theme":
-                console.log(`${getDateString(new Date())} - notify - ${event} ${action}`);
+                if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action}`);
                 return;
             default:
                 assertNever(event);
         }
 
-        console.log(`${getDateString(new Date())} - notify - ${event} ${action} ${id}`);
+        if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action} ${id}`);
 
         if (id) {
             this.idSpecificListeners[event]?.get(id)?.forEach((listener) => listener(action, payload));
@@ -283,11 +283,14 @@ export class State {
         }
     }
 
-    static async getNotifications(cursor?: string): Promise<Error | { cursor?: string; items: AppBskyNotificationListNotifications.Notification[] }> {
+    static async getNotifications(
+        cursor?: string,
+        limit = 25
+    ): Promise<Error | { cursor?: string; items: AppBskyNotificationListNotifications.Notification[] }> {
         if (!State.bskyClient) return new Error("Not connected");
 
         try {
-            const listResponse = await State.bskyClient.listNotifications({ cursor, limit: 25 });
+            const listResponse = await State.bskyClient.listNotifications({ cursor, limit });
             if (!listResponse.success) throw new Error();
 
             const postsToLoad: string[] = [];
