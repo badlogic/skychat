@@ -119,15 +119,16 @@ export abstract class StreamView<T> extends LitElement {
             }
 
             spinner.remove();
+            const itemDoms: HTMLElement[] = [];
             for (const item of items) {
-                if (this.wrapItem) {
-                    itemsDom.append(dom(html`<div class="px-4 py-2 border-t border-gray/20">${this.renderItem(item)}</div>`)[0]);
-                } else {
-                    itemsDom.append(dom(this.renderItem(item))[0]);
-                }
+                const itemDom = this.wrapItem
+                    ? dom(html`<div class="px-4 py-2 border-t border-gray/20">${this.renderItem(item)}</div>`)[0]
+                    : dom(this.renderItem(item))[0];
+                itemsDom.append(itemDom);
+                itemDoms.push(itemDom);
             }
             itemsDom.append(spinner);
-            onVisibleOnce(spinner, () => this.load());
+            onVisibleOnce(itemDoms[Math.max(0, itemDoms.length - 1 - 5)], () => this.load());
         } catch (e) {
             this.error = i18n("Sorry, an unknown error occured");
         }
@@ -197,7 +198,7 @@ export class FeedStreamView extends StreamView<FeedViewPost> {
             this.stream?.addNewItemsListener((newItems: FeedViewPost[] | Error) => {
                 if (!this.stream) return;
                 if (newItems instanceof Error) {
-                    alert("Couldn't poll new items"); // FIXME show a toast instead
+                    // alert("Couldn't poll new items"); // FIXME show a toast instead
                     return;
                 }
                 console.log("New items");

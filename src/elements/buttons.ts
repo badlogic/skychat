@@ -7,8 +7,8 @@ import { dom, getScrollParent } from "../utils";
 import { setupPushNotifications } from "./notifications";
 import { State } from "../state";
 
-let normalStyle = "flex justify-center items-center w-12 h-12 bg-[#ccc] dark:bg-[#333] rounded-full";
-let highlightStyle = "flex justify-center items-center w-12 h-12 bg-primary rounded-full";
+let normalStyle = "flex justify-center items-center w-12 h-12 bg-[#ccc] dark:bg-[#333] rounded-full shadow-md dark:shadow-white/20";
+let highlightStyle = "flex justify-center items-center w-12 h-12 bg-primary rounded-full shadow-md dark:shadow-white/20";
 
 function resetAnimation(el: HTMLElement) {
     el.style.animation = "none";
@@ -46,7 +46,7 @@ export abstract class FloatingButton extends LitElement {
             return;
         }
         const dir = this.lastScrollTop - getScrollParent(this.parentElement)!.scrollTop;
-        this.hide = dir < 0;
+        this.hide = dir <= 0;
         this.lastScrollTop = getScrollParent(this.parentElement)!.scrollTop;
     }
 
@@ -140,7 +140,7 @@ export class UpButton extends FloatingButton {
         }
 
         const dir = this.lastScrollTop - getScrollParent(this.parentElement)!.scrollTop;
-        this.hide = dir < 0;
+        this.hide = dir <= 0;
         this.lastScrollTop = getScrollParent(this.parentElement)!.scrollTop;
     }
 }

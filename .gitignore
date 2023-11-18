@@ -8,3 +8,4 @@ html/service-worker.js
 html/service-worker.js.map
 repos.json
 session.json
+html/version.json
