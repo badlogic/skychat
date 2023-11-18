@@ -1,4 +1,4 @@
-import { TemplateResult, html, render, svg } from "lit";
+import { LitElement, TemplateResult, html, render, svg } from "lit";
 import { i18n } from "./i18n";
 import { User } from "./store";
 import { spinnerIcon } from "./icons";
@@ -402,4 +402,28 @@ export function error(message: string, exception?: any) {
     if (exception instanceof Error && exception.message.length == 0) exception = undefined;
     console.error(message, exception);
     return new Error(message);
+}
+
+export function collectLitElements(element: HTMLElement): LitElement[] {
+    const litElements: LitElement[] = [];
+
+    function traverse(node: HTMLElement) {
+        if (node instanceof LitElement) {
+            litElements.push(node);
+        }
+        const children = node.children;
+        for (let i = 0; i < children.length; i++) {
+            traverse(children[i] as HTMLElement);
+        }
+    }
+    traverse(element);
+    return litElements;
+}
+
+export function getScrollParent(parent: HTMLElement | null) {
+    while (parent) {
+        if (parent.classList.contains("overflow-auto")) return parent;
+        parent = parent.parentElement;
+    }
+    return null;
 }

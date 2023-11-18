@@ -16,7 +16,7 @@ import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from 
 import { State } from "../state";
 import { Store } from "../store";
 import { ActorFeedStream, NotificationsStream, Stream } from "../streams";
-import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, spinner } from "../utils";
+import { collectLitElements, dom, error, getScrollParent, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, spinner } from "../utils";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { renderEmbed, renderRichText } from "./posts";
 import { getProfileUrl, renderProfile } from "./profiles";
@@ -27,7 +27,7 @@ export abstract class StreamView<T> extends LitElement {
     stream?: Stream<T>;
 
     @property()
-    newItems?: (newItems: T[], allItems: T[]) => void = () => {};
+    newItems?: (newItems: T[] | Error, allItems: T[]) => void = () => {};
 
     @property()
     wrapItem = true;
@@ -41,15 +41,48 @@ export abstract class StreamView<T> extends LitElement {
     @query("#items")
     itemsDom?: HTMLElement;
 
-    items: T[] = [];
-    itemsLookup = new Map<string, T>();
-
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
+        if (this.stream) {
+            this.stream.addNewItemsListener(async (newerItems) => {
+                if (newerItems instanceof Error) {
+                    error("Couldn't load newer items", newerItems);
+                    if (this.newItems) this.newItems(newerItems, this.stream!.items);
+                    return;
+                }
+
+                const itemsDom = this.itemsDom;
+                if (itemsDom) {
+                    const lastItemDom = itemsDom.firstElementChild as HTMLElement | null;
+                    const litElements: LitElement[] = [];
+                    for (const item of newerItems) {
+                        const itemDom = dom(html`${this.renderItem(item)}`)[0];
+                        itemDom.classList.add("animate-fade", "animate-duration-[2000ms]");
+                        litElements.push(...collectLitElements(itemDom));
+                        itemsDom.insertBefore(itemDom, itemsDom.firstChild);
+                    }
+
+                    const promises: Promise<boolean>[] = [];
+                    for (const element of litElements) {
+                        promises.push(element.updateComplete);
+                    }
+                    await Promise.all(promises);
+
+                    // FIXME Could do scroll to currently visible item or some other logic
+                    const scrollParent = getScrollParent(itemsDom);
+                    if (scrollParent && scrollParent.scrollTop == 0) {
+                        scrollParent.scrollTop = (lastItemDom?.offsetTop ?? 0) - 40;
+                    }
+                }
+                if (this.newItems) this.newItems(newerItems, this.stream!.items);
+            });
+        } else {
+            alert("This should never happen, stream should always be set"); // FIXME
+        }
         this.load();
     }
 
@@ -85,11 +118,8 @@ export abstract class StreamView<T> extends LitElement {
                 return;
             }
 
-            this.items = [...this.items, ...items];
-
             spinner.remove();
             for (const item of items) {
-                this.itemsLookup.set(this.getItemKey(item), item);
                 if (this.wrapItem) {
                     itemsDom.append(dom(html`<div class="px-4 py-2 border-t border-gray/20">${this.renderItem(item)}</div>`)[0]);
                 } else {
@@ -116,7 +146,6 @@ export abstract class StreamView<T> extends LitElement {
         </div>`;
     }
 
-    abstract getItemKey(item: T): string;
     abstract renderItem(item: T): TemplateResult;
 }
 
@@ -126,14 +155,14 @@ export class PosStreamView extends StreamView<PostView> {
         return item.uri;
     }
     renderItem(post: PostView): TemplateResult {
-        const postDom = dom(html`<div>
+        const postDom = dom(html`
             <post-view
                 .post=${post}
                 .quoteCallback=${(post: PostView) => quote(post)}
                 .replyCallback=${(post: PostView) => reply(post)}
                 .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
             ></post-view>
-        </div>`)[0];
+        `)[0];
         return html`${postDom}`;
     }
 }
@@ -168,7 +197,7 @@ export class FeedStreamView extends StreamView<FeedViewPost> {
             this.stream?.addNewItemsListener((newItems: FeedViewPost[] | Error) => {
                 if (!this.stream) return;
                 if (newItems instanceof Error) {
-                    alert("Couldn't poll new items"); // FIXME
+                    alert("Couldn't poll new items"); // FIXME show a toast instead
                     return;
                 }
                 console.log("New items");

@@ -188,7 +188,7 @@ export class PostEditor extends LitElement {
                               false
                           )}
                           <button
-                              class="absolute right-4 top-4 bg-black rounded-full p-1"
+                              class="absolute right-4 top-4 bg-white dark:bg-black rounded-full p-1"
                               @click=${(ev: Event) => {
                                   if (!ev.currentTarget) return;
                                   const target = ev.currentTarget as HTMLElement;
@@ -254,7 +254,7 @@ export class PostEditor extends LitElement {
                               this.imagesToUpload,
                               (image) => html`<div class="w-1/4 relative">
                                   <img src="${image.dataUri}" class="animate-jump-in px-1 w-full h-[100px] object-cover" /><button
-                                      class="absolute right-2 top-2 bg-black rounded-full p-1"
+                                      class="absolute right-2 top-2 bg-white dark:bg-black rounded-full p-1"
                                       @click=${(ev: Event) => {
                                           if (!ev.currentTarget) return;
                                           const target = ev.currentTarget as HTMLElement;
@@ -265,7 +265,7 @@ export class PostEditor extends LitElement {
                                       <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
                                   </button>
                                   <button
-                                      class="absolute left-2 top-2 bg-black rounded-full p-1"
+                                      class="absolute left-2 top-2 bg-white dark:bg-black rounded-full p-1"
                                       @click=${() => {
                                           document.body.append(dom(html`<image-editor .image=${image}></image-editor>`)[0]);
                                       }}
@@ -293,7 +293,7 @@ export class PostEditor extends LitElement {
                               false
                           )}
                           <button
-                              class="absolute right-2 top-2 bg-black rounded-full p-1"
+                              class="absolute right-2 top-2 bg-white dark:bg-black rounded-full p-1"
                               @click=${(ev: Event) => {
                                   if (!ev.currentTarget) return;
                                   const target = ev.currentTarget as HTMLElement;

@@ -797,7 +797,6 @@ export class FeewViewPostElement extends LitElement {
     render() {
         if (!this.feedViewPost) return html`${nothing}`;
         const feedViewPost = this.feedViewPost;
-        const post = feedViewPost.post;
         const repostedBy = AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)
             ? html`<div class="mb-1 flex items-center gap-2 text-lightgray dark:text-white/60 text-xs"><i class="icon w-4 h-4 fill-gray dark:fill-white/60">${reblogIcon}</i><a class="hover:underline truncate" href="${getProfileUrl(
                   feedViewPost.reason.by
@@ -810,7 +809,7 @@ export class FeewViewPostElement extends LitElement {
             : nothing;
 
         let postDom: HTMLElement;
-        if (!feedViewPost.reply) {
+        if (!feedViewPost.reply || AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)) {
             postDom = dom(html`<div>
                 ${repostedBy}
                 <post-view

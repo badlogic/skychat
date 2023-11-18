@@ -1,4 +1,4 @@
-import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api";
+import { AppBskyFeedDefs, AppBskyFeedPost, AppBskyNotificationListNotifications } from "@atproto/api";
 import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { State } from "./state";
 
@@ -66,7 +66,7 @@ export function author(post: FeedViewPost | PostView) {
     }
 }
 
-export function date(post: FeedViewPost | PostView) {
+export function date(post: FeedViewPost | PostView | AppBskyNotificationListNotifications.Notification) {
     if (post.post) {
         const rec = record(post);
         if (post.reason && AppBskyFeedDefs.isReasonRepost(post.reason)) return new Date(post.reason.indexedAt);

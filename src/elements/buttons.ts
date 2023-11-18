@@ -3,7 +3,7 @@ import { LitElement, PropertyValueMap, TemplateResult, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { arrowUpDoubleIcon, bellIcon, cloudIcon, editIcon, spinnerIcon } from "../icons";
-import { dom } from "../utils";
+import { dom, getScrollParent } from "../utils";
 import { setupPushNotifications } from "./notifications";
 import { State } from "../state";
 
@@ -38,35 +38,26 @@ export abstract class FloatingButton extends LitElement {
         return this;
     }
 
-    getScrollParent() {
-        let parent = this.parentElement;
-        while (parent) {
-            if (parent.classList.contains("overflow-auto")) return parent;
-            parent = parent.parentElement;
-        }
-        return null;
-    }
-
     lastScrollTop = 0;
     scrollHandler = () => this.handleScroll();
     handleScroll() {
         if (this.highlight) {
-            this.lastScrollTop = this.getScrollParent()!.scrollTop;
+            this.lastScrollTop = getScrollParent(this.parentElement)!.scrollTop;
             return;
         }
-        const dir = this.lastScrollTop - this.getScrollParent()!.scrollTop;
+        const dir = this.lastScrollTop - getScrollParent(this.parentElement)!.scrollTop;
         this.hide = dir < 0;
-        this.lastScrollTop = this.getScrollParent()!.scrollTop;
+        this.lastScrollTop = getScrollParent(this.parentElement)!.scrollTop;
     }
 
     connectedCallback(): void {
         super.connectedCallback();
-        this.getScrollParent()?.addEventListener("scroll", this.scrollHandler);
+        getScrollParent(this.parentElement)!?.addEventListener("scroll", this.scrollHandler);
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
-        this.getScrollParent()?.removeEventListener("scroll", this.scrollHandler);
+        getScrollParent(this.parentElement)!?.removeEventListener("scroll", this.scrollHandler);
     }
 
     protected updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
@@ -133,24 +124,24 @@ export class UpButton extends FloatingButton {
 
     handleScroll() {
         if (this.highlight) {
-            if (this.getScrollParent()!.scrollTop < 10) {
+            if (getScrollParent(this.parentElement)!.scrollTop < 10) {
                 this.hide = true;
                 this.highlight = false;
             }
-            this.lastScrollTop = this.getScrollParent()!.scrollTop;
+            this.lastScrollTop = getScrollParent(this.parentElement)!!.scrollTop;
             return;
         }
 
-        if (this.getScrollParent()!.scrollTop < 10) {
+        if (getScrollParent(this.parentElement)!.scrollTop < 10) {
             this.hide = true;
             this.highlight = false;
-            this.lastScrollTop = this.getScrollParent()!.scrollTop;
+            this.lastScrollTop = getScrollParent(this.parentElement)!.scrollTop;
             return;
         }
 
-        const dir = this.lastScrollTop - this.getScrollParent()!.scrollTop;
+        const dir = this.lastScrollTop - getScrollParent(this.parentElement)!.scrollTop;
         this.hide = dir < 0;
-        this.lastScrollTop = this.getScrollParent()!.scrollTop;
+        this.lastScrollTop = getScrollParent(this.parentElement)!.scrollTop;
     }
 }
 
