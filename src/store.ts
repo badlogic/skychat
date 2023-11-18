@@ -1,6 +1,7 @@
 import { AtpSessionData } from "@atproto/api";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { IndexedDBStorage } from "./indexeddb";
+import { State } from "./state";
 
 export type PostRef = { cid: string; uri: string };
 export type HashTagThread = { parent: PostRef; root: PostRef };
@@ -52,6 +53,8 @@ export class Store {
     }
 
     static setTheme(theme: Theme) {
-        return Store.set("theme", { theme });
+        Store.set("theme", { theme });
+        State.notify("theme", "updated", theme);
+        return theme;
     }
 }

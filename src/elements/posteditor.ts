@@ -32,7 +32,7 @@ import {
     loadImageFiles,
     splitAtUri,
 } from "../utils";
-import { renderEmbed, renderPostText, renderRecord } from "./posts";
+import { renderEmbed, renderRichText, renderRecord } from "./posts";
 import { CloseableElement, Overlay, navigationGuard, renderTopbar } from "./overlay";
 import { i18n } from "../i18n";
 import { State } from "../state";
@@ -173,7 +173,7 @@ export class PostEditor extends LitElement {
                 @dragover=${(ev: DragEvent) => ev.preventDefault()}
             >
                 ${this.replyTo
-                    ? html`<div class="flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
+                    ? html`<div class="flex flex-col border border-gray/50 rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
                           ${renderRecord(
                               this.replyTo.author,
                               splitAtUri(this.replyTo.uri).rkey,
@@ -217,7 +217,7 @@ export class PostEditor extends LitElement {
                               (card) =>
                                   html`<button
                                       @click=${() => this.addLinkCard(card)}
-                                      class="border border-gray rounded py-1 px-4 flex items-center gap-2"
+                                      class="border border-gray/50 rounded py-1 px-4 flex items-center gap-2"
                                       ?disabled=${this.isSending}
                                   >
                                       <div class="whitespace-nowrap text-blue-500">${i18n("Add card")}</div>
@@ -278,7 +278,7 @@ export class PostEditor extends LitElement {
                       </div>`
                     : nothing}
                 ${this.quote
-                    ? html`<div class="relative flex flex-col border border-gray rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
+                    ? html`<div class="relative flex flex-col border border-gray/50 rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
                           ${renderRecord(
                               this.quote.author,
                               splitAtUri(this.quote.uri).rkey,
@@ -316,7 +316,7 @@ export class PostEditor extends LitElement {
                               <i class="ml-2 icon w-6 h-6 animate-spin">${spinnerIcon}</i>
                           </div>
                       </div>`
-                    : html`<div class="flex items-center min-h-[48px]">
+                    : html`<div class="pl-2 pr-4 py-1 flex items-center min-h-[48px]">
                     <button class="p-2 disabled:fill-gray" @click=${this.addImage} ?disabled=${this.embed || this.isSending}>
                         <i class="icon w-6 h-6 ${this.embed || this.isSending ? "fill-gray" : ""}">${imageIcon}</i>
                     </button>
@@ -348,7 +348,7 @@ export class PostEditor extends LitElement {
                     }
                     <button
                         @click=${this.sendPost}
-                        class="bg-primary text-white my-2 mr-2 px-4 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
+                        class="bg-primary text-white my-2 px-4 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
                         ?disabled=${!this.canPost}
                     >
                         ${i18n("Post")}
@@ -852,7 +852,7 @@ export class TextEditor extends LitElement {
         const rt = new RichText({ text });
         rt.detectFacetsWithoutResolution();
         if (this.highlights) {
-            const textDom = dom(renderPostText(rt));
+            const textDom = dom(renderRichText(rt));
             this.highlights.innerHTML = "";
             for (const node of textDom) {
                 this.highlights.append(node);
@@ -894,5 +894,4 @@ export async function deletePost(post: PostView, postDom: HTMLElement) {
         alert(i18n("Couldn't delete post"));
         return;
     }
-    postDom.remove();
 }

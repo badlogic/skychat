@@ -39,7 +39,7 @@ function splitTextAndCreateSpans(text: string): TemplateResult[] {
     return results;
 }
 
-export function renderPostText(record: AppBskyFeedPost.Record | RichText) {
+export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {
         return html`<span>${record.text}</span>`;
     }
@@ -80,7 +80,7 @@ export function renderPostText(record: AppBskyFeedPost.Record | RichText) {
 
 export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External) {
     const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
-    return html`<a class="border rounded border-gray/50 flex" target="_blank" href="${cardEmbed.uri}">
+    return html`<a class="mt-2 border rounded border-gray/50 flex" target="_blank" href="${cardEmbed.uri}">
         ${thumb ? html`<img src="${thumb}" class="rounded-l w-[100px] object-cover" />` : nothing}
         <div class="flex flex-col p-2">
             <span class="text-gray text-xs">${new URL(cardEmbed.uri).host}</span>
@@ -91,7 +91,7 @@ export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | A
 }
 
 export function renderImagesEmbedSmall(images: AppBskyEmbedImages.ViewImage[]) {
-    return html`<div class="flex mx-2 justify-center">
+    return html`<div class="mt-2 flex mx-2 justify-center">
         ${map(
             images,
             (image) => html`<div class="w-1/4 relative">
@@ -108,7 +108,7 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
         if (sensitive) target.classList.toggle("blur-lg");
     };
 
-    return html`<div class="flex flex-col gap-2 items-center">
+    return html`<div class="mt-2 flex flex-col gap-2 items-center">
         ${map(images, (image) => {
             return html`<div class="relative">
                 <img
@@ -146,7 +146,7 @@ export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
     const author = recordEmbed.record.author;
     const embeds = recordEmbed.record.embeds && recordEmbed.record.embeds.length > 0 ? recordEmbed.record.embeds[0] : undefined;
     const sensitive = recordEmbed.record.labels?.some((label) => ["porn", "nudity", "sexual"].includes(label.val)) ?? false;
-    return html`<div class="border border-gray/50 rounded p-2">${renderRecord(author, rkey, record, embeds, true, sensitive)}</div>`;
+    return html`<div class="mt-2 border border-gray/50 rounded p-2">${renderRecord(author, rkey, record, embeds, true, sensitive)}</div>`;
 }
 
 export function renderRecordWithMediaEmbed(recordWithMediaEmbed: AppBskyEmbedRecordWithMedia.View, sensitive: boolean, minimal = false) {
@@ -155,7 +155,7 @@ export function renderRecordWithMediaEmbed(recordWithMediaEmbed: AppBskyEmbedRec
         AppBskyEmbedExternal.isView(recordWithMediaEmbed.media) || AppBskyEmbedExternal.isMain(recordWithMediaEmbed.media)
             ? recordWithMediaEmbed.media.external
             : undefined;
-    return html`<div class="mt-1">
+    return html`<div class="mt-2">
         ${cardEmbed ? renderCardEmbed(cardEmbed) : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive, minimal) : nothing}
         ${!minimal ? renderRecordEmbed(recordWithMediaEmbed.record) : nothing}
     </div>`;
@@ -166,7 +166,7 @@ export function renderEmbed(embed: PostView["embed"] | AppBskyFeedPost.Record["e
     const imagesEmbed = AppBskyEmbedImages.isView(embed) ? embed.images : undefined;
     const recordEmbed = AppBskyEmbedRecord.isView(embed) ? embed : undefined;
     const recordWithMediaEmbed = AppBskyEmbedRecordWithMedia.isView(embed) ? embed : undefined;
-    return html`<div class="mt-1">
+    return html`<div>
         ${cardEmbed ? renderCardEmbed(cardEmbed) : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive, minimal) : nothing}
         ${recordEmbed && !minimal ? renderRecordEmbed(recordEmbed) : nothing}
         ${recordWithMediaEmbed ? renderRecordWithMediaEmbed(recordWithMediaEmbed, sensitive, minimal) : nothing}
@@ -204,9 +204,7 @@ export function renderRecord(
                       ${prefix ? html`<span class="mr-1 font-bold">${prefix}</span>` : nothing} ${renderProfile(author, smallAvatar)}
                       ${prefix == undefined
                           ? html`<a
-                                class="${shortTime
-                                    ? "ml-2 mt-1 self-start"
-                                    : "ml-auto"} text-right text-xs text-gray whitespace-nowrap hover:underline"
+                                class="ml-auto text-right text-xs text-lightgray whitespace-nowrap hover:underline"
                                 href="https://bsky.app/profile/${author.did}/post/${rkey}"
                                 target="_blank"
                                 @click=${(ev: Event) => {
@@ -223,8 +221,8 @@ export function renderRecord(
                   ${subHeader ? subHeader : nothing}`
             : nothing}
         ${replyToProfile && showReplyto
-            ? html`<div class="flex gap-1 text-xs items-center text-gray dark:text-lightgray">
-                  <i class="icon fill-gray dark:fill-lightgray">${replyIcon}</i>
+            ? html`<div class="mt-1 flex gap-1 text-xs items-center text-lightgray dark:text-white/60">
+                  <i class="icon fill-lightgray dark:fill-white/60">${replyIcon}</i>
                   <span class="whitespace-nowrap">${i18n("Replying to")}</span>
                   <a
                       class="line-clamp-1 hover:underline"
@@ -239,7 +237,7 @@ export function renderRecord(
                   >
               </div>`
             : nothing}
-        <div class="mt-1 break-words leading-tight whitespace-pre-wrap">${renderPostText(record)}</div>
+        <div class="mt-1 break-words whitespace-pre-wrap">${renderRichText(record)}</div>
         ${embed ? renderEmbed(embed, sensitive) : nothing}
     </div>`;
 }
@@ -279,6 +277,12 @@ export class PostViewElement extends LitElement {
     @property()
     unmuted = false;
 
+    @property()
+    deleted = false;
+
+    @property()
+    centerButtons = true;
+
     unsubscribePost: () => void = () => {};
     unsubscribeQuote: () => void = () => {};
 
@@ -300,6 +304,9 @@ export class PostViewElement extends LitElement {
         if (action == "updated") {
             this.post = { ...post };
         }
+        if (action == "deleted") {
+            this.deleted = true;
+        }
     }
 
     handleQuoteUpdate(action: EventAction, quote: NumQuote): void {
@@ -320,6 +327,10 @@ export class PostViewElement extends LitElement {
                 ${contentLoader}
                 </div>
             </div>`;
+        }
+
+        if (this.deleted) {
+            return html`<div class="bg-lightgray dark:bg-gray text-white px-4 py-2 rounded">${i18n("Deleted post")}</div>`;
         }
 
         if ((this.post.author.viewer?.muted || this.post.author.viewer?.mutedByList) && !this.unmuted) {
@@ -349,13 +360,14 @@ export class PostViewElement extends LitElement {
                 this.openOnClick,
                 this.shortTime
             )}
-            <div class="flex items-center gap-4 mt-1">
+            <div class="flex items-center ${this.centerButtons ? "justify-center" : ""} gap-4 mt-2">
                 <button @click=${() => this.replyCallback(this.post!)} class="flex gap-1 items-center text-gray">
-                    <i class="icon w-5 h-5 fill-gray">${replyIcon}</i><span class="text-gray">${this.post.replyCount}</span>
+                    <i class="icon w-4 h-4 fill-gray dark:fill-white/60">${replyIcon}</i
+                    ><span class="text-gray dark:text-white/60">${this.post.replyCount}</span>
                 </button>
                 <button @click=${() => this.quoteCallback(this.post!)} class="flex gap-1 items-center text-gray">
-                    <i class="icon w-5 h-5 fill-gray">${quoteIcon}</i
-                    ><span class="text-gray">${State.getObject("numQuote", this.post.uri)?.numQuotes ?? 0}</span>
+                    <i class="icon w-4 h-4 fill-gray dark:fill-white/60">${quoteIcon}</i
+                    ><span class="text-gray dark:text-white/60">${State.getObject("numQuote", this.post.uri)?.numQuotes ?? 0}</span>
                 </button>
                 <div class="flex gap-1 items-center text-gray">
                     <icon-toggle
@@ -468,7 +480,7 @@ export class PostOptionsElement extends PopupMenu {
     handleOption: (option: "mute_user" | "mute_thread" | "block_user" | "delete") => void = () => {};
 
     protected renderButton(): TemplateResult {
-        return html`<i slot="buttonText" class="icon w-6 h-6 fill-gray">${moreIcon}</i>`;
+        return html`<i slot="buttonText" class="icon w-6 h-6 fill-lightgray dark:fill-white/60">${moreIcon}</i>`;
     }
 
     protected renderContent(): TemplateResult {
@@ -581,6 +593,100 @@ export class PostOptionsElement extends PopupMenu {
     }
 }
 
+@customElement("thread-view-post")
+export class ThreadViewPostElement extends LitElement {
+    @property()
+    highlightUri = "";
+
+    @property()
+    isRoot = false;
+
+    @property()
+    thread?: ThreadViewPost;
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    render() {
+        const thread = this.thread;
+        if (!AppBskyFeedDefs.isThreadViewPost(thread)) {
+            return dom(html``)[0];
+        }
+        const uri = this.highlightUri;
+        const isRoot = this.isRoot;
+
+        const animation = "animate-shake animate-delay-500";
+        const insertNewPost = (post: PostView, repliesDom: HTMLElement) => {
+            const newPost = dom(html`<div class="min-w-[350px] mb-2 pl-2 border-l border-primary ${animation}">
+                <post-view
+                    .post=${post}
+                    .quoteCallback=${(post: PostView) => quote(post)}
+                    .replyCallback=${(post: PostView) => reply(post, newPost.querySelector("#replies")!)}
+                    .deleteCallback=${(post: PostView) => deletePost(post, newPost)}
+                    .showReplyTo=${false}
+                    .openOnClick=${false}
+                    .shortTime=${true}
+                    .centerButtons=${false}
+                ></post-view>
+                <div id="replies" class="${isRoot ? "ml-2" : "ml-4"}"></div>
+            </div>`)[0];
+            if (repliesDom.children.length > 0) {
+                repliesDom.children[0].before(newPost);
+            } else {
+                repliesDom.append(newPost);
+            }
+            setTimeout(() => {
+                newPost.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 500);
+        };
+
+        const reply = (post: PostView, repliesDom: HTMLElement) => {
+            document.body.append(
+                dom(html`<post-editor-overlay .replyTo=${post} .sent=${(post: PostView) => insertNewPost(post, repliesDom)}></post-editor-overly>`)[0]
+            );
+        };
+
+        const postDom = dom(html`<div>
+            ${AppBskyFeedDefs.isNotFoundPost(thread.parent)
+                ? html`<div class="bg-lightgray dark:bg-gray text-white px-4 py-2 mb-2 rounded">${i18n("Deleted post")}</div>`
+                : nothing}
+            <div
+                class="${thread.post.uri == uri ? animation : ""} min-w-[350px] mb-2 ${!isRoot || (thread.post.uri == uri && isRoot)
+                    ? "pl-2"
+                    : ""} ${thread.post.uri == uri ? "border-l border-primary" : ""}"
+            >
+                <post-view
+                    .post=${thread.post}
+                    .quoteCallback=${(post: PostView) => quote(post)}
+                    .replyCallback=${(post: PostView) => reply(post, repliesDom)}
+                    .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
+                    .showReplyTo=${false}
+                    .openOnClick=${false}
+                    .shortTime=${true}
+                    .centerButtons=${false}
+                ></post-view>
+            </div>
+            <div id="replies" class="${isRoot ? "ml-2" : "ml-4"}">
+                ${map(thread.replies, (reply) => {
+                    if (!AppBskyFeedDefs.isThreadViewPost(reply)) return html``;
+                    return html`<div class="border-l border-gray/20">
+                        <thread-view-post .highlightUri=${this.highlightUri} .isRoot=${false} .thread=${reply}></thread-view-post>
+                    </div>`;
+                })}
+            </div>
+        </div>`)[0];
+        const repliesDom = postDom.querySelector("#replies") as HTMLElement;
+        if (thread.post.uri == uri) {
+            setTimeout(() => {
+                const postViewDom = postDom.querySelector("post-view");
+                postViewDom?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 500);
+        }
+        return postDom;
+    }
+}
+
 @customElement("thread-overlay")
 export class ThreadOverlay extends HashNavOverlay {
     @property()
@@ -689,82 +795,10 @@ export class ThreadOverlay extends HashNavOverlay {
     renderContent() {
         return html`<div class="px-4">
             ${this.isLoading ? html`<div>${spinner}</div>` : nothing} ${this.error ? html`<div>${this.error}</div>` : nothing}
-            ${this.thread ? this.renderThreadPost(this.thread) : nothing}
-        </div>`;
-    }
-
-    renderThreadPost(thread: ThreadViewPost, isRoot = true): HTMLElement {
-        if (!AppBskyFeedDefs.isThreadViewPost(thread)) {
-            return dom(html``)[0];
-        }
-        let uri = this.postUri;
-
-        // FIXME if the post gets deleted and its the root, close the overlay
-
-        const animation = "animate-shake animate-delay-500";
-        const insertNewPost = (post: PostView, repliesDom: HTMLElement) => {
-            const newPost = dom(html`<div class="min-w-[350px] mb-2 pl-2 border-l border-primary ${animation}">
-                <post-view
-                    .post=${post}
-                    .quoteCallback=${(post: PostView) => quote(post)}
-                    .replyCallback=${(post: PostView) => reply(post, newPost.querySelector("#replies")!)}
-                    .deleteCallback=${(post: PostView) => deletePost(post, newPost)}
-                    .showReplyTo=${false}
-                    .openOnClick=${false}
-                    .shortTime=${true}
-                ></post-view>
-                <div id="replies" class="${isRoot ? "ml-2" : "ml-4"}"></div>
-            </div>`)[0];
-            if (repliesDom.children.length > 0) {
-                repliesDom.children[0].before(newPost);
-            } else {
-                repliesDom.append(newPost);
-            }
-            setTimeout(() => {
-                newPost.scrollIntoView({ behavior: "smooth", block: "center" });
-            }, 500);
-        };
-
-        const reply = (post: PostView, repliesDom: HTMLElement) => {
-            document.body.append(
-                dom(html`<post-editor-overlay .replyTo=${post} .sent=${(post: PostView) => insertNewPost(post, repliesDom)}></post-editor-overly>`)[0]
-            );
-        };
-
-        const postDom = dom(html`<div>
-            ${AppBskyFeedDefs.isNotFoundPost(thread.parent)
-                ? html`<div class="bg-lightgray text-white px-4 py-2 mb-2 rounded">${i18n("Deleted post")}</div>`
+            ${this.thread
+                ? html`<thread-view-post .highglightUri=${this.postUri} .isRoot=${true} .thread=${this.thread}></thread-view-post>`
                 : nothing}
-            <div
-                class="${thread.post.uri == uri ? animation : ""} min-w-[350px] mb-2 ${!isRoot || (thread.post.uri == uri && isRoot)
-                    ? "pl-2"
-                    : ""} ${thread.post.uri == uri ? "border-l border-primary" : ""}"
-            >
-                <post-view
-                    .post=${thread.post}
-                    .quoteCallback=${(post: PostView) => quote(post)}
-                    .replyCallback=${(post: PostView) => reply(post, repliesDom)}
-                    .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
-                    .showReplyTo=${false}
-                    .openOnClick=${false}
-                    .shortTime=${true}
-                ></post-view>
-            </div>
-            <div id="replies" class="${isRoot ? "ml-2" : "ml-4"}">
-                ${map(thread.replies, (reply) => {
-                    if (!AppBskyFeedDefs.isThreadViewPost(reply)) return html``;
-                    return html`<div class="border-l border-dashed border-gray/20">${this.renderThreadPost(reply, false)}</div>`;
-                })}
-            </div>
-        </div>`)[0];
-        const repliesDom = postDom.querySelector("#replies") as HTMLElement;
-        if (thread.post.uri == uri) {
-            setTimeout(() => {
-                const postViewDom = postDom.querySelector("post-view");
-                postViewDom?.scrollIntoView({ behavior: "smooth", block: "center" });
-            }, 500);
-        }
-        return postDom;
+        </div>`;
     }
 }
 
@@ -782,7 +816,7 @@ export class FeewViewPostElement extends LitElement {
         const feedViewPost = this.feedViewPost;
         const post = feedViewPost.post;
         const repostedBy = AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)
-            ? html`<div class="mb-1 flex items-center gap-2 text-gray dark:text-lightgray text-xs"><i class="icon w-4 h-4 fill-gray dark:fill-lightgray">${reblogIcon}</i><a class="hover:underline truncate" href="${getProfileUrl(
+            ? html`<div class="mb-1 flex items-center gap-2 text-lightgray dark:text-white/60 text-xs"><i class="icon w-4 h-4 fill-gray dark:fill-white/60">${reblogIcon}</i><a class="hover:underline truncate" href="${getProfileUrl(
                   feedViewPost.reason.by
               )}" @click=${(ev: Event) => {
                   if (!AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)) return;
@@ -801,6 +835,7 @@ export class FeewViewPostElement extends LitElement {
                     .quoteCallback=${(post: PostView) => quote(post)}
                     .replyCallback=${(post: PostView) => reply(post)}
                     .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
+                    .shortTime=${true}
                 ></post-view>
             </div>`)[0];
         } else {
@@ -809,6 +844,8 @@ export class FeewViewPostElement extends LitElement {
                 .quoteCallback=${(post: PostView) => quote(post)}
                 .replyCallback=${(post: PostView) => reply(post)}
                 .deleteCallback=${(post: PostView) => deletePost(post, parentDom)}
+                .shortTime=${true}
+                .centerButtons=${false}
             ></post-view>`)[0];
             postDom = dom(html`<div class="ml-2 pl-2 mt-2 border-l border-l-primary">
                 <post-view
@@ -817,6 +854,7 @@ export class FeewViewPostElement extends LitElement {
                     .replyCallback=${(post: PostView) => reply(post)}
                     .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
                     .showReplyTo=${false}
+                    .shortTime=${true}
                 ></post-view>
             </div>`)[0];
             postDom = dom(html`<div class="flex flex-col">${repostedBy}${parentDom}${postDom}</div>`)[0];

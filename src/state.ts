@@ -22,6 +22,7 @@ export interface Events {
     profile: ProfileViewDetailed;
     numQuote: NumQuote;
     unreadNotifications: number;
+    theme: string;
 }
 
 export type EventAction = "updated" | "deleted";
@@ -77,6 +78,10 @@ export class State {
                 id = (payload as NumQuote).postUri;
                 break;
             case "unreadNotifications":
+                console.log(`${getDateString(new Date())} - notify - ${event} ${action}`);
+                return;
+            case "theme":
+                console.log(`${getDateString(new Date())} - notify - ${event} ${action}`);
                 return;
             default:
                 assertNever(event);
@@ -109,6 +114,8 @@ export class State {
                 id = (payload as NumQuote).postUri;
                 break;
             case "unreadNotifications":
+                return;
+            case "theme":
                 return;
             default:
                 assertNever(event);

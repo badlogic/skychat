@@ -5,7 +5,8 @@
 @layer base {
     html,
     body {
-        @apply h-full w-full;
+        @apply h-full w-full leading-5;
+        font-size: 15px;
     }
 
     .hidden {

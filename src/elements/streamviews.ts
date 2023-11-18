@@ -18,7 +18,7 @@ import { Store } from "../store";
 import { ActorFeedStream, NotificationsStream, Stream } from "../streams";
 import { dom, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, spinner } from "../utils";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
-import { renderEmbed, renderPostText } from "./posts";
+import { renderEmbed, renderRichText } from "./posts";
 import { getProfileUrl, renderProfile } from "./profiles";
 import { deletePost, quote, reply } from "./posteditor";
 
@@ -241,8 +241,8 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
                             document.body.append(dom(html`<thread-overlay .postUri=${post?.uri}></thread-overlay>`)[0]);
                         }}
                     >
-                        <div class="break-words dark:text-white/50 text-black/50 leading-tight">
-                            <div class="whitespace-pre-wrap">${renderPostText(post.record)}</div>
+                        <div class="break-words dark:text-white/50 text-black/50">
+                            <div class="whitespace-pre-wrap">${renderRichText(post.record)}</div>
                         </div>
                         ${post.embed ? renderEmbed(post.embed, false, true) : nothing}
                     </div>`;
@@ -252,8 +252,8 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
                     postContent = html`${parent && profile && AppBskyFeedPost.isRecord(parent.record)
                             ? html`<div class="border border-gray/50 rounded p-2 mb-2">
                                   <div class="dark:text-white/50 text-black/50">${renderProfile(parent.author, true)}</div>
-                                  <div class="mt-1 mb-1 break-words dark:text-white/50 text-black/50 leading-tight">
-                                      <div class="whitespace-pre-wrap">${renderPostText(parent.record)}</div>
+                                  <div class="mt-1 mb-1 break-words dark:text-white/50 text-black/50">
+                                      <div class="whitespace-pre-wrap">${renderRichText(parent.record)}</div>
                                   </div>
                                   ${parent.embed ? renderEmbed(parent.embed, false, true) : nothing}
                               </div>`

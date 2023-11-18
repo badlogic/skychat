@@ -3,6 +3,7 @@ import { customElement, state, property } from "lit/decorators.js";
 import { globalStyles } from "./styles";
 import { Store, Theme } from "../store";
 import { moonIcon, sunIcon } from "../icons";
+import { State } from "../state";
 
 @customElement("theme-toggle")
 export class ThemeToggle extends LitElement {

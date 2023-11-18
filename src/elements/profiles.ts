@@ -9,7 +9,7 @@ import { Store } from "../store";
 import { contentLoader, defaultAvatar, dom, error, getNumber, hasLinkOrButtonParent, spinner } from "../utils";
 import { HashNavOverlay, renderTopbar } from "./overlay";
 import { PopupMenu } from "./popup";
-import { renderPostText } from "./posts";
+import { renderRichText } from "./posts";
 import { ActorFeedStream, ActorLikesStream, FollowersStream, FollowingStream, LoggedInActorLikesStream } from "../streams";
 
 @customElement("profile-overlay")
@@ -88,7 +88,7 @@ export class ProfileOverlay extends HashNavOverlay {
                     html`<profiles-stream-overlay
                         title="${i18n("Following")}"
                         .hash=${`following/${profile.did}`}
-                        .loader=${new FollowingStream(profile.did)}
+                        .stream=${new FollowingStream(profile.did)}
                     ></profiles-stream-overlayy>`
                 )[0]
             );
@@ -147,7 +147,7 @@ export class ProfileOverlay extends HashNavOverlay {
             <div class="text-2xl px-4">${this.profile.displayName ?? this.profile.handle}</div>
             <div class="flex items-center gap-2 mt-2 px-4">
                 ${profile.viewer?.followedBy ? html`<span class="p-1 text-xs rounded bg-gray/50 text-white">${i18n("Follows you")}</span>` : nothing}
-                <span class="text-gray dark:text-lightgray text-sm">${profile.handle}</span>
+                <span class="text-gray dark:text-white/60 text-sm">${profile.handle}</span>
             </div>
             <div class="mt-2 text-sm flex flex-col gap-2 px-4">
                 ${!(this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList)
@@ -162,7 +162,7 @@ export class ProfileOverlay extends HashNavOverlay {
                             <span><span class="font-bold">${getNumber(profile.postsCount)}</span> ${i18n("posts")}</span>
                             </div>
                         </div>
-                        <div class="mt-1 leading-tight whitespace-pre-wrap">${renderPostText({
+                        <div class="mt-1 whitespace-pre-wrap">${renderRichText({
                             text: rt.text,
                             facets: rt.facets,
                             createdAt: "",
@@ -177,7 +177,7 @@ export class ProfileOverlay extends HashNavOverlay {
                 <button
                     class="whitespace-nowrap ${this.filter == "posts_no_replies"
                         ? "border-b-2 border-primary font-bold"
-                        : "text-gray dark:text-lightgray"} px-2 h-10"
+                        : "text-gray dark:text-white/&0"} px-2 h-10"
                     @click=${() => (this.filter = "posts_no_replies")}
                 >
                     ${i18n("Posts")}
@@ -185,7 +185,7 @@ export class ProfileOverlay extends HashNavOverlay {
                 <button
                     class="whitespace-nowrap ${this.filter == "posts_with_replies"
                         ? "border-b-2 border-primary font-bold"
-                        : "text-gray dark:text-lightgray"} px-2 h-10"
+                        : "text-gray dark:text-white/60"} px-2 h-10"
                     @click=${() => (this.filter = "posts_with_replies")}
                 >
                     ${i18n("Posts & Replies")}
@@ -193,7 +193,7 @@ export class ProfileOverlay extends HashNavOverlay {
                 <button
                     class="whitespace-nowrap ${this.filter == "posts_with_media"
                         ? "border-b-2 border-primary font-bold"
-                        : "text-gray dark:text-lightgray"} px-2 h-10"
+                        : "text-gray dark:text-white/60"} px-2 h-10"
                     @click=${() => (this.filter = "posts_with_media")}
                 >
                     ${i18n("Media")}
@@ -201,7 +201,7 @@ export class ProfileOverlay extends HashNavOverlay {
                 <button
                     class="whitespace-nowrap ${this.filter == "likes"
                         ? "border-b-2 border-primary font-bold"
-                        : "text-gray dark:text-lightgray"} px-2 h-10"
+                        : "text-gray dark:text-white/60"} px-2 h-10"
                     @click=${() => (this.filter = "likes")}
                 >
                     ${i18n("Likes")}
@@ -283,7 +283,7 @@ export class ProfileViewElement extends LitElement {
                         ? html`<profile-action-button class="self-start ml-auto" .profile=${this.profile}></profile-action-button>`
                         : nothing}
                 </div>
-                <div class="mt-1 leading-tight whitespace-pre-wrap">${renderPostText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
+                <div class="mt-1 whitespace-pre-wrap">${renderRichText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
             </div>
         </div>`;
     }
@@ -305,7 +305,7 @@ export function renderProfile(profile: ProfileView, smallAvatar = false) {
             : defaultAvatar}
         <div class="flex flex-col">
             <span class="${smallAvatar ? "text-sm" : ""} font-bold line-clamp-1 hover:underline">${profile.displayName ?? profile.handle}</span>
-            ${profile.displayName && !smallAvatar ? html`<span class="text-xs text-gray -mt-1">${profile.handle}</span>` : nothing}
+            ${profile.displayName && !smallAvatar ? html`<span class="text-xs text-lightgray dark:text-white/60">${profile.handle}</span>` : nothing}
         </div>
     </a>`;
 }

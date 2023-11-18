@@ -212,10 +212,7 @@ export class Chat extends LitElement {
                 </div>
                 ${user
                     ? html`
-                          <post-editor
-                              class="sticky bottom-0 border-t border-primary border-dashed bg-white dark:bg-black"
-                              .hashtag=${this.hashtag}
-                          ></post-editor>
+                          <post-editor class="sticky bottom-0 border-t border-primary bg-white dark:bg-black" .hashtag=${this.hashtag}></post-editor>
                       `
                     : nothing}
             </div>
@@ -327,9 +324,6 @@ export class Chat extends LitElement {
             alert(i18n("Couldn't delete post"));
             return;
         }
-        // FIXME should probably just rely on the post-view getting
-        // notified about the delete and showing itself as "deleted"
-        postDom.remove();
     }
 
     renderPost(post: PostView, animation: string = "") {

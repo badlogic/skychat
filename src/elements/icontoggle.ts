@@ -3,6 +3,8 @@ import { customElement, property } from "lit/decorators.js";
 import { globalStyles } from "./styles";
 
 import { heartIcon, imageIcon, reblogIcon, replyIcon, shieldIcon } from "../icons";
+import { Store } from "../store";
+import { State } from "../state";
 const icons = {
     reblog: reblogIcon,
     reply: replyIcon,
@@ -24,16 +26,25 @@ export class IconToggle extends LitElement {
     @property()
     icon?: string;
 
+    unsubscribe = () => {};
+
+    connectedCallback(): void {
+        super.connectedCallback();
+        this.unsubscribe = State.subscribe("theme", (action, payload) => this.requestUpdate());
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        this.unsubscribe();
+    }
+
     render() {
-        return html` <div
-            class="h-full flex items-center cursor-pointer gap-1 ${this.value
-                ? "text-primary dark:text-primary animate-jump"
-                : "text-gray dark:text-white/50"}"
-            @click=${() => this.toggle()}
-        >
-            <i class="icon w-5 h-5 ${this.value ? "fill-primary dark:fill-primary" : "fill-gray"}"
-                >${icons[this.icon as "reblog" | "heart" | "shield"] ?? ""}</i
-            ><span>${this.text}</span>
+        const isDark = Store.getTheme() == "dark";
+        const fill = !isDark ? "fill-gray" : "fill-white/60";
+        const text = !isDark ? "text-gray" : "text-white/60";
+        return html` <div class="h-full flex items-center cursor-pointer gap-1" @click=${() => this.toggle()}>
+            <i class="icon w-4 h-4 ${this.value ? "fill-primary" : fill}">${icons[this.icon as "reblog" | "heart" | "shield"] ?? ""}</i
+            ><span class="${this.value ? "text-primary animate-jump" : text}">${this.text}</span>
         </div>`;
     }
 
