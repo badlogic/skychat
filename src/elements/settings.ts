@@ -1,14 +1,30 @@
-import { TemplateResult, html, nothing } from "lit";
-import { customElement } from "lit/decorators.js";
+import { PropertyValueMap, TemplateResult, html, nothing } from "lit";
+import { customElement, property } from "lit/decorators.js";
 import { HashNavOverlay, renderProfile, renderTopbar } from ".";
 import { i18n } from "../i18n";
 import { Store, Theme } from "../store";
 import { State } from "../state";
+import { error } from "../utils";
 
 @customElement("settings-overlay")
 export class SettingsOverlay extends HashNavOverlay {
+    @property()
+    version = "";
+
     getHash(): string {
         return "settings";
+    }
+
+    protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        super.firstUpdated(_changedProperties);
+        (async () => {
+            const response = await fetch("/version.json");
+            if (!response) {
+                error("Couldn't fetch version.json");
+            }
+            const version = (await response.json()) as { date: string; commit: string };
+            this.version = version.date + " - " + version.commit;
+        })();
     }
 
     renderHeader(): TemplateResult {
@@ -36,6 +52,7 @@ export class SettingsOverlay extends HashNavOverlay {
                 .values=${[i18n("Dark"), i18n("Light")]}
                 .selected=${Store.getTheme() == "dark" ? "Dark" : "Light"}
             ></select-button>
+            <div class="mt-4 text-xs">Build: ${this.version}</div>
         </div>`;
     }
 

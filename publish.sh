@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 npm run build
-current_date=$(date "+%Y-%m-%d")
+current_datetime=$(date "+%Y-%m-%d %H:%M:%S")
 commit_hash=$(git rev-parse HEAD)
 echo "{\"date\": \"$current_date\", \"commit\": \"$commit_hash\"}" > html/version.json
 
