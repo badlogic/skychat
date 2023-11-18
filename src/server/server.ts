@@ -7,7 +7,6 @@ import { applicationDefault } from "firebase-admin/app";
 import { ComAtprotoSyncSubscribeRepos, SubscribeReposMessage, subscribeRepos } from "atproto-firehose";
 import { AppBskyEmbedRecord, AppBskyFeedPost } from "@atproto/api";
 import { formatFileSize, getTimeDifference, splitAtUri } from "../utils";
-import * as fs from "fs/promises";
 import * as fsSync from "fs";
 import { FileKeyValueStore, KeyValueStore } from "./keyvalue-store";
 

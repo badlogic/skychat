@@ -21,7 +21,7 @@ import { PopupMenu } from "./popup";
 import { getProfileUrl, renderProfile } from "./profiles";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { i18n } from "../i18n";
-import { EventAction, State } from "../state";
+import { EventAction, NumQuote, State } from "../state";
 import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
 import { deletePost, quote, reply } from "./posteditor";
 
@@ -279,7 +279,8 @@ export class PostViewElement extends LitElement {
     @property()
     unmuted = false;
 
-    unsubscribe: () => void = () => {};
+    unsubscribePost: () => void = () => {};
+    unsubscribeQuote: () => void = () => {};
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
@@ -291,18 +292,26 @@ export class PostViewElement extends LitElement {
             error("Can not subscribe for post updates, post not set");
             return;
         }
-        this.unsubscribe = State.subscribe("post", (action, post) => this.handleUpdate(action, post), this.post.uri);
+        this.unsubscribePost = State.subscribe("post", (action, post) => this.handlePostUpdate(action, post), this.post.uri);
+        this.unsubscribeQuote = State.subscribe("numQuote", (action, quote) => this.handleQuoteUpdate(action, quote), this.post.uri);
     }
 
-    handleUpdate(action: EventAction, post: PostView): void {
+    handlePostUpdate(action: EventAction, post: PostView): void {
         if (action == "updated") {
             this.post = { ...post };
         }
     }
 
+    handleQuoteUpdate(action: EventAction, quote: NumQuote): void {
+        if (action == "updated" && this.post) {
+            this.post = { ...this.post };
+        }
+    }
+
     disconnectedCallback(): void {
         super.disconnectedCallback();
-        this.unsubscribe();
+        this.unsubscribePost();
+        this.unsubscribeQuote();
     }
 
     render() {
@@ -346,7 +355,7 @@ export class PostViewElement extends LitElement {
                 </button>
                 <button @click=${() => this.quoteCallback(this.post!)} class="flex gap-1 items-center text-gray">
                     <i class="icon w-5 h-5 fill-gray">${quoteIcon}</i
-                    ><span class="text-gray">${State.getObject("quote", this.post.uri)?.numQuotes ?? 0}</span>
+                    ><span class="text-gray">${State.getObject("numQuote", this.post.uri)?.numQuotes ?? 0}</span>
                 </button>
                 <div class="flex gap-1 items-center text-gray">
                     <icon-toggle
@@ -465,7 +474,7 @@ export class PostOptionsElement extends PopupMenu {
     protected renderContent(): TemplateResult {
         if (!this.post) return html`${nothing}`;
         const did = Store.getUser()?.profile.did;
-        const quote = State.getObject("quote", this.post.uri);
+        const quote = State.getObject("numQuote", this.post.uri);
         const buttons: PostOptionsButton[] = [
             {
                 option: "quotes",
@@ -663,7 +672,7 @@ export class ThreadOverlay extends HashNavOverlay {
                 }
             };
             collectPostUris(response.data.thread);
-            await State.getQuotes(postUris);
+            await State.getNumQuotes(postUris);
             this.thread = response.data.thread;
         } catch (e) {
             this.error = notFoundMessage;

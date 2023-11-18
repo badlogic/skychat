@@ -9,10 +9,10 @@ import {
 } from "@atproto/api";
 import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { Store, User } from "./store";
-import { assertNever, error, fetchApi, splitAtUri } from "./utils";
+import { assertNever, error, fetchApi, getDateString, splitAtUri } from "./utils";
 import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
-export interface Quote {
+export interface NumQuote {
     postUri: string;
     numQuotes: number;
 }
@@ -20,7 +20,7 @@ export interface Quote {
 export interface Events {
     post: PostView;
     profile: ProfileViewDetailed;
-    quote: Quote;
+    numQuote: NumQuote;
     unreadNotifications: number;
 }
 
@@ -73,8 +73,8 @@ export class State {
             case "profile":
                 id = (payload as ProfileViewDetailed).did;
                 break;
-            case "quote":
-                id = (payload as Quote).postUri;
+            case "numQuote":
+                id = (payload as NumQuote).postUri;
                 break;
             case "unreadNotifications":
                 return;
@@ -82,7 +82,7 @@ export class State {
                 assertNever(event);
         }
 
-        console.log(`notify - ${event} ${action} ${id}`);
+        console.log(`${getDateString(new Date())} - notify - ${event} ${action} ${id}`);
 
         if (id) {
             this.idSpecificListeners[event]?.get(id)?.forEach((listener) => listener(action, payload));
@@ -105,8 +105,8 @@ export class State {
             case "profile":
                 id = (payload as ProfileViewDetailed).did;
                 break;
-            case "quote":
-                id = (payload as Quote).postUri;
+            case "numQuote":
+                id = (payload as NumQuote).postUri;
                 break;
             case "unreadNotifications":
                 return;
@@ -148,7 +148,7 @@ export class State {
                     profilesToFetch.push(post.author.did);
                     postsMap.set(post.uri, post);
                 }
-                if (cacheProfilesAndQuotes) promises.push(this.getQuotes(batch), this.getProfiles(profilesToFetch));
+                if (cacheProfilesAndQuotes) promises.push(this.getNumQuotes(batch), this.getProfiles(profilesToFetch));
             }
 
             for (const promise of promises) {
@@ -166,11 +166,11 @@ export class State {
         try {
             await State.bskyClient.deletePost(uri);
             const post = this.getObject("post", uri);
-            const quote = this.getObject("quote", uri);
+            const quote = this.getObject("numQuote", uri);
             this.deleteObject("post", uri);
-            this.deleteObject("quote", uri);
+            this.deleteObject("numQuote", uri);
             if (post) this.notify("post", "deleted", post);
-            if (quote) this.notify("quote", "deleted", quote);
+            if (quote) this.notify("numQuote", "deleted", quote);
         } catch (e) {
             return error("Couldn't delete post.", e);
         }
@@ -199,9 +199,9 @@ export class State {
         }
     }
 
-    static async getQuotes(postUris: string[]): Promise<Error | Quote[]> {
+    static async getNumQuotes(postUris: string[]): Promise<Error | NumQuote[]> {
         try {
-            const postUrisToFetch = Array.from(new Set<string>(postUris).keys());
+            const postUrisToFetch = Array.from(new Set<string>(postUris));
             const quotesMap = new Map<string, number>();
 
             while (postUrisToFetch.length > 0) {
@@ -214,15 +214,25 @@ export class State {
                 }
             }
 
-            const quotesList: Quote[] = [];
-            for (const postUri of postUrisToFetch) {
+            const quotesList: NumQuote[] = [];
+            for (const postUri of Array.from(new Set<string>(postUris))) {
                 quotesList.push({ postUri, numQuotes: quotesMap.get(postUri)! });
             }
 
-            this.notifyBatch("quote", "updated", quotesList);
+            this.notifyBatch("numQuote", "updated", quotesList);
             return postUris.map((postUri) => {
                 return { postUri: postUri, numQuotes: quotesMap.get(postUri)! };
             });
+        } catch (e) {
+            return error("Couldn't load num quotes", e);
+        }
+    }
+
+    static async getQuotes(postUri: string): Promise<Error | string[]> {
+        try {
+            const response = await fetchApi(`quotes?uri=${encodeURIComponent(postUri)}`);
+            if (!response.ok) throw new Error();
+            return (await response.json()) as string[];
         } catch (e) {
             return error("Couldn't load quotes", e);
         }
@@ -278,6 +288,7 @@ export class State {
             for (const notification of listResponse.data.notifications) {
                 if (notification.reasonSubject && notification.reasonSubject.includes("app.bsky.feed.post")) {
                     postsToLoad.push(notification.reasonSubject);
+                    quotesToLoad.push(notification.reasonSubject);
                 }
                 if (AppBskyFeedPost.isRecord(notification.record) && notification.record.reply) {
                     postsToLoad.push(notification.record.reply.parent.uri);
@@ -287,7 +298,7 @@ export class State {
                     postsToLoad.push(notification.uri);
                 }
             }
-            const promises = await Promise.all([State.getPosts(postsToLoad, false), State.getQuotes(quotesToLoad)]);
+            const promises = await Promise.all([State.getPosts(postsToLoad, false), State.getNumQuotes(quotesToLoad)]);
             for (const promise of promises) {
                 if (promise instanceof Error) throw promise;
             }
@@ -341,7 +352,7 @@ export class State {
                     profilesToFetch.push(feedViewPost.reason.by.did);
                 }
             }
-            const promises = await Promise.all([State.getProfiles(profilesToFetch), State.getQuotes(postUrisToFetch)]);
+            const promises = await Promise.all([State.getProfiles(profilesToFetch), State.getNumQuotes(postUrisToFetch)]);
             for (const promise of promises) {
                 if (promise instanceof Error) throw promise;
             }

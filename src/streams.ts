@@ -128,7 +128,7 @@ export class FollowingStream extends CursorStream<string, ProfileViewDetailed> {
 }
 
 export class QuotesStream implements Stream<PostView> {
-    loaded = false;
+    quotes?: string[];
 
     constructor(readonly postUri: string) {}
 
@@ -136,14 +136,18 @@ export class QuotesStream implements Stream<PostView> {
         throw new Error("Method not implemented.");
     }
     async next(): Promise<Error | PostView[]> {
-        if (this.loaded) return [];
         if (!State.isConnected()) return new Error("Couldn't load quotes");
         try {
-            const quotesResult = await State.getQuotes([this.postUri]);
-            if (quotesResult instanceof Error) throw quotesResult;
-            const postsResult = await State.getPosts(quotesResult.map((quote) => quote.postUri));
-            if (postsResult instanceof Error) throw postsResult;
-            return postsResult;
+            if (!this.quotes) {
+                const quotes = await State.getQuotes(this.postUri);
+                if (quotes instanceof Error) throw quotes;
+                this.quotes = quotes;
+            }
+
+            const postUris = this.quotes.splice(0, 25);
+            const posts = await State.getPosts(postUris);
+            if (posts instanceof Error) throw posts;
+            return posts;
         } catch (e) {
             return error("Couldn't load quotes", e);
         }
