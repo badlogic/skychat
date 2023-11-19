@@ -62,6 +62,8 @@ import sunIconSvg from "remixicon/icons/Weather/sun-line.svg";
 import moonIconSvg from "remixicon/icons/Weather/moon-line.svg";
 // @ts-ignore
 import treeIconSvg from "remixicon/icons/Editor/node-tree.svg";
+// @ts-ignore
+import gifIconSvg from "remixicon/icons/Document/file-gif-line.svg";
 
 import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 
@@ -97,3 +99,4 @@ export const arrowUpDoubleIcon = unsafeHTML(arrowUpDoubleIconSvg);
 export const moonIcon = unsafeHTML(moonIconSvg);
 export const sunIcon = unsafeHTML(sunIconSvg);
 export const treeIcon = unsafeHTML(treeIconSvg);
+export const gifIcon = unsafeHTML(gifIconSvg);

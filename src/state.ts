@@ -30,7 +30,7 @@ export type EventAction = "updated" | "deleted";
 export type ActorFeedType = "home" | "posts_with_replies" | "posts_no_replies" | "posts_with_media";
 
 export class State {
-    static DEBUG = true;
+    static DEBUG = false;
     static bskyClient?: BskyAgent;
     private static objects: { [K in keyof Events]?: Map<string, Events[K]> } = {};
     private static generalListeners: { [K in keyof Events]?: ((action: EventAction, payload: Events[K]) => void)[] } = {};

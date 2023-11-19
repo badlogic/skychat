@@ -18,7 +18,7 @@ import { LitElement, PropertyValueMap, TemplateResult, html, nothing, svg } from
 import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { extractLinkCard } from "../bsky";
-import { deleteIcon, editIcon, imageIcon, spinnerIcon } from "../icons";
+import { deleteIcon, editIcon, gifIcon, imageIcon, spinnerIcon } from "../icons";
 import { Store } from "../store";
 import {
     Caret,
@@ -323,6 +323,8 @@ export class PostEditor extends LitElement {
                     : html`<div class="pl-2 pr-4 py-1 flex items-center min-h-[48px]">
                     <button class="p-2 disabled:fill-gray" @click=${this.addImage} ?disabled=${this.embed || this.isSending}>
                         <i class="icon w-6 h-6 ${this.embed || this.isSending ? "fill-gray" : ""}">${imageIcon}</i>
+                        <button class="p-2 disabled:fill-gray" @click=${this.addGif} ?disabled=${this.embed || this.isSending}>
+                        <i class="icon w-6 h-6 ${this.embed || this.isSending ? "fill-gray" : ""}">${gifIcon}</i>
                     </button>
                     ${
                         this.imagesToUpload.length > 0
@@ -452,6 +454,10 @@ export class PostEditor extends LitElement {
         });
         input.click();
         this.canPost = true;
+    }
+
+    async addGif() {
+        document.body.append(dom(html`<image-search></image-search>`)[0]);
     }
 
     async addLinkCard(card: AppBskyRichtextFacet.Link) {

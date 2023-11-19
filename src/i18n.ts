@@ -112,6 +112,9 @@ export interface Messages {
     "Sorry, an unknown error occured": string;
     "Show replies": string;
     "Open Thread": string;
+    "GIF Search": string;
+    "Search for GIFS...": string;
+    "Couldn't load images": string;
 }
 
 const english: Messages = {
@@ -237,6 +240,9 @@ const english: Messages = {
     "Sorry, an unknown error occured": "Sorry, an unknown error occured",
     "Show replies": "Show replies",
     "Open Thread": "Open Thread",
+    "GIF Search": "GIF Search",
+    "Search for GIFS...": "Search for GIFs ...",
+    "Couldn't load images": "Couldn't load images",
 };
 
 const german: Messages = {
@@ -364,6 +370,9 @@ const german: Messages = {
     "Sorry, an unknown error occured": "Ein unbekannter Fehler ist aufgetreten",
     "Show replies": "Zeige Antworten",
     "Open Thread": "Zeige Thread",
+    "GIF Search": "GIF Suche",
+    "Search for GIFS...": "Nach GIFs suchen ...",
+    "Couldn't load images": "Konnte Bilder nicht laden",
 };
 
 export type LanguageCode = "en" | "de";

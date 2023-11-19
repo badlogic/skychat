@@ -75,14 +75,26 @@ export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     return result;
 }
 
+export function tryEmbedGiphyGif(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External): TemplateResult | undefined {
+    const url = cardEmbed.uri;
+    const giphyPattern = /https?:\/\/(?:www\.)?giphy\.com\/gifs\/(?:.*-)?([a-zA-Z0-9]+)/;
+    const match = url.match(giphyPattern);
+
+    if (match) {
+        const gifId = match[1];
+        const gifURL = `https://media.giphy.com/media/${gifId}/giphy.gif`;
+        // If you want the video format, you can use the following line instead
+        // const videoURL = `https://media.giphy.com/media/${gifId}/giphy.mp4`;
+        return html`<div class="flex items-center justify-center mt-2"><img src="${gifURL}" class="max-h-[40svh] rounded" /></div>`;
+    }
+
+    return undefined;
+}
+
 export function tryEmbedYouTubeVideo(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External): TemplateResult | undefined {
     const url = cardEmbed.uri;
-    // Regular expressions for YouTube video and Shorts URLs
     const videoRegExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([\w-]+)/;
-
     let videoID: string | undefined = "";
-
-    // Check if it's a standard YouTube video URL
     if (videoRegExp.test(url)) {
         const match = url.match(videoRegExp);
         videoID = match ? match[1] : undefined;
@@ -91,9 +103,7 @@ export function tryEmbedYouTubeVideo(cardEmbed: AppBskyEmbedExternal.ViewExterna
         return undefined;
     }
 
-    // Check if a valid video ID was extracted
     if (videoID && videoID.length === 11) {
-        // Return the iframe embed string
         const youtubeDom = dom(html`<div class="mt-2 rounded overflow-x-clip"></div>`)[0];
         fetch("https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=3Yn4v44qplg&format=json")
             .then(async (data) => {
@@ -121,38 +131,14 @@ export function tryEmbedYouTubeVideo(cardEmbed: AppBskyEmbedExternal.ViewExterna
         return html`${youtubeDom}`;
     }
 
-    // Return an empty string or a message if the URL is not a valid YouTube URL
     return undefined;
-}
-
-export class CardEmbedView extends LitElement {
-    @property()
-    cardEmbed?: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External;
-
-    youtubeEmbed?: TemplateResult;
-
-    render() {
-        if (!this.cardEmbed) return html`${nothing}`;
-        const cardEmbed = this.cardEmbed;
-        if (this.youtubeEmbed) return this.youtubeEmbed;
-        const youTubeEmbed = tryEmbedYouTubeVideo(cardEmbed);
-        if (youTubeEmbed) return youTubeEmbed;
-
-        const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
-        return html`<a class="overflow-x-clip mt-2 border rounded border-gray/50 flex" target="_blank" href="${cardEmbed.uri}">
-            ${thumb ? html`<img src="${thumb}" class="w-[100px] object-cover" />` : nothing}
-            <div class="flex flex-col p-2">
-                <span class="text-gray text-xs">${new URL(cardEmbed.uri).host}</span>
-                <span class="font-bold text-sm line-clamp-2">${cardEmbed.title}</span>
-                <div class="text-sm line-clamp-2 break-words">${cardEmbed.description}</div>
-            </div>
-        </a>`;
-    }
 }
 
 export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External) {
     const youTubeEmbed = tryEmbedYouTubeVideo(cardEmbed);
     if (youTubeEmbed) return youTubeEmbed;
+    const giphyEmbed = tryEmbedGiphyGif(cardEmbed);
+    if (giphyEmbed) return giphyEmbed;
 
     const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
     return html`<a class="overflow-x-clip mt-2 border rounded border-gray/50 flex" target="_blank" href="${cardEmbed.uri}">
@@ -656,6 +642,16 @@ export class PostOptionsElement extends PopupMenu {
                 enabled: did != this.post.author.did,
                 click: () => {
                     this.handleOption("block_user");
+                    this.close();
+                },
+            },
+            {
+                option: "delete",
+                text: i18n("Delete Post"),
+                icon: html`${deleteIcon}`,
+                enabled: did != undefined && this.post.uri.includes(did),
+                click: () => {
+                    this.handleOption("delete");
                     this.close();
                 },
             },
