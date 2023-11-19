@@ -83,6 +83,7 @@ export class PostEditor extends LitElement {
 
     @state()
     embed?: AppBskyEmbedExternal.Main;
+    embedRendered?: HTMLElement;
 
     @state()
     imagesToUpload: { alt: string; dataUri: string; data: Uint8Array; mimeType: string }[] = [];
@@ -232,7 +233,7 @@ export class PostEditor extends LitElement {
                     : nothing}
                 ${AppBskyEmbedExternal.isMain(this.embed)
                     ? html`<div class="flex relative px-2 items-center justify-center">
-                          <div class="w-full">${renderEmbed(this.embed, false)}</div>
+                          <div class="w-full">${this.embedRendered}</div>
                           ${this.isLoadingCard ? html`<i class="absolute ml-2 icon w-6 h-6 animate-spin">${spinnerIcon}</i>` : nothing}
                           <button
                               class="absolute right-4 top-4"
@@ -243,6 +244,7 @@ export class PostEditor extends LitElement {
 
                                   setTimeout(() => {
                                       this.embed = undefined;
+                                      this.embedRendered = undefined;
                                       this.checkCanPost();
                                   }, 500);
                               }}
@@ -509,6 +511,7 @@ export class PostEditor extends LitElement {
                 } as AppBskyEmbedExternal.External,
             };
             this.embed = cardEmbed;
+            this.embedRendered = dom(renderEmbed(this.embed, false))[0];
             this.canPost = true;
         } catch (e) {
             console.log("Couldn't load card", e);
@@ -697,6 +700,7 @@ export class PostEditor extends LitElement {
             this.messageElement!.style.height = "auto";
             this.messageElement!.style.height = this.messageElement!.scrollHeight + "px";
             this.embed = undefined;
+            this.embedRendered = undefined;
             this.cardSuggestions = undefined;
             this.handleSuggestions = undefined;
             this.imagesToUpload.length = 0;
