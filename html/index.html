@@ -1,8 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" style="overscroll-behavior: none">
+<html lang="en">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=1" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+
         <title>Skychat</title>
         <meta name="description" content="A better BlueSky client" />
         <meta property="og:title" content="Skychat" />
@@ -22,7 +25,7 @@
         <link rel="manifest" href="manifest.client.json" />
         <!-- meta -->
     </head>
-    <body class="h-[100dvh] pwa:h-[100svh] dark:bg-black dark:text-white no-touch-highlight">
+    <body class="h-[100vh] dark:bg-black dark:text-white no-touch-highlight">
         <skychat-client></skychat-client>
     </body>
     <script src="build/app.js" async></script>

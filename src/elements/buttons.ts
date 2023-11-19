@@ -7,7 +7,8 @@ import { dom, getScrollParent } from "../utils";
 import { setupPushNotifications } from "./notifications";
 import { State } from "../state";
 
-let normalStyle = "flex justify-center items-center w-12 h-12 bg-[#ccc] dark:bg-[#333] rounded-full shadow-md dark:shadow-white/20";
+let normalStyle =
+    "flex justify-center items-center w-12 h-12  bg-white border border-gray/10 dark:bg-black dark:border-white/20 rounded-full shadow dark:shadow-white/20";
 let highlightStyle = "flex justify-center items-center w-12 h-12 bg-primary rounded-full shadow-md dark:shadow-white/20";
 
 function resetAnimation(el: HTMLElement) {
@@ -67,7 +68,7 @@ export abstract class FloatingButton extends LitElement {
 
     render() {
         return html`<div
-            class="fixed bottom-4 ${this.hide && !this.highlight ? "animate-fade animate-reverse" : "animate-fade"} animate-duration-300"
+            class="fixed z-10 bottom-4 ${this.hide && !this.highlight ? "animate-fade animate-reverse" : "animate-fade"} animate-duration-300"
             style="transform: ${this.translateX(this.getOffset())};"
         >
             <button

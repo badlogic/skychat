@@ -779,7 +779,7 @@ export class ThreadOverlay extends HashNavOverlay {
         return html`<div class="px-4">
             ${this.isLoading ? html`<div>${spinner}</div>` : nothing} ${this.error ? html`<div>${this.error}</div>` : nothing}
             ${this.thread
-                ? html`<thread-view-post .highglightUri=${this.postUri} .isRoot=${true} .thread=${this.thread}></thread-view-post>`
+                ? html`<thread-view-post .highlightUri=${this.postUri} .isRoot=${true} .thread=${this.thread}></thread-view-post>`
                 : nothing}
         </div>`;
     }

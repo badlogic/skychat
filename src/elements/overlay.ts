@@ -1,4 +1,4 @@
-import { LitElement, PropertyValueMap, TemplateResult, html } from "lit";
+import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { pushHash } from "./routing";
@@ -121,6 +121,9 @@ export abstract class Overlay extends LitElement {
     readonly escapeCallback;
     closed = false;
 
+    @property()
+    scrollUpButton = true;
+
     constructor(pushState = true) {
         super();
         this.navCallback = navigationGuard.register(() => this.close());
@@ -141,9 +144,15 @@ export abstract class Overlay extends LitElement {
     }
 
     render() {
-        return html`<div class="fixed top-0 left-0 w-full h-full bg-white dark:bg-black overflow-auto z-10">
-            <div class="mx-auto max-w-[600px] h-full flex flex-col">${this.renderHeader()} ${this.renderContent()}</div>
-        </div>`;
+        const overlayDom = dom(html`<div class="fixed top-0 left-0 w-full h-full bg-white dark:bg-black overflow-auto z-10">
+            <div class="mx-auto max-w-[600px] h-full flex flex-col">
+                ${this.renderHeader()} ${this.renderContent()}
+                ${this.scrollUpButton
+                    ? html`<up-button id="up" @click=${() => getScrollParent(overlayDom)?.scrollTo({ top: 0, behavior: "smooth" })}></up-button>`
+                    : nothing}
+            </div>
+        </div>`)[0];
+        return overlayDom;
     }
 
     abstract renderHeader(): TemplateResult;
@@ -177,6 +186,7 @@ export abstract class HashNavOverlay extends Overlay {
 import logoSvg from "../../html/logo.svg";
 import { Messages, i18n } from "../i18n";
 import { closeIcon } from "../icons";
+import { dom, getScrollParent } from "../utils";
 
 export function renderTopbar(title: keyof Messages | HTMLElement, buttons?: TemplateResult | HTMLElement) {
     return html`<top-bar .heading=${title instanceof HTMLElement ? title : i18n(title)} .buttons=${buttons}> </top-bar>`;

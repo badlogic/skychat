@@ -27,6 +27,10 @@
     h3 {
         @apply text-primary font-bold;
     }
+
+    input {
+        @apply text-[16px];
+    }
 }
 
 @layer components {

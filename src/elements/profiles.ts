@@ -6,7 +6,7 @@ import { Messages, i18n } from "../i18n";
 import { moreIcon, spinnerIcon } from "../icons";
 import { ActorFeedType, State } from "../state";
 import { Store } from "../store";
-import { contentLoader, defaultAvatar, dom, error, getNumber, hasLinkOrButtonParent, spinner } from "../utils";
+import { contentLoader, defaultAvatar, dom, error, getNumber, getScrollParent, hasLinkOrButtonParent, spinner } from "../utils";
 import { HashNavOverlay, renderTopbar } from "./overlay";
 import { PopupMenu } from "./popup";
 import { renderRichText } from "./posts";

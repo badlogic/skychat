@@ -6,10 +6,12 @@ import { Store, Theme } from "../store";
 import { State } from "../state";
 import { error } from "../utils";
 
+type Version = { date: string; commit: string };
+
 @customElement("settings-overlay")
 export class SettingsOverlay extends HashNavOverlay {
     @property()
-    version = "";
+    version?: { date: string; commit: string };
 
     getHash(): string {
         return "settings";
@@ -22,8 +24,7 @@ export class SettingsOverlay extends HashNavOverlay {
             if (!response) {
                 error("Couldn't fetch version.json");
             }
-            const version = (await response.json()) as { date: string; commit: string };
-            this.version = version.date + " - " + version.commit;
+            this.version = (await response.json()) as Version;
         })();
     }
 
@@ -52,7 +53,11 @@ export class SettingsOverlay extends HashNavOverlay {
                 .values=${[i18n("Dark"), i18n("Light")]}
                 .selected=${Store.getTheme() == "dark" ? "Dark" : "Light"}
             ></select-button>
-            <div class="mt-4 text-xs">Build: ${this.version}</div>
+            <div class="mt-4 text-xs">
+                Build:<br />
+                ${this.version?.date}<br />
+                ${this.version?.commit}
+            </div>
         </div>`;
     }
 

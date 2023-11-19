@@ -168,7 +168,7 @@ export class PostEditor extends LitElement {
 
         return html` <div class="flex max-w-[600px] ${this.fullscreen ? "h-full max-h-full" : ""}">
             <div
-                class="flex flex-col flex-grow relative "
+                class="flex flex-col flex-grow relative"
                 @drop=${(ev: DragEvent) => this.pasteImage(ev)}
                 @dragover=${(ev: DragEvent) => ev.preventDefault()}
             >
@@ -779,7 +779,7 @@ export class PostEditorOverlay extends CloseableElement {
             <div
                 class="flex ${isMobileBrowser()
                     ? "h-full"
-                    : "mt-1 border border-gray/20 rounded-md"} justify-center max-w-[600px] mx-auto bg-white dark:bg-black"
+                    : "mt-4 border border-gray/20 rounded-md shadow dark:shadow-white/10 overflow-x-clip"} justify-center max-w-[600px] mx-auto bg-white dark:bg-black"
             >
                 <post-editor
                     class="animate-fade animate-duration-[250ms] w-[600px]"

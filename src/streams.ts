@@ -86,6 +86,9 @@ export abstract class CursorStream<T> implements Stream<T> {
         try {
             console.log("Polling");
 
+            // FIXME this will fail miserable if the client hasn't polled in say 24h, gets woken up
+            // and starts polling from the top of the new posts. Could be hundreds of posts. Need to
+            // employ the smart strategy of binary searching so we only pull in
             const newItems: T[] = [];
             let cursor: string | undefined;
             let startTimestamp = this.items.length > 0 ? this.getItemDate(this.items[0]).getTime() : new Date().getTime();
