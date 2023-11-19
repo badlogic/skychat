@@ -13,7 +13,7 @@ import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { i18n } from "../i18n";
-import { blockIcon, deleteIcon, heartIcon, moreIcon, muteIcon, quoteIcon, reblogIcon, replyIcon, shieldIcon } from "../icons";
+import { blockIcon, deleteIcon, heartIcon, moreIcon, muteIcon, quoteIcon, reblogIcon, replyIcon, shieldIcon, treeIcon } from "../icons";
 import { EventAction, NumQuote, State } from "../state";
 import { Store } from "../store";
 import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
@@ -94,7 +94,7 @@ export function tryEmbedYouTubeVideo(cardEmbed: AppBskyEmbedExternal.ViewExterna
     // Check if a valid video ID was extracted
     if (videoID && videoID.length === 11) {
         // Return the iframe embed string
-        const youtubeDom = dom(html`<div></div>`)[0];
+        const youtubeDom = dom(html`<div class="mt-2 rounded overflow-x-clip"></div>`)[0];
         fetch("https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=3Yn4v44qplg&format=json")
             .then(async (data) => {
                 const youtubeInfo = await data.json();
@@ -551,7 +551,7 @@ export class AltText extends Overlay {
     }
 }
 
-type PostOptions = "likes" | "quotes" | "reposts" | "mute_user" | "mute_thread" | "block_user" | "delete";
+type PostOptions = "likes" | "quotes" | "reposts" | "mute_user" | "mute_thread" | "block_user" | "delete" | "open_thread";
 type PostOptionsButton = { option: PostOptions; text: string; icon: TemplateResult; click: () => void; enabled: boolean };
 
 @customElement("post-options")
@@ -620,6 +620,16 @@ export class PostOptionsElement extends PopupMenu {
                 },
             },
             {
+                option: "open_thread",
+                text: i18n("Open Thread"),
+                icon: html`${treeIcon}`,
+                enabled: true,
+                click: () => {
+                    document.body.append(dom(html`<thread-overlay .postUri=${this.post?.uri}></thread-overlay>`)[0]);
+                    this.close();
+                },
+            },
+            {
                 option: "mute_thread",
                 text: i18n("Mute Thread"),
                 icon: html`${muteIcon}`,
@@ -646,16 +656,6 @@ export class PostOptionsElement extends PopupMenu {
                 enabled: did != this.post.author.did,
                 click: () => {
                     this.handleOption("block_user");
-                    this.close();
-                },
-            },
-            {
-                option: "delete",
-                text: i18n("Delete Post"),
-                icon: html`${deleteIcon}`,
-                enabled: did != undefined && this.post.uri.includes(did),
-                click: () => {
-                    this.handleOption("delete");
                     this.close();
                 },
             },

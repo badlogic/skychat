@@ -111,6 +111,7 @@ export interface Messages {
     "Invalid stream": string;
     "Sorry, an unknown error occured": string;
     "Show replies": string;
+    "Open Thread": string;
 }
 
 const english: Messages = {
@@ -235,6 +236,7 @@ const english: Messages = {
     "Invalid stream": "Invalid stream",
     "Sorry, an unknown error occured": "Sorry, an unknown error occured",
     "Show replies": "Show replies",
+    "Open Thread": "Open Thread",
 };
 
 const german: Messages = {
@@ -361,6 +363,7 @@ const german: Messages = {
     "Invalid stream": "Unbekannter stream",
     "Sorry, an unknown error occured": "Ein unbekannter Fehler ist aufgetreten",
     "Show replies": "Zeige Antworten",
+    "Open Thread": "Zeige Thread",
 };
 
 export type LanguageCode = "en" | "de";
