@@ -4,6 +4,7 @@ import { i18n } from "../i18n";
 import { customElement, property, query } from "lit/decorators.js";
 import { dom, error, onVisibleOnce } from "../utils";
 import { spinnerIcon } from "../icons";
+import { Store } from "../store";
 
 const GIPHY_API_KEY = "Tv9Va9sXl2rooRvBG6xaUhVz4zHfzTH4";
 
@@ -11,7 +12,8 @@ interface SearchedImage {
     width: number;
     height: number;
     mp4?: string;
-    url?: string;
+    imageUrl?: string;
+    url: string;
 }
 
 interface GiphyResponse {
@@ -39,6 +41,7 @@ class GiphyImageSearch implements ImageSearchProvider {
         if (this.query != query) {
             this.offset = 0;
             this.query = query;
+            console.log("Changed query to " + query);
         }
         try {
             const response = await fetch(
@@ -46,7 +49,12 @@ class GiphyImageSearch implements ImageSearchProvider {
             );
             const data = (await response.json()) as GiphyResponse;
             this.offset += data.data.length;
-            return data.data.map((img) => img.images.fixed_width);
+            const images: SearchedImage[] = [];
+            for (const img of data.data) {
+                const image = img.images.fixed_width;
+                images.push({ width: image.width, height: image.height, mp4: image.mp4, imageUrl: image.url, url: img.url });
+            }
+            return images;
         } catch (e) {
             return error("Couldn't fetch more images", e);
         }
@@ -68,6 +76,9 @@ export class ImageSearch extends Overlay {
     provider: ImageSearchProvider = new GiphyImageSearch();
 
     @property()
+    selected: (url: string) => void = () => {};
+
+    @property()
     error = "";
 
     lastGridIndex = 0;
@@ -84,7 +95,10 @@ export class ImageSearch extends Overlay {
     renderHeader(): TemplateResult {
         return renderTopbar(
             dom(
-                html`<div class="flex items-center"><span>${i18n("GIF Search")}</span><img src="/img/giphy.png" class="w-[150px] h-auto" /></div>`
+                html`<div class="flex items-center">
+                    <span>${i18n("GIF Search")}</span
+                    ><img src="/img/${Store.getTheme() == "dark" ? "giphy.png" : "giphy-light.png"}" class="ml-2 w-[150px] h-auto" />
+                </div>`
             )[0],
             this.closeButton()
         );
@@ -97,7 +111,7 @@ export class ImageSearch extends Overlay {
                 class="border border-gray rounded-full outline-none bg-transparent drop:bg-white dark:text-white disabled:text-gray dark:disabled:text-gray px-4 py-2"
                 placeholder="${i18n("Search for GIFS...")}"
             />
-            <div id="imageGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-1">
+            <div id="imageGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-1 mt-4">
                 <div class="grid gap-2"></div>
                 <div class="grid gap-2"></div>
                 <div class="grid gap-2"></div>
@@ -117,6 +131,7 @@ export class ImageSearch extends Overlay {
             for (const col of Array.from(this.imageGridElement!.children)) {
                 col.innerHTML = "";
             }
+            this.spinnerElement?.classList.add("hidden");
             this.loadMoreImages(this.searchElement!.value);
         }, 200) as any as number;
     }
@@ -136,6 +151,7 @@ export class ImageSearch extends Overlay {
                 spinner.classList.remove("hidden");
                 onVisibleOnce(spinner, () => {
                     spinner.classList.add("hidden");
+                    if (query != this.searchElement?.value) return;
                     this.loadMoreImages(query);
                 });
             }
@@ -152,24 +168,38 @@ export class ImageSearch extends Overlay {
         for (const image of images) {
             const col = gridCols[this.lastGridIndex++ % 4];
             if (image.mp4) {
+                const videoDom = dom(
+                    html`<div class="flex justify-center items-center">
+                        <video
+                            @click=${() => {
+                                this.close();
+                                this.selected(image.url);
+                            }}
+                            src="${image.mp4}"
+                            class="w-full h-auto cursor-pointer rounded"
+                            muted
+                            loop
+                            playsinline
+                        ></video>
+                    </div>`
+                )[0];
+                col.append(videoDom);
+                onVisibleOnce(videoDom, () => {
+                    const video = videoDom.querySelector("video") as HTMLVideoElement;
+                    video.play();
+                });
+            } else if (image.imageUrl) {
                 col.append(
                     dom(
                         html`<div class="flex justify-center items-center">
-                            <video
-                                src="${image.mp4}"
-                                class="w-full h-auto object-cover"
-                                style="aspect-ratio: ${image.width}/${image.height};"
-                                autoplay
-                                loop
-                            ></video>
-                        </div>`
-                    )[0]
-                );
-            } else if (image.url) {
-                col.append(
-                    dom(
-                        html`<div class="flex justify-center items-center">
-                            <img src="${image.url}" class="w-full h-auto" style="aspect-ratio: ${image.width}/${image.height};" />
+                            <img
+                                @click=${() => {
+                                    this.close();
+                                    this.selected(image.url);
+                                }}
+                                src="${image.imageUrl}"
+                                class="w-full h-auto cursor-pointer rounded"
+                            />
                         </div>`
                     )[0]
                 );

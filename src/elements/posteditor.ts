@@ -220,7 +220,7 @@ export class PostEditor extends LitElement {
                               this.cardSuggestions,
                               (card) =>
                                   html`<button
-                                      @click=${() => this.addLinkCard(card)}
+                                      @click=${() => this.addLinkCard(card.uri)}
                                       class="border border-gray/50 rounded py-1 px-4 flex items-center gap-2"
                                       ?disabled=${this.isSending}
                                   >
@@ -457,15 +457,15 @@ export class PostEditor extends LitElement {
     }
 
     async addGif() {
-        document.body.append(dom(html`<image-search></image-search>`)[0]);
+        document.body.append(dom(html`<image-search .selected=${(url: string) => this.addLinkCard(url)}></image-search>`)[0]);
     }
 
-    async addLinkCard(card: AppBskyRichtextFacet.Link) {
+    async addLinkCard(url: string) {
         if (!State.isConnected()) return;
         let cardEmbed: AppBskyEmbedExternal.Main = {
             $type: "app.bsky.embed.external",
             external: {
-                uri: card.uri,
+                uri: url,
                 title: "",
                 description: "",
             },
@@ -473,7 +473,7 @@ export class PostEditor extends LitElement {
         this.embed = cardEmbed;
         this.isLoadingCard = true;
         try {
-            const linkCard = await extractLinkCard(card.uri);
+            const linkCard = await extractLinkCard(url);
             if (linkCard instanceof Error) return;
             let imageBlob: BlobRef | undefined;
             if (linkCard.image && linkCard.image.length > 0) {
@@ -501,7 +501,7 @@ export class PostEditor extends LitElement {
             cardEmbed = {
                 $type: "app.bsky.embed.external",
                 external: {
-                    uri: card.uri,
+                    uri: url,
                     title: linkCard.title,
                     description: linkCard.description,
                     thumb: imageBlob,
