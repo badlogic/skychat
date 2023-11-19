@@ -149,6 +149,10 @@ export class PostEditor extends LitElement {
             this.messageElement.requestUpdate();
         };
 
+        // FIXME add language detection via tinyld
+        // FIXME add image captions via GPT-4, upload as blob to network, send only link to GPT-4
+        // FIXME add translations via Google Translate
+
         let placeholder = "";
         if (this.quote) {
             placeholder = this.hashtag

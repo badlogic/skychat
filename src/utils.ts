@@ -420,6 +420,15 @@ export function collectLitElements(element: HTMLElement): LitElement[] {
     return litElements;
 }
 
+export async function waitForLitElementsToRender(element: HTMLElement) {
+    const promises: Promise<boolean>[] = [];
+    const elements = collectLitElements(element);
+    for (const el of elements) {
+        promises.push(el.updateComplete);
+    }
+    await Promise.all(promises);
+}
+
 export function getScrollParent(parent: HTMLElement | null) {
     while (parent) {
         if (parent.classList.contains("overflow-auto")) return parent;

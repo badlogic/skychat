@@ -47,6 +47,10 @@ export abstract class StreamView<T> extends LitElement {
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
+        if (!this.stream) {
+            error("No stream set, this should not happen");
+            return;
+        }
         if (this.stream) {
             this.stream.addNewItemsListener(async (newerItems) => {
                 if (newerItems instanceof Error) {
@@ -80,8 +84,6 @@ export abstract class StreamView<T> extends LitElement {
                 }
                 if (this.newItems) this.newItems(newerItems, this.stream!.items);
             });
-        } else {
-            alert("This should never happen, stream should always be set"); // FIXME
         }
         this.load();
     }
@@ -101,7 +103,7 @@ export abstract class StreamView<T> extends LitElement {
         try {
             const items = await this.stream.next();
             if (items instanceof Error) {
-                this.error = i18n("Invalid stream"); // FIXME
+                this.error = i18n("Invalid stream"); // FIXME handle error
                 return;
             }
 

@@ -4,7 +4,7 @@ import * as http from "http";
 import cors from "cors";
 import * as admin from "firebase-admin";
 import { applicationDefault } from "firebase-admin/app";
-import { ComAtprotoSyncSubscribeRepos, SubscribeReposMessage, subscribeRepos } from "atproto-firehose";
+import { ComAtprotoSyncSubscribeRepos, SubscribeReposMessage, XrpcEventStreamClient, subscribeRepos } from "atproto-firehose";
 import { AppBskyEmbedRecord, AppBskyFeedPost } from "@atproto/api";
 import { formatFileSize, getTimeDifference, splitAtUri } from "../utils";
 import * as fsSync from "fs";
@@ -75,6 +75,7 @@ for (const quote of quotes.keys()) {
     numQuotes += quotes.get(quote)?.length ?? 0;
 }
 let numDidWebRequests = 0;
+let lastEventTime = new Date().getTime();
 
 (async () => {
     const app = express();
@@ -88,6 +89,7 @@ let numDidWebRequests = 0;
 
     const onMessage = (message: SubscribeReposMessage) => {
         isStreaming = true;
+        lastEventTime = new Date().getTime();
         if (ComAtprotoSyncSubscribeRepos.isCommit(message)) {
             numStreamEvents++;
             message.ops.forEach((op) => {
@@ -168,21 +170,30 @@ let numDidWebRequests = 0;
         }
     };
 
+    let firehoseClient: XrpcEventStreamClient;
     const setupStream = () => {
         numStreamRestarts++;
         console.log("(Re-)starting stream");
-        let client = subscribeRepos(`wss://bsky.network`, { decodeRepoOps: true });
-        client.on("message", onMessage);
-        client.on("error", (code, reason) => {
+        firehoseClient = subscribeRepos(`wss://bsky.network`, { decodeRepoOps: true });
+        firehoseClient.on("message", onMessage);
+        firehoseClient.on("error", (code, reason) => {
             streamErrors.push({ date: new Date().toString(), code, reason });
             try {
-                client.close();
+                firehoseClient.close();
             } catch (e) {}
             setupStream();
         });
-        client.on("close", () => setupStream());
+        firehoseClient.on("close", () => setupStream());
     };
     setupStream();
+
+    // Health check of stream
+    setInterval(() => {
+        if (new Date().getTime() - lastEventTime > 10000) {
+            console.error("Firehose timed out, restarting");
+            firehoseClient.close();
+        }
+    }, 2000);
 
     // Push messaging queue
     setInterval(() => {
@@ -259,6 +270,9 @@ let numDidWebRequests = 0;
             }
 
             const uptime = getTimeDifference(serverStart.getTime());
+            const memory = process.memoryUsage();
+            memory.heapTotal /= 1024 * 1024;
+            memory.heapUsed /= 1024 * 1024;
             res.json({
                 serverStart,
                 uptime,
@@ -275,6 +289,7 @@ let numDidWebRequests = 0;
                 quotesFileSize: formatFileSize(fsSync.statSync(quotesFile).size),
                 registrationsFileSize: formatFileSize(fsSync.statSync(registrationsFile).size),
                 numDidWebRequests,
+                memoryUsage: memory.heapUsed.toFixed(2) + " / " + memory.heapTotal.toFixed(2) + " MB",
             });
         } catch (e) {
             res.status(400).json(e);

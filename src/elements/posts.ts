@@ -17,7 +17,19 @@ import { blockIcon, deleteIcon, heartIcon, moreIcon, muteIcon, quoteIcon, reblog
 import { EventAction, NumQuote, State } from "../state";
 import { Store } from "../store";
 import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
-import { combineAtUri, contentLoader, dom, error, getDateString, getTimeDifference, hasLinkOrButtonParent, spinner, splitAtUri } from "../utils";
+import {
+    collectLitElements,
+    combineAtUri,
+    contentLoader,
+    dom,
+    error,
+    getDateString,
+    getTimeDifference,
+    hasLinkOrButtonParent,
+    spinner,
+    splitAtUri,
+    waitForLitElementsToRender,
+} from "../utils";
 import { IconToggle } from "./icontoggle";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { PopupMenu } from "./popup";
@@ -190,7 +202,7 @@ export function renderRecord(
                       ${prefix == undefined
                           ? html`<a
                                 class="self-start ml-auto text-right text-xs text-lightgray whitespace-nowrap hover:underline"
-                                href="https://bsky.app/profile/${author.did}/post/${rkey}"
+                                href="#thread/${author.did}/${rkey}"
                                 target="_blank"
                                 @click=${(ev: Event) => {
                                     ev.preventDefault();
@@ -661,10 +673,10 @@ export class ThreadViewPostElement extends LitElement {
         </div>`)[0];
         const repliesDom = postDom.querySelector("#replies") as HTMLElement;
         if (thread.post.uri == uri) {
-            setTimeout(() => {
+            waitForLitElementsToRender(postDom).then(() => {
                 const postViewDom = postDom.querySelector("post-view");
                 postViewDom?.scrollIntoView({ behavior: "smooth", block: "center" });
-            }, 500);
+            });
         }
         return postDom;
     }
@@ -738,6 +750,7 @@ export class ThreadOverlay extends HashNavOverlay {
                 uri = post.record.reply.root.uri;
             }
 
+            // FIXME go through State instead
             const response = await State.bskyClient.getPostThread({
                 depth: 1000,
                 parentHeight: 1000,
@@ -776,6 +789,8 @@ export class ThreadOverlay extends HashNavOverlay {
     }
 
     renderContent() {
+        // FIXME threads to test sorting and view modes with
+        // http://localhost:8080/#thread/did:plc:k3a6s3ac4unrst44te7fd62m/3k7ths5azkx2z
         return html`<div class="px-4">
             ${this.isLoading ? html`<div>${spinner}</div>` : nothing} ${this.error ? html`<div>${this.error}</div>` : nothing}
             ${this.thread
