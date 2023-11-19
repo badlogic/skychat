@@ -614,27 +614,23 @@ export class ThreadViewPostElement extends LitElement {
         const isRoot = this.isRoot;
 
         const animation = "animate-shake animate-delay-500";
-        const insertNewPost = (post: PostView, repliesDom: HTMLElement) => {
-            const newPost = dom(html`<div class="min-w-[350px] mb-2 pl-2 border-l border-primary ${animation}">
-                <post-view
-                    .post=${post}
-                    .quoteCallback=${(post: PostView) => quote(post)}
-                    .replyCallback=${(post: PostView) => reply(post, newPost.querySelector("#replies")!)}
-                    .deleteCallback=${(post: PostView) => deletePost(post, newPost)}
-                    .showReplyTo=${false}
-                    .openOnClick=${false}
-                    .shortTime=${true}
-                ></post-view>
-                <div id="replies" class="${isRoot ? "ml-2" : "ml-4"}"></div>
-            </div>`)[0];
+        const insertNewPost = (newPost: PostView, repliesDom: HTMLElement) => {
+            const threadViewPost = {
+                $type: "app.bsky.feed.defs#threadViewPost",
+                post: newPost,
+                replies: [],
+            } as ThreadViewPost;
+            const newPostDom = dom(
+                html`<thread-view-post .highlightUri=${newPost.uri} .isRoot=${false} .thread=${threadViewPost}></thread-view-post>`
+            )[0];
             if (repliesDom.children.length > 0) {
-                repliesDom.children[0].before(newPost);
+                repliesDom.children[0].before(newPostDom);
             } else {
-                repliesDom.append(newPost);
+                repliesDom.append(newPostDom);
             }
-            setTimeout(() => {
-                newPost.scrollIntoView({ behavior: "smooth", block: "center" });
-            }, 500);
+            waitForLitElementsToRender(newPostDom).then(() => {
+                newPostDom.scrollIntoView({ behavior: "smooth", block: "center" });
+            });
         };
 
         const reply = (post: PostView, repliesDom: HTMLElement) => {
