@@ -110,6 +110,7 @@ export interface Messages {
     "Couldn't load notifications": string;
     "Invalid stream": string;
     "Sorry, an unknown error occured": string;
+    "Show replies": string;
 }
 
 const english: Messages = {
@@ -233,6 +234,7 @@ const english: Messages = {
     "Couldn't load notifications": "Couldn't load notifications",
     "Invalid stream": "Invalid stream",
     "Sorry, an unknown error occured": "Sorry, an unknown error occured",
+    "Show replies": "Show replies",
 };
 
 const german: Messages = {
@@ -358,6 +360,7 @@ const german: Messages = {
     "Couldn't load notifications": "Konnte Notifikationen nicht laden",
     "Invalid stream": "Unbekannter stream",
     "Sorry, an unknown error occured": "Ein unbekannter Fehler ist aufgetreten",
+    "Show replies": "Zeige Antworten",
 };
 
 export type LanguageCode = "en" | "de";

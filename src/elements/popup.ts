@@ -15,6 +15,8 @@ export abstract class PopupMenu extends LitElement {
     }
 
     handleButtonClick(ev: MouseEvent) {
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
         this.show = !this.show;
         this.mouseY = ev.clientY;
         if (this.show) {
@@ -55,7 +57,7 @@ export abstract class PopupMenu extends LitElement {
         if (this.show) checkInBounds();
 
         return html`<div class="relative">
-            <div @click=${this.handleButtonClick} class="cursor-pointer">${this.renderButton()}</div>
+            <div @click=${(ev: MouseEvent) => this.handleButtonClick(ev)} class="cursor-pointer">${this.renderButton()}</div>
             ${this.show
                 ? html`<div id="content" class="animate-fade animate-duration-300 whitespace-nowrap flex flex-col bg-white dark:bg-black border border-gray rounded-md shadow-md dark:shadow-none ${
                       this.show ? "enable-pointer-events" : "hidden"

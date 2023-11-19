@@ -75,7 +75,85 @@ export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     return result;
 }
 
+export function tryEmbedYouTubeVideo(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External): TemplateResult | undefined {
+    const url = cardEmbed.uri;
+    // Regular expressions for YouTube video and Shorts URLs
+    const videoRegExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([\w-]+)/;
+
+    let videoID: string | undefined = "";
+
+    // Check if it's a standard YouTube video URL
+    if (videoRegExp.test(url)) {
+        const match = url.match(videoRegExp);
+        videoID = match ? match[1] : undefined;
+        if (!videoID) return undefined;
+    } else {
+        return undefined;
+    }
+
+    // Check if a valid video ID was extracted
+    if (videoID && videoID.length === 11) {
+        // Return the iframe embed string
+        const youtubeDom = dom(html`<div></div>`)[0];
+        fetch("https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=3Yn4v44qplg&format=json")
+            .then(async (data) => {
+                const youtubeInfo = await data.json();
+                youtubeDom.append(
+                    dom(
+                        html`<div
+                            style="position: relative; width: 100%; padding-top: calc(${(youtubeInfo.height / youtubeInfo.width) *
+                            100}%); overflow: hidden;"
+                        >
+                            <iframe
+                                src="https://www.youtube.com/embed/${videoID}"
+                                frameborder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowfullscreen
+                                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                            ></iframe>
+                        </div>`
+                    )[0]
+                );
+            })
+            .catch(() => {
+                youtubeDom.append(dom(renderCardEmbed(cardEmbed))[0]);
+            });
+        return html`${youtubeDom}`;
+    }
+
+    // Return an empty string or a message if the URL is not a valid YouTube URL
+    return undefined;
+}
+
+export class CardEmbedView extends LitElement {
+    @property()
+    cardEmbed?: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External;
+
+    youtubeEmbed?: TemplateResult;
+
+    render() {
+        if (!this.cardEmbed) return html`${nothing}`;
+        const cardEmbed = this.cardEmbed;
+        if (this.youtubeEmbed) return this.youtubeEmbed;
+        const youTubeEmbed = tryEmbedYouTubeVideo(cardEmbed);
+        if (youTubeEmbed) return youTubeEmbed;
+
+        const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
+        return html`<a class="overflow-x-clip mt-2 border rounded border-gray/50 flex" target="_blank" href="${cardEmbed.uri}">
+            ${thumb ? html`<img src="${thumb}" class="w-[100px] object-cover" />` : nothing}
+            <div class="flex flex-col p-2">
+                <span class="text-gray text-xs">${new URL(cardEmbed.uri).host}</span>
+                <span class="font-bold text-sm line-clamp-2">${cardEmbed.title}</span>
+                <div class="text-sm line-clamp-2 break-words">${cardEmbed.description}</div>
+            </div>
+        </a>`;
+    }
+}
+
 export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External) {
+    const youTubeEmbed = tryEmbedYouTubeVideo(cardEmbed);
+    if (youTubeEmbed) return youTubeEmbed;
+
     const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
     return html`<a class="overflow-x-clip mt-2 border rounded border-gray/50 flex" target="_blank" href="${cardEmbed.uri}">
         ${thumb ? html`<img src="${thumb}" class="w-[100px] object-cover" />` : nothing}
@@ -163,8 +241,9 @@ export function renderEmbed(embed: PostView["embed"] | AppBskyFeedPost.Record["e
     const imagesEmbed = AppBskyEmbedImages.isView(embed) ? embed.images : undefined;
     const recordEmbed = AppBskyEmbedRecord.isView(embed) ? embed : undefined;
     const recordWithMediaEmbed = AppBskyEmbedRecordWithMedia.isView(embed) ? embed : undefined;
+    const cardDom = cardEmbed ? renderCardEmbed(cardEmbed) : undefined;
     return html`<div>
-        ${cardEmbed ? renderCardEmbed(cardEmbed) : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive, minimal) : nothing}
+        ${cardEmbed ? cardDom : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive, minimal) : nothing}
         ${recordEmbed && !minimal ? renderRecordEmbed(recordEmbed) : nothing}
         ${recordWithMediaEmbed ? renderRecordWithMediaEmbed(recordWithMediaEmbed, sensitive, minimal) : nothing}
     </div>`;
@@ -280,6 +359,8 @@ export class PostViewElement extends LitElement {
     @property()
     centerButtons = false;
 
+    contentDom?: HTMLElement;
+
     unsubscribePost: () => void = () => {};
     unsubscribeQuote: () => void = () => {};
 
@@ -342,21 +423,26 @@ export class PostViewElement extends LitElement {
 
         const rkey = splitAtUri(this.post.uri)?.rkey;
         const author = this.post.author;
+        if (!this.contentDom) {
+            this.contentDom = dom(
+                html`${renderRecord(
+                    author,
+                    rkey,
+                    this.post.record,
+                    this.post.embed,
+                    false,
+                    this.post.labels?.some((label) => ["porn", "sexual", "nudity"].includes(label.val)) ?? false,
+                    undefined,
+                    this.showHeader,
+                    this.subHeader,
+                    this.showReplyTo,
+                    this.openOnClick,
+                    this.shortTime
+                )}`
+            )[0];
+        }
         return html`<div class="${this.animation} outline-none">
-            ${renderRecord(
-                author,
-                rkey,
-                this.post.record,
-                this.post.embed,
-                false,
-                this.post.labels?.some((label) => ["porn", "sexual", "nudity"].includes(label.val)) ?? false,
-                undefined,
-                this.showHeader,
-                this.subHeader,
-                this.showReplyTo,
-                this.openOnClick,
-                this.shortTime
-            )}
+            ${this.contentDom}
             <div class="flex items-center ${this.centerButtons ? "justify-center" : ""} gap-4 mt-2">
                 <button @click=${() => this.replyCallback(this.post!)} class="flex gap-1 items-center text-gray">
                     <i class="icon w-4 h-4 fill-gray dark:fill-white/60">${replyIcon}</i
@@ -639,6 +725,18 @@ export class ThreadViewPostElement extends LitElement {
             );
         };
 
+        const toggleReplies = (ev: MouseEvent, postDom: HTMLElement) => {
+            if (window.getSelection() && window.getSelection()?.toString().length != 0) return;
+            if (hasLinkOrButtonParent(ev.target as HTMLElement)) return;
+            ev.stopPropagation();
+            const isHiding = repliesDom.classList.contains("hidden");
+            repliesDom.classList.toggle("hidden");
+            if (isHiding) {
+                repliesDom.classList.add("animate-flip-down");
+            } else repliesDom.classList.remove("animate-flip-down");
+            showMoredom.classList.toggle("hidden");
+        };
+
         const postDom = dom(html`<div>
             ${AppBskyFeedDefs.isNotFoundPost(thread.parent)
                 ? html`<div class="bg-lightgray dark:bg-gray text-white px-4 py-2 mb-2 rounded">${i18n("Deleted post")}</div>`
@@ -646,9 +744,10 @@ export class ThreadViewPostElement extends LitElement {
             <div
                 class="${thread.post.uri == uri ? animation : ""} min-w-[350px] mb-2 ${!isRoot || (thread.post.uri == uri && isRoot)
                     ? "pl-2"
-                    : ""} ${thread.post.uri == uri ? "border-l border-primary" : ""}"
+                    : ""} ${thread.post.uri == uri ? "border-l border-primary" : ""} flex flex-col"
             >
                 <post-view
+                    @click=${(ev: MouseEvent) => toggleReplies(ev, postDom)}
                     .post=${thread.post}
                     .quoteCallback=${(post: PostView) => quote(post)}
                     .replyCallback=${(post: PostView) => reply(post, repliesDom)}
@@ -656,7 +755,15 @@ export class ThreadViewPostElement extends LitElement {
                     .showReplyTo=${false}
                     .openOnClick=${false}
                     .shortTime=${true}
+                    class="cursor-pointer"
                 ></post-view>
+                <div
+                    id="showMore"
+                    @click=${(ev: MouseEvent) => toggleReplies(ev, postDom)}
+                    class="hidden cursor-pointer self-start p-1 text-xs rounded bg-gray/50 text-white"
+                >
+                    ${i18n("Show replies")}
+                </div>
             </div>
             <div id="replies" class="${isRoot ? "ml-2" : "ml-4"}">
                 ${map(thread.replies, (reply) => {
@@ -668,6 +775,7 @@ export class ThreadViewPostElement extends LitElement {
             </div>
         </div>`)[0];
         const repliesDom = postDom.querySelector("#replies") as HTMLElement;
+        const showMoredom = postDom.querySelector("#showMore") as HTMLElement;
         if (thread.post.uri == uri) {
             waitForLitElementsToRender(postDom).then(() => {
                 const postViewDom = postDom.querySelector("post-view");

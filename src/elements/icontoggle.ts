@@ -42,13 +42,15 @@ export class IconToggle extends LitElement {
         const isDark = Store.getTheme() == "dark";
         const fill = !isDark ? "fill-gray" : "fill-white/60";
         const text = !isDark ? "text-gray" : "text-white/60";
-        return html` <div class="h-full flex items-center cursor-pointer gap-1" @click=${() => this.toggle()}>
+        return html` <div class="h-full flex items-center cursor-pointer gap-1" @click=${(ev: MouseEvent) => this.toggle(ev)}>
             <i class="icon w-4 h-4 ${this.value ? "fill-primary" : fill}">${icons[this.icon as "reblog" | "heart" | "shield"] ?? ""}</i
             ><span class="${this.value ? "text-primary animate-jump" : text}">${this.text}</span>
         </div>`;
     }
 
-    toggle() {
+    toggle(ev: MouseEvent) {
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
         this.value = !this.value;
         this.dispatchEvent(
             new CustomEvent("change", {
