@@ -23,9 +23,11 @@ import {
     contentLoader,
     dom,
     error,
+    fetchApi,
     getDateString,
     getTimeDifference,
     hasLinkOrButtonParent,
+    onVisibilityChange,
     spinner,
     splitAtUri,
     waitForLitElementsToRender,
@@ -91,6 +93,83 @@ export function tryEmbedGiphyGif(cardEmbed: AppBskyEmbedExternal.ViewExternal | 
     return undefined;
 }
 
+export function tryEmbedTenorGif(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External): TemplateResult | undefined {
+    const url = cardEmbed.uri;
+    const tenorPattern = /https?:\/\/(?:www\.)?tenor\.com\/(?:[^\/]+\/)?view\/.*-(\d+)$/;
+    if (!url.match(tenorPattern)) return undefined;
+
+    const extractMediaLinks = (html: string): { gif?: string; mp4?: string } | undefined => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+
+        const ogImageMeta = doc.querySelector('meta[property="og:image"]');
+        const ogVideoMeta = doc.querySelector('meta[property="og:video:secure_url"]');
+
+        let result: { gif?: string; mp4?: string } = {};
+
+        if (ogImageMeta && ogImageMeta.getAttribute("content")) {
+            result.gif = ogImageMeta.getAttribute("content") ?? undefined;
+        }
+
+        if (ogVideoMeta && ogVideoMeta.getAttribute("content")) {
+            result.mp4 = ogVideoMeta.getAttribute("content") ?? undefined;
+        }
+
+        return Object.keys(result).length > 0 ? result : undefined;
+    };
+
+    const tenorDom = dom(html`<div class="mt-2 rounded overflow-x-clip"></div>`)[0];
+    fetchApi("html?url=" + decodeURIComponent(url))
+        .then(async (data) => {
+            const tenorHtml = await data.text();
+            const media = extractMediaLinks(tenorHtml);
+            if (media) {
+                if (media.mp4) {
+                    const videoDom = dom(
+                        html`<div class="flex justify-center items-center">
+                            <video
+                                src="${media.mp4}"
+                                class="w-full h-auto cursor-pointer rounded"
+                                muted
+                                loop
+                                playsinline
+                                disableRemotePlayback
+                            ></video>
+                        </div>`
+                    )[0];
+                    tenorDom.append(videoDom);
+                    onVisibilityChange(
+                        videoDom,
+                        () => {
+                            const video = videoDom.querySelector("video") as HTMLVideoElement;
+                            video.play();
+                        },
+                        () => {
+                            const video = videoDom.querySelector("video") as HTMLVideoElement;
+                            video.pause();
+                        }
+                    );
+                } else if (media.gif) {
+                    tenorDom.append(
+                        dom(
+                            html`<div class="flex justify-center items-center">
+                                <img src="${media.gif}" class="w-full h-auto rounded" />
+                            </div>`
+                        )[0]
+                    );
+                } else {
+                    tenorDom.append(dom(renderCardEmbed(cardEmbed))[0]);
+                }
+            } else {
+                tenorDom.append(dom(renderCardEmbed(cardEmbed))[0]);
+            }
+        })
+        .catch(() => {
+            tenorDom.append(dom(renderCardEmbed(cardEmbed))[0]);
+        });
+    return html`${tenorDom}`;
+}
+
 export function tryEmbedYouTubeVideo(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External): TemplateResult | undefined {
     const url = cardEmbed.uri;
     const videoRegExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([\w-]+)/;
@@ -139,6 +218,8 @@ export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | A
     if (youTubeEmbed) return youTubeEmbed;
     const giphyEmbed = tryEmbedGiphyGif(cardEmbed);
     if (giphyEmbed) return giphyEmbed;
+    const tenorEmbed = tryEmbedTenorGif(cardEmbed);
+    if (tenorEmbed) return tenorEmbed;
 
     const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
     return html`<a class="overflow-x-clip mt-2 border rounded border-gray/50 flex" target="_blank" href="${cardEmbed.uri}">
@@ -724,6 +805,7 @@ export class ThreadViewPostElement extends LitElement {
         const toggleReplies = (ev: MouseEvent, postDom: HTMLElement) => {
             if (window.getSelection() && window.getSelection()?.toString().length != 0) return;
             if (hasLinkOrButtonParent(ev.target as HTMLElement)) return;
+            if (!thread.replies || thread.replies.length == 0) return;
             ev.stopPropagation();
             const isHiding = repliesDom.classList.contains("hidden");
             repliesDom.classList.toggle("hidden");

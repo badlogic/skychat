@@ -75,6 +75,7 @@ for (const quote of quotes.keys()) {
     numQuotes += quotes.get(quote)?.length ?? 0;
 }
 let numDidWebRequests = 0;
+let numHtmlRequests = 0;
 let lastEventTime = new Date().getTime();
 
 (async () => {
@@ -336,6 +337,21 @@ let lastEventTime = new Date().getTime();
                 return;
             }
             res.json(await response.json());
+        } catch (e) {
+            res.status(400).json(e);
+        }
+    });
+
+    app.get("/api/html", async (req, res) => {
+        numHtmlRequests++;
+        try {
+            const url = req.query.url as string;
+            const response = await fetch(url);
+            if (!response.ok) {
+                res.status(400).json({ error: "Couldn't fetch " + url });
+                return;
+            }
+            res.send(await response.text());
         } catch (e) {
             res.status(400).json(e);
         }
