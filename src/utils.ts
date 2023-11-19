@@ -240,6 +240,26 @@ export function onVisibleOnce(target: Element, callback: () => void) {
     observer.observe(target);
 }
 
+export function onVisibilityChange(target: Element, onVisible: () => void, onInvisible: () => void): void {
+    const observer = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    onVisible();
+                } else {
+                    onInvisible();
+                }
+            });
+        },
+        {
+            root: null,
+            rootMargin: "200px",
+            threshold: 0.01,
+        }
+    );
+    observer.observe(target);
+}
+
 export function hasHashtag(text: string, hashtag: string) {
     const tokens = text.split(/[ \t\n\r.,;!?'"]+/);
     for (const token of tokens) {

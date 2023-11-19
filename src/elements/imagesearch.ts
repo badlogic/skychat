@@ -2,7 +2,7 @@ import { PropertyValueMap, TemplateResult, html } from "lit";
 import { Overlay, renderTopbar } from "./overlay";
 import { i18n } from "../i18n";
 import { customElement, property, query } from "lit/decorators.js";
-import { dom, error, onVisibleOnce } from "../utils";
+import { dom, error, onVisibilityChange, onVisibleOnce } from "../utils";
 import { spinnerIcon } from "../icons";
 import { Store } from "../store";
 
@@ -81,8 +81,6 @@ export class ImageSearch extends Overlay {
     @property()
     error = "";
 
-    lastGridIndex = 0;
-
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
@@ -111,12 +109,7 @@ export class ImageSearch extends Overlay {
                 class="border border-gray rounded-full outline-none bg-transparent drop:bg-white dark:text-white disabled:text-gray dark:disabled:text-gray px-4 py-2"
                 placeholder="${i18n("Search for GIFS...")}"
             />
-            <div id="imageGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-1 mt-4">
-                <div class="grid gap-2"></div>
-                <div class="grid gap-2"></div>
-                <div class="grid gap-2"></div>
-                <div class="grid gap-2"></div>
-            </div>
+            <div id="imageGrid" class="flex flex-col gap-2"></div>
             <div id="spinnerino" class="hidden w-full h-12 flex items-center justify-center">
                 <i class="absolute ml-2 icon w-6 h-6 animate-spin">${spinnerIcon}</i>
             </div>
@@ -163,10 +156,8 @@ export class ImageSearch extends Overlay {
     appendImages(images: SearchedImage[]) {
         const imageGrid = this.imageGridElement;
         if (!imageGrid) return;
-        const gridCols = imageGrid.children;
 
         for (const image of images) {
-            const col = gridCols[this.lastGridIndex++ % 4];
             if (image.mp4) {
                 const videoDom = dom(
                     html`<div class="flex justify-center items-center">
@@ -180,16 +171,24 @@ export class ImageSearch extends Overlay {
                             muted
                             loop
                             playsinline
+                            disableRemotePlayback
                         ></video>
                     </div>`
                 )[0];
-                col.append(videoDom);
-                onVisibleOnce(videoDom, () => {
-                    const video = videoDom.querySelector("video") as HTMLVideoElement;
-                    video.play();
-                });
+                imageGrid.append(videoDom);
+                onVisibilityChange(
+                    videoDom,
+                    () => {
+                        const video = videoDom.querySelector("video") as HTMLVideoElement;
+                        video.play();
+                    },
+                    () => {
+                        const video = videoDom.querySelector("video") as HTMLVideoElement;
+                        video.pause();
+                    }
+                );
             } else if (image.imageUrl) {
-                col.append(
+                imageGrid.append(
                     dom(
                         html`<div class="flex justify-center items-center">
                             <img
