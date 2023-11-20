@@ -81,10 +81,6 @@ export class ImageSearch extends Overlay {
     @property()
     error = "";
 
-    protected createRenderRoot(): Element | ShadowRoot {
-        return this;
-    }
-
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
         this.searchElement?.focus();

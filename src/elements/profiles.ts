@@ -135,7 +135,7 @@ export class ProfileOverlay extends HashNavOverlay {
                               : ""} w-24 h-24 rounded-full"
                           src="${profile.avatar}"
                       />`
-                    : html`<i class="icon w-24 h-24">${defaultAvatar}</i>`}
+                    : html`<i class="icon !w-24 !h-24">${defaultAvatar}</i>`}
                 <div class="ml-auto flex items-center gap-2">
                     ${profile.did != user?.profile.did
                         ? html`<profile-action-button
@@ -334,7 +334,7 @@ export class ProfileActionButton extends LitElement {
         if (this.profile?.did == Store.getUser()?.profile.did) return html`${nothing}`;
 
         if (this.isUpdating) {
-            return html`<button class="flex items-center justify-center min-w-[80px] w-[80px] bg-muted text-muted-fg rounded-full h-8"><i class="icon w-6 h-6 fill-muted-fg animate-spin">${spinnerIcon}</i></div>`;
+            return html`<button class="flex items-center justify-center min-w-[80px] w-[80px] bg-muted text-muted-fg rounded-full h-8"><i class="icon !w-6 !h-6 fill-muted-fg animate-spin">${spinnerIcon}</i></div>`;
         }
 
         const viewer = this.profile.viewer;

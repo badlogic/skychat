@@ -35,13 +35,13 @@
     --muted: #374151;
     --muted-fg: #9ca3af;
     --input: #4b5563;
-    --divider: #374151;
+    --divider: #333;
 }
 
 @layer base {
     html,
     body {
-        @apply h-full w-full leading-5;
+        @apply h-full w-full leading-6;
     }
 
     .hidden {
@@ -61,7 +61,7 @@
     }
 
     a {
-        @apply text-primary;
+        @apply text-blue-500;
     }
 }
 

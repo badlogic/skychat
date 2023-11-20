@@ -117,7 +117,7 @@ export class Chat extends LitElement {
                       }}
                       class="relative flex w-10 h-10 items-center justify-center"
                   >
-                      <i class="icon w-6 h-6">${homeIcon}</i>
+                      <i class="icon !w-6 !h-6">${homeIcon}</i>
                   </button>
                   <button
                       @click=${() => {
@@ -137,7 +137,7 @@ export class Chat extends LitElement {
                   <button @click=${this.logout} class="flex w-10 h-10 items-center justify-center">
                       ${user.profile.avatar
                           ? html`<img class="w-6 max-w-[none] h-6 rounded-full" src="${user.profile.avatar}" />`
-                          : html`<i class="icon w-6 h-6">${defaultAvatar}</i>`}
+                          : html`<i class="icon !w-6 !h-6">${defaultAvatar}</i>`}
                   </button>
               </div>`
             : nothing}`;
@@ -156,7 +156,7 @@ export class Chat extends LitElement {
             if (user && user.hashTagThreads[this.hashtag ?? ""] && !this.askedReuse) {
                 const thread = user.hashTagThreads[this.hashtag!];
                 const rootUrl = `/#thread/${user.profile.did}/${splitAtUri(thread.root.uri).rkey}`;
-                return html`<div class="w-full max-w-[600px] mx-auto h-full flex flex-col">
+                return html`<div class="w-full max-w-[640px] mx-auto h-full flex flex-col">
                     ${this.renderHeader()}
                     <div class="flex flex-col px-4">
                         <p class="text-center pt-[56px] mt-4">${i18n("You have an existing thread for ")(rootUrl, this.hashtag!)}</p>
@@ -190,7 +190,7 @@ export class Chat extends LitElement {
             }
         }
 
-        return html` <main class="flex flex-col justify-between m-auto max-w-[600px] px-4 h-full">
+        return html` <main class="flex flex-col justify-between m-auto max-w-[640px] px-4 h-full">
             <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/chat-login.html"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat Live</span></a
             >
@@ -205,7 +205,7 @@ export class Chat extends LitElement {
     renderLive() {
         const user = Store.getUser();
         const liveDom = dom(html`<main id="livedom" class="w-full h-full overflow-auto">
-            <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
+            <div class="mx-auto max-w-[640px] min-h-full flex flex-col">
                 ${this.renderHeader()}
                 <div id="posts" class="flex-grow">
                     <loading-spinner id="loadOlderPosts"></loading-spinner>

@@ -22,7 +22,7 @@ export class PostSearchStream implements Stream<PostView> {
     items: PostView[] = [];
     itemsMap = new Map<string, PostView>();
     readonly pollNew = false;
-    constructor(readonly query: string) {}
+    constructor(readonly query: string, readonly reversStream = true) {}
 
     getItemKey(item: PostView): string {
         return item.uri;
@@ -50,13 +50,15 @@ export class PostSearchStream implements Stream<PostView> {
             );
             if (response.status != 200) throw new Error();
             const result = (await response.json()) as { cursor: string; totalHits: number; posts: { uri: string }[] };
-            const postsResponse = await State.getPosts(result.posts.map((post) => post.uri));
+            let postsResponse = await State.getPosts(result.posts.map((post) => post.uri));
             if (postsResponse instanceof Error) throw new Error();
+            postsResponse = postsResponse.filter((post) => post != undefined);
             this.cursor = result.cursor;
             for (const post of postsResponse) {
                 this.itemsMap.set(this.getItemKey(post), post);
             }
-            return postsResponse.reverse();
+            if (this.reversStream) postsResponse.reverse();
+            return postsResponse;
         } catch (e) {
             return error(`Couldn't load posts for query ${this.query}, offset ${this.cursor}`, e);
         }
@@ -84,8 +86,6 @@ export abstract class CursorStream<T> implements Stream<T> {
         this.isPolling = true;
 
         try {
-            console.log("Polling");
-
             // FIXME this will fail miserable if the client hasn't polled in say 24h, gets woken up
             // and starts polling from the top of the new posts. Could be hundreds of posts. Need to
             // employ the smart strategy of binary searching so we only pull in
@@ -145,6 +145,7 @@ export abstract class CursorStream<T> implements Stream<T> {
         if (!State.isConnected()) return Error("Not connected");
 
         try {
+            if (this.closed) return [];
             const response = await this.provider(this.cursor);
             if (response instanceof Error) throw response;
             this.cursor = response.cursor;
@@ -152,6 +153,7 @@ export abstract class CursorStream<T> implements Stream<T> {
             for (const item of response.items) {
                 this.itemsMap.set(this.getItemKey(item), item);
             }
+            if (!this.cursor && response.items.length > 0) this.close();
             return response.items;
         } catch (e) {
             return error("Could not load items", e);
@@ -347,5 +349,21 @@ export class QuotesStream implements Stream<PostView> {
 
     close(): void {
         throw new Error("Method not supported");
+    }
+}
+
+export class UserSearchStream extends CursorStream<ProfileViewDetailed> {
+    constructor(readonly query: string) {
+        super((cursor?: string, limit?: number) => {
+            return State.searchUsers(query, cursor, limit);
+        });
+    }
+
+    getItemKey(item: ProfileViewDetailed): string {
+        return item.did;
+    }
+
+    getItemDate(item: ProfileViewDetailed): Date {
+        return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
     }
 }

@@ -7,6 +7,7 @@ export * from "./popup";
 export * from "./posteditor";
 export * from "./posts";
 export * from "./profiles";
+export * from "./search";
 export * from "./settings";
 export * from "./streamviews";
 export * from "./styles";

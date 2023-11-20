@@ -171,7 +171,7 @@ export class PostEditor extends LitElement {
                 : i18n("What's up?");
         }
 
-        return html` <div class="flex max-w-[600px] ${this.fullscreen ? "h-full max-h-full" : ""}">
+        return html` <div class="flex max-w-[640px] ${this.fullscreen ? "h-full max-h-full" : ""}">
             <div
                 class="flex flex-col flex-grow relative"
                 @drop=${(ev: DragEvent) => this.pasteImage(ev)}
@@ -205,7 +205,7 @@ export class PostEditor extends LitElement {
                               }}
                               ?disabled=${this.isSending}
                           >
-                              <i class="icon w-4 h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
+                              <i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
                           </button>
                       </div>`
                     : nothing}
@@ -252,7 +252,7 @@ export class PostEditor extends LitElement {
                           >
                               ${this.isLoadingCard
                                   ? nothing
-                                  : html`<i class="icon w-4 h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>`}
+                                  : html`<i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>`}
                           </button>
                       </div>`
                     : nothing}
@@ -270,7 +270,7 @@ export class PostEditor extends LitElement {
                                       }}
                                       ?disabled=${this.isSending}
                                   >
-                                      <i class="icon w-4 h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
+                                      <i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
                                   </button>
                                   <button
                                       class="absolute left-2 top-2 bg-background rounded-full p-1"
@@ -279,7 +279,7 @@ export class PostEditor extends LitElement {
                                       }}
                                       ?disabled=${this.isSending}
                                   >
-                                      <i class="icon w-4 h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${editIcon}</i>
+                                      <i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${editIcon}</i>
                                   </button>
                               </div>`
                           )}
@@ -313,7 +313,7 @@ export class PostEditor extends LitElement {
                               }}
                               ?disabled=${this.isSending}
                           >
-                              <i class="icon w-4 h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
+                              <i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
                           </button>
                       </div>`
                     : nothing}
@@ -326,9 +326,9 @@ export class PostEditor extends LitElement {
                       </div>`
                     : html`<div class="pl-2 pr-4 py-1 flex items-center min-h-[48px]">
                     <button class="p-2" @click=${this.addImage}>
-                        <i class="icon w-6 h-6 fill-primary">${imageIcon}</i>
+                        <i class="icon !w-6 !h-6 fill-primary">${imageIcon}</i>
                         <button class="p-2" @click=${this.addGif}>
-                        <i class="icon w-6 h-6 fill-primary">${gifIcon}</i>
+                        <i class="icon !w-6 !h-6 fill-primary">${gifIcon}</i>
                     </button>
                     ${
                         this.imagesToUpload.length > 0
@@ -373,7 +373,7 @@ export class PostEditor extends LitElement {
                                   >
                                       ${suggestion.avatar
                                           ? html`<img class="w-6 h-6 rounded-full" src="${suggestion.avatar}" />`
-                                          : html`<i class="icon w-6 h-6">${defaultAvatar}</i>`}
+                                          : html`<i class="icon !w-6 !h-6">${defaultAvatar}</i>`}
                                       <span class="truncate">${suggestion.displayName ?? suggestion.handle}</span>
                                       <span class="ml-auto text-muted-fg text-sm">${suggestion.displayName ? suggestion.handle : ""}</span>
                                   </button>`
@@ -793,10 +793,10 @@ export class PostEditorOverlay extends CloseableElement {
             <div
                 class="flex ${isMobileBrowser()
                     ? "h-full"
-                    : "mt-4 border border-divider rounded-md shadow dark:shadow-white/10 overflow-x-clip"} justify-center max-w-[600px] mx-auto bg-background"
+                    : "mt-4 border border-divider rounded-md shadow dark:shadow-white/10 overflow-x-clip"} justify-center max-w-[640px] mx-auto bg-background"
             >
                 <post-editor
-                    class="animate-fade animate-duration-[250ms] w-[600px]"
+                    class="animate-fade animate-duration-[250ms] w-[640px]"
                     .cancelable=${true}
                     .cancled=${() => this.close()}
                     .quote=${this.quote}

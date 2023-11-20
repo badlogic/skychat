@@ -116,6 +116,10 @@ export interface Messages {
     "Search for GIFS...": string;
     "Couldn't load images": string;
     Moderation: string;
+    Search: string;
+    "Search for users, posts, feeds ...": string;
+    Users: string;
+    Feeds: string;
 }
 
 const english: Messages = {
@@ -245,6 +249,10 @@ const english: Messages = {
     "Search for GIFS...": "Search for GIFs ...",
     "Couldn't load images": "Couldn't load images",
     Moderation: "Moderation",
+    Search: "Search",
+    "Search for users, posts, feeds ...": "Search for users, posts, feeds ....",
+    Users: "Users",
+    Feeds: "Feeds",
 };
 
 const german: Messages = {
@@ -376,6 +384,10 @@ const german: Messages = {
     "Search for GIFS...": "Nach GIFs suchen ...",
     "Couldn't load images": "Konnte Bilder nicht laden",
     Moderation: "Moderation",
+    Search: "Suche",
+    "Search for users, posts, feeds ...": "Suche Benutzerinnen, Posts, Feeds ...",
+    Users: "Users",
+    Feeds: "Feeds",
 };
 
 export type LanguageCode = "en" | "de";

@@ -51,7 +51,7 @@ export abstract class StreamView<T> extends LitElement {
             error("No stream set, this should not happen");
             return;
         }
-        if (this.stream) {
+        if (this.stream && this.stream.pollNew) {
             this.stream.addNewItemsListener(async (newerItems) => {
                 if (newerItems instanceof Error) {
                     error("Couldn't load newer items", newerItems);
@@ -199,7 +199,6 @@ export class FeedStreamView extends StreamView<FeedViewPost> {
                     // alert("Couldn't poll new items"); // FIXME show a toast instead
                     return;
                 }
-                console.log("New items");
                 if (this.newItems) {
                     this.newItems(newItems, this.stream.items);
                 }
@@ -331,7 +330,7 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
             class="px-4 py-2 border-b border-divider flex flex-col ${notification.isRead ? "" : "bg-[#d8e4ff] dark:bg-[#001040]"}"
         >
             <div class="flex items-center gap-2">
-                <i class="icon w-5 h-5">${icons[notification.reason] ?? ""}</i>
+                <i class="icon !w-5 !h-5">${icons[notification.reason] ?? ""}</i>
                 ${renderProfile(notification.author, false)}
                 <span class="ml-auto text-xs text-muted-fg">${getTimeDifference(date.getTime())}</span>
             </div>

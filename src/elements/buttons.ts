@@ -7,8 +7,8 @@ import { dom, getScrollParent } from "../utils";
 import { setupPushNotifications } from "./notifications";
 import { State } from "../state";
 
-let normalStyle = "w-12 h-12 flex justify-center items-center bg-muted border border-divider rounded-full";
-let highlightStyle = "w-12 h-12 flex justify-center items-center bg-primary text-primary-fg rounded-full";
+let normalStyle = "w-12 h-12 flex justify-center items-center bg-background dark:bg-divider border border-divider rounded-full shadow-md";
+let highlightStyle = "w-12 h-12 flex justify-center items-center bg-primary text-[#fff] fill-[#fff] rounded-full";
 
 function resetAnimation(el: HTMLElement) {
     el.style.animation = "none";
@@ -32,7 +32,7 @@ export abstract class FloatingButton extends LitElement {
     @property()
     value?: string;
 
-    translateX = (offset: string) => "translate(calc(min(100vw,600px) " + offset + "))";
+    translateX = (offset: string) => "translate(calc(min(100vw,640px) " + offset + "))";
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
@@ -332,7 +332,7 @@ export class PullToRefresh extends LitElement {
 
     render() {
         return html`<div class="w-10 h-10 bg-primary text-primary-fg rounded-full flex items-center justify-center">
-            <i class="icon w-8 h-8 animate-spin fill-white">${spinnerIcon}</i>
+            <i class="icon !w-8 !h-8 animate-spin fill-white">${spinnerIcon}</i>
         </div>`;
     }
 }

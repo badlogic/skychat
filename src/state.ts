@@ -495,6 +495,19 @@ export class State {
         }
     }
 
+    static async searchUsers(query: string, cursor?: string, limit = 20): Promise<Error | { cursor?: string; items: ProfileView[] }> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const result = await State.bskyClient.searchActors({ q: query, cursor, limit });
+            if (!result.success) throw new Error();
+            const profiles = result.data.actors;
+            this.notifyBatch("profile", "updated", profiles);
+            return { cursor: result.data.cursor, items: profiles };
+        } catch (e) {
+            return error("Couldn't search users", e);
+        }
+    }
+
     static async detectFacets(richText: RichText): Promise<Error | undefined> {
         if (!State.bskyClient) return new Error("Not connected");
         try {

@@ -52,7 +52,7 @@ export class ChatLogin extends LitElement {
                               ${i18n("You are logged in as")}
                               ${user.profile.avatar
                                   ? html` <img class="inline-block max-w-4 max-h-4 rounded-full" src="${user.profile.avatar}" /> `
-                                  : html`<i class="icon w-5 h-5">${defaultAvatar}</i>`}
+                                  : html`<i class="icon !w-5 !h-5">${defaultAvatar}</i>`}
                               ${user.profile.displayName}
                           </p>`
                         : html`

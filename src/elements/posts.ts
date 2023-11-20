@@ -499,7 +499,7 @@ export class PostViewElement extends LitElement {
 
         if ((this.post.author.viewer?.muted || this.post.author.viewer?.mutedByList) && !this.unmuted) {
             return html`<div class="bg-muted text-muted-fg px-4 py-2 rounded flex items-center cursor-pointer" @click=${() => (this.unmuted = true)}>
-                <i class="icon w-6 h-6 fill-white">${shieldIcon}</i><span class="ml-2 text-white">${i18n("Post by muted user")}</span>
+                <i class="icon !w-6 !h-6 fill-white">${shieldIcon}</i><span class="ml-2 text-white">${i18n("Post by muted user")}</span>
                 <span class="ml-2 text-xs">(${i18n("Click to view")})</span>
             </div>`;
         }
@@ -528,10 +528,10 @@ export class PostViewElement extends LitElement {
             ${this.contentDom}
             <div class="flex items-center ${this.centerButtons ? "justify-center" : ""} text-muted-fg fill-muted-fg gap-4 mt-2">
                 <button @click=${() => this.replyCallback(this.post!)} class="flex gap-1 items-center">
-                    <i class="icon w-4 h-4">${replyIcon}</i><span>${this.post.replyCount}</span>
+                    <i class="icon !w-4 !h-4">${replyIcon}</i><span>${this.post.replyCount}</span>
                 </button>
                 <button @click=${() => this.quoteCallback(this.post!)} class="flex gap-1 items-center">
-                    <i class="icon w-4 h-4">${quoteIcon}</i><span>${State.getObject("numQuote", this.post.uri)?.numQuotes ?? 0}</span>
+                    <i class="icon !w-4 !h-4">${quoteIcon}</i><span>${State.getObject("numQuote", this.post.uri)?.numQuotes ?? 0}</span>
                 </button>
                 <icon-toggle
                     @change=${(ev: CustomEvent) => this.toggleRepost(ev)}
@@ -754,7 +754,7 @@ export class PostOptionsElement extends PopupMenu {
                 class="px-4 h-10 hover:bg-primary hover:text-primary-fg hover:fill-white flex items-center gap-4"
                 @click=${() => button.click()}
             >
-                <i class="icon">${button.icon}</i>
+                <i class="icon !w-4 !h-4">${button.icon}</i>
                 <span class="flex-grow text-left">${button.text}</span>
             </button>`;
         };
@@ -830,7 +830,7 @@ export class ThreadViewPostElement extends LitElement {
                 ? html`<div class="bg-muted text-muted-fg px-4 py-2 mb-2 rounded">${i18n("Deleted post")}</div>`
                 : nothing}
             <div
-                class="${thread.post.uri == uri ? animation : ""} min-w-[350px] mb-2 ${!isRoot || (thread.post.uri == uri && isRoot)
+                class="${thread.post.uri == uri ? animation : ""} min-w-[350px] mb-2 ml-[-1px] ${!isRoot || (thread.post.uri == uri && isRoot)
                     ? "pl-2"
                     : ""} ${thread.post.uri == uri ? "border-l border-primary" : ""} flex flex-col"
             >
@@ -856,7 +856,7 @@ export class ThreadViewPostElement extends LitElement {
             <div id="replies" class="${isRoot ? "ml-2" : "ml-4"}">
                 ${map(thread.replies, (reply) => {
                     if (!AppBskyFeedDefs.isThreadViewPost(reply)) return html``;
-                    return html`<div class="border-l border-divider/50">
+                    return html`<div class="border-l border-divider dark:border-hinted">
                         <thread-view-post .highlightUri=${this.highlightUri} .isRoot=${false} .thread=${reply}></thread-view-post>
                     </div>`;
                 })}
@@ -1012,7 +1012,7 @@ export class FeewViewPostElement extends LitElement {
             document.body.append(dom(html`<profile-overlay .did=${feedViewPost.reason.by.did}></profile-overlay>`)[0]);
         };
         const repostedBy = AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)
-            ? html`<div class="mb-1 flex items-center gap-2 fill-muted-fg text-xs"><i class="icon w-4 h-4">${reblogIcon}</i>${renderProfileAvatar(
+            ? html`<div class="mb-1 flex items-center gap-2 fill-muted-fg text-xs"><i class="icon !w-4 !h-4">${reblogIcon}</i>${renderProfileAvatar(
                   feedViewPost.reason.by,
                   true
               )}<a class="hover:underline truncate text-muted-fg" href="${getProfileUrl(feedViewPost.reason.by)}" @click=${repostedByClicked}>${

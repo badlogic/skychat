@@ -95,7 +95,7 @@ class SkychatClient extends LitElement {
                 ${user ? html`<button class="text-sm text-primary" @click=${this.logout}>${i18n("Log out")}</button>` : nothing}
             </div>`;
 
-        return html` <main class="flex flex-col justify-between m-auto max-w-[600px] px-4 h-full">
+        return html` <main class="flex flex-col justify-between m-auto max-w-[640px] px-4 h-full">
             <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
             >
@@ -105,7 +105,7 @@ class SkychatClient extends LitElement {
     }
 
     renderConnecting() {
-        return html` <main class="flex flex-col justify-between m-auto max-w-[600px] px-4 h-full">
+        return html` <main class="flex flex-col justify-between m-auto max-w-[640px] px-4 h-full">
             <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
             >
@@ -130,7 +130,7 @@ class SkychatClient extends LitElement {
         }
 
         const mainDom = dom(html`<main class="w-full h-full overflow-auto">
-            <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
+            <div class="mx-auto max-w-[640px] min-h-full flex flex-col">
                 ${this.renderTopbar()}<feed-stream-view
                     .newItems=${() => {
                         if (mainDom.scrollTop > 0) {
@@ -211,22 +211,22 @@ class SkychatClient extends LitElement {
                 class="flex items-center justify-center w-10 h-10"
                 @click=${() => document.body.append(dom(html`<search-overlay></search-overlay>`)[0])}
             >
-                <i class="icon w-5 h-5">${searchIcon}</i>
+                <i class="icon !w-5 !h-5">${searchIcon}</i>
             </button>
             <button
                 class="flex items-center justify-center w-10 h-10"
                 @click=${() => document.body.append(dom(html`<settings-overlay></settings-overlay>`)[0])}
             >
-                <i class="icon w-5 h-5">${settingsIcon}</i>
+                <i class="icon !w-5 !h-5">${settingsIcon}</i>
             </button>
-            <theme-toggle class="w-10 h-10"></theme-toggle>
+            <theme-toggle class="!w-10 !h-10"></theme-toggle>
             <button
                 class="flex items-center justify-center w-10 h-10"
                 @click=${() => document.body.append(dom(html`<profile-overlay .did=${user?.profile.did}></profile-overlay>`)[0])}
             >
                 ${user?.profile.avatar
                     ? html`<img class="w-8 max-w-[none] h-8 rounded-full" src="${user.profile.avatar}" />`
-                    : html`<i class="icon w-8 h-8">${defaultAvatar}</i>`}
+                    : html`<i class="icon !w-8 !h-8">${defaultAvatar}</i>`}
             </button>
         </div> `;
         return renderTopbar(feed, buttons);

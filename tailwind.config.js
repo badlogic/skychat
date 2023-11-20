@@ -5,6 +5,8 @@ module.exports = {
     theme: {
         extend: {
             colors: {
+                white: "rgb(221, 221, 221)",
+                black: "rgb(34, 34, 34)",
                 background: "var(--background)",
                 accent: "var(--accent)",
                 "accent-dark": "var(--accent-dark)",
