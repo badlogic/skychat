@@ -114,6 +114,13 @@ export async function routeHash(hash: string) {
                 }
                 document.body.append(dom(html`<settings-overlay .pushState=${false}></settings-overlay>`)[0]);
             }
+            if (tokens[0] == "search") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "SEARCH-OVERLAY") {
+                    return;
+                }
+                document.body.append(dom(html`<search-overlay .pushState=${false}></search-overlay>`)[0]);
+            }
         }
     }
 }

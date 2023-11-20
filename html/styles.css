@@ -41,7 +41,7 @@
 @layer base {
     html,
     body {
-        @apply h-full w-full leading-6;
+        @apply h-full w-full leading-normal;
     }
 
     .hidden {

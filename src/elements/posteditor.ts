@@ -18,7 +18,7 @@ import { LitElement, PropertyValueMap, TemplateResult, html, nothing, svg } from
 import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { extractLinkCard } from "../bsky";
-import { deleteIcon, editIcon, gifIcon, imageIcon, spinnerIcon } from "../icons";
+import { deleteIcon, editIcon, gifIcon, imageIcon, shieldIcon, spinnerIcon } from "../icons";
 import { Store } from "../store";
 import {
     Caret,
@@ -332,7 +332,11 @@ export class PostEditor extends LitElement {
                     </button>
                     ${
                         this.imagesToUpload.length > 0
-                            ? html`<icon-toggle @change=${(ev: CustomEvent) => (this.sensitive = ev.detail.value)} icon="shield" class="h-6">
+                            ? html`<icon-toggle
+                                  @change=${(ev: CustomEvent) => (this.sensitive = ev.detail.value)}
+                                  .icon=${html`<i class="icon !w-6 !h-6">${shieldIcon}</i>`}
+                                  class="h-6"
+                              >
                               </icon-toggle>`
                             : nothing
                     }

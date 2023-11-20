@@ -1,16 +1,18 @@
 import {
     AppBskyFeedDefs,
+    AppBskyFeedGetFeedGenerator,
     AppBskyFeedPost,
     AppBskyNotificationListNotifications,
     AtpSessionData,
     AtpSessionEvent,
     BskyAgent,
+    BskyPreferences,
     RichText,
 } from "@atproto/api";
-import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { Preferences, ProfileView, ProfileViewDetailed, SavedFeedsPref } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { Store, User } from "./store";
 import { assertNever, error, fetchApi, getDateString, splitAtUri } from "./utils";
-import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { FeedViewPost, GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { record } from "./bsky";
 
 export interface NumQuote {
@@ -21,6 +23,7 @@ export interface NumQuote {
 export interface Events {
     post: PostView;
     profile: ProfileViewDetailed;
+    feed: GeneratorView;
     numQuote: NumQuote;
     unreadNotifications: number;
     theme: string;
@@ -84,6 +87,9 @@ export class State {
             case "theme":
                 if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action}`, payload);
                 return;
+            case "feed":
+                id = (payload as GeneratorView).uri;
+                break;
             default:
                 assertNever(event);
         }
@@ -118,6 +124,9 @@ export class State {
                 return;
             case "theme":
                 return;
+            case "feed":
+                id = (payload as GeneratorView).uri;
+                break;
             default:
                 assertNever(event);
         }
@@ -314,6 +323,7 @@ export class State {
             for (const promise of promises) {
                 if (promise instanceof Error) throw promise;
             }
+
             State.bskyClient.updateSeenNotifications(); // Not important to wait for this one.
             return { cursor: listResponse.data.cursor, items: listResponse.data.notifications };
         } catch (e) {
@@ -325,7 +335,8 @@ export class State {
         type: ActorFeedType,
         actor?: string,
         cursor?: string,
-        limit = 20
+        limit = 20,
+        notify = true
     ): Promise<Error | { cursor?: string; items: FeedViewPost[] }> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
@@ -346,10 +357,20 @@ export class State {
                     break;
                 }
             }
+
+            if (notify) State.loadFeedViewPostsDependencies(data.items);
+            return data;
+        } catch (e) {
+            return error("Couldn't load actor feed", e);
+        }
+    }
+
+    static async loadFeedViewPostsDependencies(feedViewPosts: FeedViewPost[]): Promise<Error | void> {
+        try {
             const posts: PostView[] = [];
             const profilesToFetch: string[] = [];
             const postUrisToFetch: string[] = [];
-            for (const feedViewPost of data.items) {
+            for (const feedViewPost of feedViewPosts) {
                 posts.push(feedViewPost.post);
                 postUrisToFetch.push(feedViewPost.post.uri);
                 profilesToFetch.push(feedViewPost.post.author.did);
@@ -373,9 +394,8 @@ export class State {
                 if (promise instanceof Error) throw promise;
             }
             this.notifyBatch("post", "updated", posts);
-            return data;
         } catch (e) {
-            return error("Couldn't load actor feed", e);
+            return error("Couldn't fetch feed view post dependencies");
         }
     }
 
@@ -495,7 +515,7 @@ export class State {
         }
     }
 
-    static async searchUsers(query: string, cursor?: string, limit = 20): Promise<Error | { cursor?: string; items: ProfileView[] }> {
+    static async searchUsers(query: string, cursor?: string, limit = 2): Promise<Error | { cursor?: string; items: ProfileView[] }> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             const result = await State.bskyClient.searchActors({ q: query, cursor, limit });
@@ -505,6 +525,52 @@ export class State {
             return { cursor: result.data.cursor, items: profiles };
         } catch (e) {
             return error("Couldn't search users", e);
+        }
+    }
+
+    static async suggestUsers(cursor?: string, limit = 20): Promise<Error | { cursor?: string; items: ProfileView[] }> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const result = await State.bskyClient.getSuggestions({ cursor, limit });
+            if (!result.success) throw new Error();
+            const profiles = result.data.actors;
+            this.notifyBatch("profile", "updated", profiles);
+            return { cursor: result.data.cursor, items: profiles };
+        } catch (e) {
+            return error("Couldn't suggest users", e);
+        }
+    }
+
+    static async searchFeeds(query: string, cursor?: string, limit = 50): Promise<Error | { cursor?: string; items: GeneratorView[] }> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const result = await State.bskyClient.app.bsky.unspecced.getPopularFeedGenerators({ query, cursor, limit });
+            if (!result.success) throw new Error();
+            const feedUris = result.data.feeds.map((feed) => feed.uri);
+            const feeds: GeneratorView[] = [];
+            while (feedUris.length > 0) {
+                const batch = feedUris.splice(0, 25);
+                const response = await State.bskyClient.app.bsky.feed.getFeedGenerators({ feeds: batch });
+                if (!response.success) throw new Error("Couldn't fetch feeds");
+                feeds.push(...response.data.feeds);
+            }
+            this.notifyBatch("feed", "updated", feeds);
+            return { cursor: result.data.cursor, items: feeds };
+        } catch (e) {
+            return error("Couldn't search feeds", e);
+        }
+    }
+
+    static async suggestFeeds(cursor?: string, limit = 50): Promise<Error | { cursor?: string; items: GeneratorView[] }> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const result = await State.bskyClient.app.bsky.unspecced.getPopularFeedGenerators({ cursor, limit });
+            if (!result.success) throw new Error();
+            const feeds = result.data.feeds;
+            this.notifyBatch("feed", "updated", feeds);
+            return { cursor: result.data.cursor, items: feeds };
+        } catch (e) {
+            return error("Couldn't suggest feeds", e);
         }
     }
 
@@ -575,9 +641,11 @@ export class State {
             Store.setUser(newUser);
             State.notify("profile", "updated", newUser.profile);
             this.checkUnreadNotifications();
+            await this.updatePreferences();
         } catch (e) {
             Store.setUser(undefined);
             State.bskyClient = undefined;
+            State.preferences = undefined;
             return error("Couldn't log-in with your BlueSky credentials.", e);
         }
     }
@@ -614,5 +682,16 @@ export class State {
             error("Couldn't count unread notifications", e);
         }
         setTimeout(() => this.checkUnreadNotifications(), 5000);
+    }
+
+    static preferences?: BskyPreferences;
+    static async updatePreferences() {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            State.preferences = await State.bskyClient.getPreferences();
+            return State.preferences;
+        } catch (e) {
+            return error("Couldn't fetch preferences", e);
+        }
     }
 }

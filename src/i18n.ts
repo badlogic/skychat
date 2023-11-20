@@ -5,7 +5,7 @@ export interface Messages {
     "Couldn't delete post": string;
     Home: string;
     "Could not load list": string;
-    "No more items": string;
+    "End of list": string;
     "Could not load more items": string;
     Notifications: string;
     "No more notifications": string;
@@ -120,6 +120,13 @@ export interface Messages {
     "Search for users, posts, feeds ...": string;
     Users: string;
     Feeds: string;
+    "Suggested follows": string;
+    "Suggested feeds": string;
+    "Enter search terms above to find posts": string;
+    "Created by": string;
+    likes: string;
+    Add: string;
+    Remove: string;
 }
 
 const english: Messages = {
@@ -127,7 +134,7 @@ const english: Messages = {
     "Couldn't delete post": "Couldn't delete post",
     Home: "Home",
     "Could not load list": "Could not load list",
-    "No more items": "No more items",
+    "End of list": "End of list",
     "Could not load more items": "Could not load more items",
     Notifications: "Notifications",
     "No more notifications": "No more notifications",
@@ -253,6 +260,13 @@ const english: Messages = {
     "Search for users, posts, feeds ...": "Search for users, posts, feeds ....",
     Users: "Users",
     Feeds: "Feeds",
+    "Suggested follows": "Suggested follows",
+    "Suggested feeds": "Suggested feeds",
+    "Enter search terms above to find posts": "Enter search terms above to find posts",
+    "Created by": "Created by",
+    likes: "likes",
+    Add: "Add",
+    Remove: "Remove",
 };
 
 const german: Messages = {
@@ -260,7 +274,7 @@ const german: Messages = {
     "Couldn't delete post": "Konnte Post nicht löschen",
     Home: "Home",
     "Could not load list": "Konnte Liste nicht laden",
-    "No more items": "Keine weiteren Einträge",
+    "End of list": "Keine weiteren Einträge",
     "Could not load more items": "Konnte weitere Einträge nicht laden",
     Notifications: "Notifikationen",
     "No more notifications": "Keine weiteren Notifikationen",
@@ -388,6 +402,13 @@ const german: Messages = {
     "Search for users, posts, feeds ...": "Suche Benutzerinnen, Posts, Feeds ...",
     Users: "Users",
     Feeds: "Feeds",
+    "Suggested follows": "Spannende Benutzerinnen",
+    "Suggested feeds": "Spannende Feeds",
+    "Enter search terms above to find posts": "Gib Suchbegriffe ein",
+    "Created by": "Erstellt von",
+    likes: "likes",
+    Add: "Hinzufügen",
+    Remove: "Entfernen",
 };
 
 export type LanguageCode = "en" | "de";

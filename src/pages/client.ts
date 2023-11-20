@@ -13,6 +13,7 @@ import { searchIcon, settingsIcon } from "../icons";
 import { State } from "../state";
 import { Store } from "../store";
 import { ActorFeedStream } from "../streams";
+import { FeedViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
 @customElement("skychat-client")
 class SkychatClient extends LitElement {
@@ -132,7 +133,11 @@ class SkychatClient extends LitElement {
         const mainDom = dom(html`<main class="w-full h-full overflow-auto">
             <div class="mx-auto max-w-[640px] min-h-full flex flex-col">
                 ${this.renderTopbar()}<feed-stream-view
-                    .newItems=${() => {
+                    .newItems=${async (newItems: FeedViewPost[]) => {
+                        const result = await State.loadFeedViewPostsDependencies(newItems);
+                        if (result instanceof Error) {
+                            this.error = i18n("Could not load newer items");
+                        }
                         if (mainDom.scrollTop > 0) {
                             if (!this.upButton) return;
                             this.upButton.classList.remove("hidden");

@@ -37,7 +37,7 @@ import { getProfileUrl, renderProfile, renderProfileAvatar } from "./profiles";
 
 export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {
-        return html`<span>${record.text}</span>`;
+        return html`<div class="whitespace-pre-wrap break-words">${record.text}</div>`;
     }
 
     const rt = new RichText({
@@ -70,7 +70,7 @@ export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
             segments.push(html`<span>${segment.text}</span>`);
         }
     }
-    const result = html`${map(segments, (segment) => segment)}`;
+    const result = html`<div class="whitespace-pre-wrap break-words">${map(segments, (segment) => segment)}</div>`;
     return result;
 }
 
@@ -347,7 +347,7 @@ export function renderRecord(
     subHeader?: TemplateResult | HTMLElement,
     showReplyto = true,
     openOnClick = true,
-    shortTime = false
+    shortTime = true
 ): TemplateResult {
     const replyToAuthorDid = record.reply ? splitAtUri(record.reply?.parent.uri).repo : undefined;
     const replyToProfile = replyToAuthorDid ? State.getObject("profile", replyToAuthorDid) : undefined;
@@ -535,14 +535,14 @@ export class PostViewElement extends LitElement {
                 </button>
                 <icon-toggle
                     @change=${(ev: CustomEvent) => this.toggleRepost(ev)}
-                    icon="reblog"
+                    .icon=${html`<i class="icon !w-4 !h-4">${reblogIcon}</i>`}
                     class="h-4"
                     .value=${this.post.viewer?.repost ?? false}
                     .text=${"" + this.post.repostCount ?? 0}
                 ></icon-toggle>
                 <icon-toggle
                     @change=${(ev: CustomEvent) => this.toggleLike(ev)}
-                    icon="heart"
+                    .icon=${html`<i class="icon !w-4 !h-4">${heartIcon}</i>`}
                     class="h-4"
                     .value=${this.post.viewer?.like ?? false}
                     .text=${"" + this.post.likeCount ?? 0}
@@ -558,33 +558,22 @@ export class PostViewElement extends LitElement {
         }
     }
 
-    canInteract(toggle: IconToggle) {
-        if (!Store.getUser()) {
-            if (confirm("Do you want to log-in to repost, like, and create posts?")) {
-                location.reload();
-            }
-            toggle.value = false;
-            return false;
-        } else {
-            return true;
-        }
-    }
-
     async toggleRepost(ev: CustomEvent) {
         const toggle = ev.target as IconToggle;
-        if (!this.canInteract(toggle)) return;
+        if (!Store.getUser()) return;
+        if (!State.bskyClient) return;
         if (!this.post) return;
         if (!this.post.viewer) this.post.viewer = {};
         if (ev.detail.value) {
-            toggle.value = true;
             toggle.innerText = (Number.parseInt(toggle.innerText) + 1).toString();
+            this.requestUpdate();
             const response = await State.bskyClient!.repost(this.post.uri, this.post.cid);
             this.post.viewer.repost = response.uri;
             this.post.repostCount = this.post.repostCount ? this.post.repostCount + 1 : 1;
         } else {
-            toggle.value = false;
             toggle.innerText = (Number.parseInt(toggle.innerText) - 1).toString();
-            if (this.post.viewer.repost) State.bskyClient?.deleteRepost(this.post.viewer.repost);
+            this.requestUpdate();
+            if (this.post.viewer.repost) await State.bskyClient?.deleteRepost(this.post.viewer.repost);
             delete this.post.viewer.repost;
             this.post.repostCount = this.post.repostCount ? this.post.repostCount - 1 : 0;
         }
@@ -594,18 +583,19 @@ export class PostViewElement extends LitElement {
     likeUri: string | undefined;
     async toggleLike(ev: CustomEvent) {
         const toggle = ev.target as IconToggle;
-        if (!this.canInteract(toggle)) return;
+        if (!Store.getUser()) return;
+        if (!State.bskyClient) return;
         if (!this.post) return;
         if (!this.post.viewer) this.post.viewer = {};
         if (ev.detail.value) {
-            toggle.value = true;
             toggle.innerText = (Number.parseInt(toggle.innerText) + 1).toString();
+            this.requestUpdate();
             const response = await State.bskyClient!.like(this.post.uri, this.post.cid);
             this.post.viewer.like = response.uri;
             this.post.likeCount = this.post.likeCount ? this.post.likeCount + 1 : 1;
         } else {
-            toggle.value = false;
             toggle.innerText = (Number.parseInt(toggle.innerText) - 1).toString();
+            this.requestUpdate();
             if (this.post.viewer.like) await State.bskyClient?.deleteLike(this.post.viewer.like);
             delete this.post.viewer.like;
             this.post.likeCount = this.post.likeCount ? this.post.likeCount - 1 : 0;

@@ -163,7 +163,7 @@ export class ProfileOverlay extends HashNavOverlay {
                             <span><span class="font-bold">${getNumber(profile.postsCount)}</span> ${i18n("posts")}</span>
                             </div>
                         </div>
-                        <div class="mt-1 whitespace-pre-wrap">${renderRichText({
+                        <div class="mt-1">${renderRichText({
                             text: rt.text,
                             facets: rt.facets,
                             createdAt: "",
@@ -280,7 +280,7 @@ export class ProfileViewElement extends LitElement {
                         ? html`<profile-action-button class="self-start ml-auto" .profile=${this.profile}></profile-action-button>`
                         : nothing}
                 </div>
-                <div class="mt-1 whitespace-pre-wrap">${renderRichText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
+                <div class="text-sm mt-1">${renderRichText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
             </div>
         </div>`;
     }

@@ -1,5 +1,5 @@
 import { AppBskyFeedDefs, AppBskyNotificationListNotifications } from "@atproto/api";
-import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { FeedViewPost, GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { ActorFeedType, State } from "./state";
 import { error, fetchApi } from "./utils";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
@@ -75,7 +75,7 @@ export abstract class CursorStream<T> implements Stream<T> {
     timeoutId: any = undefined;
 
     constructor(
-        readonly provider: (cursor?: string, limit?: number) => Promise<Error | { cursor?: string; items: T[] }>,
+        readonly provider: (cursor?: string, limit?: number, notify?: boolean) => Promise<Error | { cursor?: string; items: T[] }>,
         public readonly pollNew = false,
         readonly pollInterval = 5000
     ) {}
@@ -93,7 +93,7 @@ export abstract class CursorStream<T> implements Stream<T> {
             let cursor: string | undefined;
             let startTimestamp = this.items.length > 0 ? this.getItemDate(this.items[0]).getTime() : new Date().getTime();
             while (true) {
-                let fetchedItems = await this.provider(cursor, 20);
+                let fetchedItems = await this.provider(cursor, 20, false);
                 if (fetchedItems instanceof Error) {
                     for (const listener of this.newItemslisteners) {
                         listener(fetchedItems);
@@ -169,7 +169,7 @@ export abstract class CursorStream<T> implements Stream<T> {
 export class NotificationsStream extends CursorStream<AppBskyNotificationListNotifications.Notification> {
     constructor(pollNew = false, pollInterval?: number) {
         super(
-            (cursor?: string, limit?: number) => {
+            (cursor?: string, limit?: number, notify?: boolean) => {
                 return State.getNotifications(cursor, limit);
             },
             pollNew,
@@ -189,8 +189,8 @@ export class NotificationsStream extends CursorStream<AppBskyNotificationListNot
 export class ActorFeedStream extends CursorStream<FeedViewPost> {
     constructor(readonly type: ActorFeedType, readonly actor?: string, pollNew = false, pollInterval?: number) {
         super(
-            (cursor?: string, limit?: number) => {
-                return State.getActorFeed(this.type, this.actor, cursor, limit);
+            (cursor?: string, limit?: number, notify?: boolean) => {
+                return State.getActorFeed(this.type, this.actor, cursor, limit, notify);
             },
             pollNew,
             pollInterval
@@ -208,7 +208,7 @@ export class ActorFeedStream extends CursorStream<FeedViewPost> {
 
 export class LoggedInActorLikesStream extends CursorStream<FeedViewPost> {
     constructor() {
-        super((cursor?: string, limit?: number) => {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.getLoggedInActorLikes(cursor, limit);
         });
     }
@@ -224,7 +224,7 @@ export class LoggedInActorLikesStream extends CursorStream<FeedViewPost> {
 
 export class ActorLikesStream extends CursorStream<PostView> {
     constructor(readonly actor: string) {
-        super((cursor?: string, limit?: number) => {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.getActorLikes(actor, cursor, limit);
         });
     }
@@ -240,7 +240,7 @@ export class ActorLikesStream extends CursorStream<PostView> {
 
 export class PostLikesStream extends CursorStream<ProfileViewDetailed> {
     constructor(readonly postUri: string) {
-        super((cursor?: string, limit?: number) => {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.getPostLikes(postUri, cursor, limit);
         });
     }
@@ -256,7 +256,7 @@ export class PostLikesStream extends CursorStream<ProfileViewDetailed> {
 
 export class PostRepostsStream extends CursorStream<ProfileViewDetailed> {
     constructor(readonly postUri: string) {
-        super((cursor?: string, limit?: number) => {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.getPostReposts(postUri, cursor, limit);
         });
     }
@@ -272,7 +272,7 @@ export class PostRepostsStream extends CursorStream<ProfileViewDetailed> {
 
 export class FollowersStream extends CursorStream<ProfileViewDetailed> {
     constructor(readonly did: string) {
-        super((cursor?: string, limit?: number) => {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.getFollowers(did, cursor, limit);
         });
     }
@@ -288,7 +288,7 @@ export class FollowersStream extends CursorStream<ProfileViewDetailed> {
 
 export class FollowingStream extends CursorStream<ProfileViewDetailed> {
     constructor(readonly did: string) {
-        super((cursor?: string, limit?: number) => {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.getFollowing(did, cursor, limit);
         });
     }
@@ -354,7 +354,7 @@ export class QuotesStream implements Stream<PostView> {
 
 export class UserSearchStream extends CursorStream<ProfileViewDetailed> {
     constructor(readonly query: string) {
-        super((cursor?: string, limit?: number) => {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.searchUsers(query, cursor, limit);
         });
     }
@@ -364,6 +364,54 @@ export class UserSearchStream extends CursorStream<ProfileViewDetailed> {
     }
 
     getItemDate(item: ProfileViewDetailed): Date {
+        return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
+    }
+}
+
+export class UserSuggestionStream extends CursorStream<ProfileViewDetailed> {
+    constructor() {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
+            return State.suggestUsers(cursor, limit);
+        });
+    }
+
+    getItemKey(item: ProfileViewDetailed): string {
+        return item.did;
+    }
+
+    getItemDate(item: ProfileViewDetailed): Date {
+        return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
+    }
+}
+
+export class FeedSearchStream extends CursorStream<GeneratorView> {
+    constructor(readonly query: string) {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
+            return State.searchFeeds(query, cursor, limit);
+        });
+    }
+
+    getItemKey(item: GeneratorView): string {
+        return item.uri;
+    }
+
+    getItemDate(item: GeneratorView): Date {
+        return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
+    }
+}
+
+export class FeedSuggestionStream extends CursorStream<GeneratorView> {
+    constructor() {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
+            return State.suggestFeeds(cursor, limit);
+        });
+    }
+
+    getItemKey(item: GeneratorView): string {
+        return item.uri;
+    }
+
+    getItemDate(item: GeneratorView): Date {
         return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
     }
 }

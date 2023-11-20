@@ -5,22 +5,22 @@ import {
     AppBskyFeedRepost,
     AppBskyGraphFollow,
     AppBskyNotificationListNotifications,
+    RichText,
 } from "@atproto/api";
 import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { FeedViewPost, GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import { date } from "../bsky";
 import { Messages, i18n } from "../i18n";
 import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
 import { State } from "../state";
 import { Store } from "../store";
 import { ActorFeedStream, NotificationsStream, Stream } from "../streams";
-import { collectLitElements, dom, error, getScrollParent, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce } from "../utils";
+import { collectLitElements, defaultFeed, dom, error, getScrollParent, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce } from "../utils";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
-import { renderEmbed, renderRichText } from "./posts";
-import { getProfileUrl, renderProfile } from "./profiles";
 import { deletePost, quote, reply } from "./posteditor";
+import { renderEmbed, renderRichText } from "./posts";
+import { renderProfile } from "./profiles";
 
 export abstract class StreamView<T> extends LitElement {
     @property()
@@ -57,6 +57,8 @@ export abstract class StreamView<T> extends LitElement {
                     error("Couldn't load newer items", newerItems);
                     if (this.newItems) this.newItems(newerItems, this.stream!.items);
                     return;
+                } else {
+                    if (this.newItems) this.newItems(newerItems, this.stream!.items);
                 }
 
                 const itemsDom = this.itemsDom;
@@ -82,7 +84,6 @@ export abstract class StreamView<T> extends LitElement {
                         scrollParent.scrollTop = (lastItemDom?.offsetTop ?? 0) - 40;
                     }
                 }
-                if (this.newItems) this.newItems(newerItems, this.stream!.items);
             });
         }
         this.load();
@@ -116,7 +117,7 @@ export abstract class StreamView<T> extends LitElement {
 
             if (items.length == 0) {
                 spinner.innerHTML = "";
-                spinner.append(dom(html`<div class="w-full h-8 flex items-center justify-center">${i18n("No more items")}</div>`)[0]);
+                spinner.append(dom(html`<div class="w-full h-8 flex items-center justify-center">${i18n("End of list")}</div>`)[0]);
                 return;
             }
 
@@ -284,9 +285,7 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
                             document.body.append(dom(html`<thread-overlay .postUri=${post?.uri}></thread-overlay>`)[0]);
                         }}
                     >
-                        <div class="break-words dark:text-white/50 text-black/50">
-                            <div class="whitespace-pre-wrap">${renderRichText(post.record)}</div>
-                        </div>
+                        <div class="break-words dark:text-white/50 text-black/50">${renderRichText(post.record)}</div>
                         ${post.embed ? renderEmbed(post.embed, false, true) : nothing}
                     </div>`;
                     break;
@@ -295,9 +294,7 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
                     postContent = html`${parent && profile && AppBskyFeedPost.isRecord(parent.record)
                             ? html`<div class="border border-divider rounded p-2 mb-2">
                                   <div class="dark:text-white/50 text-black/50">${renderProfile(parent.author, true)}</div>
-                                  <div class="mt-1 mb-1 break-words text-muted-fg">
-                                      <div class="whitespace-pre-wrap">${renderRichText(parent.record)}</div>
-                                  </div>
+                                  <div class="mt-1 mb-1 break-words text-muted-fg">${renderRichText(parent.record)}</div>
                                   ${parent.embed ? renderEmbed(parent.embed, false, true) : nothing}
                               </div>`
                             : nothing}<post-view
@@ -386,5 +383,12 @@ export class ProfilesStreamOverlay extends HashNavOverlay {
 
     renderContent(): TemplateResult {
         return html`<profiles-stream-view .stream=${this.stream}></profiles-stream-view>`;
+    }
+}
+
+@customElement("generators-stream-view")
+export class GeneratorsStreamView extends StreamView<GeneratorView> {
+    renderItem(item: AppBskyFeedDefs.GeneratorView): TemplateResult {
+        return html`<generator-view .generator=${item}></generator-view>`;
     }
 }

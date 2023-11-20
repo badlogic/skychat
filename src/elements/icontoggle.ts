@@ -1,17 +1,8 @@
-import { LitElement, html } from "lit";
+import { LitElement, TemplateResult, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { globalStyles } from "./styles";
-
-import { heartIcon, imageIcon, reblogIcon, replyIcon, shieldIcon } from "../icons";
 import { Store } from "../store";
 import { State } from "../state";
-const icons = {
-    reblog: reblogIcon,
-    reply: replyIcon,
-    heart: heartIcon,
-    image: imageIcon,
-    shield: shieldIcon,
-};
 
 @customElement("icon-toggle")
 export class IconToggle extends LitElement {
@@ -24,7 +15,7 @@ export class IconToggle extends LitElement {
     text = "";
 
     @property()
-    icon?: string;
+    icon?: TemplateResult;
 
     unsubscribe = () => {};
 
@@ -41,8 +32,8 @@ export class IconToggle extends LitElement {
     render() {
         const isDark = Store.getTheme() == "dark";
         return html` <div class="h-full flex items-center cursor-pointer gap-1" @click=${(ev: MouseEvent) => this.toggle(ev)}>
-            <i class="icon !w-4 !h-4 ${this.value ? "fill-primary" : "fill-muted-fg"}">${icons[this.icon as "reblog" | "heart" | "shield"] ?? ""}</i
-            ><span class="${this.value ? "text-primary animate-jump" : "text-muted-fg"}">${this.text}</span>
+            <div class="${this.value ? "fill-primary animate-jump" : "fill-muted-fg"}">${this.icon}</div>
+            <span class="${this.value ? "text-primary animate-jump" : "text-muted-fg"}">${this.text}</span>
         </div>`;
     }
 

@@ -231,7 +231,7 @@ export class ButtonGroup extends LitElement {
                 let rounded = "";
                 if (index == 0) rounded = "rounded-l-lg";
                 if (index == this.values.length - 1) rounded = "rounded-r-lg";
-                let selected = value == this.selected ? "bg-primary text-primary-fg" : "bg-muted";
+                let selected = value == this.selected ? "bg-primary text-primary-fg" : "border border-divider";
                 return html`<div
                     class="flex items-center justify-center px-4 text-sm ${rounded} ${selected}"
                     @click=${() => this.selectedChanged(value)}
