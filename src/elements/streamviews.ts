@@ -327,7 +327,7 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
             class="px-4 py-2 border-b border-divider flex flex-col ${notification.isRead ? "" : "bg-[#d8e4ff] dark:bg-[#001040]"}"
         >
             <div class="flex items-center gap-2">
-                <i class="icon !w-5 !h-5">${icons[notification.reason] ?? ""}</i>
+                <i class="icon !w-5 !h-5 fill-primary">${icons[notification.reason] ?? ""}</i>
                 ${renderProfile(notification.author, false)}
                 <span class="ml-auto text-xs text-muted-fg">${getTimeDifference(date.getTime())}</span>
             </div>

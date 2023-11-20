@@ -234,7 +234,7 @@ export class PostEditor extends LitElement {
                 ${AppBskyEmbedExternal.isMain(this.embed)
                     ? html`<div class="flex relative px-2 items-center justify-center">
                           <div class="w-full">${this.embedRendered}</div>
-                          ${this.isLoadingCard ? html`<i class="absolute ml-2 icon w-6 h-6 animate-spin">${spinnerIcon}</i>` : nothing}
+                          ${this.isLoadingCard ? html`<i class="absolute ml-2 icon !w-6 !h-6 fill-primary animate-spin">${spinnerIcon}</i>` : nothing}
                           <button
                               class="absolute right-4 top-4"
                               @click=${(ev: Event) => {
