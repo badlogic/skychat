@@ -347,7 +347,7 @@ export function renderRecord(
     subHeader?: TemplateResult | HTMLElement,
     showReplyto = true,
     openOnClick = true,
-    shortTime = true
+    timeLeft = false
 ): TemplateResult {
     const replyToAuthorDid = record.reply ? splitAtUri(record.reply?.parent.uri).repo : undefined;
     const replyToProfile = replyToAuthorDid ? State.getObject("profile", replyToAuthorDid) : undefined;
@@ -366,7 +366,9 @@ export function renderRecord(
                       ${prefix ? html`<span class="mr-1 font-bold">${prefix}</span>` : nothing} ${renderProfile(author, smallAvatar)}
                       ${prefix == undefined
                           ? html`<a
-                                class="self-start ml-auto text-right text-xs text-muted-fg whitespace-nowrap hover:underline"
+                                class="self-start ${timeLeft
+                                    ? "mt-1 ml-2"
+                                    : "ml-auto"} text-right text-xs text-muted-fg whitespace-nowrap hover:underline"
                                 href="#thread/${author.did}/${rkey}"
                                 target="_blank"
                                 @click=${(ev: Event) => {
@@ -374,9 +376,7 @@ export function renderRecord(
                                     ev.stopPropagation();
                                     document.body.append(dom(html`<thread-overlay .postUri=${combineAtUri(author.did, rkey)}></thread-overlay>`)[0]);
                                 }}
-                                >${!shortTime
-                                    ? getDateString(new Date(record.createdAt))
-                                    : getTimeDifference(new Date(record.createdAt).getTime())}</a
+                                >${getTimeDifference(new Date(record.createdAt).getTime())}</a
                             >`
                           : nothing}
                   </div>
@@ -435,9 +435,6 @@ export class PostViewElement extends LitElement {
     openOnClick = true;
 
     @property()
-    shortTime = false;
-
-    @property()
     unmuted = false;
 
     @property()
@@ -445,6 +442,9 @@ export class PostViewElement extends LitElement {
 
     @property()
     centerButtons = false;
+
+    @property()
+    timeLeft = false;
 
     contentDom?: HTMLElement;
 
@@ -520,7 +520,7 @@ export class PostViewElement extends LitElement {
                     this.subHeader,
                     this.showReplyTo,
                     this.openOnClick,
-                    this.shortTime
+                    this.timeLeft
                 )}`
             )[0];
         }
@@ -614,7 +614,7 @@ export class AltText extends Overlay {
     }
 
     renderContent(): TemplateResult {
-        return html`<div class="overflow-auto flex-1 whitespace-pre-wrap px-4">${this.alt}</div>`;
+        return html`<div class="overflow-auto flex-1 whitespace-pre-wrap px-4 mt-4">${this.alt}</div>`;
     }
 }
 
@@ -822,7 +822,7 @@ export class ThreadViewPostElement extends LitElement {
             <div
                 class="${thread.post.uri == uri ? animation : ""} min-w-[350px] mb-2 ml-[-1px] ${!isRoot || (thread.post.uri == uri && isRoot)
                     ? "pl-2"
-                    : ""} ${thread.post.uri == uri ? "border-l border-primary" : ""} flex flex-col"
+                    : ""} ${thread.post.uri == uri ? "border-l border-primary" : ""} flex flex-col pr-2"
             >
                 <post-view
                     @click=${(ev: MouseEvent) => toggleReplies(ev, postDom)}
@@ -832,7 +832,7 @@ export class ThreadViewPostElement extends LitElement {
                     .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
                     .showReplyTo=${false}
                     .openOnClick=${false}
-                    .shortTime=${true}
+                    .timeLeft=${true}
                     class="cursor-pointer"
                 ></post-view>
                 <div
@@ -1019,7 +1019,6 @@ export class FeewViewPostElement extends LitElement {
                     .quoteCallback=${(post: PostView) => quote(post)}
                     .replyCallback=${(post: PostView) => reply(post)}
                     .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
-                    .shortTime=${true}
                 ></post-view>
             </div>`)[0];
         } else {
@@ -1028,16 +1027,14 @@ export class FeewViewPostElement extends LitElement {
                 .quoteCallback=${(post: PostView) => quote(post)}
                 .replyCallback=${(post: PostView) => reply(post)}
                 .deleteCallback=${(post: PostView) => deletePost(post, parentDom)}
-                .shortTime=${true}
             ></post-view>`)[0];
-            postDom = dom(html`<div class="ml-2 pl-2 mt-2 border-l border-l-primary">
+            postDom = dom(html`<div class="ml-2 px-2 mt-2 border-l border-l-primary">
                 <post-view
                     .post=${feedViewPost.post}
                     .quoteCallback=${(post: PostView) => quote(post)}
                     .replyCallback=${(post: PostView) => reply(post)}
                     .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
                     .showReplyTo=${false}
-                    .shortTime=${true}
                 ></post-view>
             </div>`)[0];
             postDom = dom(html`<div class="flex flex-col">${repostedBy}${parentDom}${postDom}</div>`)[0];

@@ -358,7 +358,7 @@ export class State {
                 }
             }
 
-            if (notify) State.loadFeedViewPostsDependencies(data.items);
+            if (notify) await State.loadFeedViewPostsDependencies(data.items);
             return data;
         } catch (e) {
             return error("Couldn't load actor feed", e);

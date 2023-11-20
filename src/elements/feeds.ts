@@ -95,7 +95,7 @@ export class GeneratorViewElement extends LitElement {
                               <i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</i>
                           </button>`
                         : html`<button @click=${() => this.addFeed()} class="bg-primary rounded-full">
-                              <i class="icon !w-6 !h-6 fill-white">${plusIcon}</i>
+                              <i class="icon !w-6 !h-6 !fill-white">${plusIcon}</i>
                           </button>`}
                 </div>
             </div>

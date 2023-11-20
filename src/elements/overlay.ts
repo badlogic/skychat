@@ -205,7 +205,8 @@ export class Topbar extends LitElement {
     }
 
     render() {
-        return html`<div
+        return html`
+            <div
                 class="fixed top-0 z-10 w-[640px] max-w-[100%] h-10 px-2 flex items-center bg-background border-b border-divider shadow-md sm:shadow-none"
             >
                 <a class="w-10 h-10 flex items-center justify-center font-bold text-center" href="/"
@@ -214,6 +215,7 @@ export class Topbar extends LitElement {
                 <span class="text-primary font-bold">${this.heading}</span>
                 ${this.buttons}
             </div>
-            <div class="w-full h-10"></div>`;
+            <div class="w-full h-10"></div>
+        `;
     }
 }
