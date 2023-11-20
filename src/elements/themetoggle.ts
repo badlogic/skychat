@@ -12,9 +12,6 @@ export class ThemeToggle extends LitElement {
     @state()
     theme: Theme = "dark";
 
-    @property()
-    absolute = false;
-
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
@@ -37,10 +34,7 @@ export class ThemeToggle extends LitElement {
     }
 
     render() {
-        return html`<button
-            class="flex items-center justify-center w-10 h-10 fill-primary ${this.absolute == true ? "absolute top-0 right-0" : ""}"
-            @click=${this.toggleTheme}
-        >
+        return html`<button class="flex items-center justify-center w-full h-full primary" @click=${this.toggleTheme}>
             <i class="icon w-6 h-6">${this.theme == "dark" ? moonIcon : sunIcon}</i>
         </button>`;
     }

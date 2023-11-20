@@ -103,12 +103,7 @@ export class ImageSearch extends Overlay {
     }
     renderContent(): TemplateResult {
         return html`<div class="flex flex-col px-4 mt-2">
-            <input
-                @input=${() => this.handleSearch()}
-                id="search"
-                class="border border-gray rounded-full outline-none bg-transparent drop:bg-white dark:text-white disabled:text-gray dark:disabled:text-gray px-4 py-2"
-                placeholder="${i18n("Search for GIFS...")}"
-            />
+            <input @input=${() => this.handleSearch()} id="search" class="search" placeholder="${i18n("Search for GIFS...")}" />
             <div id="imageGrid" class="flex flex-col gap-2 mt-2"></div>
             <div id="spinnerino" class="hidden w-full h-12 flex items-center justify-center">
                 <i class="absolute ml-2 icon w-6 h-6 animate-spin">${spinnerIcon}</i>
@@ -126,7 +121,10 @@ export class ImageSearch extends Overlay {
             }
             this.imageGridElement!.innerHTML = "";
             this.spinnerElement?.classList.add("hidden");
-            this.loadMoreImages(this.searchElement!.value);
+            const spinner = dom(html`<loading-spinner></loading-spinner>`)[0];
+            this.imageGridElement?.append(spinner);
+            await this.loadMoreImages(this.searchElement!.value);
+            spinner.remove();
         }, 200) as any as number;
     }
 
@@ -181,11 +179,19 @@ export class ImageSearch extends Overlay {
                     videoDom,
                     () => {
                         const video = videoDom.querySelector("video") as HTMLVideoElement;
-                        video.play();
+                        try {
+                            video.play();
+                        } catch (e) {
+                            // NOOP
+                        }
                     },
                     () => {
                         const video = videoDom.querySelector("video") as HTMLVideoElement;
-                        video.pause();
+                        try {
+                            video.pause();
+                        } catch (e) {
+                            // NOOP
+                        }
                     }
                 );
             } else if (image.imageUrl) {

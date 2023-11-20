@@ -115,6 +115,7 @@ export interface Messages {
     "GIF Search": string;
     "Search for GIFS...": string;
     "Couldn't load images": string;
+    Moderation: string;
 }
 
 const english: Messages = {
@@ -184,7 +185,7 @@ const english: Messages = {
     "Hashtag, e.g. #imzentrum": "Hashtag, e.g. #imzentrum",
     "You are logged in as": "You are logged in as",
     "Want to post and reply to other posts? Enter your username and an app password below. (optional)": html`Want to post and reply to other posts?
-        Enter your username and an <a class="text-primary" href="https://bsky.app/settings/app-passwords">app password</a> below. (optional)`,
+        Enter your username and an <a href="https://bsky.app/settings/app-passwords">app password</a> below. (optional)`,
     "Account, e.g. badlogic.bsky.social": "Account, e.g. badlogic.bsky.social",
     "App password": "App password",
     "Go live!": "Go live!",
@@ -192,11 +193,11 @@ const english: Messages = {
     "Log out": "Log out",
     "How does it work?": "How does it work?",
     "Trending hashtags": "Trending hashtags",
-    footer: html`<a class="text-primary" href="https://skychat.social" target="_blank">Skychat</a>
+    footer: html`<a href="https://skychat.social" target="_blank">Skychat</a>
         is lovingly made by
-        <a class="text-primary" href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
+        <a href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
         No data is collected, not even your IP address.<br />
-        <a class="text-primary" href="https://github.com/badlogic/skychat" target="_blank">Source code</a>`,
+        <a href="https://github.com/badlogic/skychat" target="_blank">Source code</a>`,
     "Please specify a hashtag": "Please specify a hashtag",
     "Please specify an app password for your account. You can get one in your BlueSky app's settings.":
         "Please specify an app password for your account. You can get one in your BlueSky app's settings.",
@@ -204,7 +205,7 @@ const english: Messages = {
     "No hashtag given": "No hashtag given",
     "Couldn't log in with your BlueSky credentials": "Couldn't log in with your BlueSky credentials",
     "You have an existing thread for ": (rootUrl: string, hashtag: string) =>
-        html`You have an <a href="${rootUrl}" class="text-primary">existing thread</a> for ${hashtag}`,
+        html`You have an <a href="${rootUrl}">existing thread</a> for ${hashtag}`,
     "Do you want to add new posts to the existing thread, or start a new thread?":
         "Do you want to add new posts to the existing thread, or start a new thread?",
     "Use existing thread": "Use existing thread",
@@ -243,6 +244,7 @@ const english: Messages = {
     "GIF Search": "GIF Search",
     "Search for GIFS...": "Search for GIFs ...",
     "Couldn't load images": "Couldn't load images",
+    Moderation: "Moderation",
 };
 
 const german: Messages = {
@@ -313,7 +315,7 @@ const german: Messages = {
     "You are logged in as": "Angemeldet als ",
     "Want to post and reply to other posts? Enter your username and an app password below. (optional)": html`Willst du selbst einen Hashtag Thread
         schreiben und auf Posts anderer Benutzerinnen antworten können? Dann gib deinen BlueSky Benutzernamen und ein
-        <a class="text-primary" href="https://bsky.app/settings/app-passwords">App Passwort</a> an. (Optional)`,
+        <a href="https://bsky.app/settings/app-passwords">App Passwort</a> an. (Optional)`,
     "Account, e.g. badlogic.bsky.social": "Account, z.B. badlogic.bsky.social",
     "App password": "App Passwort",
     "Go live!": "Los geht's!",
@@ -321,11 +323,11 @@ const german: Messages = {
     "Log out": "Abmelden",
     "How does it work?": "Wie funktioniert es?",
     "Trending hashtags": "Hashtag Trends",
-    footer: html`<a class="text-primary" href="https://skychat.social" target="_blank">Skychat</a>
+    footer: html`<a href="https://skychat.social" target="_blank">Skychat</a>
         wird liebevoll von
-        <a class="text-primary" href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a> gebaut<br />
+        <a href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a> gebaut<br />
         Es werden keine Daten von dir gespeichert, nicht einmal deine IP Adresse<br />
-        <a class="text-primary" href="https://github.com/badlogic/skychat" target="_blank">Source Code</a>`,
+        <a href="https://github.com/badlogic/skychat" target="_blank">Source Code</a>`,
     "Please specify a hashtag": "Bitte gib ein Hashtag ein",
     "Please specify an app password for your account. You can get one in your BlueSky app's settings.":
         "Bitte gib ein App Passwort für deinen BlueSky Account ein. Du kannst App Passwörter in den Einstellungen der offiziellen BlueSky App erstellen.",
@@ -333,7 +335,7 @@ const german: Messages = {
     "No hashtag given": "Hashtag fehlt",
     "Couldn't log in with your BlueSky credentials": "Anmeldung mit deinen BlueSky Benutzerdaten fehlgeschlagen",
     "You have an existing thread for ": (rootUrl: string, hashtag: string) =>
-        html`Du hast für den Hashtag ${hashtag} bereits einen bestehenden <a href="${rootUrl}" class="text-primary">Thread</a>`,
+        html`Du hast für den Hashtag ${hashtag} bereits einen bestehenden <a href="${rootUrl}">Thread</a>`,
     "Do you want to add new posts to the existing thread, or start a new thread?":
         "Willst du neue Posts an den bestehenden Thread hinzufügen oder einen neuen Thread starten?",
     "Use existing thread": "Bestehenden Thread verwenden",
@@ -373,6 +375,7 @@ const german: Messages = {
     "GIF Search": "GIF Suche",
     "Search for GIFS...": "Nach GIFs suchen ...",
     "Couldn't load images": "Konnte Bilder nicht laden",
+    Moderation: "Moderation",
 };
 
 export type LanguageCode = "en" | "de";

@@ -1,17 +1,17 @@
 import { LitElement, PropertyValueMap, html, nothing } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { contentLoader, defaultAvatar, dom, spinner } from "../utils";
+import { defaultAvatar, dom } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
+import { FeedsButton, NotificationsButton, OpenPostEditorButton, UpButton } from "../elements";
 import { setupPushNotifications } from "../elements/notifications";
+import { renderTopbar } from "../elements/overlay";
 import { routeHash } from "../elements/routing";
 import { i18n } from "../i18n";
-import { Store } from "../store";
-import { renderTopbar } from "../elements/overlay";
-import { searchIcon, settings2Icon, settingsIcon } from "../icons";
-import { FeedsButton, NotificationsButton, OpenPostEditorButton, UpButton } from "../elements";
+import { searchIcon, settingsIcon } from "../icons";
 import { State } from "../state";
+import { Store } from "../store";
 import { ActorFeedStream } from "../streams";
 
 @customElement("skychat-client")
@@ -77,18 +77,18 @@ class SkychatClient extends LitElement {
                 ${this.error ? html`<div class="mx-auto max-w-[300px] text-[#cc0000] font-bold text-center">${this.error}</div>` : nothing}
                 <input
                     id="account"
-                    class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
+                    class="bg-none border border-input outline-none rounded text-black px-2 py-2"
                     placeholder="${i18n("Account, e.g. badlogic.bsky.social")}"
                     value="${this.lastAccount}"
                 />
                 <input
                     id="password"
                     type="password"
-                    class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
+                    class="bg-none border border-input outline-none rounded text-black px-2 py-2"
                     placeholder="${i18n("App password")}"
                     value="${this.lastPassword}"
                 />
-                <button class="align-center rounded bg-primary text-white px-4 py-2" @click=${this.login}>${i18n("Sign in")}</button>
+                <button class="align-center rounded bg-primary text-primary-fg px-4 py-2" @click=${this.login}>${i18n("Sign in")}</button>
                 ${!user
                     ? html`<p class="text-xs mt-0 pt-0 text-center">${i18n("Your credentials will only be stored on your device.")}</p>`
                     : nothing}
@@ -112,7 +112,7 @@ class SkychatClient extends LitElement {
             <div class="flex-grow flex flex-col">
                 <div class="animate-fade flex-grow flex flex-col">
                     <p class="text-center">${i18n("Connecting")}</p>
-                    <div class="align-top">${spinner}</div>
+                    <div class="align-top"><loading-spinner></loading-spinner></div>
                 </div>
             </div>
             <div class="text-center text-xs italic my-4 pb-4">${i18n("footer")}</div>
@@ -139,7 +139,7 @@ class SkychatClient extends LitElement {
                             this.upButton.highlight = true;
                         }
                     }}
-                    .stream=${new ActorFeedStream("home", undefined, true)}
+                    .stream=${new ActorFeedStream("home", undefined, true, 15000)}
                 ></feed-stream-view>
                 <open-post-editor-button id="post"></open-post-editor-button>
                 <notifications-button id="notifications"></notifications-button>
@@ -205,10 +205,8 @@ class SkychatClient extends LitElement {
 
     renderTopbar() {
         const user = Store.getUser();
-        const feed = dom(html`<button class="text-primary font-bold relative pr-2" @click=${() => (this.querySelector("main")!.scrollTop = 0)}>
-            <span class="text-left">${i18n("Home")}</span>
-        </button>`)[0];
-        const buttons = html`<div class="ml-auto flex">
+        const feed = dom(html` <span class="text-left font-bold">${i18n("Home")}</span> `)[0];
+        const buttons = html`<div class="ml-auto flex fill-primary">
             <button
                 class="flex items-center justify-center w-10 h-10"
                 @click=${() => document.body.append(dom(html`<search-overlay></search-overlay>`)[0])}
@@ -221,7 +219,7 @@ class SkychatClient extends LitElement {
             >
                 <i class="icon w-5 h-5">${settingsIcon}</i>
             </button>
-            <theme-toggle></theme-toggle>
+            <theme-toggle class="w-10 h-10"></theme-toggle>
             <button
                 class="flex items-center justify-center w-10 h-10"
                 @click=${() => document.body.append(dom(html`<profile-overlay .did=${user?.profile.did}></profile-overlay>`)[0])}

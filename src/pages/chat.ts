@@ -5,16 +5,16 @@ import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { PostSearch } from "../bsky";
 import { FirehosePost, startEventStream } from "../firehose";
-import { contentLoader, dom, hasHashtag, onVisibleOnce, spinner, splitAtUri } from "../utils";
+import { dom, hasHashtag, onVisibleOnce, splitAtUri } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import "../elements";
 import { PostEditor, renderTopbar } from "../elements";
 import { routeHash } from "../elements/routing";
 import { i18n } from "../i18n";
-import { bellIcon, homeIcon, spinnerIcon } from "../icons";
-import { Store } from "../store";
+import { bellIcon, homeIcon } from "../icons";
 import { State } from "../state";
+import { Store } from "../store";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -130,7 +130,7 @@ export class Chat extends LitElement {
                       <i id="bell" class="icon w-6 h-6">${bellIcon}</i>
                       <div
                           id="notifications"
-                          class="hidden absolute right-1 top-1 rounded-full bg-primary text-white text-xs w-4 h-4 text-center"
+                          class="hidden absolute right-1 top-1 rounded-full bg-primary text-primary-fg text-xs w-4 h-4 text-center"
                       ></div>
                   </button>
                   <theme-toggle absolute="false"></theme-toggle>
@@ -163,7 +163,7 @@ export class Chat extends LitElement {
                         <p class="text-center mt-4">${i18n("Do you want to add new posts to the existing thread, or start a new thread?")}</p>
                         <div class="flex flex-col mx-auto gap-4 mt-4">
                             <button
-                                class="flex-shrink px-4 py-2 rounded bg-primary text-white"
+                                class="flex-shrink px-4 py-2 rounded bg-primary text-primary-fg"
                                 @click=${() => {
                                     this.askedReuse = true;
                                     this.requestUpdate();
@@ -172,7 +172,7 @@ export class Chat extends LitElement {
                                 ${i18n("Use existing thread")}
                             </button>
                             <button
-                                class="flex-shrink px-4 py-2 rounded bg-primary text-white"
+                                class="flex-shrink px-4 py-2 rounded bg-primary text-primary-fg"
                                 @click=${() => {
                                     this.askedReuse = true;
                                     delete user.hashTagThreads[this.hashtag!];
@@ -196,7 +196,7 @@ export class Chat extends LitElement {
             >
             <div class="flex-grow flex flex-col">
                 <p class="text-center">${i18n("Connecting")}</p>
-                <div class="align-top">${spinner}</div>
+                <div class="align-top"><loading-spinner></loading-spinner></div>
             </div>
             <div class="text-center text-xs italic my-4 pb-4">${i18n("footer")}</div>
         </main>`;
@@ -208,12 +208,10 @@ export class Chat extends LitElement {
             <div class="mx-auto max-w-[600px] min-h-full flex flex-col">
                 ${this.renderHeader()}
                 <div id="posts" class="flex-grow">
-                    <div id="loadOlderPosts" class="flex items-center justify-center flex flex-col">${spinner}</div>
+                    <loading-spinner id="loadOlderPosts"></loading-spinner>
                 </div>
                 ${user
-                    ? html`
-                          <post-editor class="sticky bottom-0 border-t border-primary bg-white dark:bg-black" .hashtag=${this.hashtag}></post-editor>
-                      `
+                    ? html` <post-editor class="sticky bottom-0 border-t border-primary bg-background" .hashtag=${this.hashtag}></post-editor> `
                     : nothing}
             </div>
             <div id="catchup" class="hidden fixed flex items-center">
@@ -223,7 +221,7 @@ export class Chat extends LitElement {
                         catchup.classList.add("hidden");
                         scrollElement.scrollTo({ top: scrollElement.scrollHeight });
                     }}
-                    class="rounded-full bg-primary px-2 py-1 text-sm text-white"
+                    class="rounded-full bg-primary text-primary-fg px-2 py-1 text-sm"
                 >
                     ${i18n("↓ Catch up ↓")}
                 </button>
@@ -306,7 +304,7 @@ export class Chat extends LitElement {
                     .querySelector("#posts")!
                     .appendChild(
                         dom(
-                            html`<div id="loadOlderPosts" class="reconnect w-full text-center p-4 border-t border-gray/50">
+                            html`<div id="loadOlderPosts" class="reconnect w-full text-center p-4 border-b border-divider">
                                 ${i18n("Reconnected. Some posts may be missing above.")}
                             </div>`
                         )[0]
@@ -333,7 +331,7 @@ export class Chat extends LitElement {
             const isAnswer =
                 post.record.reply?.parent.uri.includes(Store.getUser()?.profile.did ?? "") && !post.uri.includes(Store.getUser()?.profile.did ?? "");
             const postDom = dom(
-                html`<div class="border-t border-gray/50 px-4 py-2 ${isAnswer ? "bg-[#d8e4ff] dark:bg-[#001040]" : ""}">
+                html`<div class="border-b border-divider px-4 py-2 ${isAnswer ? "bg-[#d8e4ff] dark:bg-[#001040]" : ""}">
                     <post-view
                         animation=${animation}
                         .post=${post}
@@ -365,13 +363,13 @@ export class Chat extends LitElement {
 
         const fragment = dom(html`<div></div>`)[0];
         for (const post of posts) {
-            const postDom = dom(html`<div class="border-t border-gray/50 px-4 py-2 animate-fade">
+            const postDom = dom(html`<div class="border-b border-divider px-4 py-2 animate-fade">
                 <post-view
                     .post=${post}
                     .quoteCallback=${(post: PostView) => this.editor?.setQuote(post)}
                     .replyCallback=${(post: PostView) => this.editor?.setReply(post)}
                     .deleteCallback=${(post: PostView) => this.deletePost(post, postDom)}
-                    class="border-t border-gray/50"
+                    class="border-b border-divider"
                 ></post-view>
             </div>`)[0];
             fragment.appendChild(postDom);

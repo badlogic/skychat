@@ -5,11 +5,20 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                primary: "#cc7d24",
-                gray: "#555555",
-                lightgray: "#4b5563",
-                black: "#111111",
-                red: "#cc0000",
+                background: "var(--background)",
+                accent: "var(--accent)",
+                "accent-dark": "var(--accent-dark)",
+                primary: "var(--primary)",
+                "primary-dark": "var(--primary-dark)",
+                "primary-fg": "var(--primary-fg)",
+                secondary: "var(--secondary)",
+                "secondary-fg": "var(--secondary-fg)",
+                hinted: "var(--hinted)",
+                "hinted-fg": "var(--hinted-fg)",
+                muted: "var(--muted)",
+                "muted-fg": "var(--muted-fg)",
+                input: "var(--input)",
+                divider: "var(--divider)",
             },
             screens: {
                 pwa: { raw: "(display-mode: standalone)" },

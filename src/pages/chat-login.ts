@@ -1,7 +1,6 @@
 import { LitElement, html, nothing, svg } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { spinner } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import "../elements";
@@ -35,7 +34,7 @@ export class ChatLogin extends LitElement {
     render() {
         let content = html` <div class="animate-fade flex-grow flex flex-col">
             <p class="text-center">${i18n("Connecting")}</p>
-            <div class="align-top">${spinner}</div>
+            <div class="align-top"><loading-spinner></loading-spinner></div>
         </div>`;
 
         if (!this.isLoading) {
@@ -45,7 +44,7 @@ export class ChatLogin extends LitElement {
                     ${this.error ? html`<div class="mx-auto max-w-[300px] text-[#cc0000] font-bold text-center">${this.error}</div>` : nothing}
                     <input
                         id="hashtag"
-                        class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
+                        class="bg-none border border-input outline-none rounded text-black px-2 py-2"
                         placeholder="${i18n("Hashtag, e.g. #imzentrum")}"
                     />
                     ${user
@@ -59,21 +58,21 @@ export class ChatLogin extends LitElement {
                         : html`
                               <p class="text-center">
                                   Want to post and reply to other posts? Enter your username and an
-                                  <a class="text-primary" href="https://bsky.app/settings/app-passwords">app password</a> below. (optional)
+                                  <a href="https://bsky.app/settings/app-passwords">app password</a> below. (optional)
                               </p>
                               <input
                                   id="account"
-                                  class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
+                                  class="bg-none border border-input outline-none rounded text-black px-2 py-2"
                                   placeholder="${i18n("Account, e.g. badlogic.bsky.social")}"
                               />
                               <input
                                   id="password"
                                   type="password"
-                                  class="bg-none border border-gray/75 outline-none rounded text-black px-2 py-2"
+                                  class="bg-none border border-input outline-none rounded text-black px-2 py-2"
                                   placeholder="${i18n("App password")}"
                               />
                           `}
-                    <button class="align-center rounded bg-primary text-white px-4 py-2" @click=${this.goLive}>${i18n("Go live!")}</button>
+                    <button class="align-center rounded bg-primary text-primary-fg px-4 py-2" @click=${this.goLive}>${i18n("Go live!")}</button>
                     ${!user
                         ? html`<p class="text-xs mt-0 pt-0 text-center">${i18n("Your credentials will only be stored on your device.")}</p>`
                         : nothing}
@@ -88,7 +87,7 @@ export class ChatLogin extends LitElement {
                     frameborder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowfullscreen
-                    class="mt-2"
+                    class="mt-2 max-w-full aspect"
                 ></iframe>
                 <a class="text-xl text-primary text-center font-bold mt-8" href="trending.html">${i18n("Trending hashtags")}</a>`;
         }

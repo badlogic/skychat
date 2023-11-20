@@ -18,9 +18,7 @@ import { EventAction, NumQuote, State } from "../state";
 import { Store } from "../store";
 import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
 import {
-    collectLitElements,
     combineAtUri,
-    contentLoader,
     dom,
     error,
     fetchApi,
@@ -28,7 +26,6 @@ import {
     getTimeDifference,
     hasLinkOrButtonParent,
     onVisibilityChange,
-    spinner,
     splitAtUri,
     waitForLitElementsToRender,
 } from "../utils";
@@ -36,7 +33,7 @@ import { IconToggle } from "./icontoggle";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { PopupMenu } from "./popup";
 import { deletePost, quote, reply } from "./posteditor";
-import { getProfileUrl, renderProfile } from "./profiles";
+import { getProfileUrl, renderProfile, renderProfileAvatar } from "./profiles";
 
 export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {
@@ -66,7 +63,7 @@ export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
                 >`
             );
         } else if (segment.isLink()) {
-            segments.push(html`<a class="text-primary" href="${segment.link?.uri}" target="_blank">${segment.text}</a>`);
+            segments.push(html`<a href="${segment.link?.uri}" target="_blank">${segment.text}</a>`);
         } else if (segment.isTag()) {
             segments.push(html`<span class="text-blue-500">${segment.text}</span>`);
         } else {
@@ -75,6 +72,26 @@ export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     }
     const result = html`${map(segments, (segment) => segment)}`;
     return result;
+}
+
+export function tryEmbedTwitter(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External): TemplateResult | undefined {
+    const link = cardEmbed.uri.split("?")[0];
+    const twitterPostRegex = /^https?:\/\/(twitter\.com|x\.com)\/(\w+)\/status\/(\d+)(\?\S*)?$/;
+    const match = link.match(twitterPostRegex);
+
+    if (match && match[3]) {
+        const tweetId = match[3];
+        return html`<iframe
+            src="https://platform.twitter.com/embed/index.html?dnt=false&embedId=twitter-widget-0&frame=false&hideCard=false&hideThread=false&id=${tweetId}&lang=en&origin=${encodeURIComponent(
+                window.location.href
+            )}&theme=light&widgetsVersion=ed20a2b%3A1601588405575&width=550px"
+            class="w-full h-[40vh] mt-2"
+            title="Twitter Tweet"
+            style="border: 0; overflow: hidden;"
+        ></iframe>`;
+    } else {
+        return undefined;
+    }
 }
 
 export function tryEmbedGiphyGif(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External): TemplateResult | undefined {
@@ -220,12 +237,14 @@ export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | A
     if (giphyEmbed) return giphyEmbed;
     const tenorEmbed = tryEmbedTenorGif(cardEmbed);
     if (tenorEmbed) return tenorEmbed;
+    const twitterEmbed = tryEmbedTwitter(cardEmbed);
+    if (twitterEmbed) return twitterEmbed;
 
     const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
-    return html`<a class="overflow-x-clip mt-2 border rounded border-gray/50 flex" target="_blank" href="${cardEmbed.uri}">
-        ${thumb ? html`<img src="${thumb}" class="w-[100px] object-cover" />` : nothing}
-        <div class="flex flex-col p-2">
-            <span class="text-gray text-xs">${new URL(cardEmbed.uri).host}</span>
+    return html`<a class="overflow-x-clip text-black dark:text-white mt-2 border border-divider rounded flex" target="_blank" href="${cardEmbed.uri}">
+        ${thumb ? html`<img src="${thumb}" class="w-28 h-28 object-cover" />` : nothing}
+        <div class="flex flex-col p-2 justify-center">
+            <span class="text-muted-fg text-xs">${new URL(cardEmbed.uri).host}</span>
             <span class="font-bold text-sm line-clamp-2">${cardEmbed.title}</span>
             <div class="text-sm line-clamp-2 break-words">${cardEmbed.description}</div>
         </div>
@@ -237,7 +256,7 @@ export function renderImagesEmbedSmall(images: AppBskyEmbedImages.ViewImage[]) {
         ${map(
             images,
             (image) => html`<div class="w-1/4 relative">
-                <img src="${image.thumb}" class="px-1 w-full h-[100px] object-cover" />
+                <img src="${image.thumb}" class="px-1 w-28 h-28 object-cover" />
             </div>`
         )}
     </div>`;
@@ -288,7 +307,7 @@ export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
     const author = recordEmbed.record.author;
     const embeds = recordEmbed.record.embeds && recordEmbed.record.embeds.length > 0 ? recordEmbed.record.embeds[0] : undefined;
     const sensitive = recordEmbed.record.labels?.some((label) => ["porn", "nudity", "sexual"].includes(label.val)) ?? false;
-    return html`<div class="mt-2 border border-gray/50 rounded p-2">${renderRecord(author, rkey, record, embeds, true, sensitive)}</div>`;
+    return html`<div class="mt-2 border border-divider rounded p-2">${renderRecord(author, rkey, record, embeds, true, sensitive)}</div>`;
 }
 
 export function renderRecordWithMediaEmbed(recordWithMediaEmbed: AppBskyEmbedRecordWithMedia.View, sensitive: boolean, minimal = false) {
@@ -347,7 +366,7 @@ export function renderRecord(
                       ${prefix ? html`<span class="mr-1 font-bold">${prefix}</span>` : nothing} ${renderProfile(author, smallAvatar)}
                       ${prefix == undefined
                           ? html`<a
-                                class="self-start ml-auto text-right text-xs text-lightgray whitespace-nowrap hover:underline"
+                                class="self-start ml-auto text-right text-xs text-muted-fg whitespace-nowrap hover:underline"
                                 href="#thread/${author.did}/${rkey}"
                                 target="_blank"
                                 @click=${(ev: Event) => {
@@ -364,11 +383,12 @@ export function renderRecord(
                   ${subHeader ? subHeader : nothing}`
             : nothing}
         ${replyToProfile && showReplyto
-            ? html`<div class="mt-1 flex gap-1 text-xs items-center text-lightgray dark:text-white/60">
-                  <i class="icon fill-lightgray dark:fill-white/60">${replyIcon}</i>
+            ? html`<div class="mt-1 flex gap-1 text-xs items-center text-muted-fg">
+                  <i class="icon fill-muted-fg">${replyIcon}</i>
                   <span class="whitespace-nowrap">${i18n("Replying to")}</span>
+                  ${renderProfileAvatar(replyToProfile, true)}
                   <a
-                      class="line-clamp-1 hover:underline"
+                      class="line-clamp-1 hover:underline text-muted-fg"
                       href="${getProfileUrl(replyToAuthorDid ?? "")}"
                       target="_blank"
                       @click=${(ev: Event) => {
@@ -469,20 +489,16 @@ export class PostViewElement extends LitElement {
     render() {
         if (!this.post || !AppBskyFeedPost.isRecord(this.post.record)) {
             return html`<div class="px-4 py-2">
-                ${contentLoader}
-                </div>
+                <loading-spinner></loading-spinner>
             </div>`;
         }
 
         if (this.deleted) {
-            return html`<div class="bg-lightgray dark:bg-gray text-white px-4 py-2 rounded">${i18n("Deleted post")}</div>`;
+            return html`<div class="bg-muted text-muted-fg px-4 py-2 rounded">${i18n("Deleted post")}</div>`;
         }
 
         if ((this.post.author.viewer?.muted || this.post.author.viewer?.mutedByList) && !this.unmuted) {
-            return html`<div
-                class="bg-lightgray dark:bg-gray text-white px-4 py-2 rounded flex items-center cursor-pointer"
-                @click=${() => (this.unmuted = true)}
-            >
+            return html`<div class="bg-muted text-muted-fg px-4 py-2 rounded flex items-center cursor-pointer" @click=${() => (this.unmuted = true)}>
                 <i class="icon w-6 h-6 fill-white">${shieldIcon}</i><span class="ml-2 text-white">${i18n("Post by muted user")}</span>
                 <span class="ml-2 text-xs">(${i18n("Click to view")})</span>
             </div>`;
@@ -510,33 +526,27 @@ export class PostViewElement extends LitElement {
         }
         return html`<div class="${this.animation} outline-none">
             ${this.contentDom}
-            <div class="flex items-center ${this.centerButtons ? "justify-center" : ""} gap-4 mt-2">
-                <button @click=${() => this.replyCallback(this.post!)} class="flex gap-1 items-center text-gray">
-                    <i class="icon w-4 h-4 fill-gray dark:fill-white/60">${replyIcon}</i
-                    ><span class="text-gray dark:text-white/60">${this.post.replyCount}</span>
+            <div class="flex items-center ${this.centerButtons ? "justify-center" : ""} text-muted-fg fill-muted-fg gap-4 mt-2">
+                <button @click=${() => this.replyCallback(this.post!)} class="flex gap-1 items-center">
+                    <i class="icon w-4 h-4">${replyIcon}</i><span>${this.post.replyCount}</span>
                 </button>
-                <button @click=${() => this.quoteCallback(this.post!)} class="flex gap-1 items-center text-gray">
-                    <i class="icon w-4 h-4 fill-gray dark:fill-white/60">${quoteIcon}</i
-                    ><span class="text-gray dark:text-white/60">${State.getObject("numQuote", this.post.uri)?.numQuotes ?? 0}</span>
+                <button @click=${() => this.quoteCallback(this.post!)} class="flex gap-1 items-center">
+                    <i class="icon w-4 h-4">${quoteIcon}</i><span>${State.getObject("numQuote", this.post.uri)?.numQuotes ?? 0}</span>
                 </button>
-                <div class="flex gap-1 items-center text-gray">
-                    <icon-toggle
-                        @change=${(ev: CustomEvent) => this.toggleRepost(ev)}
-                        icon="reblog"
-                        class="h-4"
-                        .value=${this.post.viewer?.repost ?? false}
-                        .text=${"" + this.post.repostCount ?? 0}
-                    ></icon-toggle>
-                </div>
-                <div class="flex gap-1 items-center text-gray">
-                    <icon-toggle
-                        @change=${(ev: CustomEvent) => this.toggleLike(ev)}
-                        icon="heart"
-                        class="h-4"
-                        .value=${this.post.viewer?.like ?? false}
-                        .text=${"" + this.post.likeCount ?? 0}
-                    ></icon-toggle>
-                </div>
+                <icon-toggle
+                    @change=${(ev: CustomEvent) => this.toggleRepost(ev)}
+                    icon="reblog"
+                    class="h-4"
+                    .value=${this.post.viewer?.repost ?? false}
+                    .text=${"" + this.post.repostCount ?? 0}
+                ></icon-toggle>
+                <icon-toggle
+                    @change=${(ev: CustomEvent) => this.toggleLike(ev)}
+                    icon="heart"
+                    class="h-4"
+                    .value=${this.post.viewer?.like ?? false}
+                    .text=${"" + this.post.likeCount ?? 0}
+                ></icon-toggle>
                 <post-options .post=${this.post} .handleOption=${(option: PostOptions) => this.handleOption(option)}></post-options>
             </div>
         </div>`;
@@ -630,7 +640,7 @@ export class PostOptionsElement extends PopupMenu {
     handleOption: (option: "mute_user" | "mute_thread" | "block_user" | "delete") => void = () => {};
 
     protected renderButton(): TemplateResult {
-        return html`<i slot="buttonText" class="icon w-6 h-6 fill-lightgray dark:fill-white/60">${moreIcon}</i>`;
+        return html`<i slot="buttonText" class="icon w-6 h-6 fill-muted-fg">${moreIcon}</i>`;
     }
 
     protected renderContent(): TemplateResult {
@@ -741,10 +751,10 @@ export class PostOptionsElement extends PopupMenu {
         const renderButton = (button: PostOptionsButton) => {
             if (!button.enabled) return html``;
             return html`<button
-                class="px-4 h-10 hover:bg-primary hover:text-white hover:fill-white flex items-center gap-4"
+                class="px-4 h-10 hover:bg-primary hover:text-primary-fg hover:fill-white flex items-center gap-4"
                 @click=${() => button.click()}
             >
-                <i class="icon w-6 h-6 fill-black dark:fill-white">${button.icon}</i>
+                <i class="icon">${button.icon}</i>
                 <span class="flex-grow text-left">${button.text}</span>
             </button>`;
         };
@@ -817,7 +827,7 @@ export class ThreadViewPostElement extends LitElement {
 
         const postDom = dom(html`<div>
             ${AppBskyFeedDefs.isNotFoundPost(thread.parent)
-                ? html`<div class="bg-lightgray dark:bg-gray text-white px-4 py-2 mb-2 rounded">${i18n("Deleted post")}</div>`
+                ? html`<div class="bg-muted text-muted-fg px-4 py-2 mb-2 rounded">${i18n("Deleted post")}</div>`
                 : nothing}
             <div
                 class="${thread.post.uri == uri ? animation : ""} min-w-[350px] mb-2 ${!isRoot || (thread.post.uri == uri && isRoot)
@@ -838,7 +848,7 @@ export class ThreadViewPostElement extends LitElement {
                 <div
                     id="showMore"
                     @click=${(ev: MouseEvent) => toggleReplies(ev, postDom)}
-                    class="hidden cursor-pointer self-start p-1 text-xs rounded bg-gray/50 text-white"
+                    class="hidden cursor-pointer self-start p-1 text-xs rounded bg-muted text-muted-fg"
                 >
                     ${i18n("Show replies")}
                 </div>
@@ -846,7 +856,7 @@ export class ThreadViewPostElement extends LitElement {
             <div id="replies" class="${isRoot ? "ml-2" : "ml-4"}">
                 ${map(thread.replies, (reply) => {
                     if (!AppBskyFeedDefs.isThreadViewPost(reply)) return html``;
-                    return html`<div class="border-l border-gray/20">
+                    return html`<div class="border-l border-divider/50">
                         <thread-view-post .highlightUri=${this.highlightUri} .isRoot=${false} .thread=${reply}></thread-view-post>
                     </div>`;
                 })}
@@ -974,7 +984,8 @@ export class ThreadOverlay extends HashNavOverlay {
         // FIXME threads to test sorting and view modes with
         // http://localhost:8080/#thread/did:plc:k3a6s3ac4unrst44te7fd62m/3k7ths5azkx2z
         return html`<div class="px-4">
-            ${this.isLoading ? html`<div>${spinner}</div>` : nothing} ${this.error ? html`<div>${this.error}</div>` : nothing}
+            ${this.isLoading ? html`<loading-spinner></loading-spinner>` : nothing} ${this.error ? html`<div>${this.error}</div>` : nothing}
+            <div class="mt-2"></div>
             ${this.thread
                 ? html`<thread-view-post .highlightUri=${this.postUri} .isRoot=${true} .thread=${this.thread}></thread-view-post>`
                 : nothing}
@@ -994,15 +1005,19 @@ export class FeewViewPostElement extends LitElement {
     render() {
         if (!this.feedViewPost) return html`${nothing}`;
         const feedViewPost = this.feedViewPost;
+        const repostedByClicked = (ev: Event) => {
+            if (!AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            document.body.append(dom(html`<profile-overlay .did=${feedViewPost.reason.by.did}></profile-overlay>`)[0]);
+        };
         const repostedBy = AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)
-            ? html`<div class="mb-1 flex items-center gap-2 text-lightgray dark:text-white/60 text-xs"><i class="icon w-4 h-4 fill-gray dark:fill-white/60">${reblogIcon}</i><a class="hover:underline truncate" href="${getProfileUrl(
-                  feedViewPost.reason.by
-              )}" @click=${(ev: Event) => {
-                  if (!AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)) return;
-                  ev.preventDefault();
-                  ev.stopPropagation();
-                  document.body.append(dom(html`<profile-overlay .did=${feedViewPost.reason.by.did}></profile-overlay>`)[0]);
-              }}>${feedViewPost.reason.by.displayName ?? feedViewPost.reason.by.handle}</div>`
+            ? html`<div class="mb-1 flex items-center gap-2 fill-muted-fg text-xs"><i class="icon w-4 h-4">${reblogIcon}</i>${renderProfileAvatar(
+                  feedViewPost.reason.by,
+                  true
+              )}<a class="hover:underline truncate text-muted-fg" href="${getProfileUrl(feedViewPost.reason.by)}" @click=${repostedByClicked}>${
+                  feedViewPost.reason.by.displayName ?? feedViewPost.reason.by.handle
+              }</div>`
             : nothing;
 
         let postDom: HTMLElement;
@@ -1037,6 +1052,6 @@ export class FeewViewPostElement extends LitElement {
             </div>`)[0];
             postDom = dom(html`<div class="flex flex-col">${repostedBy}${parentDom}${postDom}</div>`)[0];
         }
-        return html`<div class="px-4 py-2 border-t border-gray/20">${postDom}</div>`;
+        return html`<div class="px-4 py-2 border-b border-divider">${postDom}</div>`;
     }
 }

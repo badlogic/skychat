@@ -59,7 +59,7 @@ export abstract class PopupMenu extends LitElement {
         return html`<div class="relative">
             <div @click=${(ev: MouseEvent) => this.handleButtonClick(ev)} class="cursor-pointer">${this.renderButton()}</div>
             ${this.show
-                ? html`<div id="content" class="animate-fade animate-duration-300 whitespace-nowrap flex flex-col bg-white dark:bg-black border border-gray rounded-md shadow-md dark:shadow-none ${
+                ? html`<div id="content" class="animate-fade animate-duration-300 whitespace-nowrap overflow-x-clip flex flex-col bg-background border border-divider rounded-md shadow-md dark:shadow-none ${
                       this.show ? "enable-pointer-events" : "hidden"
                   } absolute right-0 z-20">
                       ${this.renderContent()}

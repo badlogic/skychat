@@ -144,7 +144,7 @@ export abstract class Overlay extends LitElement {
     }
 
     render() {
-        const overlayDom = dom(html`<div class="fixed top-0 left-0 w-full h-full bg-white dark:bg-black overflow-auto z-10">
+        const overlayDom = dom(html`<div class="fixed top-0 left-0 w-full h-full bg-background overflow-auto z-10">
             <div class="mx-auto max-w-[600px] h-full flex flex-col">
                 ${this.renderHeader()} ${this.renderContent()}
                 ${this.scrollUpButton
@@ -159,7 +159,7 @@ export abstract class Overlay extends LitElement {
     abstract renderContent(): TemplateResult;
 
     closeButton(): TemplateResult {
-        return html`<button @click=${() => this.close()} class="ml-auto flex items-center justify-center w-10 h-10">
+        return html`<button @click=${() => this.close()} class="ml-auto -mr-2 flex items-center justify-center w-10 h-10">
             <i class="icon w-6 h-6">${closeIcon}</i>
         </button>`;
     }
@@ -205,15 +205,13 @@ export class Topbar extends LitElement {
     }
 
     render() {
-        return html`<div class="fixed w-[600px] max-w-[100%] top-0 flex h-[40px] px-2 items-center bg-white dark:bg-black z-10">
-                <a class="flex items-center justify-center text-primary font-bold text-center w-10 h-10" href="/"
-                    ><i class="flex justify-center w-6 h-6 inline-block fill-primary">${unsafeHTML(logoSvg)}</i></a
+        return html`<div class="fixed top-0 z-10 w-[600px] max-w-[100%] h-10 px-2 flex items-center bg-background border-b border-divider">
+                <a class="w-10 h-10 flex items-center justify-center font-bold text-center" href="/"
+                    ><i class="icon w-5 h-5 fill-primary">${unsafeHTML(logoSvg)}</i></a
                 >
-                <button class="text-primary font-bold relative">
-                    <span>${this.heading}</span>
-                </button>
+                <span class="text-primary font-bold">${this.heading}</span>
                 ${this.buttons}
             </div>
-            <div class="min-h-[40px] max-h-[40px]"></div>`;
+            <div class="w-full h-10"></div>`;
     }
 }

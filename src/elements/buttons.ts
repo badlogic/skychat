@@ -7,9 +7,8 @@ import { dom, getScrollParent } from "../utils";
 import { setupPushNotifications } from "./notifications";
 import { State } from "../state";
 
-let normalStyle =
-    "flex justify-center items-center w-12 h-12  bg-white border border-gray/10 dark:bg-black dark:border-white/20 rounded-full shadow dark:shadow-white/20";
-let highlightStyle = "flex justify-center items-center w-12 h-12 bg-primary rounded-full shadow-md dark:shadow-white/20";
+let normalStyle = "w-12 h-12 flex justify-center items-center bg-muted border border-divider rounded-full";
+let highlightStyle = "w-12 h-12 flex justify-center items-center bg-primary text-primary-fg rounded-full";
 
 function resetAnimation(el: HTMLElement) {
     el.style.animation = "none";
@@ -75,17 +74,14 @@ export abstract class FloatingButton extends LitElement {
                 class="${this.highlight ? highlightStyle + " " + this.highlightAnimation + " animate-infinite animate-ease-in-out " : normalStyle}"
                 @click=${() => this.handleClick()}
             >
-                <i
-                    class="icon w-6 h-6 ${this.highlight
-                        ? `fill-white ${this.highlightAnimationIcon} animate-infinite animate-ease-in-out`
-                        : "fill-gray dark:fill-white"}"
+                <i class="icon !w-6 !h-6 ${this.highlight ? `${this.highlightAnimationIcon} animate-infinite animate-ease-in-out fill-white` : ""}"
                     >${this.getIcon()}</i
                 >
             </button>
             <div
                 class="${this.highlight && this.value
                     ? ""
-                    : "hidden"} absolute left-[70%] bottom-[70%] rounded-full border border-white dark:border-gray/50 bg-primary text-white text-xs px-1 text-center"
+                    : "hidden"} absolute left-[70%] bottom-[70%] rounded-full border border-white bg-primary text-primary-fg text-xs px-1 text-center"
             >
                 ${this.value}
             </div>
@@ -217,8 +213,8 @@ export class NotificationsButton extends FloatingButton {
     }
 }
 
-@customElement("select-button")
-export class SelectButton extends LitElement {
+@customElement("button-group")
+export class ButtonGroup extends LitElement {
     @property()
     values: string[] = [];
 
@@ -235,9 +231,9 @@ export class SelectButton extends LitElement {
                 let rounded = "";
                 if (index == 0) rounded = "rounded-l-lg";
                 if (index == this.values.length - 1) rounded = "rounded-r-lg";
-                let selected = value == this.selected ? "bg-primary text-white" : "";
+                let selected = value == this.selected ? "bg-primary text-primary-fg" : "bg-muted";
                 return html`<div
-                    class="flex items-center justify-center px-4 border border-lightgray/50 dark:border-gray/50 text-sm ${rounded} ${selected}"
+                    class="flex items-center justify-center px-4 text-sm ${rounded} ${selected}"
                     @click=${() => this.selectedChanged(value)}
                 >
                     ${value}
@@ -335,8 +331,21 @@ export class PullToRefresh extends LitElement {
     };
 
     render() {
-        return html`<div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+        return html`<div class="w-10 h-10 bg-primary text-primary-fg rounded-full flex items-center justify-center">
             <i class="icon w-8 h-8 animate-spin fill-white">${spinnerIcon}</i>
+        </div>`;
+    }
+}
+
+@customElement("loading-spinner")
+export class AnimatedSpinner extends LitElement {
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    render() {
+        return html`<div class="w-full py-4 flex items-center justify-center">
+            <i class="icon !w-8 !h-8 fill-primary animate-spin">${spinnerIcon}</i>
         </div>`;
     }
 }

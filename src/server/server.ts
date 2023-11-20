@@ -192,6 +192,7 @@ let lastEventTime = new Date().getTime();
     setInterval(() => {
         if (new Date().getTime() - lastEventTime > 10000) {
             console.error("Firehose timed out, restarting");
+            lastEventTime = new Date().getTime();
             firehoseClient.close();
         }
     }, 2000);

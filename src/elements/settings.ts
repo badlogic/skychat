@@ -36,27 +36,25 @@ export class SettingsOverlay extends HashNavOverlay {
         const user = Store.getUser();
         return html`<div class="px-4 flex flex-col">
             ${user
-                ? html`<h2>${i18n("Logged in as")}</h2>
-                      <div class="flex gap-4 mt-2">
+                ? html`<div class="h-12 flex items-center font-bold">${i18n("Logged in as")}</div>
+                      <div class="flex gap-4">
                           ${renderProfile(user.profile)}
-                          <button
-                              class="ml-auto text-primary h-8 bg-primary text-white rounded-md px-4 whitespace-nowrap text-sm"
-                              @click=${this.logout}
-                          >
-                              ${i18n("Log out")}
-                          </button>
+                          <button class="btn ml-auto" @click=${this.logout}>${i18n("Log out")}</button>
                       </div>`
                 : nothing}
-            <h2 class="mt-4 mb-2">${i18n("Theme")}</h2>
-            <select-button
+            <div class="mt-4 border-t border-divider"></div>
+            <div class="h-12 flex items-center font-bold">${i18n("Theme")}</div>
+            <button-group
                 @change=${(ev: CustomEvent) => this.setTheme(ev.detail.value)}
                 .values=${[i18n("Dark"), i18n("Light")]}
                 .selected=${Store.getTheme() == "dark" ? "Dark" : "Light"}
-            ></select-button>
+            ></button-group>
+            <div class="mt-4 border-t border-divider"></div>
+            <div class="h-12 flex items-center font-bold">${i18n("Moderation")}</div>
+            <div class="mt-4 border-t border-divider"></div>
             <div class="mt-4 text-xs">
-                Build:<br />
-                ${this.version?.date}<br />
-                ${this.version?.commit}
+                Build: ${this.version?.date}<br />
+                <a href="https://github.com/badlogic/skychat/commit/">${this.version?.commit}</a>
             </div>
         </div>`;
     }

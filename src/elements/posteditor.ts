@@ -178,7 +178,7 @@ export class PostEditor extends LitElement {
                 @dragover=${(ev: DragEvent) => ev.preventDefault()}
             >
                 ${this.replyTo
-                    ? html`<div class="flex flex-col border border-gray/50 rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
+                    ? html`<div class="flex flex-col border border-divider rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
                           ${renderRecord(
                               this.replyTo.author,
                               splitAtUri(this.replyTo.uri).rkey,
@@ -193,7 +193,7 @@ export class PostEditor extends LitElement {
                               false
                           )}
                           <button
-                              class="absolute right-4 top-4 bg-white dark:bg-black rounded-full p-1"
+                              class="absolute right-4 top-4 bg-background rounded-full p-1"
                               @click=${(ev: Event) => {
                                   if (!ev.currentTarget) return;
                                   const target = ev.currentTarget as HTMLElement;
@@ -205,7 +205,7 @@ export class PostEditor extends LitElement {
                               }}
                               ?disabled=${this.isSending}
                           >
-                              <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
+                              <i class="icon w-4 h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
                           </button>
                       </div>`
                     : nothing}
@@ -222,10 +222,10 @@ export class PostEditor extends LitElement {
                               (card) =>
                                   html`<button
                                       @click=${() => this.addLinkCard(card.uri)}
-                                      class="border border-gray/50 rounded py-1 px-4 flex items-center gap-2"
+                                      class="border border-divider rounded py-1 px-4 flex items-center gap-2"
                                       ?disabled=${this.isSending}
                                   >
-                                      <div class="whitespace-nowrap text-blue-500">${i18n("Add card")}</div>
+                                      <div class="whitespace-nowrap text-primary">${i18n("Add card")}</div>
                                       <div class="overflow-auto">${card.uri.length > 25 ? card.uri.substring(0, 25) + "..." : card.uri}</div>
                                   </button>`
                           )}
@@ -250,7 +250,9 @@ export class PostEditor extends LitElement {
                               }}
                               ?disabled=${this.isSending}
                           >
-                              ${this.isLoadingCard ? nothing : html`<i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>`}
+                              ${this.isLoadingCard
+                                  ? nothing
+                                  : html`<i class="icon w-4 h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>`}
                           </button>
                       </div>`
                     : nothing}
@@ -260,7 +262,7 @@ export class PostEditor extends LitElement {
                               this.imagesToUpload,
                               (image) => html`<div class="w-1/4 relative">
                                   <img src="${image.dataUri}" class="animate-jump-in px-1 w-full h-[100px] object-cover" /><button
-                                      class="absolute right-2 top-2 bg-white dark:bg-black rounded-full p-1"
+                                      class="absolute right-2 top-2 bg-background rounded-full p-1"
                                       @click=${(ev: Event) => {
                                           if (!ev.currentTarget) return;
                                           const target = ev.currentTarget as HTMLElement;
@@ -268,23 +270,23 @@ export class PostEditor extends LitElement {
                                       }}
                                       ?disabled=${this.isSending}
                                   >
-                                      <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
+                                      <i class="icon w-4 h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
                                   </button>
                                   <button
-                                      class="absolute left-2 top-2 bg-white dark:bg-black rounded-full p-1"
+                                      class="absolute left-2 top-2 bg-background rounded-full p-1"
                                       @click=${() => {
                                           document.body.append(dom(html`<image-editor .image=${image}></image-editor>`)[0]);
                                       }}
                                       ?disabled=${this.isSending}
                                   >
-                                      <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${editIcon}</i>
+                                      <i class="icon w-4 h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${editIcon}</i>
                                   </button>
                               </div>`
                           )}
                       </div>`
                     : nothing}
                 ${this.quote
-                    ? html`<div class="relative flex flex-col border border-gray/50 rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
+                    ? html`<div class="relative flex flex-col border border-divider rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
                           ${renderRecord(
                               this.quote.author,
                               splitAtUri(this.quote.uri).rkey,
@@ -299,7 +301,7 @@ export class PostEditor extends LitElement {
                               false
                           )}
                           <button
-                              class="absolute right-2 top-2 bg-white dark:bg-black rounded-full p-1"
+                              class="absolute right-2 top-2 bg-background rounded-full p-1"
                               @click=${(ev: Event) => {
                                   if (!ev.currentTarget) return;
                                   const target = ev.currentTarget as HTMLElement;
@@ -311,7 +313,7 @@ export class PostEditor extends LitElement {
                               }}
                               ?disabled=${this.isSending}
                           >
-                              <i class="icon w-4 h-4 ${this.isSending ? "fill-gray" : ""}">${deleteIcon}</i>
+                              <i class="icon w-4 h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
                           </button>
                       </div>`
                     : nothing}
@@ -323,10 +325,10 @@ export class PostEditor extends LitElement {
                           </div>
                       </div>`
                     : html`<div class="pl-2 pr-4 py-1 flex items-center min-h-[48px]">
-                    <button class="p-2 disabled:fill-gray" @click=${this.addImage} ?disabled=${this.embed || this.isSending}>
-                        <i class="icon w-6 h-6 ${this.embed || this.isSending ? "fill-gray" : ""}">${imageIcon}</i>
-                        <button class="p-2 disabled:fill-gray" @click=${this.addGif} ?disabled=${this.embed || this.isSending}>
-                        <i class="icon w-6 h-6 ${this.embed || this.isSending ? "fill-gray" : ""}">${gifIcon}</i>
+                    <button class="p-2" @click=${this.addImage}>
+                        <i class="icon w-6 h-6 fill-primary">${imageIcon}</i>
+                        <button class="p-2" @click=${this.addGif}>
+                        <i class="icon w-6 h-6 fill-primary">${gifIcon}</i>
                     </button>
                     ${
                         this.imagesToUpload.length > 0
@@ -336,9 +338,7 @@ export class PostEditor extends LitElement {
                     }
                     </button>
                      <span
-                        class="ml-auto mr-2 bg-transparent dark:text-gray text-end text-xs flex items-center ${
-                            this.count > totalCount ? "text-red dark:text-red" : ""
-                        }"
+                        class="ml-auto mr-2 text-muted-fg text-end text-xs flex items-center ${this.count > totalCount ? "text-red-500" : ""}"
                         >${this.count}/${totalCount}</span
                     >
                     ${
@@ -348,7 +348,7 @@ export class PostEditor extends LitElement {
                                       this.remove();
                                       this.cancled();
                                   }}
-                                  class="ml-2 text-gray/80 dark:text-white/80 my-2 mr-2 px-2 py-1"
+                                  class="ml-2 text-muted-fg my-2 mr-2 px-2 py-1"
                               >
                                   ${i18n("Cancel")}
                               </button>`
@@ -356,7 +356,7 @@ export class PostEditor extends LitElement {
                     }
                     <button
                         @click=${this.sendPost}
-                        class="bg-primary text-white my-2 px-4 py-1 rounded disabled:bg-gray/70 disabled:text-white/70"
+                        class="btn"
                         ?disabled=${!this.canPost}
                     >
                         ${i18n("Post")}
@@ -364,18 +364,18 @@ export class PostEditor extends LitElement {
                 </div>
                 ${
                     this.handleSuggestions && this.handleSuggestions.length > 0
-                        ? html`<div id="handles" class="mx-auto flex flex-col bg-white dark:bg-black border border-gray rounded fixed max-w-[100vw]">
+                        ? html`<div id="handles" class="mx-auto flex flex-col bg-background border border-divider rounded fixed max-w-[100vw]">
                               ${map(
                                   this.handleSuggestions,
                                   (suggestion) => html` <button
                                       @click=${() => insertSuggestion(suggestion.handle)}
-                                      class="flex items-center gap-2 p-2 border-bottom border-gray hover:bg-primary hover:text-white"
+                                      class="flex items-center gap-2 p-2 border-bottom border-divider hover:bg-primary hover:text-primary-fg"
                                   >
                                       ${suggestion.avatar
                                           ? html`<img class="w-6 h-6 rounded-full" src="${suggestion.avatar}" />`
                                           : html`<i class="icon w-6 h-6">${defaultAvatar}</i>`}
                                       <span class="truncate">${suggestion.displayName ?? suggestion.handle}</span>
-                                      <span class="ml-auto text-gray text-sm">${suggestion.displayName ? suggestion.handle : ""}</span>
+                                      <span class="ml-auto text-muted-fg text-sm">${suggestion.displayName ? suggestion.handle : ""}</span>
                                   </button>`
                               )}
                           </div>`
@@ -745,7 +745,7 @@ export class ImageEditor extends Overlay {
                         this.image.alt = (ev.target as HTMLInputElement)!.value;
                     }
                 }}
-                class="flex-1 break-words max-h-[11.5em] resize-none outline-none bg-transparent drop:bg-white dark:text-white disabled:text-gray dark:disabled:text-gray px-2 pt-2"
+                class="flex-1 break-words max-h-[11.5em] resize-none outline-none bg-transparent px-2 pt-2"
                 placeholder="${i18n("Add alt text to your image")}"
             >
 ${alt}</textarea
@@ -793,7 +793,7 @@ export class PostEditorOverlay extends CloseableElement {
             <div
                 class="flex ${isMobileBrowser()
                     ? "h-full"
-                    : "mt-4 border border-gray/20 rounded-md shadow dark:shadow-white/10 overflow-x-clip"} justify-center max-w-[600px] mx-auto bg-white dark:bg-black"
+                    : "mt-4 border border-divider rounded-md shadow dark:shadow-white/10 overflow-x-clip"} justify-center max-w-[600px] mx-auto bg-background"
             >
                 <post-editor
                     class="animate-fade animate-duration-[250ms] w-[600px]"

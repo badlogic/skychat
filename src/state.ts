@@ -79,16 +79,16 @@ export class State {
                 id = (payload as NumQuote).postUri;
                 break;
             case "unreadNotifications":
-                if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action}`);
+                if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action}`, payload);
                 return;
             case "theme":
-                if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action}`);
+                if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action}`, payload);
                 return;
             default:
                 assertNever(event);
         }
 
-        if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action} ${id}`);
+        if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action} ${id}`, payload);
 
         if (id) {
             this.idSpecificListeners[event]?.get(id)?.forEach((listener) => listener(action, payload));
@@ -264,6 +264,7 @@ export class State {
                 for (const profile of result.data.profiles) {
                     profiles.push(profile);
                     profilesMap.set(profile.did, profile);
+                    profilesMap.set(profile.handle, profile);
                 }
             }
             this.notifyBatch("profile", "updated", profiles);

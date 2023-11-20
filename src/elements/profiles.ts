@@ -6,7 +6,7 @@ import { Messages, i18n } from "../i18n";
 import { moreIcon, spinnerIcon } from "../icons";
 import { ActorFeedType, State } from "../state";
 import { Store } from "../store";
-import { contentLoader, defaultAvatar, dom, error, getNumber, getScrollParent, hasLinkOrButtonParent, spinner } from "../utils";
+import { defaultAvatar, dom, error, getNumber, getScrollParent, hasLinkOrButtonParent } from "../utils";
 import { HashNavOverlay, renderTopbar } from "./overlay";
 import { PopupMenu } from "./popup";
 import { renderRichText } from "./posts";
@@ -59,7 +59,8 @@ export class ProfileOverlay extends HashNavOverlay {
     }
 
     renderContent(): TemplateResult {
-        if (this.isLoading || this.error || !this.profile) return html`<div class="align-top p-4">${this.error ? this.error : spinner}</div>`;
+        if (this.isLoading || this.error || !this.profile)
+            return html`<div class="align-top p-4">${this.error ? this.error : html`<loading-spinner></loading-spinner>`}</div>`;
 
         const user = Store.getUser();
         const profile = this.profile;
@@ -146,17 +147,17 @@ export class ProfileOverlay extends HashNavOverlay {
             </div>
             <div class="text-2xl px-4">${this.profile.displayName ?? this.profile.handle}</div>
             <div class="flex items-center gap-2 mt-2 px-4">
-                ${profile.viewer?.followedBy ? html`<span class="p-1 text-xs rounded bg-gray/50 text-white">${i18n("Follows you")}</span>` : nothing}
-                <span class="text-gray dark:text-white/60 text-sm">${profile.handle}</span>
+                ${profile.viewer?.followedBy ? html`<span class="p-1 text-xs rounded bg-muted text-muted-fg">${i18n("Follows you")}</span>` : nothing}
+                <span class="text-muted-fg text-sm">${profile.handle}</span>
             </div>
             <div class="mt-2 text-sm flex flex-col gap-2 px-4">
                 ${!(this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList)
                     ? html`
                             <div class="flex gap-2">
-                            <a href="" target="_blank" @click=${showFollowers}
+                            <a class="text-black dark:text-white" href="" target="_blank" @click=${showFollowers}
                                 ><span class="font-bold">${getNumber(profile.followersCount)}</span> ${i18n("followers")}</a
                             >
-                            <a href="" target="_blank" @click=${showFollowing}><span class="font-bold">${getNumber(
+                            <a class="text-black dark:text-white" href="" target="_blank" @click=${showFollowing}><span class="font-bold">${getNumber(
                           profile.followsCount
                       )}</span> ${i18n("following")}</a>
                             <span><span class="font-bold">${getNumber(profile.postsCount)}</span> ${i18n("posts")}</span>
@@ -173,11 +174,9 @@ export class ProfileOverlay extends HashNavOverlay {
                     ? html`<span>${i18n("You are blocking the user.")}</span>`
                     : nothing}
             </div>
-            <div class="overflow-x-auto flex flex-nowrap border-b border-gray/50">
+            <div class="overflow-x-auto flex flex-nowrap border-b border-divider">
                 <button
-                    class="whitespace-nowrap ${this.filter == "posts_no_replies"
-                        ? "border-b-2 border-primary font-bold"
-                        : "text-gray dark:text-white/&0"} px-2 h-10"
+                    class="whitespace-nowrap ${this.filter == "posts_no_replies" ? "border-b-2 border-primary font-bold" : "text-muted-fg"} px-2 h-10"
                     @click=${() => (this.filter = "posts_no_replies")}
                 >
                     ${i18n("Posts")}
@@ -185,23 +184,19 @@ export class ProfileOverlay extends HashNavOverlay {
                 <button
                     class="whitespace-nowrap ${this.filter == "posts_with_replies"
                         ? "border-b-2 border-primary font-bold"
-                        : "text-gray dark:text-white/60"} px-2 h-10"
+                        : "text-muted-fg"} px-2 h-10"
                     @click=${() => (this.filter = "posts_with_replies")}
                 >
                     ${i18n("Posts & Replies")}
                 </button>
                 <button
-                    class="whitespace-nowrap ${this.filter == "posts_with_media"
-                        ? "border-b-2 border-primary font-bold"
-                        : "text-gray dark:text-white/60"} px-2 h-10"
+                    class="whitespace-nowrap ${this.filter == "posts_with_media" ? "border-b-2 border-primary font-bold" : "text-muted-fg"} px-2 h-10"
                     @click=${() => (this.filter = "posts_with_media")}
                 >
                     ${i18n("Media")}
                 </button>
                 <button
-                    class="whitespace-nowrap ${this.filter == "likes"
-                        ? "border-b-2 border-primary font-bold"
-                        : "text-gray dark:text-white/60"} px-2 h-10"
+                    class="whitespace-nowrap ${this.filter == "likes" ? "border-b-2 border-primary font-bold" : "text-muted-fg"} px-2 h-10"
                     @click=${() => (this.filter = "likes")}
                 >
                     ${i18n("Likes")}
@@ -222,12 +217,12 @@ export class ProfileOptionsElement extends PopupMenu {
     profile?: ProfileView;
 
     protected renderButton(): TemplateResult {
-        return html`<i slot="buttonText" class="icon w-5 h-5 fill-gray">${moreIcon}</i>`;
+        return html`<i slot="buttonText" class="icon w-5 h-5 fill-muted-fg">${moreIcon}</i>`;
     }
     protected renderContent(): TemplateResult {
         const createButton = (label: TemplateResult, click: () => void) => {
             return html`<button
-                class="border-b border-gray/50 py-2 px-2 hover:bg-primary"
+                class="border-b border-divider py-2 px-2 hover:bg-primary hover:text-primary-fg"
                 @click=${() => {
                     this.close();
                     click();
@@ -254,7 +249,7 @@ export class ProfileViewElement extends LitElement {
 
     render() {
         if (!this.profile) {
-            return html`<div class="align-top">${spinner}</div>`;
+            return html`<div class="align-top"><loading-spinner></loading-spinner></div>`;
         }
 
         const user = Store.getUser();
@@ -275,7 +270,9 @@ export class ProfileViewElement extends LitElement {
                     <div class="flex flex-col">
                         ${renderProfile(this.profile)}
                         ${this.profile.viewer?.followedBy
-                            ? html`<div class="mt-1"><span class="p-1 text-xs rounded bg-gray/50 text-white">${i18n("Follows you")}</span></div>`
+                            ? html`<div class="mt-1">
+                                  <span class="p-1 text-xs rounded bg-muted text-muted-fg">${i18n("Follows you")}</span>
+                              </div>`
                             : nothing}
                     </div>
 
@@ -289,24 +286,30 @@ export class ProfileViewElement extends LitElement {
     }
 }
 
+export function renderProfileAvatar(profile: ProfileView, smallAvatar = false) {
+    return html`${profile.avatar
+        ? html`<img loading="lazy" class="${smallAvatar ? "w-4 h-4" : "w-8 h-8"} rounded-full" src="${profile.avatar}" />`
+        : defaultAvatar}`;
+}
+
+export function renderProfileNameAndHandle(profile: ProfileView, smallAvatar = false) {
+    return html`<div class="flex flex-col">
+        <span class="${smallAvatar ? "text-sm" : ""} font-bold line-clamp-1 text-black dark:text-white hover:underline"
+            >${profile.displayName ?? profile.handle}</span
+        >
+        ${profile.displayName && !smallAvatar ? html`<span class="text-xs text-muted-fg">${profile.handle}</span>` : nothing}
+    </div>`;
+}
+
 export function renderProfile(profile: ProfileView, smallAvatar = false) {
-    return html`<a
-        class="flex items-center gap-2"
-        href="${getProfileUrl(profile.handle ?? profile.did)}"
-        target="_blank"
-        @click=${(ev: Event) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            document.body.append(dom(html`<profile-overlay .did=${profile.did}></profile-overlay>`)[0]);
-        }}
-    >
-        ${profile.avatar
-            ? html`<img loading="lazy" class="${smallAvatar ? "w-4 h-4" : "w-8 h-8"} rounded-full" src="${profile.avatar}" />`
-            : defaultAvatar}
-        <div class="flex flex-col">
-            <span class="${smallAvatar ? "text-sm" : ""} font-bold line-clamp-1 hover:underline">${profile.displayName ?? profile.handle}</span>
-            ${profile.displayName && !smallAvatar ? html`<span class="text-xs text-lightgray dark:text-white/60">${profile.handle}</span>` : nothing}
-        </div>
+    const avatarClicked = (ev: Event) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        document.body.append(dom(html`<profile-overlay .did=${profile.did}></profile-overlay>`)[0]);
+    };
+
+    return html`<a class="flex items-center gap-2" href="${getProfileUrl(profile.handle ?? profile.did)}" target="_blank" @click=${avatarClicked}>
+        ${renderProfileAvatar(profile, smallAvatar)} ${renderProfileNameAndHandle(profile, smallAvatar)}
     </a>`;
 }
 
@@ -331,17 +334,14 @@ export class ProfileActionButton extends LitElement {
         if (this.profile?.did == Store.getUser()?.profile.did) return html`${nothing}`;
 
         if (this.isUpdating) {
-            return html`<button class="flex items-center justify-center min-w-[80px] w-[80px] bg-gray/50 text-white rounded-full h-8"><i class="icon w-6 h-6 fill-gray animate-spin">${spinnerIcon}</i></div>`;
+            return html`<button class="flex items-center justify-center min-w-[80px] w-[80px] bg-muted text-muted-fg rounded-full h-8"><i class="icon w-6 h-6 fill-muted-fg animate-spin">${spinnerIcon}</i></div>`;
         }
 
         const viewer = this.profile.viewer;
         let action = i18n("Follow");
         if (viewer?.following) action = i18n("Unfollow");
         if (viewer?.blocking) action = i18n("Unblock");
-        return html`<button
-            @click=${() => this.handleClick(action)}
-            class="${action != i18n("Follow") ? "bg-gray/50" : "bg-primary"} text-white text-sm rounded-full px-4 h-8"
-        >
+        return html`<button @click=${() => this.handleClick(action)} class="btn-toggle ${action == i18n("Follow") ? "active" : "inactive"}">
             ${action}
         </button>`;
     }

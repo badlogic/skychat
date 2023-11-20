@@ -177,11 +177,11 @@ class ChatHelp extends LitElement {
             </div>
 
             <div class="text-center text-xs italic my-4 pb-4">
-                <a class="text-primary" href="https://skychat.social" target="_blank">Skychat</a>
+                <a href="https://skychat.social" target="_blank">Skychat</a>
                 is lovingly made by
-                <a class="text-primary" href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
+                <a href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
                 No data is collected, not even your IP address.<br />
-                <a class="text-primary" href="https://github.com/badlogic/skychat" target="_blank">Source code</a>
+                <a href="https://github.com/badlogic/skychat" target="_blank">Source code</a>
             </div>
         </main>`)[0];
         const headings = Array.from(helpDom.querySelectorAll("h1, h2, h3"));

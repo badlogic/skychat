@@ -16,7 +16,7 @@ import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from 
 import { State } from "../state";
 import { Store } from "../store";
 import { ActorFeedStream, NotificationsStream, Stream } from "../streams";
-import { collectLitElements, dom, error, getScrollParent, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce, spinner } from "../utils";
+import { collectLitElements, dom, error, getScrollParent, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce } from "../utils";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { renderEmbed, renderRichText } from "./posts";
 import { getProfileUrl, renderProfile } from "./profiles";
@@ -124,7 +124,7 @@ export abstract class StreamView<T> extends LitElement {
             const itemDoms: HTMLElement[] = [];
             for (const item of items) {
                 const itemDom = this.wrapItem
-                    ? dom(html`<div class="px-4 py-2 border-t border-gray/20">${this.renderItem(item)}</div>`)[0]
+                    ? dom(html`<div class="px-4 py-2 border-b border-divider">${this.renderItem(item)}</div>`)[0]
                     : dom(this.renderItem(item))[0];
                 itemsDom.append(itemDom);
                 itemDoms.push(itemDom);
@@ -136,16 +136,12 @@ export abstract class StreamView<T> extends LitElement {
         }
     }
 
-    internalRenderItem(item: T) {
-        return html`<div class="px-4 py-2 border-t border-gray/20">${this.renderItem(item)}</div>`;
-    }
-
     render() {
         if (this.error)
             return html`<div class="mt-4 py-4 flex-grow flex items-center justify-center border border-red text-red rounded-md">${this.error}</div>`;
 
         return html` <div id="items" class="flex flex-col">
-            <div id="spinner" class="w-full">${spinner}</div>
+            <loading-spinner id="spinner"></loading-spinner>
         </div>`;
     }
 
@@ -298,9 +294,9 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
                 case "reply":
                     const parent = State.getObject("post", (notification.record as any).reply.parent.uri);
                     postContent = html`${parent && profile && AppBskyFeedPost.isRecord(parent.record)
-                            ? html`<div class="border border-gray/50 rounded p-2 mb-2">
+                            ? html`<div class="border border-divider rounded p-2 mb-2">
                                   <div class="dark:text-white/50 text-black/50">${renderProfile(parent.author, true)}</div>
-                                  <div class="mt-1 mb-1 break-words dark:text-white/50 text-black/50">
+                                  <div class="mt-1 mb-1 break-words text-muted-fg">
                                       <div class="whitespace-pre-wrap">${renderRichText(parent.record)}</div>
                                   </div>
                                   ${parent.embed ? renderEmbed(parent.embed, false, true) : nothing}
@@ -310,6 +306,7 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
                             .post=${post}
                             .quoteCallback=${(post: PostView) => quote(post)}
                             .replyCallback=${(post: PostView) => reply(post)}
+                            .showReplyTo=${false}
                         ></post-view>`;
                     break;
                 case "mention":
@@ -331,12 +328,12 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
         }
 
         notificationDom = dom(html`<div
-            class="px-4 py-2 border-t border-gray/20 flex flex-col ${notification.isRead ? "" : "bg-[#d8e4ff] dark:bg-[#001040]"}"
+            class="px-4 py-2 border-b border-divider flex flex-col ${notification.isRead ? "" : "bg-[#d8e4ff] dark:bg-[#001040]"}"
         >
             <div class="flex items-center gap-2">
                 <i class="icon w-5 h-5">${icons[notification.reason] ?? ""}</i>
                 ${renderProfile(notification.author, false)}
-                <span class="ml-auto text-xs text-gray">${getTimeDifference(date.getTime())}</span>
+                <span class="ml-auto text-xs text-muted-fg">${getTimeDifference(date.getTime())}</span>
             </div>
             ${postContent ? html`<div class="mt-1">${postContent}</div>` : nothing}
         </div>`)[0];
