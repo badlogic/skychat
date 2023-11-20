@@ -290,7 +290,9 @@ let lastEventTime = new Date().getTime();
                 quotesFileSize: formatFileSize(fsSync.statSync(quotesFile).size),
                 registrationsFileSize: formatFileSize(fsSync.statSync(registrationsFile).size),
                 numDidWebRequests,
+                numHtmlRequests,
                 memoryUsage: memory.heapUsed.toFixed(2) + " / " + memory.heapTotal.toFixed(2) + " MB",
+                cpuUsage: process.cpuUsage(),
             });
         } catch (e) {
             res.status(400).json(e);

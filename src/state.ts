@@ -11,6 +11,7 @@ import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types
 import { Store, User } from "./store";
 import { assertNever, error, fetchApi, getDateString, splitAtUri } from "./utils";
 import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { record } from "./bsky";
 
 export interface NumQuote {
     postUri: string;
@@ -356,6 +357,10 @@ export class State {
                     if (AppBskyFeedDefs.isPostView(feedViewPost.reply.parent)) {
                         posts.push(feedViewPost.reply.parent);
                         postUrisToFetch.push(feedViewPost.reply.parent.uri);
+                        const parentRecord = record(feedViewPost.reply.parent);
+                        if (parentRecord && parentRecord.reply) {
+                            profilesToFetch.push(splitAtUri(parentRecord.reply.parent.uri).repo);
+                        }
                     }
                 }
                 if (AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)) {
