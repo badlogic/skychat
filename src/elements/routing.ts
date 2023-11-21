@@ -130,18 +130,12 @@ export async function routeHash(hash: string) {
             }
             if (tokens[0] == "feed" && tokens[1] && tokens[2]) {
                 const child = document.body.children[document.body.children.length - 1];
+                const atUri = combineAtUri(tokens[1], tokens[2], "app.bsky.feed.generator");
                 if (child.tagName == "FEED-OVERLAY") {
                     const profileOverlay = child as FeedOverlay;
-                    if (profileOverlay.feedUri == tokens[1]) return;
+                    if (profileOverlay.feedUri == atUri) return;
                 }
-                document.body.append(
-                    dom(
-                        html`<feed-overlay
-                            .feedUri=${combineAtUri(tokens[1], tokens[2], "app.bsky.feed.generator")}
-                            .pushState=${false}
-                        ></feed-overlay>`
-                    )[0]
-                );
+                document.body.append(dom(html`<feed-overlay .feedUri=${atUri} .pushState=${false}></feed-overlay>`)[0]);
             }
         }
     }

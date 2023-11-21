@@ -34,6 +34,10 @@ export type EventAction = "updated" | "deleted";
 
 export type ActorFeedType = "home" | "posts_with_replies" | "posts_no_replies" | "posts_with_media";
 
+export const NOTIFICATION_CHECK_INTERVAL = 5000;
+export const PREFERENCES_CHECK_INTERVAL = 15000;
+export const FEED_CHECK_INTERVAL = 5000;
+
 export class State {
     static DEBUG = false;
     static bskyClient?: BskyAgent;
@@ -667,6 +671,7 @@ export class State {
                     throw new Error();
                 }
             }
+            const preferencesPromise = this.updatePreferences();
             const profileResponse = await State.bskyClient.app.bsky.actor.getProfile({ actor: account });
             if (!profileResponse.success) {
                 Store.setUser(undefined);
@@ -683,7 +688,8 @@ export class State {
             Store.setUser(newUser);
             State.notify("profile", "updated", newUser.profile);
             this.checkUnreadNotifications();
-            await this.updatePreferences();
+            this.checkPreferences();
+            await preferencesPromise;
         } catch (e) {
             Store.setUser(undefined);
             State.bskyClient = undefined;
@@ -723,7 +729,7 @@ export class State {
         } catch (e) {
             error("Couldn't count unread notifications", e);
         }
-        setTimeout(() => this.checkUnreadNotifications(), 5000);
+        setTimeout(() => this.checkUnreadNotifications(), NOTIFICATION_CHECK_INTERVAL);
     }
 
     static preferences?: BskyPreferences;
@@ -738,5 +744,15 @@ export class State {
         } catch (e) {
             return error("Couldn't fetch preferences", e);
         }
+    }
+
+    static async checkPreferences() {
+        if (!State.bskyClient) return;
+
+        try {
+        } catch (e) {
+            error("Couldn't count unread notifications", e);
+        }
+        setTimeout(() => this.checkPreferences(), PREFERENCES_CHECK_INTERVAL);
     }
 }

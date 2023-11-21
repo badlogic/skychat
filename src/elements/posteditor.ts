@@ -321,7 +321,7 @@ export class PostEditor extends LitElement {
                     ? html`<div class="flex items-center min-h-[48px]">
                           <div class="mx-auto flex items-center">
                               <span class="text-center">${i18n("Sending post")}</span>
-                              <i class="ml-2 icon w-6 h-6 animate-spin">${spinnerIcon}</i>
+                              <i class="ml-2 icon !w-6 !h-6 animate-spin fill-primary">${spinnerIcon}</i>
                           </div>
                       </div>`
                     : html`<div class="pl-2 pr-4 py-1 flex items-center min-h-[48px]">

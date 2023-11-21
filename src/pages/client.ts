@@ -10,7 +10,7 @@ import { renderTopbar } from "../elements/overlay";
 import { routeHash } from "../elements/routing";
 import { i18n } from "../i18n";
 import { searchIcon, settingsIcon } from "../icons";
-import { State } from "../state";
+import { FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
 import { ActorFeedStream } from "../streams";
 import { FeedViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
@@ -144,7 +144,7 @@ class SkychatClient extends LitElement {
                             this.upButton.highlight = true;
                         }
                     }}
-                    .stream=${new ActorFeedStream("home", undefined, true, 15000)}
+                    .stream=${new ActorFeedStream("home", undefined, true, FEED_CHECK_INTERVAL)}
                 ></feed-stream-view>
                 <open-post-editor-button id="post"></open-post-editor-button>
                 <notifications-button id="notifications"></notifications-button>
@@ -210,7 +210,6 @@ class SkychatClient extends LitElement {
 
     renderTopbar() {
         const user = Store.getUser();
-        const feed = dom(html` <span class="text-left font-bold">${i18n("Home")}</span> `)[0];
         const buttons = html`<div class="ml-auto flex fill-primary">
             <button
                 class="flex items-center justify-center w-10 h-10"
@@ -234,6 +233,6 @@ class SkychatClient extends LitElement {
                     : html`<i class="icon !w-8 !h-8">${defaultAvatar}</i>`}
             </button>
         </div> `;
-        return renderTopbar(feed, buttons);
+        return renderTopbar("Home", buttons);
     }
 }

@@ -195,6 +195,7 @@ export class ImageSearch extends Overlay {
                     dom(
                         html`<div class="flex justify-center items-center">
                             <img
+                                loading="lazy"
                                 @click=${() => {
                                     this.close();
                                     this.selected(image.url);

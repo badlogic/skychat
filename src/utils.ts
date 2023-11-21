@@ -439,3 +439,12 @@ export function getScrollParent(parent: HTMLElement | null) {
     }
     return null;
 }
+
+export function waitForNavigation(): Promise<void> {
+    return new Promise((resolve) => {
+        window.addEventListener("popstate", function onPopState() {
+            window.removeEventListener("popstate", onPopState);
+            resolve();
+        });
+    });
+}

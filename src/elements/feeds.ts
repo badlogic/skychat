@@ -1,14 +1,14 @@
 import { BskyPreferences, RichText } from "@atproto/api";
-import { GeneratorView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { FeedViewPost, GeneratorView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { HashNavOverlay, renderTopbar } from ".";
+import { HashNavOverlay, UpButton, renderTopbar } from ".";
 import { i18n } from "../i18n";
 import { heartIcon, infoIcon, minusIcon, pinIcon, plusIcon, spinnerIcon } from "../icons";
-import { EventAction, State } from "../state";
+import { EventAction, FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
-import { defaultFeed, dom, error, hasLinkOrButtonParent, splitAtUri } from "../utils";
+import { defaultFeed, dom, error, getScrollParent, hasLinkOrButtonParent, splitAtUri, waitForNavigation as waitForNavigation } from "../utils";
 import { IconToggle } from "./icontoggle";
 import { renderRichText } from "./posts";
 import { getProfileUrl, renderProfileAvatar } from "./profiles";
@@ -375,8 +375,12 @@ export class FeedPicker extends HashNavOverlay {
         </div>`;
     }
 
-    feedAction(action: GeneratorViewElementAction, generator: GeneratorView) {
+    async feedAction(action: GeneratorViewElementAction, generator: GeneratorView) {
         if (action == "clicked") {
+            this.close();
+            console.log(location.hash);
+            await waitForNavigation();
+            console.log(location.hash);
             document.body.append(dom(html`<feed-overlay .feedUri=${generator.uri}></feed-overlay>`)[0]);
         }
     }
@@ -440,6 +444,23 @@ export class FeedOverlay extends HashNavOverlay {
         if (this.error) return html`<div id="error" class="align-top p-4">${this.error}</div>`;
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
-        return html`<feed-stream-view .stream=${new FeedPostsStream(this.feedUri!)}></feed-stream-view>`;
+        return html`<feed-stream-view
+                .stream=${new FeedPostsStream(this.feedUri!, true, FEED_CHECK_INTERVAL)}
+                .newItems=${async (newItems: FeedViewPost[]) => {
+                    const result = await State.loadFeedViewPostsDependencies(newItems);
+                    if (result instanceof Error) {
+                        this.error = i18n("Could not load newer items");
+                    }
+                    const scrollParent = getScrollParent(this);
+                    if (scrollParent && scrollParent.scrollTop > 0) {
+                        const upButton = scrollParent.querySelector("up-button") as UpButton;
+                        if (upButton) {
+                            upButton.classList.remove("hidden");
+                            upButton.highlight = true;
+                        }
+                    }
+                }}
+            ></feed-stream-view
+            ><open-post-editor-button id="post"></open-post-editor-button> <notifications-button id="notifications"></notifications-button>`;
     }
 }
