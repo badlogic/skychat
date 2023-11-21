@@ -21,6 +21,9 @@ import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { deletePost, quote, reply } from "./posteditor";
 import { renderEmbed, renderRichText } from "./posts";
 import { renderProfile } from "./profiles";
+import { GeneratorViewElement, GeneratorViewElementAction } from ".";
+
+(window as any).emitLitDebugLogEvents = true;
 
 export abstract class StreamView<T> extends LitElement {
     @property()
@@ -31,6 +34,9 @@ export abstract class StreamView<T> extends LitElement {
 
     @property()
     wrapItem = true;
+
+    @property()
+    showEndOfList = true;
 
     @state()
     error?: string;
@@ -117,7 +123,8 @@ export abstract class StreamView<T> extends LitElement {
 
             if (items.length == 0) {
                 spinner.innerHTML = "";
-                spinner.append(dom(html`<div class="w-full h-8 flex items-center justify-center">${i18n("End of list")}</div>`)[0]);
+                if (this.showEndOfList)
+                    spinner.append(dom(html`<div class="w-full h-8 flex items-center justify-center">${i18n("End of list")}</div>`)[0]);
                 return;
             }
 
@@ -150,7 +157,7 @@ export abstract class StreamView<T> extends LitElement {
 }
 
 @customElement("posts-stream-view")
-export class PosStreamView extends StreamView<PostView> {
+export class PostsStreamView extends StreamView<PostView> {
     getItemKey(item: PostView): string {
         return item.uri;
     }
@@ -388,7 +395,13 @@ export class ProfilesStreamOverlay extends HashNavOverlay {
 
 @customElement("generators-stream-view")
 export class GeneratorsStreamView extends StreamView<GeneratorView> {
+    @property()
+    minimal = false;
+
+    @property()
+    action = (action: GeneratorViewElementAction, generator: GeneratorView) => {};
+
     renderItem(item: AppBskyFeedDefs.GeneratorView): TemplateResult {
-        return html`<generator-view .generator=${item}></generator-view>`;
+        return html`<generator-view .minimal=${this.minimal} .generator=${item} .action=${this.action}></generator-view>`;
     }
 }

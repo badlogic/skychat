@@ -499,7 +499,7 @@ export class PostViewElement extends LitElement {
 
         if ((this.post.author.viewer?.muted || this.post.author.viewer?.mutedByList) && !this.unmuted) {
             return html`<div class="bg-muted text-muted-fg px-4 py-2 rounded flex items-center cursor-pointer" @click=${() => (this.unmuted = true)}>
-                <i class="icon !w-6 !h-6 fill-white">${shieldIcon}</i><span class="ml-2 text-white">${i18n("Post by muted user")}</span>
+                <i class="icon !w-6 !h-6 fill-[#fff]">${shieldIcon}</i><span class="ml-2 text-white">${i18n("Post by muted user")}</span>
                 <span class="ml-2 text-xs">(${i18n("Click to view")})</span>
             </div>`;
         }
@@ -741,7 +741,7 @@ export class PostOptionsElement extends PopupMenu {
         const renderButton = (button: PostOptionsButton) => {
             if (!button.enabled) return html``;
             return html`<button
-                class="px-4 h-10 hover:bg-primary hover:text-primary-fg hover:fill-white flex items-center gap-4"
+                class="px-4 h-10 hover:bg-primary hover:text-primary-fg hover:fill-[#fff] flex items-center gap-4"
                 @click=${() => button.click()}
             >
                 <i class="icon !w-4 !h-4">${button.icon}</i>

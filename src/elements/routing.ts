@@ -1,5 +1,5 @@
 import { html } from "lit";
-import { ProfileOverlay, ThreadOverlay } from ".";
+import { FeedOverlay, ProfileOverlay, ThreadOverlay } from ".";
 import { dom, splitAtUri, combineAtUri } from "../utils";
 import { i18n } from "../i18n";
 import { FollowersStream, FollowingStream, PostLikesStream, PostRepostsStream } from "../streams";
@@ -120,6 +120,28 @@ export async function routeHash(hash: string) {
                     return;
                 }
                 document.body.append(dom(html`<search-overlay .pushState=${false}></search-overlay>`)[0]);
+            }
+            if (tokens[0] == "feeds") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "FEED-PICKER") {
+                    return;
+                }
+                document.body.append(dom(html`<feed-picker .pushState=${false}></feed-picker>`)[0]);
+            }
+            if (tokens[0] == "feed" && tokens[1] && tokens[2]) {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "FEED-OVERLAY") {
+                    const profileOverlay = child as FeedOverlay;
+                    if (profileOverlay.feedUri == tokens[1]) return;
+                }
+                document.body.append(
+                    dom(
+                        html`<feed-overlay
+                            .feedUri=${combineAtUri(tokens[1], tokens[2], "app.bsky.feed.generator")}
+                            .pushState=${false}
+                        ></feed-overlay>`
+                    )[0]
+                );
             }
         }
     }

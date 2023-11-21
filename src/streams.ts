@@ -415,3 +415,44 @@ export class FeedSuggestionStream extends CursorStream<GeneratorView> {
         return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
     }
 }
+
+export class ArrayFeed<T> extends CursorStream<T> {
+    index = 0;
+    constructor(items: T[], readonly itemKey: (item: T) => string, readonly itemDate: (item: T) => Date) {
+        items = [...items];
+        super(async (cursor?: string, limit?: number, notify?: boolean) => {
+            const batch = items.splice(0, limit);
+            if (batch.length == 0) return { items: [] };
+            this.index += batch.length;
+            return { cursor: this.index.toString(), items: batch };
+        });
+    }
+
+    getItemKey(item: T): string {
+        return this.itemKey(item);
+    }
+
+    getItemDate(item: T): Date {
+        return this.itemDate(item);
+    }
+}
+
+export class FeedPostsStream extends CursorStream<FeedViewPost> {
+    constructor(readonly feedUri: string, pollNew = false, pollInterval?: number) {
+        super(
+            (cursor?: string, limit?: number, notify?: boolean) => {
+                return State.getFeed(this.feedUri, cursor, limit, notify);
+            },
+            pollNew,
+            pollInterval
+        );
+    }
+
+    getItemKey(item: FeedViewPost): string {
+        return item.post.uri + (AppBskyFeedDefs.isReasonRepost(item.reason) ? item.reason.by.did : "");
+    }
+
+    getItemDate(item: AppBskyFeedDefs.FeedViewPost): Date {
+        return date(item) ?? new Date();
+    }
+}

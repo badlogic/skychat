@@ -403,7 +403,7 @@ export function assertNever(x: never) {
 
 export function error(message: string, exception?: any) {
     if (exception instanceof Error && exception.message.length == 0) exception = undefined;
-    console.error(message, exception);
+    console.error(getDateString(new Date()) + " - " + message, exception);
     return new Error(message);
 }
 

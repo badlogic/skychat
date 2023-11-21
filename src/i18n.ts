@@ -117,7 +117,7 @@ export interface Messages {
     "Couldn't load images": string;
     Moderation: string;
     Search: string;
-    "Search for users, posts, feeds ...": string;
+    "Search for": string;
     Users: string;
     Feeds: string;
     "Suggested follows": string;
@@ -127,6 +127,12 @@ export interface Messages {
     likes: string;
     Add: string;
     Remove: string;
+    "Pinned Feeds": string;
+    "Saved Feeds": string;
+    "Discover more feeds": string;
+    "Couldn't load your feeds": string;
+    Feed: string;
+    "Could not load feed": string;
 }
 
 const english: Messages = {
@@ -257,7 +263,7 @@ const english: Messages = {
     "Couldn't load images": "Couldn't load images",
     Moderation: "Moderation",
     Search: "Search",
-    "Search for users, posts, feeds ...": "Search for users, posts, feeds ....",
+    "Search for": "Search ",
     Users: "Users",
     Feeds: "Feeds",
     "Suggested follows": "Suggested follows",
@@ -267,6 +273,12 @@ const english: Messages = {
     likes: "likes",
     Add: "Add",
     Remove: "Remove",
+    "Pinned Feeds": "Your pinned feeds",
+    "Saved Feeds": "Your saved feeds",
+    "Discover more feeds": "Discover more feeds",
+    "Couldn't load your feeds": "Couldn't load your feeds",
+    Feed: "Feed",
+    "Could not load feed": "Could not load feed",
 };
 
 const german: Messages = {
@@ -399,8 +411,8 @@ const german: Messages = {
     "Couldn't load images": "Konnte Bilder nicht laden",
     Moderation: "Moderation",
     Search: "Suche",
-    "Search for users, posts, feeds ...": "Suche Benutzerinnen, Posts, Feeds ...",
-    Users: "Users",
+    "Search for": "Suche",
+    Users: "Benutzerinnen",
     Feeds: "Feeds",
     "Suggested follows": "Spannende Benutzerinnen",
     "Suggested feeds": "Spannende Feeds",
@@ -409,6 +421,12 @@ const german: Messages = {
     likes: "likes",
     Add: "Hinzufügen",
     Remove: "Entfernen",
+    "Pinned Feeds": "Deine angehefteten Feeds",
+    "Saved Feeds": "Deine Feeds",
+    "Discover more feeds": "Entdecke mehr Feeds",
+    "Couldn't load your feeds": "Konnte deine Feeds nicht laden",
+    Feed: "Feed",
+    "Could not load feed": "Konnte Feed nicht laden",
 };
 
 export type LanguageCode = "en" | "de";

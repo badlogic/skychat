@@ -1,13 +1,17 @@
 import { PropertyValueMap, TemplateResult, html, nothing } from "lit";
-import { ButtonGroup, HashNavOverlay, Overlay, renderTopbar } from ".";
+import { ButtonGroup, GeneratorViewElementAction, HashNavOverlay, Overlay, renderTopbar } from ".";
 import { customElement, property, query } from "lit/decorators.js";
 import { spinnerIcon } from "../icons";
 import { i18n } from "../i18n";
 import { dom } from "../utils";
 import { FeedSearchStream, FeedSuggestionStream, PostSearchStream, UserSearchStream as UserSearchStream, UserSuggestionStream } from "../streams";
+import { GeneratorView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
 @customElement("search-overlay")
 export class SearchOverlay extends HashNavOverlay {
+    @property()
+    showTypes = [i18n("Users"), i18n("Posts"), i18n("Feeds")];
+
     @query("#search")
     searchElement?: HTMLInputElement;
 
@@ -28,12 +32,15 @@ export class SearchOverlay extends HashNavOverlay {
     }
 
     renderHeader(): TemplateResult {
-        return html`${renderTopbar("Search", this.closeButton())}`;
+        return html`${renderTopbar(
+            dom(html`<span>${i18n("Search") + (this.showTypes.length == 1 ? " " + this.showTypes[0] : "")}</span>`)[0],
+            this.closeButton()
+        )}`;
     }
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
-        this.search("", this.typeElement?.selected);
+        this.search("", this.showTypes.length == 1 ? this.showTypes[0] : this.typeElement!.selected);
     }
 
     renderContent(): TemplateResult {
@@ -46,15 +53,17 @@ export class SearchOverlay extends HashNavOverlay {
                     }}
                     id="search"
                     class="search"
-                    placeholder="${i18n("Search for users, posts, feeds ...")}"
+                    placeholder="${i18n("Search for") + this.showTypes.join(", ") + " ..."}"
                 />
-                <button-group
-                    id="type"
-                    @change=${() => this.handleSearch()}
-                    class="self-center mt-4"
-                    .values=${[i18n("Users"), i18n("Posts"), i18n("Feeds")]}
-                    .selected=${i18n("Feeds")}
-                ></button-group>
+                ${this.showTypes.length > 1
+                    ? html`<button-group
+                          id="type"
+                          @change=${() => this.handleSearch()}
+                          class="self-center mt-4"
+                          .values=${this.showTypes}
+                          .selected=${this.showTypes.includes(i18n("Feeds")) ? i18n("Feeds") : this.showTypes[0]}
+                      ></button-group>`
+                    : nothing}
                 <div id="spinnerino" class="hidden w-full h-12 flex items-center justify-center mt-2">
                     <i class="absolute ml-2 icon !w-6 !h-6 fill-primary animate-spin">${spinnerIcon}</i>
                 </div>
@@ -70,7 +79,7 @@ export class SearchOverlay extends HashNavOverlay {
         this.timeoutId = setTimeout(async () => {
             this.resultsElement!.innerHTML = "";
             this.spinnerElement?.classList.remove("hidden");
-            await this.search(this.searchElement!.value, this.typeElement!.selected);
+            await this.search(this.searchElement!.value, this.showTypes.length == 1 ? this.showTypes[0] : this.typeElement!.selected);
             this.spinnerElement?.classList.add("hidden");
         }, 200) as any as number;
     }
@@ -106,10 +115,18 @@ export class SearchOverlay extends HashNavOverlay {
             this.resultsElement!.append(
                 dom(
                     html`<generators-stream-view
+                        .minimal=${false}
                         .stream=${query.length == 0 ? new FeedSuggestionStream() : new FeedSearchStream(query)}
+                        .action=${(action: GeneratorViewElementAction, generator: GeneratorView) => this.feedAction(action, generator)}
                     ></generators-stream-view>`
                 )[0]
             );
+        }
+    }
+
+    feedAction(action: GeneratorViewElementAction, generator: GeneratorView) {
+        if (action == "clicked") {
+            document.body.append(dom(html`<feed-overlay .feedUri=${generator.uri}></feed-overlay>`)[0]);
         }
     }
 }

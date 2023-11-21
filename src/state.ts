@@ -27,6 +27,7 @@ export interface Events {
     numQuote: NumQuote;
     unreadNotifications: number;
     theme: string;
+    preferences: BskyPreferences;
 }
 
 export type EventAction = "updated" | "deleted";
@@ -81,15 +82,14 @@ export class State {
             case "numQuote":
                 id = (payload as NumQuote).postUri;
                 break;
-            case "unreadNotifications":
-                if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action}`, payload);
-                return;
-            case "theme":
-                if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action}`, payload);
-                return;
             case "feed":
                 id = (payload as GeneratorView).uri;
                 break;
+            case "unreadNotifications":
+            case "theme":
+            case "preferences":
+                if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action}`, payload);
+                return;
             default:
                 assertNever(event);
         }
@@ -120,13 +120,13 @@ export class State {
             case "numQuote":
                 id = (payload as NumQuote).postUri;
                 break;
-            case "unreadNotifications":
-                return;
-            case "theme":
-                return;
             case "feed":
                 id = (payload as GeneratorView).uri;
                 break;
+            case "unreadNotifications":
+            case "theme":
+            case "preferences":
+                return;
             default:
                 assertNever(event);
         }
@@ -365,6 +365,26 @@ export class State {
         }
     }
 
+    static async getFeed(
+        feedUri: string,
+        cursor?: string,
+        limit = 20,
+        notify = true
+    ): Promise<Error | { cursor?: string; items: AppBskyFeedDefs.FeedViewPost[] }> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            let data: { cursor?: string; items: FeedViewPost[] } | undefined;
+
+            const response = await State.bskyClient.app.bsky.feed.getFeed({ feed: feedUri, cursor, limit });
+            if (!response.success) throw new Error();
+            data = { cursor: response.data.cursor, items: response.data.feed };
+            if (notify) await State.loadFeedViewPostsDependencies(data.items);
+            return data;
+        } catch (e) {
+            return error("Couldn't load feed " + feedUri, e);
+        }
+    }
+
     static async loadFeedViewPostsDependencies(feedViewPosts: FeedViewPost[]): Promise<Error | void> {
         try {
             const posts: PostView[] = [];
@@ -515,7 +535,7 @@ export class State {
         }
     }
 
-    static async searchUsers(query: string, cursor?: string, limit = 2): Promise<Error | { cursor?: string; items: ProfileView[] }> {
+    static async searchUsers(query: string, cursor?: string, limit = 20): Promise<Error | { cursor?: string; items: ProfileView[] }> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             const result = await State.bskyClient.searchActors({ q: query, cursor, limit });
@@ -569,6 +589,28 @@ export class State {
             const feeds = result.data.feeds;
             this.notifyBatch("feed", "updated", feeds);
             return { cursor: result.data.cursor, items: feeds };
+        } catch (e) {
+            return error("Couldn't suggest feeds", e);
+        }
+    }
+
+    static async getFeeds(feeds: string[]): Promise<Error | GeneratorView[]> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const promises: Promise<any>[] = [];
+            const feedsToFetch: string[] = [...feeds];
+            const feedsMap = new Map<string, GeneratorView>();
+            while (feedsToFetch.length > 0) {
+                const batch = feedsToFetch.splice(0, 25);
+                const result = await State.bskyClient.app.bsky.feed.getFeedGenerators({ feeds: batch });
+                if (!result.success) throw new Error();
+                for (const feed of result.data.feeds) {
+                    feedsMap.set(feed.uri, feed);
+                }
+            }
+            const fetchedFeeds = feeds.map((uri) => feedsMap.get(uri)).filter((feed) => feed != undefined) as GeneratorView[];
+            this.notifyBatch("feed", "updated", fetchedFeeds);
+            return fetchedFeeds;
         } catch (e) {
             return error("Couldn't suggest feeds", e);
         }
@@ -689,6 +731,9 @@ export class State {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             State.preferences = await State.bskyClient.getPreferences();
+            const response = await this.getFeeds([...(State.preferences.feeds.pinned ?? []), ...(State.preferences.feeds.saved ?? [])]);
+            if (response instanceof Error) throw response;
+            this.notify("preferences", "updated", State.preferences);
             return State.preferences;
         } catch (e) {
             return error("Couldn't fetch preferences", e);

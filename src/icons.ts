@@ -70,6 +70,8 @@ import pinIconSvg from "remixicon/icons/Map/pushpin-2-line.svg";
 import plusIconSvg from "remixicon/icons/System/add-line.svg";
 // @ts-ignore
 import minusIconSvg from "remixicon/icons/System/subtract-line.svg";
+// @ts-ignore
+import infoIconSvg from "remixicon/icons/System/information-line.svg";
 
 import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 
@@ -109,3 +111,4 @@ export const gifIcon = unsafeHTML(gifIconSvg);
 export const pinIcon = unsafeHTML(pinIconSvg);
 export const plusIcon = unsafeHTML(plusIconSvg);
 export const minusIcon = unsafeHTML(minusIconSvg);
+export const infoIcon = unsafeHTML(infoIconSvg);
