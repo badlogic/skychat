@@ -92,7 +92,7 @@
         @apply h-8 rounded-md px-4 whitespace-nowrap text-sm;
         @apply bg-primary text-primary-fg;
         @apply disabled:bg-muted disabled:text-muted-fg;
-        @apply hover:bg-primarysw-600;
+        @apply hover:bg-primarysw-600 disabled:hover:bg-muted;
         @apply fancy-shadow;
     }
 
@@ -109,7 +109,7 @@
     }
 
     .btn-toggle:hover {
-        @apply bg-primarysw-700 text-primary-fg;
+        @apply bg-primarysw-600 text-primary-fg;
     }
 
     .search {

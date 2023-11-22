@@ -12,7 +12,7 @@ import { FeedViewPost, PostView, ThreadViewPost } from "@atproto/api/dist/client
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { i18n } from "../i18n";
+import { Messages, i18n } from "../i18n";
 import { blockIcon, deleteIcon, heartIcon, moreIcon, muteIcon, quoteIcon, reblogIcon, replyIcon, shieldIcon, treeIcon } from "../icons";
 import { EventAction, NumQuote, State } from "../state";
 import { Store } from "../store";
@@ -187,6 +187,7 @@ export function tryEmbedTenorGif(cardEmbed: AppBskyEmbedExternal.ViewExternal | 
     return html`${tenorDom}`;
 }
 
+// FIXME don't embed the player initially, just the thumb, on click, start playing.
 export function tryEmbedYouTubeVideo(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External): TemplateResult | undefined {
     const url = cardEmbed.uri;
     const videoRegExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([\w-]+)/;
@@ -904,32 +905,11 @@ export class ThreadOverlay extends HashNavOverlay {
                 return;
             }
             let uri = this.postUri;
-            const postResponse = await State.bskyClient.getPostThread({ uri });
-            if (!postResponse.success) {
-                this.error = notFoundMessage;
-                return;
-            }
-            if (postResponse.data.thread.blocked) {
-                this.error = i18n("You have blocked the author or the author has blocked you.");
-                return;
-            }
-            if (postResponse.data.thread.notFound) {
-                this.error = notFoundMessage;
-                return;
-            }
-            if (!AppBskyFeedDefs.isThreadViewPost(postResponse.data.thread)) {
-                this.error = notFoundMessage;
-                return;
-            }
+            let atUri = splitAtUri(uri);
+            const postResponse = await State.bskyClient.getPost({ repo: atUri.repo, rkey: atUri.rkey });
 
-            if (AppBskyFeedDefs.isNotFoundPost(postResponse.data.thread.parent)) {
-                this.thread = postResponse.data.thread;
-                return;
-            }
-
-            const post = postResponse.data.thread.post;
-            if (AppBskyFeedPost.isRecord(post.record) && post.record.reply) {
-                uri = post.record.reply.root.uri;
+            if (AppBskyFeedPost.isRecord(postResponse.value) && postResponse.value.reply) {
+                uri = postResponse.value.reply.root.uri;
             }
 
             // FIXME go through State instead
@@ -946,6 +926,25 @@ export class ThreadOverlay extends HashNavOverlay {
                 this.error = notFoundMessage;
                 return;
             }
+
+            if (response.data.thread.blocked) {
+                this.error = i18n("You have blocked the author or the author has blocked you.");
+                return;
+            }
+            if (response.data.thread.notFound) {
+                this.error = notFoundMessage;
+                return;
+            }
+            if (!AppBskyFeedDefs.isThreadViewPost(response.data.thread)) {
+                this.error = notFoundMessage;
+                return;
+            }
+
+            if (AppBskyFeedDefs.isNotFoundPost(response.data.thread.parent)) {
+                this.thread = response.data.thread;
+                return;
+            }
+
             const postUris: string[] = [];
             const collectPostUris = (post: ThreadViewPost) => {
                 postUris.push(post.post.uri);

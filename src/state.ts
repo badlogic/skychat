@@ -686,9 +686,9 @@ export class State {
             };
             Store.setUser(newUser);
             State.notify("profile", "updated", newUser.profile);
+            await preferencesPromise;
             this.checkUnreadNotifications();
             this.checkPreferences();
-            await preferencesPromise;
         } catch (e) {
             Store.setUser(undefined);
             State.bskyClient = undefined;

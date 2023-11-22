@@ -48,6 +48,7 @@ export class SettingsOverlay extends HashNavOverlay {
                 @change=${(ev: CustomEvent) => this.setTheme(ev.detail.value)}
                 .values=${[i18n("Dark"), i18n("Light")]}
                 .selected=${Store.getTheme() == "dark" ? "Dark" : "Light"}
+                class="self-start"
             ></button-group>
             <div class="mt-4 border-t border-divider"></div>
             <div class="h-12 flex items-center font-semibold">${i18n("Moderation")}</div>

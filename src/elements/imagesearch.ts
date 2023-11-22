@@ -52,7 +52,13 @@ class GiphyImageSearch implements ImageSearchProvider {
             const images: SearchedImage[] = [];
             for (const img of data.data) {
                 const image = img.images.fixed_width;
-                images.push({ width: image.width, height: image.height, mp4: image.mp4, imageUrl: image.url, url: img.url });
+                images.push({
+                    width: image.width,
+                    height: image.height,
+                    mp4: undefined /*image.url FIXME videos are hard*/,
+                    imageUrl: image.url,
+                    url: img.url,
+                });
             }
             return images;
         } catch (e) {
@@ -98,8 +104,13 @@ export class ImageSearch extends Overlay {
         );
     }
     renderContent(): TemplateResult {
-        return html`<div class="flex flex-col px-4 mt-2">
-            <input @input=${() => this.handleSearch()} id="search" class="search" placeholder="${i18n("Search for GIFS...")}" />
+        return html`<div class="flex flex-col px-4 mt-4">
+            <input
+                @input=${() => this.handleSearch()}
+                id="search"
+                class="search fancy-shadow outline-none"
+                placeholder="${i18n("Search for GIFS...")}"
+            />
             <div id="imageGrid" class="flex flex-col gap-2 mt-2"></div>
             <div id="spinnerino" class="hidden w-full h-12 flex items-center justify-center">
                 <i class="absolute ml-2 icon w-6 h-6 animate-spin">${spinnerIcon}</i>
@@ -201,7 +212,7 @@ export class ImageSearch extends Overlay {
                                     this.selected(image.url);
                                 }}
                                 src="${image.imageUrl}"
-                                class="w-full h-auto cursor-pointer rounded"
+                                class="w-full h-auto min-h-[100px] cursor-pointer rounded"
                             />
                         </div>`
                     )[0]

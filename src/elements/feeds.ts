@@ -150,7 +150,7 @@ export class GeneratorViewElement extends LitElement {
             ${this.expandDetails
                 ? this.viewStyle == "topbar"
                     ? html`<div
-                          class="absolute top-[39px] left-0 w-full bg-background text-black dark:text-white font-normal px-4 pb-2 pt-1 border-b border-divider shadow-md sm:shadow-none"
+                          class="absolute top-[48px] left-0 w-full bg-background text-black dark:text-white font-normal px-4 pb-2 pt-1 rounded-md fancy-shadow"
                       >
                           ${details}
                       </div>`

@@ -338,7 +338,7 @@ export class ProfileActionButton extends LitElement {
         if (this.profile?.did == Store.getUser()?.profile.did) return html`${nothing}`;
 
         if (this.isUpdating) {
-            return html`<button class="flex items-center justify-center min-w-[80px] w-[80px] bg-muted text-muted-fg rounded-full h-8 shadow-fancy"><i class="icon !w-6 !h-6 fill-muted-fg animate-spin">${spinnerIcon}</i></div>`;
+            return html`<button class="flex items-center justify-center min-w-[80px] w-[80px] bg-muted text-muted-fg rounded-full h-8 fancy-shadow"><i class="icon !w-6 !h-6 fill-muted-fg animate-spin">${spinnerIcon}</i></div>`;
         }
 
         const viewer = this.profile.viewer;
