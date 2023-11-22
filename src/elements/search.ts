@@ -33,7 +33,7 @@ export class SearchOverlay extends HashNavOverlay {
 
     renderHeader(): TemplateResult {
         return html`${renderTopbar(
-            dom(html`<span>${i18n("Search") + (this.showTypes.length == 1 ? " " + this.showTypes[0] : "")}</span>`)[0],
+            dom(html`<span class="font-semibold">${i18n("Search") + (this.showTypes.length == 1 ? " " + this.showTypes[0] : "")}</span>`)[0],
             this.closeButton()
         )}`;
     }
@@ -97,7 +97,7 @@ export class SearchOverlay extends HashNavOverlay {
         if (!type) type = i18n("Posts");
         if (type == i18n("Users")) {
             if (query.length == 0)
-                this.resultsElement!.append(dom(html`<div class="px-4 h-12 flex items-center font-bold">${i18n("Suggested follows")}</div>`)[0]);
+                this.resultsElement!.append(dom(html`<div class="px-4 h-12 flex items-center font-semibold">${i18n("Suggested follows")}</div>`)[0]);
             this.resultsElement!.append(
                 dom(
                     html`<profiles-stream-view .stream=${
@@ -109,7 +109,7 @@ export class SearchOverlay extends HashNavOverlay {
             if (query.length == 0) {
                 this.resultsElement!.append(
                     dom(
-                        html`<div class="px-4 h-12 flex items-center justify-center font-bold">
+                        html`<div class="px-4 h-12 flex items-center justify-center font-semibold">
                             ${i18n("Enter search terms above to find posts")}
                         </div>`
                     )[0]
@@ -119,7 +119,7 @@ export class SearchOverlay extends HashNavOverlay {
             this.resultsElement!.append(dom(html`<posts-stream-view .stream=${new PostSearchStream(query, false)}></posts-streams-view>`)[0]);
         } else if (type == i18n("Feeds")) {
             if (query.length == 0)
-                this.resultsElement!.append(dom(html`<div class="px-4 h-12 flex items-center font-bold">${i18n("Suggested feeds")}</div>`)[0]);
+                this.resultsElement!.append(dom(html`<div class="px-4 h-12 flex items-center font-semibold">${i18n("Suggested feeds")}</div>`)[0]);
             this.resultsElement!.append(
                 dom(
                     html`<generators-stream-view

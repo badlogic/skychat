@@ -41,7 +41,7 @@ export class ChatLogin extends LitElement {
             const user = Store.getUser();
             content = html`<p class="text-center mx-auto w-[280px]">${i18n("Explore & create hashtag threads in real-time on BlueSky")}</p>
                 <div class="mx-auto flex flex-col gap-4 mt-4 w-[280px]">
-                    ${this.error ? html`<div class="mx-auto max-w-[300px] text-[#cc0000] font-bold text-center">${this.error}</div>` : nothing}
+                    ${this.error ? html`<div class="mx-auto max-w-[300px] text-[#cc0000] font-semibold text-center">${this.error}</div>` : nothing}
                     <input
                         id="hashtag"
                         class="bg-none border border-input outline-none rounded text-black px-2 py-2"
@@ -78,7 +78,7 @@ export class ChatLogin extends LitElement {
                         : nothing}
                     ${user ? html`<button class="text-sm text-primary" @click=${this.logout}>${i18n("Log out")}</button>` : nothing}
                 </div>
-                <a class="text-xl text-primary text-center font-bold mt-16" href="chat-help.html">${i18n("How does it work?")}</a>
+                <a class="text-xl text-primary text-center font-semibold mt-16" href="chat-help.html">${i18n("How does it work?")}</a>
                 <iframe
                     width="560"
                     height="315"
@@ -89,11 +89,11 @@ export class ChatLogin extends LitElement {
                     allowfullscreen
                     class="mt-2 max-w-full aspect"
                 ></iframe>
-                <a class="text-xl text-primary text-center font-bold mt-8" href="trending.html">${i18n("Trending hashtags")}</a>`;
+                <a class="text-xl text-primary text-center font-semibold mt-8" href="trending.html">${i18n("Trending hashtags")}</a>`;
         }
 
         return html` <main class="flex flex-col justify-between m-auto max-w-[728px] px-4 h-full">
-            <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/chat-login.html"
+            <a class="text-2xl flex align-center justify-center text-primary font-semibold text-center my-8" href="/chat-login.html"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat Live</span></a
             >
             <div class="flex-grow flex flex-col items-center">${content}</div>

@@ -71,11 +71,11 @@ class Trending extends LitElement {
     render() {
         return html`<main class="flex flex-col justify-between m-auto max-w-[640px] px-4 h-full">
             <theme-toggle></theme-toggle>
-            <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/chat-login.html"
+            <a class="text-2xl flex align-center justify-center text-primary font-semibold text-center my-8" href="/chat-login.html"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat Live</span></a
             >
             <div class="flex-grow flex flex-col gap-3">
-                <h1 class="text-center text-xl text-primary font-bold">What's trending</h1>
+                <h1 class="text-center text-xl text-primary font-semibold">What's trending</h1>
                 <div class="text-center">
                     Below you'll see hashtags sorted by the number of posts they are contained in since you opened this page. Updates in real-time.
                     The longer you leave this page open, the more representative the statistics get.

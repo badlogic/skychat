@@ -155,12 +155,12 @@ export class ProfileOverlay extends HashNavOverlay {
                     ? html`
                             <div class="flex gap-2">
                             <a class="text-black dark:text-white" href="" target="_blank" @click=${showFollowers}
-                                ><span class="font-bold">${getNumber(profile.followersCount)}</span> ${i18n("followers")}</a
+                                ><span class="font-semibold">${getNumber(profile.followersCount)}</span> ${i18n("followers")}</a
                             >
-                            <a class="text-black dark:text-white" href="" target="_blank" @click=${showFollowing}><span class="font-bold">${getNumber(
+                            <a class="text-black dark:text-white" href="" target="_blank" @click=${showFollowing}><span class="font-semibold">${getNumber(
                           profile.followsCount
                       )}</span> ${i18n("following")}</a>
-                            <span><span class="font-bold">${getNumber(profile.postsCount)}</span> ${i18n("posts")}</span>
+                            <span><span class="font-semibold">${getNumber(profile.postsCount)}</span> ${i18n("posts")}</span>
                             </div>
                         </div>
                         <div class="mt-1">${renderRichText({
@@ -176,27 +176,31 @@ export class ProfileOverlay extends HashNavOverlay {
             </div>
             <div class="overflow-x-auto flex flex-nowrap border-b border-divider">
                 <button
-                    class="whitespace-nowrap ${this.filter == "posts_no_replies" ? "border-b-2 border-primary font-bold" : "text-muted-fg"} px-2 h-10"
+                    class="whitespace-nowrap ${this.filter == "posts_no_replies"
+                        ? "border-b-2 border-primary font-semibold"
+                        : "text-muted-fg"} px-2 h-10"
                     @click=${() => (this.filter = "posts_no_replies")}
                 >
                     ${i18n("Posts")}
                 </button>
                 <button
                     class="whitespace-nowrap ${this.filter == "posts_with_replies"
-                        ? "border-b-2 border-primary font-bold"
+                        ? "border-b-2 border-primary font-semibold"
                         : "text-muted-fg"} px-2 h-10"
                     @click=${() => (this.filter = "posts_with_replies")}
                 >
                     ${i18n("Posts & Replies")}
                 </button>
                 <button
-                    class="whitespace-nowrap ${this.filter == "posts_with_media" ? "border-b-2 border-primary font-bold" : "text-muted-fg"} px-2 h-10"
+                    class="whitespace-nowrap ${this.filter == "posts_with_media"
+                        ? "border-b-2 border-primary font-semibold"
+                        : "text-muted-fg"} px-2 h-10"
                     @click=${() => (this.filter = "posts_with_media")}
                 >
                     ${i18n("Media")}
                 </button>
                 <button
-                    class="whitespace-nowrap ${this.filter == "likes" ? "border-b-2 border-primary font-bold" : "text-muted-fg"} px-2 h-10"
+                    class="whitespace-nowrap ${this.filter == "likes" ? "border-b-2 border-primary font-semibold" : "text-muted-fg"} px-2 h-10"
                     @click=${() => (this.filter = "likes")}
                 >
                     ${i18n("Likes")}
@@ -294,7 +298,7 @@ export function renderProfileAvatar(profile: ProfileView, smallAvatar = false) {
 
 export function renderProfileNameAndHandle(profile: ProfileView, smallAvatar = false) {
     return html`<div class="flex flex-col">
-        <span class="${smallAvatar ? "text-sm" : ""} font-bold line-clamp-1 text-black dark:text-white hover:underline"
+        <span class="${smallAvatar ? "text-sm" : ""} font-semibold line-clamp-1 text-black dark:text-white hover:underline"
             >${profile.displayName ?? profile.handle}</span
         >
         ${profile.displayName && !smallAvatar ? html`<span class="text-xs text-muted-fg">${profile.handle}</span>` : nothing}

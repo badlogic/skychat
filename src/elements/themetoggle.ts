@@ -35,7 +35,7 @@ export class ThemeToggle extends LitElement {
 
     render() {
         return html`<button class="flex items-center justify-center w-full h-full primary" @click=${this.toggleTheme}>
-            <i class="icon !w-6 !h-6">${this.theme == "dark" ? moonIcon : sunIcon}</i>
+            <i class="icon !w-5 !h-5">${this.theme == "dark" ? moonIcon : sunIcon}</i>
         </button>`;
     }
 }

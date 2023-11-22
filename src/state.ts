@@ -325,9 +325,7 @@ export class State {
                 }
             }
             const promises = await Promise.all([State.getPosts(postsToLoad, false), State.getNumQuotes(quotesToLoad)]);
-            for (const promise of promises) {
-                if (promise instanceof Error) throw promise;
-            }
+            if (promises[0] instanceof Error) throw promises[0];
 
             State.bskyClient.updateSeenNotifications(); // Not important to wait for this one.
             return { cursor: listResponse.data.cursor, items: listResponse.data.notifications };
@@ -764,7 +762,7 @@ export class State {
         } catch (e) {
             error("Couldn't poll preferences", e);
         }
-        setTimeout(() => this.checkPreferences(), PREFERENCES_CHECK_INTERVAL);
+        // setTimeout(() => this.checkPreferences(), PREFERENCES_CHECK_INTERVAL);
     }
 
     private static async updatePreferences(agent: BskyAgent, cb: (prefs: AppBskyActorDefs.Preferences) => AppBskyActorDefs.Preferences | false) {
@@ -800,6 +798,18 @@ export class State {
             }
             return prefs.filter((pref) => !AppBskyActorDefs.isSavedFeedsPref(pref)).concat([feedsPref]);
         });
+    }
+
+    static async setPinnedAndSavedFeeds(pinned: string[], saved: string[]) {
+        if (!State.bskyClient) return;
+        try {
+            await State.updateFeedPreferences(State.bskyClient, () => {
+                return { saved, pinned };
+            });
+            await State.getPreferences();
+        } catch (e) {
+            return error("Couldn't save pinned and saved feeds");
+        }
     }
 
     static async addSavedFeed(v: string) {

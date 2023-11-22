@@ -89,7 +89,7 @@
     }
 
     .btn {
-        @apply h-8 bg-primary text-primary-fg rounded-md px-4 whitespace-nowrap text-sm disabled:bg-muted disabled:text-muted-fg hover:bg-primary-dark;
+        @apply h-8 bg-primary text-primary-fg rounded-md px-4 whitespace-nowrap text-sm disabled:bg-muted disabled:text-muted-fg hover:bg-white hover:text-primary hover:fill-primary;
     }
 
     .btn-toggle {

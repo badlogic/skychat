@@ -105,7 +105,7 @@ export class Chat extends LitElement {
     renderHeader() {
         const user = Store.getUser();
         const title = dom(html`<a
-            class="flex-grow text-primary font-bold pl-2 truncate"
+            class="flex-grow text-primary font-semibold pl-2 truncate"
             href="/chat.html?hashtag=${encodeURIComponent(this.hashtag!)}"
             >${this.hashtag}</a
         >`)[0];
@@ -191,7 +191,7 @@ export class Chat extends LitElement {
         }
 
         return html` <main class="flex flex-col justify-between m-auto max-w-[640px] px-4 h-full">
-            <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/chat-login.html"
+            <a class="text-2xl flex align-center justify-center text-primary font-semibold text-center my-8" href="/chat-login.html"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat Live</span></a
             >
             <div class="flex-grow flex flex-col">

@@ -58,7 +58,7 @@ export class ListTest extends AbstractListTest {
     }
 
     renderHeader(): TemplateResult {
-        return html`<div class="mb-12 text-red-500 font-bold">TEST</div>`;
+        return html`<div class="mb-12 text-red-500 font-semibold">TEST</div>`;
     }
 
     renderContent(): TemplateResult {

@@ -74,7 +74,7 @@ export abstract class FloatingButton extends LitElement {
                 class="${this.highlight ? highlightStyle + " " + this.highlightAnimation + " animate-infinite animate-ease-in-out " : normalStyle}"
                 @click=${() => this.handleClick()}
             >
-                <i class="icon !w-6 !h-6 ${this.highlight ? `${this.highlightAnimationIcon} animate-infinite animate-ease-in-out fill-[#fff]` : ""}"
+                <i class="icon !w-5 !h-5 ${this.highlight ? `${this.highlightAnimationIcon} animate-infinite animate-ease-in-out fill-[#fff]` : ""}"
                     >${this.getIcon()}</i
                 >
             </button>

@@ -75,7 +75,7 @@ class SkychatClient extends LitElement {
         const user = Store.getUser();
         const content = html`<p class="text-center mx-auto w-[280px]">${i18n("The better BlueSky app")}</p>
             <div class="mx-auto flex flex-col gap-4 mt-4 w-[280px]">
-                ${this.error ? html`<div class="mx-auto max-w-[300px] text-[#cc0000] font-bold text-center">${this.error}</div>` : nothing}
+                ${this.error ? html`<div class="mx-auto max-w-[300px] text-[#cc0000] font-semibold text-center">${this.error}</div>` : nothing}
                 <input
                     id="account"
                     class="bg-none border border-input outline-none rounded text-black px-2 py-2"
@@ -97,7 +97,7 @@ class SkychatClient extends LitElement {
             </div>`;
 
         return html` <main class="flex flex-col m-auto max-w-[640px] px-4 h-full">
-            <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
+            <a class="text-2xl flex align-center justify-center text-primary font-semibold text-center my-8" href="/"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
             >
             <div class="flex-grow flex flex-col">${content}</div>
@@ -107,7 +107,7 @@ class SkychatClient extends LitElement {
 
     renderConnecting() {
         return html` <main class="flex flex-col m-auto max-w-[640px] px-4 h-full">
-            <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
+            <a class="text-2xl flex align-center justify-center text-primary font-semibold text-center my-8" href="/"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
             >
             <div class="flex-grow flex flex-col">
@@ -200,7 +200,7 @@ export class HomeOverlay extends Overlay {
 
     renderHeader(): TemplateResult {
         const user = Store.getUser();
-        const buttons = html`<div class="ml-auto flex fill-primary">
+        const buttons = html`<div class="ml-auto flex">
             <button
                 class="flex items-center justify-center w-10 h-10"
                 @click=${() => document.body.append(dom(html`<search-overlay></search-overlay>`)[0])}

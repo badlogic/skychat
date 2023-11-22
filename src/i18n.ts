@@ -135,6 +135,8 @@ export interface Messages {
     "Could not load feed": string;
     "You don't have pinned feeds": string;
     "You don't have saved feeds": string;
+    Edit: string;
+    Save: string;
 }
 
 const english: Messages = {
@@ -283,6 +285,8 @@ const english: Messages = {
     "Could not load feed": "Could not load feed",
     "You don't have pinned feeds": "You don't have pinned feeds",
     "You don't have saved feeds": "You don't have saved feeds",
+    Edit: "Edit",
+    Save: "Save",
 };
 
 const german: Messages = {
@@ -433,6 +437,8 @@ const german: Messages = {
     "Could not load feed": "Konnte Feed nicht laden",
     "You don't have pinned feeds": "Keine angehefteten Feeds vorhanden",
     "You don't have saved feeds": "Keine gespeicherten Feeds vorhanden",
+    Edit: "Editieren",
+    Save: "Speichern",
 };
 
 export type LanguageCode = "en" | "de";

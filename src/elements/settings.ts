@@ -36,21 +36,21 @@ export class SettingsOverlay extends HashNavOverlay {
         const user = Store.getUser();
         return html`<div class="px-4 flex flex-col">
             ${user
-                ? html`<div class="h-12 flex items-center font-bold">${i18n("Logged in as")}</div>
+                ? html`<div class="h-12 flex items-center font-semibold">${i18n("Logged in as")}</div>
                       <div class="flex gap-4">
                           ${renderProfile(user.profile)}
                           <button class="btn ml-auto" @click=${this.logout}>${i18n("Log out")}</button>
                       </div>`
                 : nothing}
             <div class="mt-4 border-t border-divider"></div>
-            <div class="h-12 flex items-center font-bold">${i18n("Theme")}</div>
+            <div class="h-12 flex items-center font-semibold">${i18n("Theme")}</div>
             <button-group
                 @change=${(ev: CustomEvent) => this.setTheme(ev.detail.value)}
                 .values=${[i18n("Dark"), i18n("Light")]}
                 .selected=${Store.getTheme() == "dark" ? "Dark" : "Light"}
             ></button-group>
             <div class="mt-4 border-t border-divider"></div>
-            <div class="h-12 flex items-center font-bold">${i18n("Moderation")}</div>
+            <div class="h-12 flex items-center font-semibold">${i18n("Moderation")}</div>
             <div class="mt-4 border-t border-divider"></div>
             <div class="mt-4 text-xs">
                 Build: ${this.version?.date}<br />

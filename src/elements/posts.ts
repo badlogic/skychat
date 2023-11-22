@@ -245,7 +245,7 @@ export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | A
         ${thumb ? html`<img src="${thumb}" class="w-28 h-28 object-cover" />` : nothing}
         <div class="flex flex-col p-2 justify-center">
             <span class="text-muted-fg text-xs">${new URL(cardEmbed.uri).host}</span>
-            <span class="font-bold text-sm line-clamp-2">${cardEmbed.title}</span>
+            <span class="font-semibold text-sm line-clamp-2">${cardEmbed.title}</span>
             <div class="text-sm line-clamp-2 break-words">${cardEmbed.description}</div>
         </div>
     </a>`;
@@ -363,7 +363,7 @@ export function renderRecord(
     >
         ${showHeader
             ? html`<div class="flex items-center">
-                      ${prefix ? html`<span class="mr-1 font-bold">${prefix}</span>` : nothing} ${renderProfile(author, smallAvatar)}
+                      ${prefix ? html`<span class="mr-1 font-semibold">${prefix}</span>` : nothing} ${renderProfile(author, smallAvatar)}
                       ${prefix == undefined
                           ? html`<a
                                 class="self-start ${timeLeft

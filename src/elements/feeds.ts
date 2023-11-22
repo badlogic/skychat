@@ -5,7 +5,7 @@ import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { HashNavOverlay, UpButton, renderTopbar } from ".";
 import { i18n } from "../i18n";
-import { heartIcon, infoIcon, minusIcon, pinIcon, plusIcon, spinnerIcon } from "../icons";
+import { editIcon, heartIcon, infoIcon, minusIcon, pinIcon, plusIcon, searchIcon, spinnerIcon } from "../icons";
 import { EventAction, FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
 import { defaultFeed, dom, error, getScrollParent, hasLinkOrButtonParent, splitAtUri, waitForNavigation as waitForNavigation } from "../utils";
@@ -28,6 +28,12 @@ export class GeneratorViewElement extends LitElement {
 
     @property()
     expandDetails = false;
+
+    @property()
+    editable = true;
+
+    @property()
+    defaultActions = true;
 
     @property()
     action = (action: GeneratorViewElementAction, generator: GeneratorView) => {};
@@ -92,18 +98,20 @@ export class GeneratorViewElement extends LitElement {
                       .value=${this.expandDetails}
                   ></icon-toggle>`
                 : nothing}
-            <icon-toggle
-                @change=${(ev: CustomEvent) => this.togglePin(ev)}
-                .icon=${html`<i class="icon !w-6 !h-6">${pinIcon}</i>`}
-                .value=${prefs.pinned?.includes(generator.uri)}
-            ></icon-toggle>
-            ${prefs.saved?.includes(generator.uri) || prefs.pinned?.includes(generator.uri)
-                ? html`<button @click=${() => this.removeFeed()}>
-                      <i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</i>
-                  </button>`
-                : html`<button @click=${() => this.addFeed()}>
-                      <i class="icon !w-6 !h-6 !fill-primary">${plusIcon}</i>
-                  </button>`}
+            ${this.editable
+                ? html` <icon-toggle
+                          @change=${(ev: CustomEvent) => this.togglePin(ev)}
+                          .icon=${html`<i class="icon !w-6 !h-6">${pinIcon}</i>`}
+                          .value=${prefs.pinned?.includes(generator.uri)}
+                      ></icon-toggle>
+                      ${prefs.saved?.includes(generator.uri) || prefs.pinned?.includes(generator.uri)
+                          ? html`<button @click=${() => this.removeFeed()}>
+                                <i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</i>
+                            </button>`
+                          : html`<button @click=${() => this.addFeed()}>
+                                <i class="icon !w-6 !h-6">${plusIcon}</i>
+                            </button>`}`
+                : nothing}
         </div>`;
 
         const header = html`<div class="flex items-center gap-2 ${this.viewStyle == "topbar" ? "flex-grow" : ""}">
@@ -111,7 +119,7 @@ export class GeneratorViewElement extends LitElement {
                 ? html`<img src="${generator.avatar}" class="${this.viewStyle == "topbar" ? "w-8 h-8" : "w-10 h-10"} object-cover rounded-md" />`
                 : html`<i class="icon !w-10 !h-10">${defaultFeed}</i>`}
             <div class="flex flex-col">
-                <div class="font-bold">${generator.displayName}</div>
+                <div class="font-semibold">${generator.displayName}</div>
                 ${this.viewStyle != "topbar" && this.expandDetails ? createdBy : nothing}
             </div>
         </div>`;
@@ -191,10 +199,12 @@ export class GeneratorViewElement extends LitElement {
         if (!State.bskyClient) return;
         if (!this.generator) return;
 
-        if (ev.detail.value) {
-            State.addPinnedFeed(this.generator.uri);
-        } else {
-            State.removePinnedFeed(this.generator.uri);
+        if (this.defaultActions) {
+            if (ev.detail.value) {
+                State.addPinnedFeed(this.generator.uri);
+            } else {
+                State.removePinnedFeed(this.generator.uri);
+            }
         }
 
         this.requestUpdate();
@@ -208,8 +218,8 @@ export class GeneratorViewElement extends LitElement {
         if (!State.bskyClient) return;
         if (!this.generator) return;
 
-        State.removeSavedFeed(this.generator.uri);
-        this.generator = { ...this.generator };
+        if (this.defaultActions) State.removeSavedFeed(this.generator.uri);
+        this.requestUpdate();
         State.notify("feed", "updated", this.generator);
         this.action("unsaved", this.generator);
     }
@@ -219,7 +229,7 @@ export class GeneratorViewElement extends LitElement {
         if (!user) return;
         if (!State.bskyClient) return;
         if (!this.generator) return;
-        State.addSavedFeed(this.generator.uri);
+        if (this.defaultActions) State.addSavedFeed(this.generator.uri);
         this.generator = { ...this.generator };
         State.notify("feed", "updated", this.generator);
         this.action("saved", this.generator);
@@ -240,6 +250,9 @@ export class FeedPicker extends HashNavOverlay {
     @property()
     saved: GeneratorView[] = [];
 
+    @property()
+    editing = false;
+
     unsubscribe = () => {};
 
     search?: HTMLElement;
@@ -252,7 +265,7 @@ export class FeedPicker extends HashNavOverlay {
         super.firstUpdated(_changedProperties);
         this.load();
         this.unsubscribe = State.subscribe("preferences", (action, payload) => {
-            if (action == "updated") {
+            if (action == "updated" && !this.editing) {
                 this.load(payload);
             }
         });
@@ -315,8 +328,24 @@ export class FeedPicker extends HashNavOverlay {
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
         return html`<div class="flex flex-col">
-            <button @click=${() => this.discoverFeeds()} class="btn self-right mt-4 mx-auto">${i18n("Discover more feeds")}</button>
-            <div class="px-4 h-12 flex items-center font-bold">${i18n("Pinned Feeds")}</div>
+            <button
+                @click=${() => this.discoverFeeds()}
+                class="btn bg-transparent text-black dark:text-white hover:text-primary border border-primary rounded-full self-right mt-4 mx-auto flex gap-2 items-center justify-center"
+            >
+                <i class="icon !w-4 !h-4">${searchIcon}</i>
+                ${i18n("Discover more feeds")}
+            </button>
+            <div class="px-4 h-12 flex items-center font-semibold">
+                <span>${i18n("Pinned Feeds")}</span>
+                <div class="ml-auto flex items-center gap-2">
+                    ${!this.editing
+                        ? html`<button @click=${() => this.startEdit()} class="btn">${i18n("Edit")}</button>`
+                        : html`
+                              <button @click=${() => this.cancelEdit()} class="font-normal">${i18n("Cancel")}</button
+                              ><button @click=${() => this.saveEdit()} class="btn font-normal">${i18n("Save")}</button>
+                          `}
+                </div>
+            </div>
             ${this.pinned.length == 0
                 ? html`<div class="bg-muted text-muted-fg px-4 py-2 rounded">${i18n("You don't have pinned feeds")}</div>`
                 : nothing}
@@ -329,10 +358,12 @@ export class FeedPicker extends HashNavOverlay {
                             .generator=${generator}
                             .viewStyle=${"minimal"}
                             .action=${(action: GeneratorViewElementAction, generator: GeneratorView) => this.feedAction(action, generator)}
+                            .editable=${this.editing}
+                            .defaultActions=${false}
                         ></generator-view>
                     </div>`
             )}
-            <div class="px-4 h-12 flex items-center font-bold">${i18n("Saved Feeds")}</div>
+            <div class="px-4 h-12 flex items-center font-semibold">${i18n("Saved Feeds")}</div>
             ${this.saved.length == 0
                 ? html`<div class="bg-muted text-muted-fg px-4 py-2 rounded">${i18n("You don't have saved feeds")}</div>`
                 : nothing}
@@ -345,6 +376,8 @@ export class FeedPicker extends HashNavOverlay {
                             .generator=${generator}
                             .viewStyle=${"minimal"}
                             .action=${(action: GeneratorViewElementAction, generator: GeneratorView) => this.feedAction(action, generator)}
+                            .editable=${this.editing}
+                            .defaultActions=${false}
                         ></generator-view>
                     </div>`
             )}
@@ -352,18 +385,84 @@ export class FeedPicker extends HashNavOverlay {
     }
 
     async feedAction(action: GeneratorViewElementAction, generator: GeneratorView) {
-        if (action != "clicked") {
-            this.load(State.preferences);
-        } else {
-            this.close();
-            await waitForNavigation();
-            document.body.append(dom(html`<feed-overlay .feedUri=${generator.uri}></feed-overlay>`)[0]);
+        if (action == "pinned") {
+            this.pinned = [...this.pinned, generator];
+            this.saved = this.saved.filter((other) => other.uri != generator.uri);
         }
+
+        if (action == "unpinned") {
+            this.pinned = this.pinned.filter((other) => other.uri != generator.uri);
+            this.saved = [generator, ...this.saved];
+        }
+
+        if (action == "unsaved") {
+            this.pinned = this.pinned.filter((other) => other.uri != generator.uri);
+            this.saved = this.saved.filter((other) => other.uri != generator.uri);
+        }
+
+        if (action != "clicked") {
+            this.setFeedPreferences();
+        }
+
+        if (action)
+            if (action == "clicked" && !this.editing) {
+                this.close();
+                await waitForNavigation();
+                document.body.append(dom(html`<feed-overlay .feedUri=${generator.uri}></feed-overlay>`)[0]);
+            }
     }
 
     discoverFeeds() {
         this.search = dom(html`<search-overlay .showTypes=${[i18n("Feeds")]}></search-overlay>`)[0];
         document.body.append(this.search);
+    }
+
+    lastPinned: GeneratorView[] = [];
+    lastSaved: GeneratorView[] = [];
+    lastPinnedPrefs: string[] = [];
+    lastSavedPrefs: string[] = [];
+    startEdit() {
+        this.lastPinned = [...this.pinned];
+        this.lastSaved = [...this.saved];
+        this.lastPinnedPrefs = [...(State.preferences?.feeds.pinned ?? [])];
+        this.lastSavedPrefs = [...(State.preferences?.feeds.saved ?? [])];
+        this.editing = true;
+    }
+
+    cancelEdit() {
+        this.pinned = this.lastPinned;
+        this.saved = this.lastSaved;
+        if (State.preferences) {
+            State.preferences.feeds.pinned = this.lastPinnedPrefs;
+            State.preferences.feeds.saved = this.lastSavedPrefs;
+        }
+        this.editing = false;
+    }
+
+    setFeedPreferences() {
+        const pinned = [...this.lastPinnedPrefs].filter((uri) => splitAtUri(uri).type != "app.bsky.feed.generator");
+        const saved = [...this.lastSavedPrefs].filter((uri) => splitAtUri(uri).type != "app.bsky.feed.generator");
+
+        for (const feed of this.pinned) {
+            pinned.push(feed.uri);
+            saved.push(feed.uri);
+        }
+        for (const feed of this.saved) {
+            saved.push(feed.uri);
+        }
+        if (State.preferences) {
+            State.preferences.feeds.pinned = pinned;
+            State.preferences.feeds.saved = saved;
+            State.notify("preferences", "updated", State.preferences); // necessary?
+        }
+    }
+
+    saveEdit() {
+        this.editing = false;
+        this.pinned = [...this.pinned];
+        this.saved = [...this.saved];
+        this.setFeedPreferences();
+        State.setPinnedAndSavedFeeds(State.preferences?.feeds.pinned ?? [], State.preferences?.feeds.saved ?? []);
     }
 }
 
