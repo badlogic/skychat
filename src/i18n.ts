@@ -133,6 +133,8 @@ export interface Messages {
     "Couldn't load your feeds": string;
     Feed: string;
     "Could not load feed": string;
+    "You don't have pinned feeds": string;
+    "You don't have saved feeds": string;
 }
 
 const english: Messages = {
@@ -273,12 +275,14 @@ const english: Messages = {
     likes: "likes",
     Add: "Add",
     Remove: "Remove",
-    "Pinned Feeds": "Your pinned feeds",
-    "Saved Feeds": "Your saved feeds",
+    "Pinned Feeds": "Pinned feeds",
+    "Saved Feeds": "Saved feeds",
     "Discover more feeds": "Discover more feeds",
     "Couldn't load your feeds": "Couldn't load your feeds",
     Feed: "Feed",
     "Could not load feed": "Could not load feed",
+    "You don't have pinned feeds": "You don't have pinned feeds",
+    "You don't have saved feeds": "You don't have saved feeds",
 };
 
 const german: Messages = {
@@ -421,12 +425,14 @@ const german: Messages = {
     likes: "likes",
     Add: "Hinzufügen",
     Remove: "Entfernen",
-    "Pinned Feeds": "Deine angehefteten Feeds",
-    "Saved Feeds": "Deine Feeds",
+    "Pinned Feeds": "Angehefteten Feeds",
+    "Saved Feeds": "Gespeicherte Feeds",
     "Discover more feeds": "Entdecke mehr Feeds",
     "Couldn't load your feeds": "Konnte deine Feeds nicht laden",
     Feed: "Feed",
     "Could not load feed": "Konnte Feed nicht laden",
+    "You don't have pinned feeds": "Keine angehefteten Feeds vorhanden",
+    "You don't have saved feeds": "Keine gespeicherten Feeds vorhanden",
 };
 
 export type LanguageCode = "en" | "de";

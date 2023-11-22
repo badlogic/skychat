@@ -109,7 +109,11 @@
     }
 
     .search {
-        @apply border border-input rounded-full outline-none bg-transparent dark:text-white px-4 py-2;
+        @apply border border-input rounded-full px-4 py-2 dark:text-white;
+    }
+
+    .search > input {
+        @apply outline-none bg-transparent;
     }
 }
 

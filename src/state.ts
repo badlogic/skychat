@@ -1,4 +1,5 @@
 import {
+    AppBskyActorDefs,
     AppBskyFeedDefs,
     AppBskyFeedGetFeedGenerator,
     AppBskyFeedPost,
@@ -11,7 +12,7 @@ import {
 } from "@atproto/api";
 import { Preferences, ProfileView, ProfileViewDetailed, SavedFeedsPref } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { Store, User } from "./store";
-import { assertNever, error, fetchApi, getDateString, splitAtUri } from "./utils";
+import { AsyncQueue, assertNever, error, fetchApi, getDateString, splitAtUri } from "./utils";
 import { FeedViewPost, GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { record } from "./bsky";
 
@@ -671,7 +672,7 @@ export class State {
                     throw new Error();
                 }
             }
-            const preferencesPromise = this.updatePreferences();
+            const preferencesPromise = this.getPreferences();
             const profileResponse = await State.bskyClient.app.bsky.actor.getProfile({ actor: account });
             if (!profileResponse.success) {
                 Store.setUser(undefined);
@@ -733,11 +734,19 @@ export class State {
     }
 
     static preferences?: BskyPreferences;
-    static async updatePreferences() {
+    static preferencesMutationQueue = new AsyncQueue(() =>
+        (async () => {
+            await this.getPreferences();
+            return;
+        })()
+    );
+    static async getPreferences() {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             State.preferences = await State.bskyClient.getPreferences();
-            const response = await this.getFeeds([...(State.preferences.feeds.pinned ?? []), ...(State.preferences.feeds.saved ?? [])]);
+            const response = await this.getFeeds([
+                ...(State.preferences.feeds.saved?.filter((feed) => feed.includes("app.bsky.feed.generator")) ?? []),
+            ]);
             if (response instanceof Error) throw response;
             this.notify("preferences", "updated", State.preferences);
             return State.preferences;
@@ -750,9 +759,116 @@ export class State {
         if (!State.bskyClient) return;
 
         try {
+            const response = this.getPreferences();
+            if (response instanceof Error) throw response;
         } catch (e) {
-            error("Couldn't count unread notifications", e);
+            error("Couldn't poll preferences", e);
         }
         setTimeout(() => this.checkPreferences(), PREFERENCES_CHECK_INTERVAL);
+    }
+
+    private static async updatePreferences(agent: BskyAgent, cb: (prefs: AppBskyActorDefs.Preferences) => AppBskyActorDefs.Preferences | false) {
+        const res = await agent.app.bsky.actor.getPreferences({});
+        const newPrefs = cb(res.data.preferences);
+        if (newPrefs === false) {
+            return;
+        }
+        await agent.app.bsky.actor.putPreferences({
+            preferences: newPrefs,
+        });
+    }
+
+    private static async updateFeedPreferences(
+        agent: BskyAgent,
+        cb: (saved: string[], pinned: string[]) => { saved: string[]; pinned: string[] }
+    ): Promise<void> {
+        await State.updatePreferences(agent, (prefs: AppBskyActorDefs.Preferences) => {
+            let feedsPref = prefs.findLast(
+                (pref) => AppBskyActorDefs.isSavedFeedsPref(pref) && AppBskyActorDefs.validateSavedFeedsPref(pref).success
+            ) as AppBskyActorDefs.SavedFeedsPref | undefined;
+            if (feedsPref) {
+                const res = cb(feedsPref.saved, feedsPref.pinned);
+                feedsPref.saved = res.saved;
+                feedsPref.pinned = res.pinned;
+            } else {
+                const res = cb([], []);
+                feedsPref = {
+                    $type: "app.bsky.actor.defs#savedFeedsPref",
+                    saved: res.saved,
+                    pinned: res.pinned,
+                };
+            }
+            return prefs.filter((pref) => !AppBskyActorDefs.isSavedFeedsPref(pref)).concat([feedsPref]);
+        });
+    }
+
+    static async addSavedFeed(v: string) {
+        if (!State.bskyClient) return;
+        if (!State.preferences) return;
+        try {
+            const feeds = State.preferences.feeds;
+            if (!feeds.saved) feeds.saved = [];
+            feeds.saved = [...feeds.saved?.filter((o) => o != v), v];
+            State.preferencesMutationQueue.enqueue(async () => {
+                await State.bskyClient!.addSavedFeed(v);
+            });
+        } catch (e) {
+            return error("Couldn't add saved feed", e);
+        }
+    }
+
+    static async removeSavedFeed(v: string) {
+        if (!State.bskyClient) return;
+        if (!State.preferences) return;
+        try {
+            const feeds = State.preferences.feeds;
+            if (!feeds.saved) feeds.saved = [];
+            if (!feeds.pinned) feeds.pinned = [];
+            feeds.saved = feeds.saved?.filter((o) => o != v);
+            feeds.pinned = feeds.pinned?.filter((o) => o != v);
+            State.preferencesMutationQueue.enqueue(async () => {
+                await State.bskyClient!.removeSavedFeed(v);
+            });
+        } catch (e) {
+            return error("Couldn't remove saved feed", e);
+        }
+    }
+
+    static async addPinnedFeed(v: string) {
+        if (!State.bskyClient) return;
+        if (!State.preferences) return;
+        try {
+            const feeds = State.preferences.feeds;
+            if (!feeds.pinned) feeds.pinned = [];
+            feeds.pinned = [...feeds.pinned.filter((o) => o != v), v];
+            State.preferencesMutationQueue.enqueue(async () => {
+                await State.updateFeedPreferences(State.bskyClient!, (saved: string[], pinned: string[]) => ({
+                    saved,
+                    pinned: [...pinned.filter((uri) => uri != v), v],
+                }));
+            });
+        } catch (e) {
+            return error("Couldn't add pinned feed", e);
+        }
+    }
+
+    static async removePinnedFeed(v: string) {
+        if (!State.bskyClient) return;
+        if (!State.preferences) return;
+        try {
+            const feeds = State.preferences.feeds;
+            if (!feeds.pinned) feeds.pinned = [];
+            if (!feeds.saved) feeds.saved = [];
+            feeds.pinned = feeds.pinned.filter((o) => o != v);
+            feeds.saved = [v, ...feeds.saved.filter((uri) => uri != v)];
+            State.preferencesMutationQueue.enqueue(async () => {
+                await State.updateFeedPreferences(State.bskyClient!, (saved: string[], pinned: string[]) => ({
+                    saved: [v, ...saved.filter((uri) => uri != v)],
+                    pinned: pinned.filter((uri) => uri != v),
+                }));
+            });
+        } catch (e) {
+            return error("Couldn't add pinned feed", e);
+        }
     }
 }

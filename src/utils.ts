@@ -448,3 +448,36 @@ export function waitForNavigation(): Promise<void> {
         });
     });
 }
+
+export type AsyncTask = () => Promise<void>;
+
+export class AsyncQueue {
+    private tasks: AsyncTask[];
+    private finalTask: AsyncTask;
+    private isProcessing: boolean;
+
+    constructor(finalTask: AsyncTask) {
+        this.tasks = [];
+        this.finalTask = finalTask;
+        this.isProcessing = false;
+    }
+
+    enqueue(task: AsyncTask): void {
+        this.tasks.push(task);
+        if (!this.isProcessing) {
+            this.processQueue();
+        }
+    }
+
+    private async processQueue(): Promise<void> {
+        this.isProcessing = true;
+        while (this.tasks.length > 0) {
+            const task = this.tasks.shift();
+            if (task) {
+                await task();
+            }
+        }
+        this.isProcessing = false;
+        await this.finalTask();
+    }
+}

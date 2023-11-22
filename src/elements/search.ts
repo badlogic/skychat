@@ -1,7 +1,7 @@
 import { PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { ButtonGroup, GeneratorViewElementAction, HashNavOverlay, Overlay, renderTopbar } from ".";
 import { customElement, property, query } from "lit/decorators.js";
-import { spinnerIcon } from "../icons";
+import { closeIcon, searchIcon, spinnerIcon } from "../icons";
 import { i18n } from "../i18n";
 import { dom } from "../utils";
 import { FeedSearchStream, FeedSuggestionStream, PostSearchStream, UserSearchStream as UserSearchStream, UserSuggestionStream } from "../streams";
@@ -46,15 +46,23 @@ export class SearchOverlay extends HashNavOverlay {
     renderContent(): TemplateResult {
         return html`<div class="flex flex-col">
             <div class="bg-background border-b border-divider top-[40px] w-full px-4 py-4 max-w-[640px] flex flex-col">
-                <input
-                    @input=${() => this.handleSearch()}
-                    @click=${(ev: Event) => {
-                        if (this.searchElement?.selectionStart == this.searchElement?.selectionEnd) this.searchElement?.select();
-                    }}
-                    id="search"
-                    class="search"
-                    placeholder="${i18n("Search for") + this.showTypes.join(", ") + " ..."}"
-                />
+                <div class="search flex items-center gap-2">
+                    <i class="icon !w-5 !h-5 fill-muted-fg">${searchIcon}</i>
+                    <input
+                        @input=${() => this.handleSearch()}
+                        id="search"
+                        class="flex-grow"
+                        placeholder="${i18n("Search for") + this.showTypes.join(", ") + " ..."}"
+                    />
+                    <button
+                        @click=${() => {
+                            this.searchElement!.value = "";
+                            this.handleSearch();
+                        }}
+                    >
+                        <i class="icon !w-5 !h-5 fill-muted-fg hover:fill-primary">${closeIcon}</i>
+                    </button>
+                </div>
                 ${this.showTypes.length > 1
                     ? html`<button-group
                           id="type"
