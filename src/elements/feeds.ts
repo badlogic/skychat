@@ -101,7 +101,7 @@ export class GeneratorViewElement extends LitElement {
             ${this.editable
                 ? html` <icon-toggle
                           @change=${(ev: CustomEvent) => this.togglePin(ev)}
-                          .icon=${html`<i class="icon !w-6 !h-6">${pinIcon}</i>`}
+                          .icon=${html`<i class="icon !w-5 !h-5">${pinIcon}</i>`}
                           .value=${prefs.pinned?.includes(generator.uri)}
                       ></icon-toggle>
                       ${prefs.saved?.includes(generator.uri) || prefs.pinned?.includes(generator.uri)
@@ -109,15 +109,18 @@ export class GeneratorViewElement extends LitElement {
                                 <i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</i>
                             </button>`
                           : html`<button @click=${() => this.addFeed()}>
-                                <i class="icon !w-6 !h-6">${plusIcon}</i>
+                                <i class="icon !w-6 !h-6 fill-primary">${plusIcon}</i>
                             </button>`}`
                 : nothing}
         </div>`;
 
         const header = html`<div class="flex items-center gap-2 ${this.viewStyle == "topbar" ? "flex-grow" : ""}">
             ${generator.avatar
-                ? html`<img src="${generator.avatar}" class="${this.viewStyle == "topbar" ? "w-8 h-8" : "w-10 h-10"} object-cover rounded-md" />`
-                : html`<i class="icon !w-10 !h-10">${defaultFeed}</i>`}
+                ? html`<img
+                      src="${generator.avatar}"
+                      class="${this.viewStyle == "topbar" ? "w-8 h-8" : "w-10 h-10"} object-cover rounded-md fancy-shadow"
+                  />`
+                : html`<div class="fancy-shadow"><i class="icon !w-10 !h-10 fancy-shadow">${defaultFeed}</i></div>`}
             <div class="flex flex-col">
                 <div class="font-semibold">${generator.displayName}</div>
                 ${this.viewStyle != "topbar" && this.expandDetails ? createdBy : nothing}
@@ -328,11 +331,8 @@ export class FeedPicker extends HashNavOverlay {
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
         return html`<div class="flex flex-col">
-            <button
-                @click=${() => this.discoverFeeds()}
-                class="btn bg-transparent text-black dark:text-white hover:text-primary border border-primary rounded-full self-right mt-4 mx-auto flex gap-2 items-center justify-center"
-            >
-                <i class="icon !w-4 !h-4">${searchIcon}</i>
+            <button @click=${() => this.discoverFeeds()} class="btn rounded-full self-right mt-4 mx-auto flex gap-2 items-center justify-center">
+                <i class="icon !w-4 !h-4 fill-current">${searchIcon}</i>
                 ${i18n("Discover more feeds")}
             </button>
             <div class="px-4 h-12 flex items-center font-semibold">
@@ -341,7 +341,7 @@ export class FeedPicker extends HashNavOverlay {
                     ${!this.editing
                         ? html`<button @click=${() => this.startEdit()} class="btn">${i18n("Edit")}</button>`
                         : html`
-                              <button @click=${() => this.cancelEdit()} class="font-normal">${i18n("Cancel")}</button
+                              <button @click=${() => this.cancelEdit()} class="font-normal text-muted-fg">${i18n("Cancel")}</button
                               ><button @click=${() => this.saveEdit()} class="btn font-normal">${i18n("Save")}</button>
                           `}
                 </div>

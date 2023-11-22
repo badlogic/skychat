@@ -45,13 +45,13 @@ export class SearchOverlay extends HashNavOverlay {
 
     renderContent(): TemplateResult {
         return html`<div class="flex flex-col">
-            <div class="bg-background border-b border-divider top-[40px] w-full px-4 py-4 max-w-[640px] flex flex-col">
-                <div class="search flex items-center gap-2">
+            <div class="bg-background top-[40px] w-full px-4 pt-4 pb-2 max-w-[640px] flex flex-col">
+                <div class="search flex items-center gap-2 fancy-shadow">
                     <i class="icon !w-5 !h-5 fill-muted-fg">${searchIcon}</i>
                     <input
                         @input=${() => this.handleSearch()}
                         id="search"
-                        class="flex-grow"
+                        class="flex-grow bg-transparent"
                         placeholder="${i18n("Search for") + this.showTypes.join(", ") + " ..."}"
                     />
                     <button
@@ -97,7 +97,9 @@ export class SearchOverlay extends HashNavOverlay {
         if (!type) type = i18n("Posts");
         if (type == i18n("Users")) {
             if (query.length == 0)
-                this.resultsElement!.append(dom(html`<div class="px-4 h-12 flex items-center font-semibold">${i18n("Suggested follows")}</div>`)[0]);
+                this.resultsElement!.append(
+                    dom(html`<div class="px-4 h-8 align-top flex items-center font-semibold">${i18n("Suggested follows")}</div>`)[0]
+                );
             this.resultsElement!.append(
                 dom(
                     html`<profiles-stream-view .stream=${
@@ -119,7 +121,9 @@ export class SearchOverlay extends HashNavOverlay {
             this.resultsElement!.append(dom(html`<posts-stream-view .stream=${new PostSearchStream(query, false)}></posts-streams-view>`)[0]);
         } else if (type == i18n("Feeds")) {
             if (query.length == 0)
-                this.resultsElement!.append(dom(html`<div class="px-4 h-12 flex items-center font-semibold">${i18n("Suggested feeds")}</div>`)[0]);
+                this.resultsElement!.append(
+                    dom(html`<div class="px-4 h-8 align-top flex items-center font-semibold">${i18n("Suggested feeds")}</div>`)[0]
+                );
             this.resultsElement!.append(
                 dom(
                     html`<generators-stream-view

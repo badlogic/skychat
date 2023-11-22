@@ -89,11 +89,15 @@
     }
 
     .btn {
-        @apply h-8 bg-primary text-primary-fg rounded-md px-4 whitespace-nowrap text-sm disabled:bg-muted disabled:text-muted-fg hover:bg-white hover:text-primary hover:fill-primary;
+        @apply h-8 rounded-md px-4 whitespace-nowrap text-sm;
+        @apply bg-primary text-primary-fg;
+        @apply disabled:bg-muted disabled:text-muted-fg;
+        @apply hover:bg-primarysw-600;
+        @apply fancy-shadow;
     }
 
     .btn-toggle {
-        @apply h-8 rounded-full px-4 whitespace-nowrap text-sm;
+        @apply h-8 rounded-full px-4 whitespace-nowrap text-sm fancy-shadow;
     }
 
     .btn-toggle.active {
@@ -105,7 +109,7 @@
     }
 
     .btn-toggle:hover {
-        @apply bg-primary-dark text-white;
+        @apply bg-primarysw-700 text-primary-fg;
     }
 
     .search {
@@ -151,5 +155,9 @@
 
     i.icon > svg {
         @apply w-full h-full;
+    }
+
+    .fancy-shadow {
+        box-shadow: rgb(0 0 0 / 8%) 0px 1px 2px, rgb(0 0 0 / 5%) 0px 4px 12px;
     }
 }

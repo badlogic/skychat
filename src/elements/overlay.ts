@@ -161,7 +161,7 @@ export abstract class Overlay extends LitElement {
     abstract renderContent(): TemplateResult;
 
     closeButton(grow = true): TemplateResult {
-        return html`<button @click=${() => this.close()} class="${grow ? "ml-auto" : ""} -mr-2 flex items-center justify-center w-10 h-10">
+        return html`<button @click=${() => this.close()} class="${grow ? "ml-auto" : ""} -mr-4 flex items-center justify-center w-10 h-10">
             <i class="icon !w-5 !h-5 fill-muted-fg">${closeIcon}</i>
         </button>`;
     }
@@ -212,7 +212,7 @@ export class Topbar extends LitElement {
     render() {
         return html`
             <div
-                class="fixed top-0 z-10 w-[640px] max-w-[100%] h-10 px-2 flex items-center bg-background border-b border-divider shadow-md sm:shadow-none"
+                class="fixed top-0 z-10 w-[640px] max-w-[100%] h-10 px-4 flex items-center bg-background border-divider fancy-shadow sm:rounded-b-lg"
             >
                 ${this.renderLogo
                     ? /*html`<a class="w-10 h-10 flex items-center justify-center font-semibold text-center" href="/"

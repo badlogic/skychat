@@ -56,10 +56,10 @@ export abstract class PopupMenu extends LitElement {
         };
         if (this.show) checkInBounds();
 
-        return html`<div class="relative">
+        return html`<div class="relative text-black dark:text-white">
             <div @click=${(ev: MouseEvent) => this.handleButtonClick(ev)} class="cursor-pointer">${this.renderButton()}</div>
             ${this.show
-                ? html`<div id="content" class="animate-fade animate-duration-300 whitespace-nowrap overflow-x-clip flex flex-col bg-background border border-divider rounded-md shadow-md dark:shadow-none ${
+                ? html`<div id="content" class="animate-fade animate-duration-300 whitespace-nowrap overflow-x-clip flex flex-col bg-background border border-divider rounded-md fancy-shadow ${
                       this.show ? "enable-pointer-events" : "hidden"
                   } absolute right-0 z-20">
                       ${this.renderContent()}

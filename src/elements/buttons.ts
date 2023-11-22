@@ -7,8 +7,8 @@ import { dom, getScrollParent } from "../utils";
 import { setupPushNotifications } from "./notifications";
 import { State } from "../state";
 
-let normalStyle = "w-12 h-12 flex justify-center items-center bg-background dark:bg-divider border border-divider rounded-full shadow-md";
-let highlightStyle = "w-12 h-12 flex justify-center items-center bg-primary rounded-full";
+let normalStyle = "w-12 h-12 flex justify-center items-center bg-background dark:bg-divider border border-divider rounded-full fancy-shadow";
+let highlightStyle = "w-12 h-12 flex justify-center items-center bg-primary rounded-full fancy-shadow";
 
 function resetAnimation(el: HTMLElement) {
     el.style.animation = "none";
@@ -226,7 +226,7 @@ export class ButtonGroup extends LitElement {
     }
 
     render() {
-        return html`<div class="flex h-8">
+        return html`<div class="flex h-8 fancy-shadow rounded-lg">
             ${map(this.values, (value, index) => {
                 let rounded = "";
                 if (index == 0) rounded = "rounded-l-lg";

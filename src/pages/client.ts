@@ -200,7 +200,7 @@ export class HomeOverlay extends Overlay {
 
     renderHeader(): TemplateResult {
         const user = Store.getUser();
-        const buttons = html`<div class="ml-auto flex">
+        const buttons = html`<div class="ml-auto flex -mr-1">
             <button
                 class="flex items-center justify-center w-10 h-10"
                 @click=${() => document.body.append(dom(html`<search-overlay></search-overlay>`)[0])}
@@ -247,7 +247,6 @@ export class HomeOverlay extends Overlay {
             <open-post-editor-button id="post"></open-post-editor-button>
             <notifications-button id="notifications"></notifications-button>
             <feeds-button id="feeds"></feeds-button>
-            <search-button id="search"></search-button>
-            <up-button id="up" @click=${() => getScrollParent(this)!.scrollTo({ top: 0, behavior: "smooth" })}></up-button>`;
+            <search-button id="search"></search-button> `;
     }
 }
