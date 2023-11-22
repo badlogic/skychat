@@ -137,6 +137,7 @@ export interface Messages {
     "You don't have saved feeds": string;
     Edit: string;
     Save: string;
+    "Search my posts": string;
 }
 
 const english: Messages = {
@@ -287,6 +288,7 @@ const english: Messages = {
     "You don't have saved feeds": "You don't have saved feeds",
     Edit: "Edit",
     Save: "Save",
+    "Search my posts": "Search my posts",
 };
 
 const german: Messages = {
@@ -439,6 +441,7 @@ const german: Messages = {
     "You don't have saved feeds": "Keine gespeicherten Feeds vorhanden",
     Edit: "Editieren",
     Save: "Speichern",
+    "Search my posts": "Nur in meinen Posts suchen",
 };
 
 export type LanguageCode = "en" | "de";

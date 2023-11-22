@@ -352,3 +352,42 @@ export class AnimatedSpinner extends LitElement {
         </div>`;
     }
 }
+
+@customElement("slide-button")
+export class SlideButton extends LitElement {
+    @property()
+    checked = false;
+
+    @property()
+    text?: string;
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    render() {
+        return html`<label class="relative inline-flex items-center cursor-pointer">
+            <input
+                type="checkbox"
+                class="sr-only peer outline-none"
+                ?checked=${this.checked}
+                @change=${(ev: Event) => this.handleChange(ev.target as HTMLInputElement)}
+            />
+            <div
+                class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-[#fff] after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-muted-fg peer-checked:bg-primary fancy-shadow"
+            ></div>
+            <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">${this.text ? this.text : ""}</span>
+        </label>`;
+    }
+
+    handleChange(el: HTMLInputElement) {
+        this.checked = el.checked;
+        this.dispatchEvent(
+            new CustomEvent("change", {
+                detail: {
+                    value: this.checked,
+                },
+            })
+        );
+    }
+}

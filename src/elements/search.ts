@@ -6,6 +6,7 @@ import { i18n } from "../i18n";
 import { dom } from "../utils";
 import { FeedSearchStream, FeedSuggestionStream, PostSearchStream, UserSearchStream as UserSearchStream, UserSuggestionStream } from "../streams";
 import { GeneratorView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { Store } from "../store";
 
 @customElement("search-overlay")
 export class SearchOverlay extends HashNavOverlay {
@@ -14,6 +15,9 @@ export class SearchOverlay extends HashNavOverlay {
 
     @query("#search")
     searchElement?: HTMLInputElement;
+
+    @query("#self")
+    selfElement?: HTMLInputElement;
 
     @query("#type")
     typeElement?: ButtonGroup;
@@ -26,6 +30,9 @@ export class SearchOverlay extends HashNavOverlay {
 
     @property()
     error = "";
+
+    @property()
+    selectedType?: string;
 
     getHash(): string {
         return "search";
@@ -66,11 +73,22 @@ export class SearchOverlay extends HashNavOverlay {
                 ${this.showTypes.length > 1
                     ? html`<button-group
                           id="type"
-                          @change=${() => this.handleSearch()}
+                          @change=${(ev: Event) => {
+                              this.handleSearch();
+                              this.selectedType = (ev.target as ButtonGroup).selected!;
+                          }}
                           class="self-center mt-4"
                           .values=${this.showTypes}
                           .selected=${this.showTypes.includes(i18n("Feeds")) ? i18n("Feeds") : this.showTypes[0]}
                       ></button-group>`
+                    : nothing}
+                ${this.selectedType == i18n("Posts")
+                    ? html`<slide-button
+                          id="self"
+                          class="self-center mt-4"
+                          .text=${i18n("Search my posts")}
+                          @change=${() => this.handleSearch()}
+                      ></slide-button>`
                     : nothing}
                 <div id="spinnerino" class="hidden w-full h-12 flex items-center justify-center mt-2">
                     <i class="absolute ml-2 icon !w-6 !h-6 fill-primary animate-spin">${spinnerIcon}</i>
@@ -87,14 +105,19 @@ export class SearchOverlay extends HashNavOverlay {
         this.timeoutId = setTimeout(async () => {
             this.resultsElement!.innerHTML = "";
             this.spinnerElement?.classList.remove("hidden");
-            await this.search(this.searchElement!.value, this.showTypes.length == 1 ? this.showTypes[0] : this.typeElement!.selected);
+            await this.search(
+                this.searchElement!.value,
+                this.showTypes.length == 1 ? this.showTypes[0] : this.typeElement!.selected,
+                this.selfElement!.checked
+            );
             this.spinnerElement?.classList.add("hidden");
         }, 200) as any as number;
     }
 
-    async search(query: string, type?: string) {
+    async search(query: string, type?: string, self?: boolean) {
         query = query.trim();
         if (!type) type = i18n("Posts");
+        if (!self) self = false;
         if (type == i18n("Users")) {
             if (query.length == 0)
                 this.resultsElement!.append(
@@ -118,6 +141,7 @@ export class SearchOverlay extends HashNavOverlay {
                 );
                 return;
             }
+            if (self) query = "from:" + Store.getUser()?.profile.handle + " " + query;
             this.resultsElement!.append(dom(html`<posts-stream-view .stream=${new PostSearchStream(query, false)}></posts-streams-view>`)[0]);
         } else if (type == i18n("Feeds")) {
             if (query.length == 0)

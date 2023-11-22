@@ -300,8 +300,9 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
 }
 
 export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
-    // FIXME implement support for app.bsky.graph.list and app.bsky.feed.generator
-    if (!AppBskyEmbedRecord.isViewRecord(recordEmbed.record)) return nothing;
+    // FIXME implement support for app.bsky.graph.list and app.bsky.feed.generator and
+    // all other record types in an AppBSkyEmbedREcord.VIew
+    if (!AppBskyEmbedRecord.isViewRecord(recordEmbed.record) || !AppBskyEmbedRecord.isMain) return nothing;
     if (!AppBskyFeedPost.isRecord(recordEmbed.record.value)) return nothing;
     const record = recordEmbed.record.value;
     const rkey = splitAtUri(recordEmbed.record.uri).rkey;
