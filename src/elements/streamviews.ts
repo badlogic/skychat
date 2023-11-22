@@ -331,7 +331,7 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
         }
 
         notificationDom = dom(html`<div
-            class="px-4 py-2 border-b border-divider flex flex-col ${notification.isRead ? "" : "bg-[#d8e4ff4a] dark:bg-[#001040]"}"
+            class="px-4 py-4 border-b border-divider flex flex-col ${notification.isRead ? "" : "bg-[#d8e4ff4a] dark:bg-[#001040]"}"
         >
             <div class="flex items-center gap-2">
                 <i class="icon !w-5 !h-5 fill-primary">${icons[notification.reason] ?? ""}</i>

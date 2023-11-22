@@ -246,7 +246,6 @@ export class HomeOverlay extends Overlay {
             ></feed-stream-view>
             <open-post-editor-button id="post"></open-post-editor-button>
             <notifications-button id="notifications"></notifications-button>
-            <feeds-button id="feeds"></feeds-button>
-            <search-button id="search"></search-button> `;
+            <feeds-button id="feeds"></feeds-button>`;
     }
 }

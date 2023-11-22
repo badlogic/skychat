@@ -12,6 +12,7 @@ import { PopupMenu } from "./popup";
 import { renderRichText } from "./posts";
 import { ActorFeedStream, ActorLikesStream, FollowersStream, FollowingStream, LoggedInActorLikesStream } from "../streams";
 
+// FIXME add open-edito-button that will prefill the shown profiles handle
 @customElement("profile-overlay")
 export class ProfileOverlay extends HashNavOverlay {
     @property()

@@ -16,6 +16,7 @@ function resetAnimation(el: HTMLElement) {
     (el.style.animation as any) = null;
 }
 
+// FIXME button receives click events, despite being hidden...
 export abstract class FloatingButton extends LitElement {
     @property()
     highlight = false;
@@ -67,7 +68,9 @@ export abstract class FloatingButton extends LitElement {
 
     render() {
         return html`<div
-            class="fixed z-10 bottom-4 ${this.hide && !this.highlight ? "animate-fade animate-reverse" : "animate-fade"} animate-duration-300"
+            class="fixed z-10 bottom-4 ${this.hide && !this.highlight
+                ? "animate-fade animate-reverse disable-pointer-events"
+                : "animate-fade enable-pointer-events"} animate-duration-300"
             style="transform: ${this.translateX(this.getOffset())};"
         >
             <button
