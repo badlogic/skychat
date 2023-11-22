@@ -1,12 +1,12 @@
-import { LitElement, PropertyValueMap, html, nothing } from "lit";
-import { customElement, query, state } from "lit/decorators.js";
+import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { defaultAvatar, dom } from "../utils";
+import { defaultAvatar, dom, getScrollParent } from "../utils";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
 import { FeedsButton, NotificationsButton, OpenPostEditorButton, UpButton } from "../elements";
 import { setupPushNotifications } from "../elements/notifications";
-import { renderTopbar } from "../elements/overlay";
+import { Overlay, renderTopbar } from "../elements/overlay";
 import { routeHash } from "../elements/routing";
 import { i18n } from "../i18n";
 import { searchIcon, settingsIcon } from "../icons";
@@ -96,7 +96,7 @@ class SkychatClient extends LitElement {
                 ${user ? html`<button class="text-sm text-primary" @click=${this.logout}>${i18n("Log out")}</button>` : nothing}
             </div>`;
 
-        return html` <main class="flex flex-col justify-between m-auto max-w-[640px] px-4 h-full">
+        return html` <main class="flex flex-col m-auto max-w-[640px] px-4 h-full">
             <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
             >
@@ -106,7 +106,7 @@ class SkychatClient extends LitElement {
     }
 
     renderConnecting() {
-        return html` <main class="flex flex-col justify-between m-auto max-w-[640px] px-4 h-full">
+        return html` <main class="flex flex-col m-auto max-w-[640px] px-4 h-full">
             <a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
             >
@@ -122,6 +122,9 @@ class SkychatClient extends LitElement {
 
     renderMain() {
         if (!State.isConnected()) return html`<div>${i18n("Not connected")}</div>`;
+
+        document.body.append(dom(html`<home-overlay></home-overlay>`)[0]);
+
         if (location.hash && location.hash.length > 0) {
             const hash = location.hash;
             const newHref = location.href;
@@ -129,32 +132,7 @@ class SkychatClient extends LitElement {
             history.pushState(null, "", newHref);
             routeHash(hash);
         }
-
-        const mainDom = dom(html`<main class="w-full h-full overflow-auto">
-            <div class="mx-auto max-w-[640px] min-h-full flex flex-col">
-                ${this.renderTopbar()}<feed-stream-view
-                    .newItems=${async (newItems: FeedViewPost[]) => {
-                        const result = await State.loadFeedViewPostsDependencies(newItems);
-                        if (result instanceof Error) {
-                            this.error = i18n("Could not load newer items");
-                        }
-                        if (mainDom.scrollTop > 0) {
-                            if (!this.upButton) return;
-                            this.upButton.classList.remove("hidden");
-                            this.upButton.highlight = true;
-                        }
-                    }}
-                    .stream=${new ActorFeedStream("home", undefined, true, FEED_CHECK_INTERVAL)}
-                ></feed-stream-view>
-                <open-post-editor-button id="post"></open-post-editor-button>
-                <notifications-button id="notifications"></notifications-button>
-                <feeds-button id="feeds"></feeds-button>
-                <search-button id="search"></search-button>
-                <up-button id="up" @click=${() => mainDom.scrollTo({ top: 0, behavior: "smooth" })}></up-button>
-            </div>
-        </main>`)[0];
-
-        return mainDom;
+        return html``;
     }
 
     async login() {
@@ -207,8 +185,20 @@ class SkychatClient extends LitElement {
         State.logout();
         location.reload();
     }
+}
 
-    renderTopbar() {
+@customElement("home-overlay")
+export class HomeOverlay extends Overlay {
+    @property()
+    error?: string;
+
+    constructor() {
+        super(false);
+    }
+
+    close() {}
+
+    renderHeader(): TemplateResult {
         const user = Store.getUser();
         const buttons = html`<div class="ml-auto flex fill-primary">
             <button
@@ -234,5 +224,30 @@ class SkychatClient extends LitElement {
             </button>
         </div> `;
         return renderTopbar("Home", buttons);
+    }
+
+    renderContent(): TemplateResult {
+        return html`<feed-stream-view
+                .newItems=${async (newItems: FeedViewPost[]) => {
+                    const result = await State.loadFeedViewPostsDependencies(newItems);
+                    if (result instanceof Error) {
+                        this.error = i18n("Could not load newer items");
+                    }
+                    const scrollParent = getScrollParent(this.children[0] as HTMLElement)!;
+                    if (scrollParent.scrollTop > 0) {
+                        const upButton = scrollParent.querySelector("up-button") as UpButton;
+                        if (upButton) {
+                            upButton.classList.remove("hidden");
+                            upButton.highlight = true;
+                        }
+                    }
+                }}
+                .stream=${new ActorFeedStream("home", undefined, true, FEED_CHECK_INTERVAL)}
+            ></feed-stream-view>
+            <open-post-editor-button id="post"></open-post-editor-button>
+            <notifications-button id="notifications"></notifications-button>
+            <feeds-button id="feeds"></feeds-button>
+            <search-button id="search"></search-button>
+            <up-button id="up" @click=${() => getScrollParent(this)!.scrollTo({ top: 0, behavior: "smooth" })}></up-button>`;
     }
 }

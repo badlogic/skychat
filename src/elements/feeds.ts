@@ -306,7 +306,8 @@ export class FeedPicker extends HashNavOverlay {
                     .filter((feed) => feed != undefined) as GeneratorView[];
                 this.saved = (prefs.feeds.saved ?? [])
                     .map((feedUri) => State.getObject("feed", feedUri))
-                    .filter((feed) => feed != undefined) as GeneratorView[];
+                    .filter((feed) => feed != undefined)
+                    .filter((feed) => !this.pinned.some((other) => other.uri == feed!.uri)) as GeneratorView[];
             } else {
                 prefs = await State.updatePreferences();
                 if (prefs instanceof Error) {
@@ -451,7 +452,7 @@ export class FeedOverlay extends HashNavOverlay {
                     if (result instanceof Error) {
                         this.error = i18n("Could not load newer items");
                     }
-                    const scrollParent = getScrollParent(this);
+                    const scrollParent = getScrollParent(this.children[0] as HTMLElement);
                     if (scrollParent && scrollParent.scrollTop > 0) {
                         const upButton = scrollParent.querySelector("up-button") as UpButton;
                         if (upButton) {
