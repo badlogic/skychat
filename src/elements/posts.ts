@@ -12,7 +12,8 @@ import { FeedViewPost, PostView, ThreadViewPost } from "@atproto/api/dist/client
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { Messages, i18n } from "../i18n";
+import { date } from "../bsky";
+import { i18n } from "../i18n";
 import { articleIcon, blockIcon, deleteIcon, heartIcon, moreIcon, muteIcon, quoteIcon, reblogIcon, replyIcon, shieldIcon, treeIcon } from "../icons";
 import { EventAction, NumQuote, State } from "../state";
 import { Store } from "../store";
@@ -20,23 +21,23 @@ import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
 import {
     combineAtUri,
     dom,
+    enableYoutubeJSApi,
     error,
     fetchApi,
-    getDateString,
-    getScrollParent,
     getTimeDifference,
     hasLinkOrButtonParent,
     onVisibilityChange,
     splitAtUri,
     waitForLitElementsToRender,
     waitForScrollHeightUnchanged,
+    youtubePlaYButton,
 } from "../utils";
 import { IconToggle } from "./icontoggle";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { PopupMenu } from "./popup";
 import { deletePost, quote, reply } from "./posteditor";
 import { getProfileUrl, renderProfile, renderProfileAvatar } from "./profiles";
-import { date, record } from "../bsky";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
 
 export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {
@@ -77,7 +78,10 @@ export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     return result;
 }
 
-export function tryEmbedTwitter(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External): TemplateResult | undefined {
+export function tryEmbedTwitter(
+    cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
+    minimal: boolean
+): TemplateResult | undefined {
     const link = cardEmbed.uri.split("?")[0];
     const twitterPostRegex = /^https?:\/\/(twitter\.com|x\.com)\/(\w+)\/status\/(\d+)(\?\S*)?$/;
     const match = link.match(twitterPostRegex);
@@ -97,7 +101,10 @@ export function tryEmbedTwitter(cardEmbed: AppBskyEmbedExternal.ViewExternal | A
     }
 }
 
-export function tryEmbedGiphyGif(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External): TemplateResult | undefined {
+export function tryEmbedGiphyGif(
+    cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
+    minimal: boolean
+): TemplateResult | undefined {
     const url = cardEmbed.uri;
     const giphyPattern = /https?:\/\/(?:www\.)?giphy\.com\/gifs\/(?:.*-)?([a-zA-Z0-9]+)/;
     const match = url.match(giphyPattern);
@@ -113,7 +120,10 @@ export function tryEmbedGiphyGif(cardEmbed: AppBskyEmbedExternal.ViewExternal | 
     return undefined;
 }
 
-export function tryEmbedTenorGif(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External): TemplateResult | undefined {
+export function tryEmbedTenorGif(
+    cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
+    minimal: boolean
+): TemplateResult | undefined {
     const url = cardEmbed.uri;
     const tenorPattern = /https?:\/\/(?:www\.)?tenor\.com\/(?:[^\/]+\/)?view\/.*-(\d+)$/;
     if (!url.match(tenorPattern)) return undefined;
@@ -178,20 +188,23 @@ export function tryEmbedTenorGif(cardEmbed: AppBskyEmbedExternal.ViewExternal | 
                         )[0]
                     );
                 } else {
-                    tenorDom.append(dom(renderCardEmbed(cardEmbed))[0]);
+                    tenorDom.append(dom(renderCardEmbed(cardEmbed, minimal))[0]);
                 }
             } else {
-                tenorDom.append(dom(renderCardEmbed(cardEmbed))[0]);
+                tenorDom.append(dom(renderCardEmbed(cardEmbed, minimal))[0]);
             }
         })
         .catch(() => {
-            tenorDom.append(dom(renderCardEmbed(cardEmbed))[0]);
+            tenorDom.append(dom(renderCardEmbed(cardEmbed, minimal))[0]);
         });
     return html`${tenorDom}`;
 }
 
 // FIXME don't embed the player initially, just the thumb, on click, start playing.
-export function tryEmbedYouTubeVideo(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External): TemplateResult | undefined {
+export function tryEmbedYouTubeVideo(
+    cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
+    minimal: boolean
+): TemplateResult | undefined {
     const url = cardEmbed.uri;
     const videoRegExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([\w-]+)/;
     let videoID: string | undefined = "";
@@ -204,29 +217,49 @@ export function tryEmbedYouTubeVideo(cardEmbed: AppBskyEmbedExternal.ViewExterna
     }
 
     if (videoID && videoID.length === 11) {
-        const youtubeDom = dom(html`<div class="mt-2 rounded overflow-x-clip"></div>`)[0];
+        const youtubeDom = dom(html`<div class="mt-2 rounded overflow-x-clip flex justify-center"></div>`)[0];
         fetch("https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=3Yn4v44qplg&format=json")
             .then(async (data) => {
                 const youtubeInfo = await data.json();
-                youtubeDom.append(
-                    dom(
-                        html`<div
-                            style="position: relative; width: 100%; padding-top: calc(${(youtubeInfo.height / youtubeInfo.width) *
-                            100}%); overflow: hidden;"
+                const showIFrame = (ev: MouseEvent) => {
+                    if (minimal) return;
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    ev.stopImmediatePropagation();
+                    const img = imgDom.querySelector("img")!;
+                    const width = img.clientWidth;
+                    const height = img.clientHeight;
+                    requestAnimationFrame(() => {
+                        const outerFrame = dom(
+                            html`<div class="flex w-full max-w-[480px]">${unsafeHTML(enableYoutubeJSApi(youtubeInfo.html))}</div>`
+                        )[0];
+                        const iframe = outerFrame.querySelector("iframe")!;
+                        iframe.width = width.toString() + "px";
+                        iframe.height = height.toString() + "px";
+                        youtubeDom.classList.add("hidedn");
+                        imgDom.remove();
+                        youtubeDom.append(outerFrame);
+                        setTimeout(() => {
+                            iframe.contentWindow?.postMessage('{"event":"command","func":"' + "playVideo" + '","args":""}', "*");
+                            imgDom.remove();
+                        }, 1000);
+                    });
+                };
+                const imgDom = dom(
+                    html` <div @click=${(ev: MouseEvent) => showIFrame(ev)} class="relative flex items-center cursor-pointer">
+                        <img src="${youtubeInfo.thumbnail_url}" class="${minimal ? "max-w-[200px]" : "w-full max-w-[480px]"} h-auto mx-auto" />
+                        <div
+                            class="absolute ${minimal ? "w-4 h-4" : "w-16 h-16"} disable-pointer-events"
+                            style="top: calc(100% / 2 - ${minimal ? "8px" : "32px"}); left: calc(100% / 2 - ${minimal ? "8px" : "32px"});"
                         >
-                            <iframe
-                                src="https://www.youtube.com/embed/${videoID}"
-                                frameborder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowfullscreen
-                                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
-                            ></iframe>
-                        </div>`
-                    )[0]
-                );
+                            ${youtubePlaYButton}
+                        </div>
+                    </div>`
+                )[0];
+                youtubeDom.append(imgDom);
             })
             .catch(() => {
-                youtubeDom.append(dom(renderCardEmbed(cardEmbed))[0]);
+                youtubeDom.append(dom(renderCardEmbed(cardEmbed, minimal))[0]);
             });
         return html`${youtubeDom}`;
     }
@@ -234,14 +267,14 @@ export function tryEmbedYouTubeVideo(cardEmbed: AppBskyEmbedExternal.ViewExterna
     return undefined;
 }
 
-export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External) {
-    const youTubeEmbed = tryEmbedYouTubeVideo(cardEmbed);
+export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External, minimal: boolean) {
+    const youTubeEmbed = tryEmbedYouTubeVideo(cardEmbed, minimal);
     if (youTubeEmbed) return youTubeEmbed;
-    const giphyEmbed = tryEmbedGiphyGif(cardEmbed);
+    const giphyEmbed = tryEmbedGiphyGif(cardEmbed, minimal);
     if (giphyEmbed) return giphyEmbed;
-    const tenorEmbed = tryEmbedTenorGif(cardEmbed);
+    const tenorEmbed = tryEmbedTenorGif(cardEmbed, minimal);
     if (tenorEmbed) return tenorEmbed;
-    const twitterEmbed = tryEmbedTwitter(cardEmbed);
+    const twitterEmbed = tryEmbedTwitter(cardEmbed, minimal);
     if (twitterEmbed) return twitterEmbed;
 
     const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
@@ -322,7 +355,7 @@ export function renderRecordWithMediaEmbed(recordWithMediaEmbed: AppBskyEmbedRec
             ? recordWithMediaEmbed.media.external
             : undefined;
     return html`<div class="mt-2">
-        ${cardEmbed ? renderCardEmbed(cardEmbed) : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive, minimal) : nothing}
+        ${cardEmbed ? renderCardEmbed(cardEmbed, minimal) : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive, minimal) : nothing}
         ${!minimal ? renderRecordEmbed(recordWithMediaEmbed.record) : nothing}
     </div>`;
 }
@@ -332,7 +365,7 @@ export function renderEmbed(embed: PostView["embed"] | AppBskyFeedPost.Record["e
     const imagesEmbed = AppBskyEmbedImages.isView(embed) ? embed.images : undefined;
     const recordEmbed = AppBskyEmbedRecord.isView(embed) ? embed : undefined;
     const recordWithMediaEmbed = AppBskyEmbedRecordWithMedia.isView(embed) ? embed : undefined;
-    const cardDom = cardEmbed ? renderCardEmbed(cardEmbed) : undefined;
+    const cardDom = cardEmbed ? renderCardEmbed(cardEmbed, minimal) : undefined;
     return html`<div>
         ${cardEmbed ? cardDom : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive, minimal) : nothing}
         ${recordEmbed && !minimal ? renderRecordEmbed(recordEmbed) : nothing}
