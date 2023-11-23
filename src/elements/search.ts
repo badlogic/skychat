@@ -108,7 +108,7 @@ export class SearchOverlay extends HashNavOverlay {
             await this.search(
                 this.searchElement!.value,
                 this.showTypes.length == 1 ? this.showTypes[0] : this.typeElement!.selected,
-                this.selfElement!.checked
+                this.selfElement?.checked ?? false
             );
             this.spinnerElement?.classList.add("hidden");
         }, 200) as any as number;

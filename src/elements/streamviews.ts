@@ -21,7 +21,7 @@ import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { deletePost, quote, reply } from "./posteditor";
 import { renderEmbed, renderRichText } from "./posts";
 import { renderProfile } from "./profiles";
-import { GeneratorViewElement, GeneratorViewElementAction } from ".";
+import { GeneratorViewElement, GeneratorViewElementAction, IconToggle } from ".";
 
 (window as any).emitLitDebugLogEvents = true;
 
@@ -46,6 +46,8 @@ export abstract class StreamView<T> extends LitElement {
 
     @query("#items")
     itemsDom?: HTMLElement;
+
+    loadingPaused = false;
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
@@ -100,12 +102,16 @@ export abstract class StreamView<T> extends LitElement {
         this.stream?.close();
     }
 
+    isLoading = false;
     protected async load() {
         if (!State.isConnected()) return;
         if (!this.stream) {
             this.error = i18n("Invalid stream");
             return;
         }
+        if (this.loadingPaused) return;
+        if (this.isLoading) return;
+        this.isLoading = true;
 
         try {
             const items = await this.stream.next();
@@ -139,8 +145,11 @@ export abstract class StreamView<T> extends LitElement {
             }
             itemsDom.append(spinner);
             onVisibleOnce(itemDoms[Math.max(0, itemDoms.length - 1 - 5)], () => this.load());
+            onVisibleOnce(spinner, () => this.load());
         } catch (e) {
             this.error = i18n("Sorry, an unknown error occured");
+        } finally {
+            this.isLoading = false;
         }
     }
 
@@ -240,14 +249,85 @@ export class FeedStreamOverlay extends Overlay {
 }
 
 type NotificationType = "like" | "repost" | "follow" | "mention" | "reply" | "quote" | (string & {});
+type NotificationFilter = {
+    showFollows: boolean;
+    showReplies: boolean;
+    showQuotes: boolean;
+    showReposts: boolean;
+    showMentions: boolean;
+    showLikes: boolean;
+};
 
 @customElement("notifications-stream-view")
 export class NotificationsStreamView extends StreamView<AppBskyNotificationListNotifications.Notification> {
+    filter: NotificationFilter = {
+        showFollows: true,
+        showLikes: true,
+        showMentions: true,
+        showQuotes: true,
+        showReplies: true,
+        showReposts: true,
+    };
+
     constructor() {
         super();
         this.stream = new NotificationsStream();
         this.wrapItem = false;
         State.notify("unreadNotifications", "updated", 0);
+    }
+
+    private shouldShowNotification(type: NotificationType) {
+        let show = false;
+        switch (type) {
+            case "like":
+                show = this.filter.showLikes;
+                break;
+            case "repost":
+                show = this.filter.showReposts;
+                break;
+            case "follow":
+                show = this.filter.showFollows;
+                break;
+            case "mention":
+                show = this.filter.showMentions;
+                break;
+            case "reply":
+                show = this.filter.showReplies;
+                break;
+            case "quote":
+                show = this.filter.showQuotes;
+                break;
+        }
+        return show;
+    }
+
+    applyFilter() {
+        const notifications = Array.from(this.querySelectorAll(".notification")) as HTMLElement[];
+        for (const notification of notifications) {
+            const show = this.shouldShowNotification(notification.dataset.type as NotificationType);
+            if (show) notification.classList.remove("hidden");
+            else notification.classList.add("hidden");
+        }
+
+        if (
+            !this.filter.showFollows &&
+            !this.filter.showLikes &&
+            !this.filter.showMentions &&
+            !this.filter.showQuotes &&
+            !this.filter.showReplies &&
+            !this.filter.showReposts
+        ) {
+            this.loadingPaused = true;
+            this.spinner?.classList.add("hidden");
+        } else {
+            if (this.loadingPaused) {
+                this.loadingPaused = false;
+                this.spinner?.classList.remove("hidden");
+                this.load();
+            } else {
+                this.loadingPaused = false;
+            }
+        }
     }
 
     getItemKey(notification: AppBskyNotificationListNotifications.Notification): string {
@@ -331,7 +411,10 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
         }
 
         notificationDom = dom(html`<div
-            class="px-4 py-4 border-b border-divider flex flex-col ${notification.isRead ? "" : "bg-[#d8e4ff4a] dark:bg-[#001040]"}"
+            data-type="${notification.reason}"
+            class="notification ${this.shouldShowNotification(notification.reason)
+                ? ""
+                : "hidden"} px-4 py-4 border-b border-divider flex flex-col ${notification.isRead ? "" : "bg-[#d8e4ff4a] dark:bg-[#001040]"}"
         >
             <div class="flex items-center gap-2">
                 <i class="icon !w-5 !h-5 fill-primary">${icons[notification.reason] ?? ""}</i>
@@ -346,16 +429,82 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
 
 @customElement("notifications-stream-overlay")
 export class NotificationsStreamOverlay extends HashNavOverlay {
+    @query("#notifications")
+    notifications?: NotificationsStreamView;
+
     getHash(): string {
         return "notifications";
     }
 
     renderHeader(): TemplateResult {
-        return html` ${renderTopbar("Notifications", this.closeButton())}`;
+        const buttons = html`<div class="ml-auto flex">
+            <div class="flex -mr-2">
+                <icon-toggle
+                    .value=${true}
+                    @change=${(ev: CustomEvent) => {
+                        this.notifications!.filter.showFollows = ev.detail.value;
+                        this.handleFilter();
+                    }}
+                    .icon=${html`<i class="icon !w-5 !h-5">${followIcon}</i>`}
+                    class="mr-2"
+                ></icon-toggle>
+                <icon-toggle
+                    .value=${true}
+                    @change=${(ev: CustomEvent) => {
+                        this.notifications!.filter.showReplies = ev.detail.value;
+                        this.handleFilter();
+                    }}
+                    .icon=${html`<i class="icon !w-5 !h-5">${replyIcon}</i>`}
+                    class="mr-2"
+                ></icon-toggle>
+                <icon-toggle
+                    .value=${true}
+                    @change=${(ev: CustomEvent) => {
+                        this.notifications!.filter.showQuotes = ev.detail.value;
+                        this.handleFilter();
+                    }}
+                    .icon=${html`<i class="icon !w-5 !h-5">${quoteIcon}</i>`}
+                    class="mr-2"
+                ></icon-toggle>
+                <icon-toggle
+                    .value=${true}
+                    @change=${(ev: CustomEvent) => {
+                        this.notifications!.filter.showReposts = ev.detail.value;
+                        this.handleFilter();
+                    }}
+                    .icon=${html`<i class="icon !w-5 !h-5">${reblogIcon}</i>`}
+                    class="mr-2"
+                ></icon-toggle>
+                <icon-toggle
+                    .value=${true}
+                    @change=${(ev: CustomEvent) => {
+                        this.notifications!.filter.showMentions = ev.detail.value;
+                        this.handleFilter();
+                    }}
+                    .icon=${html`<i class="icon !w-5 !h-5">${atIcon}</i>`}
+                    class="mr-2"
+                ></icon-toggle>
+                <icon-toggle
+                    .value=${true}
+                    @change=${(ev: CustomEvent) => {
+                        this.notifications!.filter.showLikes = ev.detail.value;
+                        this.handleFilter();
+                    }}
+                    .icon=${html`<i class="icon !w-5 !h-5">${heartIcon}</i>`}
+                ></icon-toggle>
+            </div>
+            ${this.closeButton()}
+        </div>`;
+
+        return html`${renderTopbar("Notifications", buttons)}`;
+    }
+
+    handleFilter() {
+        this.notifications?.applyFilter();
     }
 
     renderContent(): TemplateResult {
-        return html`<notifications-stream-view></notifications-stream-view>`;
+        return html`<notifications-stream-view id="notifications"></notifications-stream-view>`;
     }
 }
 
