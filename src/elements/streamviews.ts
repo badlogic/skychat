@@ -21,7 +21,7 @@ import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { deletePost, quote, reply } from "./posteditor";
 import { renderEmbed, renderRichText } from "./posts";
 import { renderProfile } from "./profiles";
-import { GeneratorViewElement, GeneratorViewElementAction, IconToggle } from ".";
+import { GeneratorViewElement, GeneratorViewElementAction, IconToggle, UpButton } from ".";
 
 (window as any).emitLitDebugLogEvents = true;
 
@@ -271,7 +271,16 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
 
     constructor() {
         super();
-        this.stream = new NotificationsStream();
+        this.stream = new NotificationsStream(true);
+        this.newItems = () => {
+            const scrollParent = getScrollParent(this.children[0] as HTMLElement)!;
+            const upButton = scrollParent.querySelector("up-button") as UpButton;
+            if (upButton) {
+                upButton.classList.remove("hidden");
+                upButton.highlight = true;
+            }
+        };
+
         this.wrapItem = false;
         State.notify("unreadNotifications", "updated", 0);
     }

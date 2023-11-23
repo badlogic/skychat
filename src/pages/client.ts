@@ -234,12 +234,10 @@ export class HomeOverlay extends Overlay {
                         this.error = i18n("Could not load newer items");
                     }
                     const scrollParent = getScrollParent(this.children[0] as HTMLElement)!;
-                    if (scrollParent.scrollTop > 0) {
-                        const upButton = scrollParent.querySelector("up-button") as UpButton;
-                        if (upButton) {
-                            upButton.classList.remove("hidden");
-                            upButton.highlight = true;
-                        }
+                    const upButton = scrollParent.querySelector("up-button") as UpButton;
+                    if (upButton) {
+                        upButton.classList.remove("hidden");
+                        upButton.highlight = true;
                     }
                 }}
                 .stream=${new ActorFeedStream("home", undefined, true, FEED_CHECK_INTERVAL)}

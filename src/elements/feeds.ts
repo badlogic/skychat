@@ -114,7 +114,7 @@ export class GeneratorViewElement extends LitElement {
                 : nothing}
         </div>`;
 
-        const header = html`<div class="flex items-center gap-2 ${this.viewStyle == "topbar" ? "flex-grow" : ""}">
+        const header = html`<div class="flex items-center gap-2 ${this.viewStyle == "topbar" ? "flex-grow -ml-3" : ""}">
             ${generator.avatar
                 ? html`<img
                       src="${generator.avatar}"
@@ -150,7 +150,7 @@ export class GeneratorViewElement extends LitElement {
             ${this.expandDetails
                 ? this.viewStyle == "topbar"
                     ? html`<div
-                          class="absolute top-[48px] left-0 w-full bg-background text-black dark:text-white font-normal px-4 pb-2 pt-1 rounded-md fancy-shadow"
+                          class="absolute animate-fade-down animate-duration-300 top-[40px] left-0 w-full bg-secondary text-secondary-fg font-normal px-4 pb-2 pt-1 rounded-md fancy-shadow"
                       >
                           ${details}
                       </div>`
@@ -528,7 +528,7 @@ export class FeedOverlay extends HashNavOverlay {
                         this.error = i18n("Could not load newer items");
                     }
                     const scrollParent = getScrollParent(this.children[0] as HTMLElement);
-                    if (scrollParent && scrollParent.scrollTop > 0) {
+                    if (scrollParent) {
                         const upButton = scrollParent.querySelector("up-button") as UpButton;
                         if (upButton) {
                             upButton.classList.remove("hidden");
