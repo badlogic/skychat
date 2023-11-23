@@ -1,5 +1,6 @@
 import {
     AppBskyActorDefs,
+    AppBskyActorSearchActors,
     AppBskyActorSearchActorsTypeahead,
     AppBskyFeedDefs,
     AppBskyFeedGetFeedGenerator,
@@ -548,12 +549,13 @@ export class State {
             }
             promises.push(State.bskyClient.searchActors({ q: query, cursor, limit }));
             const results = await Promise.all(promises);
-            const result = results.length == 1 ? results[0] : results[1];
+            const result = (results.length == 1 ? results[0] : results[1]) as AppBskyActorSearchActors.Response;
             if (!result.success) throw new Error();
             let profiles = result.data.actors;
             const typeAheadResult = results.length == 2 ? (results[0] as AppBskyActorSearchActorsTypeahead.Response) : undefined;
             if (typeAheadResult?.success) {
-                profiles = [...typeAheadResult.data.actors, ...profiles];
+                const lookup = new Set<string>(typeAheadResult.data.actors.map((user) => user.did));
+                profiles = [...typeAheadResult.data.actors, ...profiles.filter((user) => !lookup.has(user.did))];
             }
             this.notifyBatch("profile", "updated", profiles);
             return { cursor: result.data.cursor, items: profiles };
