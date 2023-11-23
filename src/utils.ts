@@ -440,6 +440,27 @@ export function getScrollParent(parent: HTMLElement | null) {
     return null;
 }
 
+export function waitForScrollHeightUnchanged(element: HTMLElement, cb: () => void, steadyInterval = 50) {
+    let lastChangeTime = performance.now();
+    let lastHeight = 0;
+    const check = () => {
+        const height = element.scrollHeight;
+        if (height != lastHeight) {
+            lastChangeTime = performance.now();
+            lastHeight = height;
+            requestAnimationFrame(check);
+            return;
+        }
+
+        if (performance.now() - lastChangeTime > steadyInterval) {
+            cb();
+        } else {
+            requestAnimationFrame(check);
+        }
+    };
+    check();
+}
+
 export function waitForNavigation(): Promise<void> {
     return new Promise((resolve) => {
         window.addEventListener("popstate", function onPopState() {

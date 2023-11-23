@@ -28,6 +28,7 @@ import {
     onVisibilityChange,
     splitAtUri,
     waitForLitElementsToRender,
+    waitForScrollHeightUnchanged,
 } from "../utils";
 import { IconToggle } from "./icontoggle";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
@@ -817,7 +818,7 @@ export class ThreadViewPostElement extends LitElement {
             showMoredom.classList.toggle("hidden");
         };
 
-        const postDom = dom(html`<div>
+        const postDom = dom(html`<div data-uri="${thread.post.uri}" class="min-h-[80px]">
             ${AppBskyFeedDefs.isNotFoundPost(thread.parent)
                 ? html`<div class="bg-muted text-muted-fg px-4 py-2 mb-2 rounded">${i18n("Deleted post")}</div>`
                 : nothing}
@@ -856,12 +857,6 @@ export class ThreadViewPostElement extends LitElement {
         </div>`)[0];
         const repliesDom = postDom.querySelector("#replies") as HTMLElement;
         const showMoredom = postDom.querySelector("#showMore") as HTMLElement;
-        if (thread.post.uri == uri) {
-            waitForLitElementsToRender(postDom).then(() => {
-                const postViewDom = postDom.querySelector("post-view");
-                postViewDom?.scrollIntoView({ behavior: "smooth", block: "center" });
-            });
-        }
         return postDom;
     }
 }
@@ -973,13 +968,21 @@ export class ThreadOverlay extends HashNavOverlay {
     renderContent() {
         // FIXME threads to test sorting and view modes with
         // http://localhost:8080/#thread/did:plc:k3a6s3ac4unrst44te7fd62m/3k7ths5azkx2z
-        return html`<div class="px-4">
+        const result = dom(html`<div class="px-4">
             ${this.isLoading ? html`<loading-spinner></loading-spinner>` : nothing} ${this.error ? html`<div>${this.error}</div>` : nothing}
             <div class="mt-2"></div>
             ${this.thread
                 ? html`<thread-view-post .highlightUri=${this.postUri} .isRoot=${true} .thread=${this.thread}></thread-view-post>`
                 : nothing}
-        </div>`;
+        </div>`)[0];
+        if (this.thread) {
+            const root = this.renderRoot.children[0] as HTMLElement;
+            waitForScrollHeightUnchanged(root, () => {
+                const postViewDom = this.querySelector(`[data-uri="${this.postUri}"]`);
+                postViewDom?.querySelector("post-view")?.scrollIntoView({ behavior: "smooth", block: "center" });
+            });
+        }
+        return html`${result}`;
     }
 }
 
