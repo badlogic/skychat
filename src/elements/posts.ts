@@ -13,7 +13,7 @@ import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { Messages, i18n } from "../i18n";
-import { blockIcon, deleteIcon, heartIcon, moreIcon, muteIcon, quoteIcon, reblogIcon, replyIcon, shieldIcon, treeIcon } from "../icons";
+import { articleIcon, blockIcon, deleteIcon, heartIcon, moreIcon, muteIcon, quoteIcon, reblogIcon, replyIcon, shieldIcon, treeIcon } from "../icons";
 import { EventAction, NumQuote, State } from "../state";
 import { Store } from "../store";
 import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
@@ -23,6 +23,7 @@ import {
     error,
     fetchApi,
     getDateString,
+    getScrollParent,
     getTimeDifference,
     hasLinkOrButtonParent,
     onVisibilityChange,
@@ -35,6 +36,7 @@ import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { PopupMenu } from "./popup";
 import { deletePost, quote, reply } from "./posteditor";
 import { getProfileUrl, renderProfile, renderProfileAvatar } from "./profiles";
+import { date, record } from "../bsky";
 
 export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {
@@ -765,7 +767,12 @@ export class ThreadViewPostElement extends LitElement {
     isRoot = false;
 
     @property()
-    thread?: ThreadViewPost;
+    thread?: ThreadViewPost["replies"];
+
+    @property()
+    showReplies = true;
+
+    hasWiggled = false;
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
@@ -774,12 +781,14 @@ export class ThreadViewPostElement extends LitElement {
     render() {
         const thread = this.thread;
         if (!AppBskyFeedDefs.isThreadViewPost(thread)) {
+            // FIXME handle other thread types.
             return dom(html``)[0];
         }
         const uri = this.highlightUri;
         const isRoot = this.isRoot;
 
-        const animation = "animate-shake animate-delay-500";
+        const animation = this.hasWiggled ? "" : "animate-shake animate-delay-500";
+        this.hasWiggled = true;
         const insertNewPost = (newPost: PostView, repliesDom: HTMLElement) => {
             const threadViewPost = {
                 $type: "app.bsky.feed.defs#threadViewPost",
@@ -805,16 +814,12 @@ export class ThreadViewPostElement extends LitElement {
             );
         };
 
-        const toggleReplies = (ev: MouseEvent, postDom: HTMLElement) => {
+        const toggleReplies = (ev: MouseEvent) => {
             if (window.getSelection() && window.getSelection()?.toString().length != 0) return;
             if (hasLinkOrButtonParent(ev.target as HTMLElement)) return;
             if (!thread.replies || thread.replies.length == 0) return;
             ev.stopPropagation();
-            const isHiding = repliesDom.classList.contains("hidden");
             repliesDom.classList.toggle("hidden");
-            if (isHiding) {
-                repliesDom.classList.add("animate-flip-down");
-            } else repliesDom.classList.remove("animate-flip-down");
             showMoredom.classList.toggle("hidden");
         };
 
@@ -828,7 +833,7 @@ export class ThreadViewPostElement extends LitElement {
                     : ""} ${thread.post.uri == uri ? "border-l border-primary" : ""} flex flex-col pr-2"
             >
                 <post-view
-                    @click=${(ev: MouseEvent) => toggleReplies(ev, postDom)}
+                    @click=${(ev: MouseEvent) => toggleReplies(ev)}
                     .post=${thread.post}
                     .quoteCallback=${(post: PostView) => quote(post)}
                     .replyCallback=${(post: PostView) => reply(post, repliesDom)}
@@ -840,7 +845,7 @@ export class ThreadViewPostElement extends LitElement {
                 ></post-view>
                 <div
                     id="showMore"
-                    @click=${(ev: MouseEvent) => toggleReplies(ev, postDom)}
+                    @click=${(ev: MouseEvent) => toggleReplies(ev)}
                     class="hidden cursor-pointer self-start p-1 text-xs rounded bg-muted text-muted-fg"
                 >
                     ${i18n("Show replies")}
@@ -857,6 +862,7 @@ export class ThreadViewPostElement extends LitElement {
         </div>`)[0];
         const repliesDom = postDom.querySelector("#replies") as HTMLElement;
         const showMoredom = postDom.querySelector("#showMore") as HTMLElement;
+        if (!this.showReplies) toggleReplies(new MouseEvent("none"));
         return postDom;
     }
 }
@@ -874,6 +880,9 @@ export class ThreadOverlay extends HashNavOverlay {
 
     @state()
     thread?: ThreadViewPost;
+
+    @property()
+    readerMode = false;
 
     constructor() {
         super();
@@ -962,23 +971,100 @@ export class ThreadOverlay extends HashNavOverlay {
     }
 
     renderHeader() {
-        return html`${renderTopbar("Thread", this.closeButton())}`;
+        return html`${renderTopbar(
+            "Thread",
+            html`<div class="ml-auto flex">
+                <div class="flex -mr-2">
+                    <icon-toggle
+                        @change=${(ev: CustomEvent) => (this.readerMode = ev.detail.value)}
+                        .icon=${html`<i class="icon !w-5 !h-5">${articleIcon}</i>`}
+                    ></icon-toggle>
+                </div>
+                ${this.closeButton()}
+            </div>`
+        )}`;
+    }
+
+    applyFilters(thread: ThreadViewPost): ThreadViewPost[] {
+        const copyThread = (thread: ThreadViewPost): ThreadViewPost => {
+            const replies: ThreadViewPost["replies"] = thread.replies ? [] : undefined;
+            if (thread.replies) {
+                for (const reply of thread.replies) {
+                    if (AppBskyFeedDefs.isThreadViewPost(reply)) {
+                        replies?.push(copyThread(reply));
+                    } else {
+                        replies?.push(reply);
+                    }
+                }
+            }
+            return { ...thread, replies };
+        };
+        thread = copyThread(thread);
+        const sortReplies = (thread: ThreadViewPost) => {
+            const parentAuthor = thread.post.author;
+            const dateSort = (a: ThreadViewPost, b: ThreadViewPost) => {
+                const aRecord = date(a);
+                const bRecord = date(b);
+                if (aRecord && bRecord) return aRecord.getTime() - bRecord.getTime();
+                return 0;
+            };
+            if (thread.replies) {
+                const posts = thread.replies.filter((reply) => AppBskyFeedDefs.isThreadViewPost(reply)) as ThreadViewPost[];
+                const authorPosts = posts.filter((reply) => reply.post.author.did == parentAuthor.did);
+                authorPosts.sort(dateSort);
+                const otherPosts = posts.filter((reply) => reply.post.author.did != parentAuthor.did);
+                otherPosts.sort(dateSort);
+                const other = thread.replies.filter((reply) => !AppBskyFeedDefs.isThreadViewPost(reply));
+                thread.replies = [...authorPosts, ...otherPosts, ...other];
+                for (const reply of thread.replies) {
+                    if (AppBskyFeedDefs.isThreadViewPost(reply)) sortReplies(reply);
+                }
+            }
+        };
+        sortReplies(thread);
+        if (this.readerMode) {
+            const parentAuthor = thread.post.author;
+            const threadPosts: ThreadViewPost[] = [];
+            const collectThreadPosts = (replies: ThreadViewPost["replies"]) => {
+                if (replies && replies.length > 0 && AppBskyFeedDefs.isThreadViewPost(replies[0]) && replies[0].post.author.did == parentAuthor.did) {
+                    const opReply = replies[0];
+                    threadPosts.push(opReply);
+                    replies.splice(0, 1)[0];
+                    collectThreadPosts(opReply.replies);
+                }
+            };
+            collectThreadPosts(thread.replies);
+            return [thread, ...threadPosts];
+        }
+        return [thread];
     }
 
     renderContent() {
+        const thread = this.thread ? this.applyFilters(this.thread) : undefined;
+
         // FIXME threads to test sorting and view modes with
         // http://localhost:8080/#thread/did:plc:k3a6s3ac4unrst44te7fd62m/3k7ths5azkx2z
         const result = dom(html`<div class="px-4">
             ${this.isLoading ? html`<loading-spinner></loading-spinner>` : nothing} ${this.error ? html`<div>${this.error}</div>` : nothing}
             <div class="mt-2"></div>
-            ${this.thread
-                ? html`<thread-view-post .highlightUri=${this.postUri} .isRoot=${true} .thread=${this.thread}></thread-view-post>`
+            ${thread
+                ? map(
+                      thread,
+                      (t, index) =>
+                          html`<thread-view-post
+                              .showReplies=${!this.readerMode}
+                              .highlightUri=${this.readerMode ? "" : this.postUri}
+                              .isRoot=${true}
+                              .thread=${t}
+                          ></thread-view-post>`
+                  )
                 : nothing}
         </div>`)[0];
-        if (this.thread) {
+        if (thread) {
+            const scrollToUri = this.readerMode ? (thread ? thread[0].post.uri : "") : this.postUri;
             const root = this.renderRoot.children[0] as HTMLElement;
             waitForScrollHeightUnchanged(root, () => {
-                const postViewDom = this.querySelector(`[data-uri="${this.postUri}"]`);
+                const postViewDom = this.querySelector(`[data-uri="${scrollToUri}"]`);
                 postViewDom?.querySelector("post-view")?.scrollIntoView({ behavior: "smooth", block: "center" });
             });
         }
