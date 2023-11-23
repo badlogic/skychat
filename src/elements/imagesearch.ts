@@ -108,7 +108,7 @@ export class ImageSearch extends Overlay {
             <input
                 @input=${() => this.handleSearch()}
                 id="search"
-                class="search fancy-shadow outline-none"
+                class="search bg-transparent fancy-shadow outline-none"
                 placeholder="${i18n("Search for GIFS...")}"
             />
             <div id="imageGrid" class="flex flex-col gap-2 mt-2"></div>

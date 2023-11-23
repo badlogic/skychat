@@ -154,7 +154,7 @@ export class State {
         this.objects[event]?.delete(id);
     }
 
-    static async getPosts(uris: string[], cacheProfilesAndQuotes = true): Promise<Error | PostView[]> {
+    static async getPosts(uris: string[], cacheProfilesAndQuotes = true, notify = true): Promise<Error | PostView[]> {
         if (!State.bskyClient) return new Error("Not connected");
         const urisToFetch = Array.from(new Set<string>(uris));
         const posts: PostView[] = [];
@@ -178,7 +178,7 @@ export class State {
             for (const promise of promises) {
                 if (promise instanceof Error) throw promise;
             }
-            this.notifyBatch("post", "updated", posts);
+            if (notify) this.notifyBatch("post", "updated", posts);
             return uris.map((uri) => postsMap.get(uri)!);
         } catch (e) {
             return error("Couldn't load posts", e);

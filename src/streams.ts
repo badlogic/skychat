@@ -5,80 +5,16 @@ import { error, fetchApi } from "./utils";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { date, record } from "./bsky";
 
-export interface Stream<T> {
-    items: T[];
-    itemsMap: Map<string, T>;
-    getItemKey(item: T): string;
-    getItemDate(item: T): Date;
-    readonly pollNew: boolean;
-    addNewItemsListener(listener: (newerItems: Error | T[]) => void): void;
-    next(): Promise<Error | T[]>;
-    poll(): void;
-    close(): void;
-}
+export type StreamProvider<T> = (cursor?: string, limit?: number, notify?: boolean) => Promise<Error | { cursor?: string; items: T[] }>;
 
-export class PostSearchStream implements Stream<PostView> {
-    cursor?: string;
-    items: PostView[] = [];
-    itemsMap = new Map<string, PostView>();
-    readonly pollNew = false;
-    constructor(readonly query: string, readonly reversStream = true) {}
-
-    getItemKey(item: PostView): string {
-        return item.uri;
-    }
-
-    getItemDate(item: AppBskyFeedDefs.PostView): Date {
-        return date(item) ?? new Date();
-    }
-
-    addNewItemsListener(listener: (newItems: Error | PostView[]) => void): void {
-        throw new Error("Method not supported");
-    }
-
-    poll(): void {
-        throw new Error("Method not supported");
-    }
-
-    async next() {
-        if (!State.isConnected()) return Error("Not connected");
-        try {
-            const response = await fetch(
-                `https://palomar.bsky.social/xrpc/app.bsky.unspecced.searchPostsSkeleton?q=${encodeURIComponent(this.query)}&limit=20${
-                    this.cursor ? `&cursor=${this.cursor}` : ""
-                }`
-            );
-            if (response.status != 200) throw new Error();
-            const result = (await response.json()) as { cursor: string; totalHits: number; posts: { uri: string }[] };
-            let postsResponse = await State.getPosts(result.posts.map((post) => post.uri));
-            if (postsResponse instanceof Error) throw new Error();
-            postsResponse = postsResponse.filter((post) => post != undefined);
-            this.cursor = result.cursor;
-            for (const post of postsResponse) {
-                this.itemsMap.set(this.getItemKey(post), post);
-            }
-            if (this.reversStream) postsResponse.reverse();
-            return postsResponse;
-        } catch (e) {
-            return error(`Couldn't load posts for query ${this.query}, offset ${this.cursor}`, e);
-        }
-    }
-
-    close() {}
-}
-
-export abstract class CursorStream<T> implements Stream<T> {
+export abstract class Stream<T> {
     cursor?: string;
     items: T[] = [];
     itemsMap = new Map<string, T>();
     closed = false;
     timeoutId: any = undefined;
 
-    constructor(
-        readonly provider: (cursor?: string, limit?: number, notify?: boolean) => Promise<Error | { cursor?: string; items: T[] }>,
-        public readonly pollNew = false,
-        readonly pollInterval = 5000
-    ) {}
+    constructor(readonly provider: StreamProvider<T>, public readonly pollNew = false, readonly pollInterval = 5000) {}
 
     isPolling = false;
     async poll() {
@@ -166,7 +102,51 @@ export abstract class CursorStream<T> implements Stream<T> {
     }
 }
 
-export class NotificationsStream extends CursorStream<AppBskyNotificationListNotifications.Notification> {
+export class PostSearchStream extends Stream<PostView> {
+    cursor?: string;
+    items: PostView[] = [];
+    itemsMap = new Map<string, PostView>();
+    readonly pollNew = false;
+    constructor(readonly query: string, readonly reversStream = true) {
+        const provider: StreamProvider<PostView> = async (cursor?: string, limit?: number, notify?: boolean) => {
+            try {
+                const response = await fetch(
+                    `https://palomar.bsky.social/xrpc/app.bsky.unspecced.searchPostsSkeleton?q=${encodeURIComponent(this.query)}&limit=${limit}${
+                        this.cursor ? `&cursor=${this.cursor}` : ""
+                    }`
+                );
+                if (response.status != 200) throw new Error();
+                const result = (await response.json()) as { cursor: string; totalHits: number; posts: { uri: string }[] };
+                let postsResponse = await State.getPosts(
+                    result.posts.map((post) => post.uri),
+                    true,
+                    notify
+                );
+                if (postsResponse instanceof Error) throw new Error();
+                postsResponse = postsResponse.filter((post) => post != undefined);
+                this.cursor = result.cursor;
+                for (const post of postsResponse) {
+                    this.itemsMap.set(this.getItemKey(post), post);
+                }
+                if (this.reversStream) postsResponse.reverse();
+                return { cursor: this.cursor, items: postsResponse };
+            } catch (e) {
+                return error(`Couldn't load posts for query ${this.query}, offset ${this.cursor}`, e);
+            }
+        };
+        super(provider);
+    }
+
+    getItemKey(item: PostView): string {
+        return item.uri;
+    }
+
+    getItemDate(item: AppBskyFeedDefs.PostView): Date {
+        return date(item) ?? new Date();
+    }
+}
+
+export class NotificationsStream extends Stream<AppBskyNotificationListNotifications.Notification> {
     constructor(pollNew = false, pollInterval?: number) {
         super(
             (cursor?: string, limit?: number, notify?: boolean) => {
@@ -186,7 +166,7 @@ export class NotificationsStream extends CursorStream<AppBskyNotificationListNot
     }
 }
 
-export class ActorFeedStream extends CursorStream<FeedViewPost> {
+export class ActorFeedStream extends Stream<FeedViewPost> {
     constructor(readonly type: ActorFeedType, readonly actor?: string, pollNew = false, pollInterval?: number) {
         super(
             (cursor?: string, limit?: number, notify?: boolean) => {
@@ -206,7 +186,7 @@ export class ActorFeedStream extends CursorStream<FeedViewPost> {
     }
 }
 
-export class LoggedInActorLikesStream extends CursorStream<FeedViewPost> {
+export class LoggedInActorLikesStream extends Stream<FeedViewPost> {
     constructor() {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.getLoggedInActorLikes(cursor, limit);
@@ -222,7 +202,7 @@ export class LoggedInActorLikesStream extends CursorStream<FeedViewPost> {
     }
 }
 
-export class ActorLikesStream extends CursorStream<PostView> {
+export class ActorLikesStream extends Stream<PostView> {
     constructor(readonly actor: string) {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.getActorLikes(actor, cursor, limit);
@@ -238,7 +218,7 @@ export class ActorLikesStream extends CursorStream<PostView> {
     }
 }
 
-export class PostLikesStream extends CursorStream<ProfileViewDetailed> {
+export class PostLikesStream extends Stream<ProfileViewDetailed> {
     constructor(readonly postUri: string) {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.getPostLikes(postUri, cursor, limit);
@@ -254,7 +234,7 @@ export class PostLikesStream extends CursorStream<ProfileViewDetailed> {
     }
 }
 
-export class PostRepostsStream extends CursorStream<ProfileViewDetailed> {
+export class PostRepostsStream extends Stream<ProfileViewDetailed> {
     constructor(readonly postUri: string) {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.getPostReposts(postUri, cursor, limit);
@@ -270,7 +250,7 @@ export class PostRepostsStream extends CursorStream<ProfileViewDetailed> {
     }
 }
 
-export class FollowersStream extends CursorStream<ProfileViewDetailed> {
+export class FollowersStream extends Stream<ProfileViewDetailed> {
     constructor(readonly did: string) {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.getFollowers(did, cursor, limit);
@@ -286,7 +266,7 @@ export class FollowersStream extends CursorStream<ProfileViewDetailed> {
     }
 }
 
-export class FollowingStream extends CursorStream<ProfileViewDetailed> {
+export class FollowingStream extends Stream<ProfileViewDetailed> {
     constructor(readonly did: string) {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.getFollowing(did, cursor, limit);
@@ -302,13 +282,34 @@ export class FollowingStream extends CursorStream<ProfileViewDetailed> {
     }
 }
 
-export class QuotesStream implements Stream<PostView> {
+export class QuotesStream extends Stream<PostView> {
     quotes?: string[];
     items: PostView[] = [];
     itemsMap = new Map<string, PostView>();
     pollNew = false;
 
-    constructor(readonly postUri: string) {}
+    constructor(readonly postUri: string) {
+        const provider: StreamProvider<PostView> = async () => {
+            try {
+                if (!this.quotes) {
+                    const quotes = await State.getQuotes(this.postUri);
+                    if (quotes instanceof Error) throw quotes;
+                    this.quotes = quotes;
+                }
+
+                const postUris = this.quotes.splice(0, 25);
+                const posts = await State.getPosts(postUris);
+                if (posts instanceof Error) throw posts;
+                for (const post of posts) {
+                    this.itemsMap.set(this.getItemKey(post), post);
+                }
+                return { cursor: "end", items: posts };
+            } catch (e) {
+                return error("Couldn't load quotes", e);
+            }
+        };
+        super(provider);
+    }
 
     getItemKey(item: PostView): string {
         return item.uri;
@@ -317,42 +318,9 @@ export class QuotesStream implements Stream<PostView> {
     getItemDate(item: AppBskyFeedDefs.PostView): Date {
         return date(item) ?? new Date();
     }
-
-    addNewItemsListener(listener: (newerItems: PostView[] | Error) => void): void {
-        throw new Error("Method not supported");
-    }
-
-    poll() {
-        throw new Error("Method not supported");
-    }
-
-    async next(): Promise<Error | PostView[]> {
-        if (!State.isConnected()) return new Error("Couldn't load quotes");
-        try {
-            if (!this.quotes) {
-                const quotes = await State.getQuotes(this.postUri);
-                if (quotes instanceof Error) throw quotes;
-                this.quotes = quotes;
-            }
-
-            const postUris = this.quotes.splice(0, 25);
-            const posts = await State.getPosts(postUris);
-            if (posts instanceof Error) throw posts;
-            for (const post of posts) {
-                this.itemsMap.set(this.getItemKey(post), post);
-            }
-            return posts;
-        } catch (e) {
-            return error("Couldn't load quotes", e);
-        }
-    }
-
-    close(): void {
-        throw new Error("Method not supported");
-    }
 }
 
-export class UserSearchStream extends CursorStream<ProfileViewDetailed> {
+export class UserSearchStream extends Stream<ProfileViewDetailed> {
     constructor(readonly query: string) {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.searchUsers(query, cursor, limit);
@@ -368,7 +336,7 @@ export class UserSearchStream extends CursorStream<ProfileViewDetailed> {
     }
 }
 
-export class UserSuggestionStream extends CursorStream<ProfileViewDetailed> {
+export class UserSuggestionStream extends Stream<ProfileViewDetailed> {
     constructor() {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.suggestUsers(cursor, limit);
@@ -384,7 +352,7 @@ export class UserSuggestionStream extends CursorStream<ProfileViewDetailed> {
     }
 }
 
-export class FeedSearchStream extends CursorStream<GeneratorView> {
+export class FeedSearchStream extends Stream<GeneratorView> {
     constructor(readonly query: string) {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.searchFeeds(query, cursor, limit);
@@ -400,7 +368,7 @@ export class FeedSearchStream extends CursorStream<GeneratorView> {
     }
 }
 
-export class FeedSuggestionStream extends CursorStream<GeneratorView> {
+export class FeedSuggestionStream extends Stream<GeneratorView> {
     constructor() {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.suggestFeeds(cursor, limit);
@@ -416,7 +384,7 @@ export class FeedSuggestionStream extends CursorStream<GeneratorView> {
     }
 }
 
-export class ArrayFeed<T> extends CursorStream<T> {
+export class ArrayFeed<T> extends Stream<T> {
     index = 0;
     constructor(items: T[], readonly itemKey: (item: T) => string, readonly itemDate: (item: T) => Date) {
         items = [...items];
@@ -437,7 +405,7 @@ export class ArrayFeed<T> extends CursorStream<T> {
     }
 }
 
-export class FeedPostsStream extends CursorStream<FeedViewPost> {
+export class FeedPostsStream extends Stream<FeedViewPost> {
     constructor(readonly feedUri: string, pollNew = false, pollInterval?: number) {
         super(
             (cursor?: string, limit?: number, notify?: boolean) => {

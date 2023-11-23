@@ -5,23 +5,22 @@ import {
     AppBskyFeedRepost,
     AppBskyGraphFollow,
     AppBskyNotificationListNotifications,
-    RichText,
 } from "@atproto/api";
 import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { FeedViewPost, GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
+import { GeneratorViewElementAction, UpButton } from ".";
 import { Messages, i18n } from "../i18n";
 import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
 import { State } from "../state";
 import { Store } from "../store";
 import { ActorFeedStream, NotificationsStream, Stream } from "../streams";
-import { collectLitElements, defaultFeed, dom, error, getScrollParent, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce } from "../utils";
+import { collectLitElements, dom, error, getScrollParent, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce } from "../utils";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { deletePost, quote, reply } from "./posteditor";
 import { renderEmbed, renderRichText } from "./posts";
 import { renderProfile } from "./profiles";
-import { GeneratorViewElement, GeneratorViewElementAction, IconToggle, UpButton } from ".";
 
 (window as any).emitLitDebugLogEvents = true;
 
@@ -388,7 +387,14 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
                 case "reply":
                     const parent = State.getObject("post", (notification.record as any).reply.parent.uri);
                     postContent = html`${parent && profile && AppBskyFeedPost.isRecord(parent.record)
-                            ? html`<div class="border border-divider rounded p-2 mb-2">
+                            ? html`<div
+                                  class="border border-divider rounded p-2 mb-2 cursor-pointer"
+                                  @click=${(ev: Event) => {
+                                      if (hasLinkOrButtonParent(ev.target as HTMLElement)) return;
+                                      ev.stopPropagation();
+                                      document.body.append(dom(html`<thread-overlay .postUri=${post?.uri}></thread-overlay>`)[0]);
+                                  }}
+                              >
                                   <div class="dark:text-white/50 text-black/50">${renderProfile(parent.author, true)}</div>
                                   <div class="mt-1 mb-1 break-words text-muted-fg">${renderRichText(parent.record)}</div>
                                   ${parent.embed ? renderEmbed(parent.embed, false, true) : nothing}

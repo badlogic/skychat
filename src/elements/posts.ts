@@ -218,7 +218,7 @@ export function tryEmbedYouTubeVideo(
 
     if (videoID && videoID.length === 11) {
         const youtubeDom = dom(html`<div class="mt-2 rounded overflow-x-clip flex justify-center"></div>`)[0];
-        fetch("https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=3Yn4v44qplg&format=json")
+        fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoID}&format=json`)
             .then(async (data) => {
                 const youtubeInfo = await data.json();
                 const showIFrame = (ev: MouseEvent) => {
