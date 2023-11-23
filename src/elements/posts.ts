@@ -14,7 +14,20 @@ import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { date } from "../bsky";
 import { i18n } from "../i18n";
-import { articleIcon, blockIcon, deleteIcon, heartIcon, moreIcon, muteIcon, quoteIcon, reblogIcon, replyIcon, shieldIcon, treeIcon } from "../icons";
+import {
+    articleIcon,
+    blockIcon,
+    cloudIcon,
+    deleteIcon,
+    heartIcon,
+    moreIcon,
+    muteIcon,
+    quoteIcon,
+    reblogIcon,
+    replyIcon,
+    shieldIcon,
+    treeIcon,
+} from "../icons";
 import { EventAction, NumQuote, State } from "../state";
 import { Store } from "../store";
 import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
@@ -33,7 +46,7 @@ import {
     youtubePlaYButton,
 } from "../utils";
 import { IconToggle } from "./icontoggle";
-import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
+import { HashNavOverlay, Overlay, renderTopbar, waitForOverlayClosed } from "./overlay";
 import { PopupMenu } from "./popup";
 import { deletePost, quote, reply } from "./posteditor";
 import { getProfileUrl, renderProfile, renderProfileAvatar } from "./profiles";
@@ -656,7 +669,12 @@ export class AltText extends Overlay {
     }
 }
 
-type PostOptions = "likes" | "quotes" | "reposts" | "mute_user" | "mute_thread" | "block_user" | "delete" | "open_thread";
+export function getBskyPostUrl(post: PostView) {
+    const atUri = splitAtUri(post.uri);
+    return `https://bsky.app/profile/${post.author.did}/post/${atUri.rkey}`;
+}
+
+type PostOptions = "likes" | "quotes" | "reposts" | "mute_user" | "mute_thread" | "block_user" | "delete" | "open_thread" | "open_bluesky";
 type PostOptionsButton = { option: PostOptions; text: string; icon: TemplateResult; click: () => void; enabled: boolean };
 
 @customElement("post-options")
@@ -694,15 +712,17 @@ export class PostOptionsElement extends PopupMenu {
                 icon: html`${reblogIcon}`,
                 enabled: (this.post.repostCount ?? 0) > 0,
                 click: () => {
-                    document.body.append(
-                        dom(
-                            html`<profiles-stream-overlay
-                                title="Reposts"
-                                .hash=${`reposts/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
-                                .stream=${new PostRepostsStream(this.post?.uri!)}
-                            ></profile-stream-overlay>`
-                        )[0]
-                    );
+                    waitForOverlayClosed(() => {
+                        document.body.append(
+                            dom(
+                                html`<profiles-stream-overlay
+                                    title="Reposts"
+                                    .hash=${`reposts/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
+                                    .stream=${new PostRepostsStream(this.post?.uri!)}
+                                ></profile-stream-overlay>`
+                            )[0]
+                        );
+                    });
                     this.close();
                 },
             },
@@ -712,15 +732,17 @@ export class PostOptionsElement extends PopupMenu {
                 icon: html`${heartIcon}`,
                 enabled: (this.post.likeCount ?? 0) > 0,
                 click: () => {
-                    document.body.append(
-                        dom(
-                            html`<profiles-stream-overlay
-                                title="Likes"
-                                .hash=${`likes/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
-                                .stream=${new PostLikesStream(this.post?.uri!)}
-                            ></profiles-stream-overlay>`
-                        )[0]
-                    );
+                    waitForOverlayClosed(() => {
+                        document.body.append(
+                            dom(
+                                html`<profiles-stream-overlay
+                                    title="Likes"
+                                    .hash=${`likes/${this.post?.author.did}/${this.post ? splitAtUri(this.post.uri).rkey : undefined}`}
+                                    .stream=${new PostLikesStream(this.post?.uri!)}
+                                ></profiles-stream-overlay>`
+                            )[0]
+                        );
+                    });
                     this.close();
                 },
             },
@@ -730,7 +752,9 @@ export class PostOptionsElement extends PopupMenu {
                 icon: html`${treeIcon}`,
                 enabled: true,
                 click: () => {
-                    document.body.append(dom(html`<thread-overlay .postUri=${this.post?.uri}></thread-overlay>`)[0]);
+                    waitForOverlayClosed(() => {
+                        document.body.append(dom(html`<thread-overlay .postUri=${this.post?.uri}></thread-overlay>`)[0]);
+                    });
                     this.close();
                 },
             },
@@ -761,6 +785,16 @@ export class PostOptionsElement extends PopupMenu {
                 enabled: did != this.post.author.did,
                 click: () => {
                     this.handleOption("block_user");
+                    this.close();
+                },
+            },
+            {
+                option: "open_bluesky",
+                text: i18n("Open in Bluesky"),
+                icon: html`${cloudIcon}`,
+                enabled: true,
+                click: () => {
+                    if (this.post) window.open(getBskyPostUrl(this.post), "_blank");
                     this.close();
                 },
             },
@@ -1011,6 +1045,7 @@ export class ThreadOverlay extends HashNavOverlay {
                     <icon-toggle
                         @change=${(ev: CustomEvent) => (this.readerMode = ev.detail.value)}
                         .icon=${html`<i class="icon !w-5 !h-5">${articleIcon}</i>`}
+                        class="w-10 h-10"
                     ></icon-toggle>
                 </div>
                 ${this.closeButton()}

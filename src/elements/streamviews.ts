@@ -15,7 +15,7 @@ import { Messages, i18n } from "../i18n";
 import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
 import { State } from "../state";
 import { Store } from "../store";
-import { ActorFeedStream, NotificationsStream, Stream } from "../streams";
+import { ActorFeedStream, NotificationsStream, Stream, StreamPage } from "../streams";
 import { collectLitElements, dom, error, getScrollParent, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce } from "../utils";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { deletePost, quote, reply } from "./posteditor";
@@ -29,7 +29,7 @@ export abstract class StreamView<T> extends LitElement {
     stream?: Stream<T>;
 
     @property()
-    newItems?: (newItems: T[] | Error, allItems: T[]) => void = () => {};
+    newItems?: (newItems: T[] | Error) => void = () => {};
 
     @property()
     wrapItem = true;
@@ -62,10 +62,10 @@ export abstract class StreamView<T> extends LitElement {
             this.stream.addNewItemsListener(async (newerItems) => {
                 if (newerItems instanceof Error) {
                     error("Couldn't load newer items", newerItems);
-                    if (this.newItems) this.newItems(newerItems, this.stream!.items);
+                    if (this.newItems) this.newItems(newerItems);
                     return;
                 } else {
-                    if (this.newItems) this.newItems(newerItems, this.stream!.items);
+                    if (this.newItems) this.newItems(newerItems);
                 }
 
                 const itemsDom = this.itemsDom;
@@ -113,12 +113,13 @@ export abstract class StreamView<T> extends LitElement {
         this.isLoading = true;
 
         try {
-            const items = await this.stream.next();
-            if (items instanceof Error) {
+            const page = await this.stream.next();
+            if (page instanceof Error) {
                 this.error = i18n("Invalid stream"); // FIXME handle error
                 return;
             }
 
+            const { cursor, items } = page;
             const itemsDom = this.itemsDom;
             const spinner = this.spinner;
             if (!itemsDom || !spinner) {
@@ -216,7 +217,7 @@ export class FeedStreamView extends StreamView<FeedViewPost> {
                     return;
                 }
                 if (this.newItems) {
-                    this.newItems(newItems, this.stream.items);
+                    this.newItems(newItems);
                 }
             });
     }

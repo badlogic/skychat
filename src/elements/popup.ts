@@ -1,14 +1,54 @@
 import { LitElement, TemplateResult, html, nothing } from "lit";
-import { query, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
+import { CloseableElement } from "./overlay";
+import { dom } from "../utils";
 
-export abstract class PopupMenu extends LitElement {
-    @state()
-    show = false;
+@customElement("popup-overlay")
+export class PopupOverlay extends CloseableElement {
+    @property()
+    viewportCoords = { left: 0, top: 0 };
+
+    @property()
+    content?: TemplateResult;
 
     @query("#content")
-    content?: HTMLElement;
+    contentElement?: HTMLElement;
 
-    mouseY = 0;
+    render() {
+        const checkInBounds = () => {
+            if (!this.contentElement) {
+                requestAnimationFrame(checkInBounds);
+                return;
+            }
+            if (this.viewportCoords.top + this.contentElement.clientHeight > window.innerHeight) {
+                this.contentElement.style.top = this.viewportCoords.top - this.contentElement.clientHeight + "px";
+            }
+            if (this.viewportCoords.left + this.contentElement.clientWidth > window.innerWidth) {
+                this.contentElement.style.left = this.viewportCoords.left - this.contentElement.clientWidth + "px";
+            }
+        };
+        checkInBounds();
+
+        return html`<div
+            class="fixed top-0 left-0 w-full h-full overflow-none z-10"
+            @click=${() => {
+                this.close();
+            }}
+        >
+            <div
+                id="content"
+                class="absolute animate-fade animate-duration-300 whitespace-nowrap overflow-x-clip flex flex-col bg-background border border-divider rounded-md fancy-shadow"
+                style="left: ${this.viewportCoords.left}px; top: ${this.viewportCoords.top}px;"
+            >
+                ${this.content}
+            </div>
+        </div>`;
+    }
+}
+
+export abstract class PopupMenu extends LitElement {
+    @query("#content")
+    content?: HTMLElement;
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
@@ -17,60 +57,18 @@ export abstract class PopupMenu extends LitElement {
     handleButtonClick(ev: MouseEvent) {
         ev.stopPropagation();
         ev.stopImmediatePropagation();
-        this.show = !this.show;
-        this.mouseY = ev.clientY;
-        if (this.show) {
-            document.body.classList.add("disable-pointer-events");
-        } else {
-            document.body.classList.remove("disable-pointer-events");
-        }
-    }
-
-    connectedCallback() {
-        super.connectedCallback();
-        document.addEventListener("mousedown", (ev) => this.handleDocumentClick(ev));
-    }
-
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        document.removeEventListener("mousedown", (ev) => this.handleDocumentClick(ev));
-    }
-
-    handleDocumentClick(event: Event) {
-        if (this.show && !this.contains(event.target as Node)) {
-            this.show = false;
-            document.body.classList.remove("disable-pointer-events");
-        }
+        document.body.append(
+            dom(html`<popup-overlay .viewportCoords=${{ left: ev.clientX, top: ev.clientY }} .content=${this.renderContent()}></popup-overlay>`)[0]
+        );
     }
 
     protected render(): TemplateResult {
-        const checkInBounds = () => {
-            if (!this.show) return;
-            if (!this.content) {
-                requestAnimationFrame(checkInBounds);
-                return;
-            }
-            if (this.mouseY + this.content.clientHeight > window.innerHeight) {
-                this.content.classList.add("bottom-[100%]");
-            }
-        };
-        if (this.show) checkInBounds();
-
         return html`<div class="relative text-black dark:text-white">
             <div @click=${(ev: MouseEvent) => this.handleButtonClick(ev)} class="cursor-pointer">${this.renderButton()}</div>
-            ${this.show
-                ? html`<div id="content" class="animate-fade animate-duration-300 whitespace-nowrap overflow-x-clip flex flex-col bg-background border border-divider rounded-md fancy-shadow ${
-                      this.show ? "enable-pointer-events" : "hidden"
-                  } absolute right-0 z-20">
-                      ${this.renderContent()}
-                          </div>
-                      </div>`
-                : nothing}
         </div>`;
     }
 
     close(): void {
-        this.show = false;
         document.body.classList.remove("disable-pointer-events");
     }
     protected abstract renderButton(): TemplateResult;

@@ -352,6 +352,7 @@ export class ProfileActionButton extends LitElement {
     }
 
     async handleClick(action: string) {
+        // FIXME this is fucked! Needs to notify state
         const user = Store.getUser();
         if (!user) return;
         if (!this.profile) return;

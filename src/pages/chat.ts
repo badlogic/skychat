@@ -354,7 +354,7 @@ export class Chat extends LitElement {
         const postsDom = this.liveDom.querySelector("#posts")!;
         const load = postsDom.querySelector("#loadOlderPosts")! as HTMLElement;
         const posts = await this.postSearch!.next();
-        if (posts instanceof Error || posts.length == 0) {
+        if (posts instanceof Error || posts.items.length == 0) {
             load.innerText = i18n("No older posts");
             load.classList.remove("animate-pulse");
             this.loadingOlder = false;
@@ -362,7 +362,7 @@ export class Chat extends LitElement {
         }
 
         const fragment = dom(html`<div></div>`)[0];
-        for (const post of posts) {
+        for (const post of posts.items) {
             const postDom = dom(html`<div class="border-b border-divider px-4 py-2 animate-fade">
                 <post-view
                     .post=${post}

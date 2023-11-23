@@ -138,6 +138,7 @@ export interface Messages {
     Edit: string;
     Save: string;
     "Search my posts": string;
+    "Open in Bluesky": string;
 }
 
 const english: Messages = {
@@ -289,6 +290,7 @@ const english: Messages = {
     Edit: "Edit",
     Save: "Save",
     "Search my posts": "Search my posts",
+    "Open in Bluesky": "Open in Bluesky app",
 };
 
 const german: Messages = {
@@ -442,6 +444,7 @@ const german: Messages = {
     Edit: "Editieren",
     Save: "Speichern",
     "Search my posts": "Nur in meinen Posts suchen",
+    "Open in Bluesky": "In BlueSky App öffnen",
 };
 
 export type LanguageCode = "en" | "de";

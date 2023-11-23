@@ -225,3 +225,13 @@ export class Topbar extends LitElement {
         `;
     }
 }
+
+export function waitForOverlayClosed(cb: () => void) {
+    const listener = () => {
+        requestAnimationFrame(() => {
+            cb();
+            window.removeEventListener("popstate", listener);
+        });
+    };
+    window.addEventListener("popstate", listener);
+}

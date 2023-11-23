@@ -17,6 +17,7 @@ import { Store, User } from "./store";
 import { AsyncQueue, assertNever, error, fetchApi, getDateString, splitAtUri } from "./utils";
 import { FeedViewPost, GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { record } from "./bsky";
+import { StreamPage } from "./streams";
 
 export interface NumQuote {
     postUri: string;
@@ -301,10 +302,7 @@ export class State {
         }
     }
 
-    static async getNotifications(
-        cursor?: string,
-        limit = 25
-    ): Promise<Error | { cursor?: string; items: AppBskyNotificationListNotifications.Notification[] }> {
+    static async getNotifications(cursor?: string, limit = 25): Promise<Error | StreamPage<AppBskyNotificationListNotifications.Notification>> {
         if (!State.bskyClient) return new Error("Not connected");
 
         try {
@@ -342,10 +340,10 @@ export class State {
         cursor?: string,
         limit = 20,
         notify = true
-    ): Promise<Error | { cursor?: string; items: FeedViewPost[] }> {
+    ): Promise<Error | StreamPage<FeedViewPost>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
-            let data: { cursor?: string; items: FeedViewPost[] } | undefined;
+            let data: StreamPage<FeedViewPost> | undefined;
 
             switch (type) {
                 case "home": {
@@ -370,15 +368,10 @@ export class State {
         }
     }
 
-    static async getFeed(
-        feedUri: string,
-        cursor?: string,
-        limit = 20,
-        notify = true
-    ): Promise<Error | { cursor?: string; items: AppBskyFeedDefs.FeedViewPost[] }> {
+    static async getFeed(feedUri: string, cursor?: string, limit = 20, notify = true): Promise<Error | StreamPage<FeedViewPost>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
-            let data: { cursor?: string; items: FeedViewPost[] } | undefined;
+            let data: StreamPage<FeedViewPost> | undefined;
 
             const response = await State.bskyClient.app.bsky.feed.getFeed({ feed: feedUri, cursor, limit });
             if (!response.success) throw new Error();
@@ -424,7 +417,7 @@ export class State {
         }
     }
 
-    static async getLoggedInActorLikes(cursor?: string, limit = 20): Promise<Error | { cursor?: string; items: FeedViewPost[] }> {
+    static async getLoggedInActorLikes(cursor?: string, limit = 20): Promise<Error | StreamPage<FeedViewPost>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             const did = Store.getUser()?.profile.did;
@@ -447,7 +440,7 @@ export class State {
         }
     }
 
-    static async getActorLikes(did: string, cursor?: string, limit = 20): Promise<Error | { cursor?: string; items: PostView[] }> {
+    static async getActorLikes(did: string, cursor?: string, limit = 20): Promise<Error | StreamPage<PostView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             // Resolve the didDoc
@@ -488,7 +481,7 @@ export class State {
         }
     }
 
-    static async getPostLikes(postUri: string, cursor?: string, limit = 20): Promise<Error | { cursor?: string; items: ProfileView[] }> {
+    static async getPostLikes(postUri: string, cursor?: string, limit = 20): Promise<Error | StreamPage<ProfileView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             const result = await State.bskyClient.getLikes({ uri: postUri, cursor, limit });
@@ -501,7 +494,7 @@ export class State {
         }
     }
 
-    static async getPostReposts(postUri: string, cursor?: string, limit = 20): Promise<Error | { cursor?: string; items: ProfileView[] }> {
+    static async getPostReposts(postUri: string, cursor?: string, limit = 20): Promise<Error | StreamPage<ProfileView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             const result = await State.bskyClient.getRepostedBy({ uri: postUri, cursor, limit });
@@ -514,7 +507,7 @@ export class State {
         }
     }
 
-    static async getFollowers(did: string, cursor?: string, limit = 20): Promise<Error | { cursor?: string; items: ProfileView[] }> {
+    static async getFollowers(did: string, cursor?: string, limit = 20): Promise<Error | StreamPage<ProfileView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             const result = await State.bskyClient.getFollowers({ actor: did, cursor, limit });
@@ -527,7 +520,7 @@ export class State {
         }
     }
 
-    static async getFollowing(did: string, cursor?: string, limit = 20): Promise<Error | { cursor?: string; items: ProfileView[] }> {
+    static async getFollowing(did: string, cursor?: string, limit = 20): Promise<Error | StreamPage<ProfileView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             const result = await State.bskyClient.getFollows({ actor: did, cursor, limit });
@@ -540,7 +533,7 @@ export class State {
         }
     }
 
-    static async searchUsers(query: string, cursor?: string, limit = 20): Promise<Error | { cursor?: string; items: ProfileView[] }> {
+    static async searchUsers(query: string, cursor?: string, limit = 20): Promise<Error | StreamPage<ProfileView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             const promises: Promise<any | Error>[] = [];
@@ -564,7 +557,7 @@ export class State {
         }
     }
 
-    static async suggestUsers(cursor?: string, limit = 20): Promise<Error | { cursor?: string; items: ProfileView[] }> {
+    static async suggestUsers(cursor?: string, limit = 20): Promise<Error | StreamPage<ProfileView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             const result = await State.bskyClient.getSuggestions({ cursor, limit });
@@ -577,7 +570,7 @@ export class State {
         }
     }
 
-    static async searchFeeds(query: string, cursor?: string, limit = 50): Promise<Error | { cursor?: string; items: GeneratorView[] }> {
+    static async searchFeeds(query: string, cursor?: string, limit = 50): Promise<Error | StreamPage<GeneratorView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             const result = await State.bskyClient.app.bsky.unspecced.getPopularFeedGenerators({ query, cursor, limit });
@@ -597,7 +590,7 @@ export class State {
         }
     }
 
-    static async suggestFeeds(cursor?: string, limit = 50): Promise<Error | { cursor?: string; items: GeneratorView[] }> {
+    static async suggestFeeds(cursor?: string, limit = 50): Promise<Error | StreamPage<GeneratorView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             const result = await State.bskyClient.app.bsky.unspecced.getPopularFeedGenerators({ cursor, limit });

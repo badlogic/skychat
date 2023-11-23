@@ -5,11 +5,12 @@ import { error, fetchApi } from "./utils";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { date, record } from "./bsky";
 
-export type StreamProvider<T> = (cursor?: string, limit?: number, notify?: boolean) => Promise<Error | { cursor?: string; items: T[] }>;
+export type StreamPage<T> = { cursor?: string; items: T[] };
+
+export type StreamProvider<T> = (cursor?: string, limit?: number, notify?: boolean) => Promise<Error | StreamPage<T>>;
 
 export abstract class Stream<T> {
-    cursor?: string;
-    items: T[] = [];
+    pages: StreamPage<T>[] = [];
     itemsMap = new Map<string, T>();
     closed = false;
     timeoutId: any = undefined;
@@ -27,7 +28,7 @@ export abstract class Stream<T> {
             // employ the smart strategy of binary searching so we only pull in
             const newItems: T[] = [];
             let cursor: string | undefined;
-            let startTimestamp = this.items.length > 0 ? this.getItemDate(this.items[0]).getTime() : new Date().getTime();
+            let startTimestamp = this.pages.length > 0 ? this.getItemDate(this.pages[0].items[0]).getTime() : new Date().getTime();
             while (true) {
                 let fetchedItems = await this.provider(cursor, 20, false);
                 if (fetchedItems instanceof Error) {
@@ -51,7 +52,8 @@ export abstract class Stream<T> {
             }
 
             if (newItems.length > 0) {
-                this.items = [...newItems, ...this.items];
+                const newPage = { cursor, items: newItems };
+                this.pages.unshift(newPage);
                 for (const listener of this.newItemslisteners) {
                     listener(newItems);
                 }
@@ -77,20 +79,21 @@ export abstract class Stream<T> {
         }
     }
 
-    async next(): Promise<Error | T[]> {
+    async next(): Promise<Error | StreamPage<T>> {
         if (!State.isConnected()) return Error("Not connected");
 
         try {
-            if (this.closed) return [];
-            const response = await this.provider(this.cursor);
+            if (this.closed) return { items: [] };
+            const lastCursor = this.pages.length == 0 ? undefined : this.pages[this.pages.length - 1].cursor;
+            const response = await this.provider(lastCursor);
             if (response instanceof Error) throw response;
-            this.cursor = response.cursor;
-            this.items.push(...response.items);
             for (const item of response.items) {
                 this.itemsMap.set(this.getItemKey(item), item);
             }
-            if (!this.cursor && response.items.length > 0) this.close();
-            return response.items;
+            if (!response.cursor && response.items.length > 0) this.close();
+            const page = { cursor: response.cursor, items: response.items };
+            this.pages.push(page);
+            return page;
         } catch (e) {
             return error("Could not load items", e);
         }
@@ -103,16 +106,12 @@ export abstract class Stream<T> {
 }
 
 export class PostSearchStream extends Stream<PostView> {
-    cursor?: string;
-    items: PostView[] = [];
-    itemsMap = new Map<string, PostView>();
-    readonly pollNew = false;
     constructor(readonly query: string, readonly reversStream = true) {
         const provider: StreamProvider<PostView> = async (cursor?: string, limit?: number, notify?: boolean) => {
             try {
                 const response = await fetch(
                     `https://palomar.bsky.social/xrpc/app.bsky.unspecced.searchPostsSkeleton?q=${encodeURIComponent(this.query)}&limit=${limit}${
-                        this.cursor ? `&cursor=${this.cursor}` : ""
+                        cursor ? `&cursor=${cursor}` : ""
                     }`
                 );
                 if (response.status != 200) throw new Error();
@@ -124,14 +123,10 @@ export class PostSearchStream extends Stream<PostView> {
                 );
                 if (postsResponse instanceof Error) throw new Error();
                 postsResponse = postsResponse.filter((post) => post != undefined);
-                this.cursor = result.cursor;
-                for (const post of postsResponse) {
-                    this.itemsMap.set(this.getItemKey(post), post);
-                }
                 if (this.reversStream) postsResponse.reverse();
-                return { cursor: this.cursor, items: postsResponse };
+                return { cursor: result.cursor, items: postsResponse };
             } catch (e) {
-                return error(`Couldn't load posts for query ${this.query}, offset ${this.cursor}`, e);
+                return error(`Couldn't load posts for query ${this.query}, offset ${cursor}`, e);
             }
         };
         super(provider);
