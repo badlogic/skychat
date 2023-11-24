@@ -56,6 +56,7 @@ import { PopupMenu } from "./popup";
 import { deletePost, quote, reply } from "./posteditor";
 import { getProfileUrl, renderProfile, renderProfileAvatar } from "./profiles";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
+import { ViewImage } from "@atproto/api/dist/client/types/app/bsky/embed/images";
 
 export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {
@@ -316,97 +317,6 @@ export function renderImagesEmbedSmall(images: AppBskyEmbedImages.ViewImage[]) {
     </div>`;
 }
 
-@customElement("image-gallery")
-export class ImageGallery extends CloseableElement {
-    @property()
-    images: { url: string; altText?: string }[] = [];
-
-    protected createRenderRoot(): Element | ShadowRoot {
-        return this;
-    }
-
-    render() {
-        return html`
-            <div
-                class="fixed top-0 left-0 w-screen h-screen flex overflow-x-auto snap-x snap-mandatory backdrop-blur z-10 fill-primary"
-                @click=${() => this.close()}
-            >
-                ${this.images.map(
-                    (image, index) => html`
-                        <div class="flex-none w-full h-full relative snap-center flex justify-center items-center">
-                            <img src="${image.url}" alt="${image.altText ?? ""}" class="max-w-full max-h-full object-contain" />
-                            <div class="absolute pt-4 pl-4 mr-4 w-full h-full flex items-center">
-                                ${this.images.length > 1 && index > 0
-                                    ? html`<button @click=${(ev: MouseEvent) =>
-                                          this.scrollPrevious(ev)} class="h-full flex"><i class="self-start icon !w-8 !h-8">${arrowLeftIcon}</button>`
-                                    : nothing}
-                                ${this.images.length > 1 && index < this.images.length - 1
-                                    ? html`<button @click=${(ev: MouseEvent) =>
-                                          this.scrollNext(
-                                              ev
-                                          )} class="ml-auto h-full flex"><i class="self-start icon !w-8 !h-8">${arrowRightIcon}</button>`
-                                    : nothing}
-                            </div>
-                            <div class="absolute bottom-4 left-4 w-full flex items-center gap-4">
-                                ${image.altText
-                                    ? html`<button
-                                          class="bg-black text-white py-1 px-2 text-xs rounded"
-                                          @click="${(ev: MouseEvent) => this.showAltText(ev, image.altText ?? "")}"
-                                      >
-                                          ALT
-                                      </button>`
-                                    : nothing}
-                                <button
-                                    @click=${(ev: MouseEvent) => this.download(ev, image)}
-                                    class="flex gap-1 items-center justify-center w-8 h-8 bg-black rounded"
-                                >
-                                    <i class="icon !w-5 !h-5 fill-white">${downloadIcon}</i>
-                                </button>
-                            </div>
-                        </div>
-                    `
-                )}
-            </div>
-        `;
-    }
-
-    private scrollNext(ev: MouseEvent) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        ev.stopImmediatePropagation();
-        const galleryContainer = this.renderRoot.children[0] as HTMLElement;
-
-        if (galleryContainer) {
-            galleryContainer.scrollTo({ left: galleryContainer.scrollLeft + galleryContainer.clientWidth, behavior: "smooth" });
-        }
-    }
-
-    private scrollPrevious(ev: MouseEvent) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        ev.stopImmediatePropagation();
-        const galleryContainer = this.renderRoot.children[0] as HTMLElement;
-
-        if (galleryContainer) {
-            galleryContainer.scrollTo({ left: galleryContainer.scrollLeft - galleryContainer.clientWidth, behavior: "smooth" });
-        }
-    }
-
-    showAltText(ev: MouseEvent, altText: string) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        ev.stopImmediatePropagation();
-        document.body.append(dom(html`<alt-text alt=${altText}></alt-text>`)[0]);
-    }
-
-    download(ev: MouseEvent, image: { url: string; altText?: string }) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        ev.stopImmediatePropagation();
-        downloadImageAsFile(image.url, "image.jpeg");
-    }
-}
-
 export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensitive: boolean, minimal = false) {
     if (minimal) return renderImagesEmbedSmall(images);
 
@@ -414,42 +324,95 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
         if (sensitive) target.classList.toggle("blur-lg");
     };
 
-    return html`<div class="mt-2 flex flex-col gap-2 items-center">
-        ${map(images, (image) => {
-            return html`<div
-                class="relative"
-                @click=${(ev: Event) => {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    ev.stopImmediatePropagation();
-                    if (sensitive) {
-                        unblur(ev.target as HTMLElement);
-                        sensitive = false;
-                    } else {
-                        const galleryImages = images.map((image) => {
-                            return { url: image.fullsize, altText: image.alt };
-                        });
-                        document.body.append(dom(html`<image-gallery .images=${galleryImages}></image-gallery>`)[0]);
-                    }
-                }}
-            >
-                <img src="${image.thumb}" alt="${image.alt}" class="max-h-[40svh] rounded ${sensitive ? "blur-lg" : ""}" />
-                ${image.alt && image.alt.length > 0
-                    ? html`<div
-                          class="absolute bottom-2 left-2 rounded bg-black text-white p-1 text-xs"
-                      >
-                          ALT
-                      </button>`
-                    : nothing}
-            </div>`;
-        })}
+    const openGallery = (ev: Event, imageIndex = 0) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
+        if (sensitive) {
+            unblur(ev.target as HTMLElement);
+            sensitive = false;
+        } else {
+            const galleryImages = images.map((image) => {
+                return { url: image.fullsize, altText: image.alt };
+            });
+            document.body.append(dom(html`<image-gallery-overlay .images=${galleryImages} .imageIndex=${imageIndex}></image-gallery-overlay>`)[0]);
+        }
+    };
+
+    const renderAlt = (image: ViewImage) => {
+        return image.alt && image.alt.length > 0
+            ? html`<div class="absolute bottom-2 left-2 rounded bg-black text-white p-1 text-xs">ALT</div>`
+            : html`${nothing}`;
+    };
+
+    const renderImage = (image: ViewImage, index: number) => html`<div
+        class="relative w-full h-full"
+        @click=${(ev: MouseEvent) => openGallery(ev, index)}
+    >
+        <img src="${image.thumb}" alt="${image.alt}" class="w-full h-full object-cover rounded ${sensitive ? "blur-lg" : ""}" />
+        ${renderAlt(image)}
     </div>`;
+
+    const renderImages: ((images: AppBskyEmbedImages.ViewImage[]) => TemplateResult)[] = [
+        (images: AppBskyEmbedImages.ViewImage[]) => {
+            return html` <div class="relative w-full">
+                <img src="${images[0].thumb}" alt="${images[0].alt}" class="max-h-[40vh] w-auto mx-auto rounded ${sensitive ? "blur-lg" : ""}" />
+                ${renderAlt(images[0])}
+            </div>`;
+        },
+        (images: AppBskyEmbedImages.ViewImage[]) => {
+            return html` <div class="relative w-full aspect-[2/1] flex gap-1">
+                ${map(images, (image, index) => html`<div class="w-[50%] h-full">${renderImage(image, index)}</div>`)}
+            </div>`;
+        },
+        (images: AppBskyEmbedImages.ViewImage[]) => {
+            return html` <div class="relative flex gap-1">
+                <div class="w-[66%] aspect-square rounded overflow-x-clip">${renderImage(images[0], 0)}</div>
+                <div class="w-[33%] flex flex-col aspect-[1/2] gap-1">
+                    <div class="w-full h-[50%]">${renderImage(images[1], 1)}</div>
+                    <div class="w-full h-[50%]">${renderImage(images[2], 2)}</div>
+                </div>
+            </div>`;
+        },
+        (images: AppBskyEmbedImages.ViewImage[]) => {
+            return html` <div class="relative w-full aspect-square flex gap-1">
+                <div class="w-[50%] aspect-square flex flex-col gap-1">
+                    <div class="w-full h-[50%]">${renderImage(images[0], 0)}</div>
+                    <div class="w-full h-[50%]">${renderImage(images[2], 2)}</div>
+                </div>
+                <div class="w-[50%] aspect-square flex flex-col gap-1">
+                    <div class="w-full h-[50%]">${renderImage(images[1], 1)}</div>
+                    <div class="w-full h-[50%]">${renderImage(images[3], 2)}</div>
+                </div>
+            </div>`;
+        },
+    ];
+
+    return html`
+        <div class="mt-2 flex items-center justify-center" @click=${(ev: MouseEvent) => openGallery(ev)}>
+            ${renderImages[images.length - 1](images)}
+        </div>
+    `;
 }
 
 export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
     // FIXME implement support for app.bsky.graph.list and app.bsky.feed.generator and
     // all other record types in an AppBSkyEmbedREcord.VIew
-    if (!AppBskyEmbedRecord.isViewRecord(recordEmbed.record) || !AppBskyEmbedRecord.isMain) return nothing;
+    if (AppBskyEmbedRecord.isViewNotFound(recordEmbed.record)) {
+        return html`<div class="bg-muted text-muted-fg px-4 py-2 rounded">${i18n("Deleted post")}</div>`;
+    }
+
+    if (AppBskyEmbedRecord.isViewBlocked(recordEmbed.record)) {
+        return html`<div class="bg-muted text-muted-fg px-4 py-2 rounded">
+            ${i18n("You have blocked the author or the author has blocked you.")}
+        </div>`;
+    }
+
+    if (AppBskyFeedDefs.isGeneratorView(recordEmbed.record)) {
+        return html`<div class="mt-2 border border-divider rounded p-2"><generator-view .generator=${recordEmbed.record}></generator-view></div>`;
+    }
+
+    if (!AppBskyEmbedRecord.isViewRecord(recordEmbed.record)) return nothing;
     if (!AppBskyFeedPost.isRecord(recordEmbed.record.value)) return nothing;
     const record = recordEmbed.record.value;
     const rkey = splitAtUri(recordEmbed.record.uri).rkey;
@@ -687,14 +650,14 @@ export class PostViewElement extends LitElement {
                     .icon=${html`<i class="icon !w-4 !h-4">${reblogIcon}</i>`}
                     class="h-4"
                     .value=${this.post.viewer?.repost ?? false}
-                    .text=${"" + this.post.repostCount ?? 0}
+                    .text=${"" + (this.post.repostCount ?? 0)}
                 ></icon-toggle>
                 <icon-toggle
                     @change=${(ev: CustomEvent) => this.toggleLike(ev)}
                     .icon=${html`<i class="icon !w-4 !h-4">${heartIcon}</i>`}
                     class="h-4"
                     .value=${this.post.viewer?.like ?? false}
-                    .text=${"" + this.post.likeCount ?? 0}
+                    .text=${"" + (this.post.likeCount ?? 0)}
                 ></icon-toggle>
                 <post-options .post=${this.post} .handleOption=${(option: PostOptions) => this.handleOption(option)}></post-options>
             </div>

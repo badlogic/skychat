@@ -92,7 +92,7 @@ export abstract class Stream<T> {
             }
             if (!response.cursor && response.items.length > 0) this.close();
             const page = { cursor: response.cursor, items: response.items };
-            this.pages.push(page);
+            if (page.items.length > 0) this.pages.push(page);
             return page;
         } catch (e) {
             return error("Could not load items", e);

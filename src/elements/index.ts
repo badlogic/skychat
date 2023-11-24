@@ -1,6 +1,7 @@
 export * from "./overlay";
 export * from "./buttons";
 export * from "./feeds";
+export * from "./images";
 export * from "./imagesearch";
 export * from "./icontoggle";
 export * from "./notifications";

@@ -153,6 +153,7 @@ export class PostEditor extends LitElement {
         // FIXME add language detection via tinyld
         // FIXME add image captions via GPT-4, upload as blob to network, send only link to GPT-4
         // FIXME add translations via Google Translate
+        // FIXME handle suggestions are not properly offset on y if replying to a post
 
         let placeholder = "";
         if (this.quote) {
@@ -327,8 +328,6 @@ export class PostEditor extends LitElement {
                     : html`<div class="pl-2 pr-4 py-1 flex items-center min-h-[48px]">
                     <button class="p-2" @click=${this.addImage}>
                         <i class="icon !w-6 !h-6 fill-primary">${imageIcon}</i>
-                        <button class="p-2" @click=${this.addGif}>
-                        <i class="icon !w-6 !h-6 fill-primary">${gifIcon}</i>
                     </button>
                     ${
                         this.imagesToUpload.length > 0
@@ -340,7 +339,17 @@ export class PostEditor extends LitElement {
                               </icon-toggle>`
                             : nothing
                     }
-                    </button>
+                                        ${
+                                            !this.embed
+                                                ? html`<button
+                                                      class="p-2"
+                                                      @click=${this.addGif}
+                                                      ?disabled=${this.imagesToUpload.length > 0 || this.embed}
+                                                  >
+                                                      <i class="icon !w-6 !h-6 fill-primary">${gifIcon}</i>
+                                                  </button>`
+                                                : nothing
+                                        }
                      <span
                         class="ml-auto mr-2 text-muted-fg text-end text-xs flex items-center ${this.count > totalCount ? "text-red-500" : ""}"
                         >${this.count}/${totalCount}</span
@@ -457,9 +466,9 @@ export class PostEditor extends LitElement {
             const images = await loadImageFiles(files);
             this.imagesToUpload = [...this.imagesToUpload, ...images];
             input.remove();
+            this.canPost = true;
         });
         input.click();
-        this.canPost = true;
     }
 
     async addGif() {
