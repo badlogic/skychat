@@ -692,6 +692,18 @@ export class State {
             };
             Store.setUser(newUser);
             State.notify("profile", "updated", newUser.profile);
+            const pushPrefs = Store.getPushPreferences();
+            if (!pushPrefs) {
+                Store.setPushPreferences({
+                    enabled: true,
+                    likes: true,
+                    mentions: true,
+                    newFollowers: true,
+                    quotes: true,
+                    replies: true,
+                    reposts: true,
+                });
+            }
             await preferencesPromise;
             this.checkUnreadNotifications();
             this.checkPreferences();

@@ -139,6 +139,11 @@ export interface Messages {
     Save: string;
     "Search my posts": string;
     "Open in Bluesky": string;
+    "Push notifications": string;
+    Enabled: string;
+    "New follower": string;
+    Replies: string;
+    Mentions: string;
 }
 
 const english: Messages = {
@@ -291,6 +296,11 @@ const english: Messages = {
     Save: "Save",
     "Search my posts": "Search my posts",
     "Open in Bluesky": "Open in Bluesky app",
+    "Push notifications": "Push notifications",
+    Enabled: "Enabled",
+    "New follower": "New followers",
+    Replies: "Replies",
+    Mentions: "Mentions",
 };
 
 const german: Messages = {
@@ -445,6 +455,11 @@ const german: Messages = {
     Save: "Speichern",
     "Search my posts": "Nur in meinen Posts suchen",
     "Open in Bluesky": "In BlueSky App öffnen",
+    "Push notifications": "Push Notifikationen",
+    Enabled: "Aktiviert",
+    "New follower": "Neuer Follower",
+    Replies: "Antworten",
+    Mentions: "Mentions", // FIXME
 };
 
 export type LanguageCode = "en" | "de";

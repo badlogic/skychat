@@ -34,6 +34,7 @@ export class SettingsOverlay extends HashNavOverlay {
 
     renderContent(): TemplateResult {
         const user = Store.getUser();
+        const pushPrefs = Store.getPushPreferences();
         return html`<div class="px-4 flex flex-col">
             ${user
                 ? html`<div class="h-12 flex items-center font-semibold">${i18n("Logged in as")}</div>
@@ -52,6 +53,64 @@ export class SettingsOverlay extends HashNavOverlay {
             ></button-group>
             <div class="mt-4 border-t border-divider"></div>
             <div class="h-12 flex items-center font-semibold">${i18n("Moderation")}</div>
+            <div class="mt-4 border-t border-divider"></div>
+            <div class="h-12 flex items-center font-semibold">${i18n("Push notifications")}</div>
+            <slide-button
+                class="mt-4"
+                .checked=${pushPrefs?.enabled}
+                .text=${i18n("Enabled")}
+                @change=${(ev: CustomEvent) => {
+                    Store.setPushPreferences({ ...Store.getPushPreferences()!, enabled: ev.detail.value });
+                }}
+            ></slide-button>
+            <slide-button
+                class="mt-4"
+                .checked=${pushPrefs?.newFollowers}
+                .text=${i18n("New follower")}
+                @change=${(ev: CustomEvent) => {
+                    Store.setPushPreferences({ ...Store.getPushPreferences()!, newFollowers: ev.detail.value });
+                }}
+            ></slide-button>
+            <slide-button
+                class="mt-4"
+                .checked=${pushPrefs?.replies}
+                .text=${i18n("Replies")}
+                @change=${(ev: CustomEvent) => {
+                    Store.setPushPreferences({ ...Store.getPushPreferences()!, replies: ev.detail.value });
+                }}
+            ></slide-button>
+            <slide-button
+                class="mt-4"
+                .checked=${pushPrefs?.quotes}
+                .text=${i18n("Quotes")}
+                @change=${(ev: CustomEvent) => {
+                    Store.setPushPreferences({ ...Store.getPushPreferences()!, quotes: ev.detail.value });
+                }}
+            ></slide-button>
+            <slide-button
+                class="mt-4"
+                .checked=${pushPrefs?.reposts}
+                .text=${i18n("Reposts")}
+                @change=${(ev: CustomEvent) => {
+                    Store.setPushPreferences({ ...Store.getPushPreferences()!, reposts: ev.detail.value });
+                }}
+            ></slide-button>
+            <slide-button
+                class="mt-4"
+                .checked=${pushPrefs?.mentions}
+                .text=${i18n("Mentions")}
+                @change=${(ev: CustomEvent) => {
+                    Store.setPushPreferences({ ...Store.getPushPreferences()!, mentions: ev.detail.value });
+                }}
+            ></slide-button>
+            <slide-button
+                class="mt-4"
+                .checked=${pushPrefs?.likes}
+                .text=${i18n("Likes")}
+                @change=${(ev: CustomEvent) => {
+                    Store.setPushPreferences({ ...Store.getPushPreferences()!, likes: ev.detail.value });
+                }}
+            ></slide-button>
             <div class="mt-4 border-t border-divider"></div>
             <div class="mt-4 text-xs">
                 Build: ${this.version?.date}<br />

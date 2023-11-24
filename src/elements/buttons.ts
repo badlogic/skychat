@@ -16,7 +16,6 @@ function resetAnimation(el: HTMLElement) {
     (el.style.animation as any) = null;
 }
 
-// FIXME button receives click events, despite being hidden...
 export abstract class FloatingButton extends LitElement {
     @property()
     highlight = false;
@@ -359,7 +358,7 @@ export class SlideButton extends LitElement {
     checked = false;
 
     @property()
-    text?: string;
+    text?: string | TemplateResult;
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
@@ -376,7 +375,9 @@ export class SlideButton extends LitElement {
             <div
                 class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-[#fff] after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-muted-fg peer-checked:bg-primary fancy-shadow"
             ></div>
-            <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">${this.text ? this.text : ""}</span>
+            ${typeof this.text == "string"
+                ? html`<span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">${this.text ? this.text : ""}</span>`
+                : this.text}
         </label>`;
     }
 

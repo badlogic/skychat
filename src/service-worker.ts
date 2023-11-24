@@ -37,7 +37,7 @@ import { BskyAgent } from "@atproto/api";
 import { initializeApp } from "firebase/app";
 import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
 import { IndexedDBStorage } from "./indexeddb";
-import { User } from "./store";
+import { User, PushPreferences } from "./store";
 const firebaseConfig = {
     apiKey: "AIzaSyAZ2nH3qKCFqFhQSdeNH91SNAfTHl-nP7s",
     authDomain: "skychat-733ab.firebaseapp.com",
@@ -58,6 +58,11 @@ onBackgroundMessage(messaging, async (payload) => {
         const user = (await db.get("user")) as User | undefined;
         if (!user || user.profile.did != payload.data.toDid) {
             console.error("Received notification for other user, or not logged in.");
+            return;
+        }
+        const pushPrefs = (await db.get("pushPrefs")) as PushPreferences | undefined;
+        if (!pushPrefs) {
+            console.error("No push preferences found.");
             return;
         }
 
@@ -85,20 +90,26 @@ onBackgroundMessage(messaging, async (payload) => {
             }
         }
         let message = "";
+        if (!pushPrefs?.enabled) return;
         switch (notification.type) {
             case "follow":
+                if (!pushPrefs?.newFollowers) return;
                 message = `${from} is following you`;
                 break;
             case "like":
+                if (!pushPrefs?.likes) return;
                 message = `${from} liked your post`;
                 break;
             case "quote":
+                if (!pushPrefs?.quotes) return;
                 message = `${from} quoted your post`;
                 break;
             case "reply":
+                if (!pushPrefs?.replies) return;
                 message = `${from} replied to your post`;
                 break;
             case "repost":
+                if (!pushPrefs?.reposts) return;
                 message = `${from} reposted your post`;
                 break;
             default:

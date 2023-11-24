@@ -13,7 +13,16 @@ export type User = {
     hashTagThreads: Record<string, HashTagThread>;
     pushToken?: string;
 };
-export type StoreKey = "user" | "theme";
+export type PushPreferences = {
+    enabled: boolean;
+    newFollowers: boolean;
+    replies: boolean;
+    quotes: boolean;
+    reposts: boolean;
+    mentions: boolean;
+    likes: boolean;
+};
+export type StoreKey = "user" | "theme" | "pushPrefs";
 export type Theme = "dark" | "light";
 
 export class Store {
@@ -56,5 +65,13 @@ export class Store {
         Store.set("theme", { theme });
         State.notify("theme", "updated", theme);
         return theme;
+    }
+
+    static getPushPreferences() {
+        return Store.get<PushPreferences>("pushPrefs");
+    }
+
+    static setPushPreferences(pushPrefs: PushPreferences) {
+        return Store.set("pushPrefs", pushPrefs);
     }
 }

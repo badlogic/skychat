@@ -213,7 +213,6 @@ export function tryEmbedTenorGif(
     return html`${tenorDom}`;
 }
 
-// FIXME don't embed the player initially, just the thumb, on click, start playing.
 export function tryEmbedYouTubeVideo(
     cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
     minimal: boolean
