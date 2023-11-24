@@ -31,7 +31,7 @@ export class IconToggle extends LitElement {
 
     render() {
         const isDark = Store.getTheme() == "dark";
-        return html` <div class="h-full flex items-center cursor-pointer gap-1" @click=${(ev: MouseEvent) => this.toggle(ev)}>
+        return html` <div class="h-full w-full flex items-center justify-center cursor-pointer gap-1" @click=${(ev: MouseEvent) => this.toggle(ev)}>
             <div class="${this.value ? "fill-primary animate-jump" : "fill-muted-fg"}">${this.icon}</div>
             <span class="${this.value ? "text-primary animate-jump" : "text-muted-fg"}">${this.text}</span>
         </div>`;

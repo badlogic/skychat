@@ -1040,7 +1040,7 @@ export class ThreadOverlay extends HashNavOverlay {
         return html`${renderTopbar(
             "Thread",
             html`<div class="ml-auto flex">
-                <div class="flex -mr-2">
+                <div class="flex">
                     <icon-toggle
                         @change=${(ev: CustomEvent) => (this.readerMode = ev.detail.value)}
                         .icon=${html`<i class="icon !w-5 !h-5">${articleIcon}</i>`}

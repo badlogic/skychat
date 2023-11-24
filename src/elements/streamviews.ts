@@ -454,7 +454,7 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
 
     renderHeader(): TemplateResult {
         const buttons = html`<div class="ml-auto flex">
-            <div class="flex -mr-2">
+            <div class="flex">
                 <icon-toggle
                     .value=${true}
                     @change=${(ev: CustomEvent) => {
@@ -462,7 +462,7 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
                         this.handleFilter();
                     }}
                     .icon=${html`<i class="icon !w-5 !h-5">${followIcon}</i>`}
-                    class="mr-2"
+                    class="w-10 h-10"
                 ></icon-toggle>
                 <icon-toggle
                     .value=${true}
@@ -471,7 +471,7 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
                         this.handleFilter();
                     }}
                     .icon=${html`<i class="icon !w-5 !h-5">${replyIcon}</i>`}
-                    class="mr-2"
+                    class="w-10 h-10"
                 ></icon-toggle>
                 <icon-toggle
                     .value=${true}
@@ -480,7 +480,7 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
                         this.handleFilter();
                     }}
                     .icon=${html`<i class="icon !w-5 !h-5">${quoteIcon}</i>`}
-                    class="mr-2"
+                    class="w-10 h-10"
                 ></icon-toggle>
                 <icon-toggle
                     .value=${true}
@@ -489,7 +489,7 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
                         this.handleFilter();
                     }}
                     .icon=${html`<i class="icon !w-5 !h-5">${reblogIcon}</i>`}
-                    class="mr-2"
+                    class="w-10 h-10"
                 ></icon-toggle>
                 <icon-toggle
                     .value=${true}
@@ -498,7 +498,7 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
                         this.handleFilter();
                     }}
                     .icon=${html`<i class="icon !w-5 !h-5">${atIcon}</i>`}
-                    class="mr-2"
+                    class="w-10 h-10"
                 ></icon-toggle>
                 <icon-toggle
                     .value=${true}
@@ -507,9 +507,10 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
                         this.handleFilter();
                     }}
                     .icon=${html`<i class="icon !w-5 !h-5">${heartIcon}</i>`}
+                    class="w-10 h-10"
                 ></icon-toggle>
             </div>
-            ${this.closeButton()}
+            <div class="-ml-2">${this.closeButton()}</div>
         </div>`;
 
         return html`${renderTopbar("Notifications", buttons)}`;
