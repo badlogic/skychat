@@ -118,6 +118,28 @@ export async function downloadImage(url: string): Promise<ImageInfo | Error> {
     }
 }
 
+export async function downloadImageAsFile(imageUrl: string, fileName: string): Promise<void> {
+    try {
+        const response = await fetchApi("resolve-blob?url=" + encodeURIComponent(imageUrl));
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const imageBlob = await response.blob();
+        const url = URL.createObjectURL(imageBlob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName || "downloaded-image";
+        document.body.appendChild(a);
+        a.click();
+
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error("Error downloading image:", error);
+    }
+}
+
 export async function readFile(file: File) {
     return new Promise<{ dataUri: string; mimeType: string }>((resolve) => {
         const reader = new FileReader();

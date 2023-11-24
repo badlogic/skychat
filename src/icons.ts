@@ -53,6 +53,10 @@ import cloudIconSvg from "remixicon/icons/Business/cloud-line.svg";
 // @ts-ignore
 import searchIconSvg from "remixicon/icons/System/search-line.svg";
 // @ts-ignore
+import arrowLeftIconSvg from "remixicon/icons/Arrows/arrow-left-s-line.svg";
+// @ts-ignore
+import arrowRightIconSvg from "remixicon/icons/Arrows/arrow-right-s-line.svg";
+// @ts-ignore
 import arrowUpIconSvg from "remixicon/icons/Arrows/arrow-up-s-line.svg";
 // @ts-ignore
 import arrowUpDoubleIconSvg from "remixicon/icons/Arrows/arrow-up-double-line.svg";
@@ -74,6 +78,8 @@ import minusIconSvg from "remixicon/icons/System/subtract-line.svg";
 import infoIconSvg from "remixicon/icons/System/information-line.svg";
 // @ts-ignore
 import articleIconSvg from "remixicon/icons/Document/article-line.svg";
+// @ts-ignore
+import downloadIconSvg from "remixicon/icons/System/download-cloud-line.svg";
 
 import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 
@@ -104,6 +110,8 @@ export const muteIcon = unsafeHTML(muteIconSvg);
 export const blockIcon = unsafeHTML(blockIconSvg);
 export const cloudIcon = unsafeHTML(cloudIconSvg);
 export const searchIcon = unsafeHTML(searchIconSvg);
+export const arrowLeftIcon = unsafeHTML(arrowLeftIconSvg);
+export const arrowRightIcon = unsafeHTML(arrowRightIconSvg);
 export const arrowUpIcon = unsafeHTML(arrowUpIconSvg);
 export const arrowUpDoubleIcon = unsafeHTML(arrowUpDoubleIconSvg);
 export const moonIcon = unsafeHTML(moonIconSvg);
@@ -115,3 +123,4 @@ export const plusIcon = unsafeHTML(plusIconSvg);
 export const minusIcon = unsafeHTML(minusIconSvg);
 export const infoIcon = unsafeHTML(infoIconSvg);
 export const articleIcon = unsafeHTML(articleIconSvg);
+export const downloadIcon = unsafeHTML(downloadIconSvg);

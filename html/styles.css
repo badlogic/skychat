@@ -122,10 +122,6 @@
 }
 
 @layer utilities {
-    .blur-background {
-        backdrop-filter: blur(4px);
-    }
-
     .no-touch-highlight {
         -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
     }
@@ -140,10 +136,6 @@
 
     .break-any {
         overflow-wrap: anywhere;
-    }
-
-    .no-scroll {
-        overflow: hidden !important;
     }
 
     i.icon {

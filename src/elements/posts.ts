@@ -15,10 +15,13 @@ import { map } from "lit/directives/map.js";
 import { date } from "../bsky";
 import { i18n } from "../i18n";
 import {
+    arrowLeftIcon,
+    arrowRightIcon,
     articleIcon,
     blockIcon,
     cloudIcon,
     deleteIcon,
+    downloadIcon,
     heartIcon,
     moreIcon,
     muteIcon,
@@ -32,8 +35,10 @@ import { EventAction, NumQuote, State } from "../state";
 import { Store } from "../store";
 import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
 import {
+    ImageInfo,
     combineAtUri,
     dom,
+    downloadImageAsFile,
     enableYoutubeJSApi,
     error,
     fetchApi,
@@ -46,7 +51,7 @@ import {
     youtubePlaYButton,
 } from "../utils";
 import { IconToggle } from "./icontoggle";
-import { HashNavOverlay, Overlay, renderTopbar, waitForOverlayClosed } from "./overlay";
+import { CloseableElement, HashNavOverlay, Overlay, renderTopbar, waitForOverlayClosed } from "./overlay";
 import { PopupMenu } from "./popup";
 import { deletePost, quote, reply } from "./posteditor";
 import { getProfileUrl, renderProfile, renderProfileAvatar } from "./profiles";
@@ -311,6 +316,97 @@ export function renderImagesEmbedSmall(images: AppBskyEmbedImages.ViewImage[]) {
     </div>`;
 }
 
+@customElement("image-gallery")
+export class ImageGallery extends CloseableElement {
+    @property()
+    images: { url: string; altText?: string }[] = [];
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    render() {
+        return html`
+            <div
+                class="fixed top-0 left-0 w-screen h-screen flex overflow-x-auto snap-x snap-mandatory backdrop-blur z-10 fill-primary"
+                @click=${() => this.close()}
+            >
+                ${this.images.map(
+                    (image, index) => html`
+                        <div class="flex-none w-full h-full relative snap-center flex justify-center items-center">
+                            <img src="${image.url}" alt="${image.altText ?? ""}" class="max-w-full max-h-full object-contain" />
+                            <div class="absolute pt-4 pl-4 mr-4 w-full h-full flex items-center">
+                                ${this.images.length > 1 && index > 0
+                                    ? html`<button @click=${(ev: MouseEvent) =>
+                                          this.scrollPrevious(ev)} class="h-full flex"><i class="self-start icon !w-8 !h-8">${arrowLeftIcon}</button>`
+                                    : nothing}
+                                ${this.images.length > 1 && index < this.images.length - 1
+                                    ? html`<button @click=${(ev: MouseEvent) =>
+                                          this.scrollNext(
+                                              ev
+                                          )} class="ml-auto h-full flex"><i class="self-start icon !w-8 !h-8">${arrowRightIcon}</button>`
+                                    : nothing}
+                            </div>
+                            <div class="absolute bottom-4 left-4 w-full flex items-center gap-4">
+                                ${image.altText
+                                    ? html`<button
+                                          class="bg-black text-white py-1 px-2 text-xs rounded"
+                                          @click="${(ev: MouseEvent) => this.showAltText(ev, image.altText ?? "")}"
+                                      >
+                                          ALT
+                                      </button>`
+                                    : nothing}
+                                <button
+                                    @click=${(ev: MouseEvent) => this.download(ev, image)}
+                                    class="flex gap-1 items-center justify-center w-8 h-8 bg-black rounded"
+                                >
+                                    <i class="icon !w-5 !h-5 fill-white">${downloadIcon}</i>
+                                </button>
+                            </div>
+                        </div>
+                    `
+                )}
+            </div>
+        `;
+    }
+
+    private scrollNext(ev: MouseEvent) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
+        const galleryContainer = this.renderRoot.children[0] as HTMLElement;
+
+        if (galleryContainer) {
+            galleryContainer.scrollTo({ left: galleryContainer.scrollLeft + galleryContainer.clientWidth, behavior: "smooth" });
+        }
+    }
+
+    private scrollPrevious(ev: MouseEvent) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
+        const galleryContainer = this.renderRoot.children[0] as HTMLElement;
+
+        if (galleryContainer) {
+            galleryContainer.scrollTo({ left: galleryContainer.scrollLeft - galleryContainer.clientWidth, behavior: "smooth" });
+        }
+    }
+
+    showAltText(ev: MouseEvent, altText: string) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
+        document.body.append(dom(html`<alt-text alt=${altText}></alt-text>`)[0]);
+    }
+
+    download(ev: MouseEvent, image: { url: string; altText?: string }) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
+        downloadImageAsFile(image.url, "image.jpeg");
+    }
+}
+
 export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensitive: boolean, minimal = false) {
     if (minimal) return renderImagesEmbedSmall(images);
 
@@ -320,23 +416,26 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
 
     return html`<div class="mt-2 flex flex-col gap-2 items-center">
         ${map(images, (image) => {
-            return html`<div class="relative">
-                <img
-                    src="${image.thumb}"
-                    @click="${(ev: Event) => {
-                        if (sensitive) {
-                            ev.stopImmediatePropagation();
-                            unblur(ev.target as HTMLElement);
-                        }
-                    }}"
-                    alt="${image.alt}"
-                    class="max-h-[40svh] rounded ${sensitive ? "blur-lg" : ""}"
-                />
+            return html`<div
+                class="relative"
+                @click=${(ev: Event) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    ev.stopImmediatePropagation();
+                    if (sensitive) {
+                        unblur(ev.target as HTMLElement);
+                        sensitive = false;
+                    } else {
+                        const galleryImages = images.map((image) => {
+                            return { url: image.fullsize, altText: image.alt };
+                        });
+                        document.body.append(dom(html`<image-gallery .images=${galleryImages}></image-gallery>`)[0]);
+                    }
+                }}
+            >
+                <img src="${image.thumb}" alt="${image.alt}" class="max-h-[40svh] rounded ${sensitive ? "blur-lg" : ""}" />
                 ${image.alt && image.alt.length > 0
-                    ? html`<button
-                          @click=${() => {
-                              document.body.append(dom(html`<alt-text alt=${image.alt}></alt-text>`)[0]);
-                          }}
+                    ? html`<div
                           class="absolute bottom-2 left-2 rounded bg-black text-white p-1 text-xs"
                       >
                           ALT
@@ -933,6 +1032,7 @@ export class ThreadViewPostElement extends LitElement {
     }
 }
 
+// FIXME detect if reader mode actually makes sense, and hide the reader mode button if not.
 @customElement("thread-overlay")
 export class ThreadOverlay extends HashNavOverlay {
     @property()

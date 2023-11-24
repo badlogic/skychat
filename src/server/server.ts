@@ -345,6 +345,24 @@ let lastEventTime = new Date().getTime();
         }
     });
 
+    app.get("/api/resolve-blob", async (req, res) => {
+        numDidWebRequests++;
+        try {
+            const response = await fetch(req.query.url as string);
+            if (!response.ok) {
+                res.status(400).json({ error: `Couldn't retrieve ${req.query.url}` });
+                return;
+            }
+
+            res.setHeader("Content-Type", response.headers.get("content-type") || "application/octet-stream");
+            const buffer = await response.arrayBuffer();
+            const nodeBuffer = Buffer.from(buffer);
+            res.send(nodeBuffer);
+        } catch (e) {
+            res.status(400).json({ error: "An error occurred" });
+        }
+    });
+
     app.get("/api/html", async (req, res) => {
         numHtmlRequests++;
         try {
