@@ -610,8 +610,11 @@ export class PostViewElement extends LitElement {
         }
 
         if ((this.post.author.viewer?.muted || this.post.author.viewer?.mutedByList) && !this.unmuted) {
-            return html`<div class="bg-muted text-muted-fg px-4 py-2 rounded flex items-center cursor-pointer" @click=${() => (this.unmuted = true)}>
-                <i class="icon !w-6 !h-6 fill-[#fff]">${shieldIcon}</i><span class="ml-2 text-white">${i18n("Post by muted user")}</span>
+            return html`<div
+                class="bg-muted text-muted-fg fill-muted-fg px-4 py-2 rounded flex items-center cursor-pointer"
+                @click=${() => (this.unmuted = true)}
+            >
+                <i class="icon !w-6 !h-6">${shieldIcon}</i><span class="ml-2">${i18n("Post by muted user")}</span>
                 <span class="ml-2 text-xs">(${i18n("Click to view")})</span>
             </div>`;
         }
@@ -1013,6 +1016,8 @@ export class ThreadOverlay extends HashNavOverlay {
     @property()
     readerMode = false;
 
+    canReaderMode = false;
+
     constructor() {
         super();
     }
@@ -1091,6 +1096,7 @@ export class ThreadOverlay extends HashNavOverlay {
             collectPostUris(response.data.thread);
             await State.getNumQuotes(postUris);
             this.thread = response.data.thread;
+            if (this.applyFilters(this.thread, true).length > 1) this.canReaderMode = true;
         } catch (e) {
             this.error = notFoundMessage;
             return;
@@ -1104,18 +1110,20 @@ export class ThreadOverlay extends HashNavOverlay {
             "Thread",
             html`<div class="ml-auto flex">
                 <div class="flex">
-                    <icon-toggle
-                        @change=${(ev: CustomEvent) => (this.readerMode = ev.detail.value)}
-                        .icon=${html`<i class="icon !w-5 !h-5">${articleIcon}</i>`}
-                        class="w-10 h-10"
-                    ></icon-toggle>
+                    ${this.canReaderMode
+                        ? html`<icon-toggle
+                              @change=${(ev: CustomEvent) => (this.readerMode = ev.detail.value)}
+                              .icon=${html`<i class="icon !w-5 !h-5">${articleIcon}</i>`}
+                              class="w-10 h-10"
+                          ></icon-toggle>`
+                        : nothing}
                 </div>
                 ${this.closeButton()}
             </div>`
         )}`;
     }
 
-    applyFilters(thread: ThreadViewPost): ThreadViewPost[] {
+    applyFilters(thread: ThreadViewPost, readerMode = false): ThreadViewPost[] {
         const copyThread = (thread: ThreadViewPost): ThreadViewPost => {
             const replies: ThreadViewPost["replies"] = thread.replies ? [] : undefined;
             if (thread.replies) {
@@ -1152,7 +1160,7 @@ export class ThreadOverlay extends HashNavOverlay {
             }
         };
         sortReplies(thread);
-        if (this.readerMode) {
+        if (this.readerMode || readerMode) {
             const parentAuthor = thread.post.author;
             const threadPosts: ThreadViewPost[] = [];
             const collectThreadPosts = (replies: ThreadViewPost["replies"]) => {

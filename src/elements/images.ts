@@ -34,7 +34,7 @@ export class ImageGalleryOverlay extends CloseableElement {
     render() {
         return html`
             <div
-                class="fixed top-0 left-0 w-screen h-screen flex overflow-x-auto snap-x snap-mandatory backdrop-blur z-10 fill-primary"
+                class="fixed scrollbar-hide top-0 left-0 w-full h-full overflow-none flex overflow-x-auto snap-x snap-mandatory backdrop-blur z-10 fill-primary"
                 @click=${() => this.close()}
             >
                 ${this.images.map(
@@ -44,20 +44,20 @@ export class ImageGalleryOverlay extends CloseableElement {
                                 ? html`<button @click=${(ev: MouseEvent) =>
                                       this.scrollPrevious(
                                           ev
-                                      )} class="animate-fade animate-duration-500 absolute left-4 top-4 h-full flex"><i class="icon !w-8 !h-8">${arrowLeftIcon}</button>`
+                                      )} class="animate-fade animate-duration-100 absolute left-4 top-4 h-full flex"><i class="icon !w-8 !h-8">${arrowLeftIcon}</button>`
                                 : nothing}
                             ${this.images.length > 1 && index < this.images.length - 1 && !this.isScrolling
                                 ? html`<button @click=${(ev: MouseEvent) =>
                                       this.scrollNext(
                                           ev
-                                      )} class="animate-fade animate-duration-500 absolute right-4 top-4 h-full flex"><i class="icon !w-8 !h-8">${arrowRightIcon}</button>`
+                                      )} class="animate-fade animate-duration-100 absolute right-4 top-4 h-full flex"><i class="icon !w-8 !h-8">${arrowRightIcon}</button>`
                                 : nothing}
                             <img src="${image.url}" alt="${image.altText ?? ""}" class="max-w-full max-h-full object-contain" />
                             ${!this.isScrolling
                                 ? html`<div class="absolute bottom-4 left-4 w-full flex items-center gap-4">
                                       ${image.altText
                                           ? html`<button
-                                                class="animate-fade animate-duration-500  bg-black text-white py-1 px-2 text-xs rounded"
+                                                class="animate-fade animate-duration-100  bg-black text-white py-1 px-2 text-xs rounded"
                                                 @click="${(ev: MouseEvent) => this.showAltText(ev, image.altText ?? "")}"
                                             >
                                                 ALT
@@ -65,7 +65,7 @@ export class ImageGalleryOverlay extends CloseableElement {
                                           : nothing}
                                       <button
                                           @click=${(ev: MouseEvent) => this.download(ev, image)}
-                                          class="animate-fade animate-duration-500 flex gap-1 items-center justify-center w-8 h-8 bg-black rounded"
+                                          class="animate-fade animate-duration-100 flex gap-1 items-center justify-center w-8 h-8 bg-black rounded"
                                       >
                                           <i class="icon !w-5 !h-5 fill-white">${downloadIcon}</i>
                                       </button>
@@ -109,7 +109,7 @@ export class ImageGalleryOverlay extends CloseableElement {
         clearTimeout(this.scrollTimeout);
         this.scrollTimeout = window.setTimeout(() => {
             this.isScrolling = false;
-        }, 300);
+        }, 100);
     }
 
     showAltText(ev: MouseEvent, altText: string) {

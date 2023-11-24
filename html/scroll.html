@@ -7,7 +7,7 @@
         <link rel="stylesheet" href="build/styles-bundle.css" />
     </head>
     <body class="flex flex-col w-full h-full">
-        <main class="max-w-[600px] w-full overflow-none mx-auto bg-red/20 flex flex-col">
+        <main class="max-w-[600px] w-full mx-auto bg-red/20 flex flex-col" style="overflow-anchor: auto">
             <div id="posts" class="flex flex-col w-full">
                 <button id="loader" class="bg-green-100 flex items-center justify-center flex flex-col">
                     <div id="spacer" class="h-[56px] w-full bg-blue-100"></div>
@@ -15,7 +15,6 @@
                 </button>
             </div>
         </main>
-        <div id="measurementContainer" style="position: absolute; visibility: hidden; overflow: hidden"></div>
     </body>
     <script>
         const main = document.documentElement;
@@ -53,11 +52,11 @@
 
         const renderPost = (post) => {
             return dom(`<div class="flex flex-col w-full border-t border-gray/50 p-4">
-                    <span class="font-bold">${post.title}</span>
-                    <span>${post.date}</span>
-                    <p>${post.text}</p>
-                    <div class="flex items-center justify-center"><img src="${post.img}" class="max-h-[30vh]"></div>
-                </div>`)[0];
+                            <span class="font-bold">${post.title}</span>
+                            <span>${post.date}</span>
+                            <p>${post.text}</p>
+                            <div class="flex items-center justify-center"><img src="${post.img}" class="h-[30vw] max-h-[30vh]"></div>
+                        </div>`)[0];
         };
 
         let id = 0;
@@ -85,11 +84,25 @@
             });
 
             postsDom.insertBefore(fragment, postsDom.firstChild);
-            main.scrollTop = loader.offsetTop;
             postsDom.insertBefore(loader, postsDom.firstChild);
         }
 
         document.querySelector("#loader").addEventListener("click", () => loadPosts());
         loadPosts();
+        main.scrollTop = 0;
+
+        let previousLastChild = main.lastElementChild;
+        let previousScrollHeight = main.scrollHeight;
+        const observer = new ResizeObserver(function () {
+            let isHeightIncreased = main.scrollHeight != previousScrollHeight;
+            let isAppend = main.lastElementChild !== previousLastChild;
+            if (isHeightIncreased && !isAppend) {
+                let newScrollYPosition = main.scrollTop + main.scrollHeight - previousScrollHeight;
+                previousScrollHeight = main.scrollHeight;
+                main.scrollTop = newScrollYPosition;
+            }
+        });
+
+        observer.observe(document.body.querySelector("main"));
     </script>
 </html>

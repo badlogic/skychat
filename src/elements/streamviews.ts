@@ -16,7 +16,7 @@ import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from 
 import { State } from "../state";
 import { Store } from "../store";
 import { ActorFeedStream, NotificationsStream, Stream, StreamPage } from "../streams";
-import { collectLitElements, dom, error, getScrollParent, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce } from "../utils";
+import { collectLitElements, dom, error, fixScrollTop, getScrollParent, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce } from "../utils";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { deletePost, quote, reply } from "./posteditor";
 import { renderEmbed, renderRichText } from "./posts";
@@ -58,6 +58,17 @@ export abstract class StreamView<T> extends LitElement {
             error("No stream set, this should not happen");
             return;
         }
+
+        // Setup scroll position fixes when inserting new items at the top
+        if (this.itemsDom) {
+            const scrollParent = getScrollParent(this.itemsDom);
+            if (scrollParent) {
+                scrollParent.scrollTop = 0;
+                fixScrollTop(scrollParent, this.itemsDom);
+            }
+        }
+
+        // Setup polling
         if (this.stream && this.stream.pollNew) {
             this.stream.addNewItemsListener(async (newerItems) => {
                 if (newerItems instanceof Error) {
@@ -84,12 +95,6 @@ export abstract class StreamView<T> extends LitElement {
                         promises.push(element.updateComplete);
                     }
                     await Promise.all(promises);
-
-                    // FIXME Could do scroll to currently visible item or some other logic
-                    const scrollParent = getScrollParent(itemsDom);
-                    if (scrollParent && scrollParent.scrollTop == 0) {
-                        scrollParent.scrollTop = (lastItemDom?.offsetTop ?? 0) - 40;
-                    }
                 }
             });
         }

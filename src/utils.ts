@@ -541,3 +541,18 @@ export function enableYoutubeJSApi(originalString: string) {
     }
     return originalString;
 }
+
+export function fixScrollTop(scrollableElement: HTMLElement, container: Element) {
+    let previousLastChild = container.lastElementChild;
+    let previousScrollHeight = container.scrollHeight;
+    const observer = new ResizeObserver(function () {
+        let isHeightIncreased = container.scrollHeight != previousScrollHeight;
+        let isAppend = container.lastElementChild !== previousLastChild;
+        if (isHeightIncreased && !isAppend) {
+            let newScrollYPosition = container.scrollTop + container.scrollHeight - previousScrollHeight;
+            previousScrollHeight = container.scrollHeight;
+            container.scrollTop = newScrollYPosition;
+        }
+    });
+    observer.observe(container);
+}
