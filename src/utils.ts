@@ -550,3 +550,27 @@ export function enableYoutubeJSApi(originalString: string) {
     }
     return originalString;
 }
+
+export function copyTextToClipboard(text: string): void {
+    const tempElement = document.createElement("textarea");
+    tempElement.style.position = "fixed";
+    tempElement.style.left = "0";
+    tempElement.style.top = "0";
+    tempElement.style.opacity = "0";
+    tempElement.value = text;
+    document.body.appendChild(tempElement);
+
+    tempElement.focus();
+    tempElement.select();
+
+    try {
+        const successful = document.execCommand("copy");
+        if (!successful) {
+            console.error("Failed to copy link.");
+        }
+    } catch (err) {
+        console.error("Error in copying link: ", err);
+    }
+
+    document.body.removeChild(tempElement);
+}

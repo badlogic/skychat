@@ -37,6 +37,7 @@ import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
 import {
     ImageInfo,
     combineAtUri,
+    copyTextToClipboard,
     dom,
     downloadImageAsFile,
     enableYoutubeJSApi,
@@ -58,6 +59,7 @@ import { deletePost, quote, reply } from "./posteditor";
 import { getProfileUrl, renderProfile, renderProfileAvatar } from "./profiles";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { ViewImage } from "@atproto/api/dist/client/types/app/bsky/embed/images";
+import { toast } from "./toast";
 
 export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {
@@ -737,7 +739,17 @@ export function getBskyPostUrl(post: PostView) {
     return `https://bsky.app/profile/${post.author.did}/post/${atUri.rkey}`;
 }
 
-type PostOptions = "likes" | "quotes" | "reposts" | "mute_user" | "mute_thread" | "block_user" | "delete" | "open_thread" | "open_bluesky";
+type PostOptions =
+    | "likes"
+    | "quotes"
+    | "reposts"
+    | "mute_user"
+    | "mute_thread"
+    | "block_user"
+    | "delete"
+    | "open_thread"
+    | "open_bluesky"
+    | "copy_link";
 type PostOptionsButton = { option: PostOptions; text: string; icon: TemplateResult; click: () => void; enabled: boolean };
 
 @customElement("post-options")
@@ -858,6 +870,19 @@ export class PostOptionsElement extends PopupMenu {
                 enabled: true,
                 click: () => {
                     if (this.post) window.open(getBskyPostUrl(this.post), "_blank");
+                    this.close();
+                },
+            },
+            {
+                option: "copy_link",
+                text: i18n("Copy link"),
+                icon: html`${cloudIcon}`,
+                enabled: true,
+                click: () => {
+                    if (this.post) {
+                        copyTextToClipboard(getBskyPostUrl(this.post));
+                        toast("Copied link to clipboard");
+                    }
                     this.close();
                 },
             },

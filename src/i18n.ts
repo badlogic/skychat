@@ -144,6 +144,8 @@ export interface Messages {
     "New follower": string;
     Replies: string;
     Mentions: string;
+    "Copy link": string;
+    "Copied link to clipboard": string;
 }
 
 const english: Messages = {
@@ -301,6 +303,8 @@ const english: Messages = {
     "New follower": "New followers",
     Replies: "Replies",
     Mentions: "Mentions",
+    "Copy link": "Copy link",
+    "Copied link to clipboard": "Copied link to clipboard",
 };
 
 const german: Messages = {
@@ -460,6 +464,8 @@ const german: Messages = {
     "New follower": "Neuer Follower",
     Replies: "Antworten",
     Mentions: "Mentions", // FIXME
+    "Copy link": "Link kopieren",
+    "Copied link to clipboard": "Link in Zwischenablage kopiert",
 };
 
 export type LanguageCode = "en" | "de";
