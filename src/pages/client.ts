@@ -229,15 +229,8 @@ export class HomeOverlay extends Overlay {
     renderContent(): TemplateResult {
         return html`<feed-stream-view
                 .newItems=${async (newItems: FeedViewPost[]) => {
-                    const result = await State.loadFeedViewPostsDependencies(newItems);
-                    if (result instanceof Error) {
+                    if (newItems instanceof Error) {
                         this.error = i18n("Could not load newer items");
-                    }
-                    const scrollParent = getScrollParent(this.children[0] as HTMLElement)!;
-                    const upButton = scrollParent.querySelector("up-button") as UpButton;
-                    if (upButton) {
-                        upButton.classList.remove("hidden");
-                        upButton.highlight = true;
                     }
                 }}
                 .stream=${new ActorFeedStream("home", undefined, true, FEED_CHECK_INTERVAL)}
