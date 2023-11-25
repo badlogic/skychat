@@ -21,6 +21,8 @@ import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { deletePost, quote, reply } from "./posteditor";
 import { renderEmbed, renderRichText } from "./posts";
 import { renderProfile } from "./profiles";
+import { ListViewElementAction } from "./lists";
+import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 
 (window as any).emitLitDebugLogEvents = true;
 
@@ -206,6 +208,22 @@ export class PostsStreamOverlay extends Overlay {
 
 @customElement("feed-stream-view")
 export class FeedStreamView extends StreamView<FeedViewPost> {
+    constructor() {
+        super();
+        this.wrapItem = false;
+    }
+
+    getItemKey(post: FeedViewPost): string {
+        return post.post.uri + (AppBskyFeedDefs.isReasonRepost(post.reason) ? post.reason.by.did : "");
+    }
+
+    renderItem(feedViewPost: FeedViewPost): TemplateResult {
+        return html`<feed-view-post-view .feedViewPost=${feedViewPost}></feed-view-post-view>`;
+    }
+}
+
+@customElement("list-feed-stream-view")
+export class ListFeedStreamView extends StreamView<FeedViewPost> {
     constructor() {
         super();
         this.wrapItem = false;
@@ -547,7 +565,20 @@ export class GeneratorsStreamView extends StreamView<GeneratorView> {
     @property()
     action = (action: GeneratorViewElementAction, generator: GeneratorView) => {};
 
-    renderItem(item: AppBskyFeedDefs.GeneratorView): TemplateResult {
+    renderItem(item: GeneratorView): TemplateResult {
         return html`<generator-view .minimal=${this.minimal} .generator=${item} .action=${this.action}></generator-view>`;
+    }
+}
+
+@customElement("lists-stream-view")
+export class ListsStreamView extends StreamView<ListView> {
+    @property()
+    minimal = false;
+
+    @property()
+    action = (action: ListViewElementAction, list: ListView) => {};
+
+    renderItem(item: ListView): TemplateResult {
+        return html`<list-view .minimal=${this.minimal} .list=${item} .action=${this.action}></list-view>`;
     }
 }

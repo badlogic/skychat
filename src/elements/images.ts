@@ -34,7 +34,7 @@ export class ImageGalleryOverlay extends CloseableElement {
     render() {
         return html`
             <div
-                class="fixed scrollbar-hide top-0 left-0 w-full h-full overflow-none flex overflow-x-auto snap-x snap-mandatory backdrop-blur z-10 fill-primary"
+                class="fixed scrollbar-hide top-0 left-0 w-full h-full overflow-none flex snap-x overflow-x-auto backdrop-blur z-10 fill-primary"
                 @click=${() => this.close()}
             >
                 ${this.images.map(

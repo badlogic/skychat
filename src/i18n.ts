@@ -133,6 +133,7 @@ export interface Messages {
     "Couldn't load your feeds": string;
     Feed: string;
     "Could not load feed": string;
+    "Could not load list feed": string;
     "You don't have pinned feeds": string;
     "You don't have saved feeds": string;
     Edit: string;
@@ -146,6 +147,8 @@ export interface Messages {
     Mentions: string;
     "Copy link": string;
     "Copied link to clipboard": string;
+    List: string;
+    Lists: string;
 }
 
 const english: Messages = {
@@ -292,6 +295,7 @@ const english: Messages = {
     "Couldn't load your feeds": "Couldn't load your feeds",
     Feed: "Feed",
     "Could not load feed": "Could not load feed",
+    "Could not load list feed": "Could not load list feed",
     "You don't have pinned feeds": "You don't have pinned feeds",
     "You don't have saved feeds": "You don't have saved feeds",
     Edit: "Edit",
@@ -305,6 +309,8 @@ const english: Messages = {
     Mentions: "Mentions",
     "Copy link": "Copy link",
     "Copied link to clipboard": "Copied link to clipboard",
+    List: "List",
+    Lists: "Lists",
 };
 
 const german: Messages = {
@@ -453,6 +459,7 @@ const german: Messages = {
     "Couldn't load your feeds": "Konnte deine Feeds nicht laden",
     Feed: "Feed",
     "Could not load feed": "Konnte Feed nicht laden",
+    "Could not load list feed": "Konnte Listen Feed nicht laden",
     "You don't have pinned feeds": "Keine angehefteten Feeds vorhanden",
     "You don't have saved feeds": "Keine gespeicherten Feeds vorhanden",
     Edit: "Editieren",
@@ -466,6 +473,8 @@ const german: Messages = {
     Mentions: "Mentions", // FIXME
     "Copy link": "Link kopieren",
     "Copied link to clipboard": "Link in Zwischenablage kopiert",
+    List: "Liste",
+    Lists: "Listen",
 };
 
 export type LanguageCode = "en" | "de";

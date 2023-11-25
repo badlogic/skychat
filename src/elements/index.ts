@@ -4,6 +4,7 @@ export * from "./feeds";
 export * from "./images";
 export * from "./imagesearch";
 export * from "./icontoggle";
+export * from "./lists";
 export * from "./notifications";
 export * from "./popup";
 export * from "./posteditor";

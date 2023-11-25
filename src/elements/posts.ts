@@ -5,10 +5,11 @@ import {
     AppBskyEmbedRecordWithMedia,
     AppBskyFeedDefs,
     AppBskyFeedPost,
+    AppBskyGraphDefs,
     RichText,
 } from "@atproto/api";
 import { ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { FeedViewPost, PostView, ThreadViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { FeedViewPost, GeneratorView, PostView, ThreadViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
@@ -60,6 +61,8 @@ import { getProfileUrl, renderProfile, renderProfileAvatar } from "./profiles";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { ViewImage } from "@atproto/api/dist/client/types/app/bsky/embed/images";
 import { toast } from "./toast";
+import { GeneratorViewElementAction } from "./feeds";
+import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 
 export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {
@@ -410,7 +413,19 @@ export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
     }
 
     if (AppBskyFeedDefs.isGeneratorView(recordEmbed.record)) {
-        return html`<div class="mt-2 border border-divider rounded p-2"><generator-view .generator=${recordEmbed.record}></generator-view></div>`;
+        const action = (action: GeneratorViewElementAction, generator: GeneratorView) => {
+            if (action == "clicked") document.body.append(dom(html`<feed-overlay .feedUri=${generator.uri}></feed-overlay>`)[0]);
+        };
+        return html`<div class="mt-2 border border-divider rounded p-2">
+            <generator-view .generator=${recordEmbed.record} .action=${action}></generator-view>
+        </div>`;
+    }
+
+    if (AppBskyGraphDefs.isListView(recordEmbed.record)) {
+        const action = (action: GeneratorViewElementAction, list: ListView) => {
+            if (action == "clicked") document.body.append(dom(html`<list-overlay .listUri=${list.uri}></list-overlay>`)[0]);
+        };
+        return html`<div class="mt-2 border border-divider rounded p-2"><list-view .list=${recordEmbed.record} .action=${action}></list-view></div>`;
     }
 
     if (!AppBskyEmbedRecord.isViewRecord(recordEmbed.record)) return nothing;
@@ -881,7 +896,7 @@ export class PostOptionsElement extends PopupMenu {
                 click: () => {
                     if (this.post) {
                         copyTextToClipboard(getBskyPostUrl(this.post));
-                        toast("Copied link to clipboard");
+                        toast(i18n("Copied link to clipboard"));
                     }
                     this.close();
                 },

@@ -5,7 +5,7 @@ import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { HashNavOverlay, UpButton, renderTopbar } from ".";
 import { i18n } from "../i18n";
-import { editIcon, heartIcon, infoIcon, minusIcon, pinIcon, plusIcon, searchIcon, spinnerIcon } from "../icons";
+import { blockIcon, editIcon, heartIcon, infoIcon, minusIcon, muteIcon, pinIcon, plusIcon, searchIcon, spinnerIcon } from "../icons";
 import { EventAction, FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
 import { defaultFeed, dom, error, getScrollParent, hasLinkOrButtonParent, splitAtUri, waitForNavigation as waitForNavigation } from "../utils";
@@ -13,18 +13,19 @@ import { IconToggle } from "./icontoggle";
 import { renderRichText } from "./posts";
 import { getProfileUrl, renderProfileAvatar } from "./profiles";
 import { repeat } from "lit-html/directives/repeat.js";
-import { FeedPostsStream } from "../streams";
+import { FeedPostsStream, ListFeedPostsStream } from "../streams";
+import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 
-export type GeneratorViewElementAction = "clicked" | "pinned" | "unpinned" | "saved" | "unsaved";
-export type GeneratorViewElementStyle = "topbar" | "minimal" | "full";
+export type ListViewElementAction = "clicked" | "pinned" | "unpinned" | "saved" | "unsaved";
+export type ListViewElementStyle = "topbar" | "minimal" | "full";
 
-@customElement("generator-view")
-export class GeneratorViewElement extends LitElement {
+@customElement("list-view")
+export class ListViewElement extends LitElement {
     @property()
-    generator?: GeneratorView;
+    list?: ListView;
 
     @property()
-    viewStyle: GeneratorViewElementStyle = "full";
+    viewStyle: ListViewElementStyle = "full";
 
     @property()
     expandDetails = false;
@@ -36,7 +37,7 @@ export class GeneratorViewElement extends LitElement {
     defaultActions = true;
 
     @property()
-    action = (action: GeneratorViewElementAction, generator: GeneratorView) => {};
+    action = (action: ListViewElementAction, list: ListView) => {};
 
     unsubscribe = () => {};
 
@@ -48,13 +49,13 @@ export class GeneratorViewElement extends LitElement {
         super.firstUpdated(_changedProperties);
         if (this.viewStyle == "full") this.expandDetails = true;
         this.unsubscribe = State.subscribe(
-            "feed",
+            "list",
             (action, payload) => {
                 if (action == "updated") {
-                    this.generator = { ...payload };
+                    this.list = { ...payload };
                 }
             },
-            this.generator?.uri
+            this.list?.uri
         );
     }
 
@@ -64,31 +65,57 @@ export class GeneratorViewElement extends LitElement {
     }
 
     render() {
-        if (!this.generator) return html`${nothing}`;
+        if (!this.list) return html`${nothing}`;
 
-        const generator = this.generator;
+        const list = this.list;
         const prefs = State.preferences?.feeds ?? {
             pinned: [],
             saved: [],
         };
-        const richText = new RichText({ text: generator.description ?? "" });
+        const richText = new RichText({ text: list.description ?? "" });
         richText.detectFacetsWithoutResolution();
 
         const createdBy = html`<div class="flex gap-1 text-xs items-center font-normal text-muted-fg">
             <span class="whitespace-nowrap">${i18n("Created by")}</span>
-            ${renderProfileAvatar(generator.creator, true)}
+            ${renderProfileAvatar(list.creator, true)}
             <a
                 class="line-clamp-1 hover:underline text-muted-fg"
-                href="${getProfileUrl(generator.creator ?? "")}"
+                href="${getProfileUrl(list.creator ?? "")}"
                 target="_blank"
                 @click=${(ev: Event) => {
                     ev.preventDefault();
                     ev.stopPropagation();
-                    document.body.append(dom(html`<profile-overlay .did=${generator.creator.did}></profile-overlay>`)[0]);
+                    document.body.append(dom(html`<profile-overlay .did=${list.creator.did}></profile-overlay>`)[0]);
                 }}
-                >${generator.creator.displayName ?? generator.creator.handle}</a
+                >${list.creator.displayName ?? list.creator.handle}</a
             >
         </div>`;
+
+        // FIXME need to display mod list toggles according to settings
+        const editButtons =
+            list.purpose == "app.bsky.graph.defs#curatelist"
+                ? html` <icon-toggle
+                          @change=${(ev: CustomEvent) => this.togglePin(ev)}
+                          .icon=${html`<i class="icon !w-5 !h-5">${pinIcon}</i>`}
+                          .value=${prefs.pinned?.includes(list.uri)}
+                      ></icon-toggle>
+                      ${prefs.saved?.includes(list.uri) || prefs.pinned?.includes(list.uri)
+                          ? html`<button @click=${() => this.removeList()}>
+                                <i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</i>
+                            </button>`
+                          : html`<button @click=${() => this.addList()}>
+                                <i class="icon !w-6 !h-6 fill-primary">${plusIcon}</i>
+                            </button>`}`
+                : html`<icon-toggle
+                          @change=${(ev: CustomEvent) => this.toggleBlock(ev)}
+                          .icon=${html`<i class="icon !w-5 !h-5">${blockIcon}</i>`}
+                          .value=${false}
+                      ></icon-toggle
+                      ><icon-toggle
+                          @change=${(ev: CustomEvent) => this.toggleBlock(ev)}
+                          .icon=${html`<i class="icon !w-5 !h-5">${muteIcon}</i>`}
+                          .value=${false}
+                      ></icon-toggle>`;
 
         const buttons = html`<div class="flex gap-2 ml-auto">
             ${this.viewStyle != "full"
@@ -98,46 +125,26 @@ export class GeneratorViewElement extends LitElement {
                       .value=${this.expandDetails}
                   ></icon-toggle>`
                 : nothing}
-            ${this.editable
-                ? html` <icon-toggle
-                          @change=${(ev: CustomEvent) => this.togglePin(ev)}
-                          .icon=${html`<i class="icon !w-5 !h-5">${pinIcon}</i>`}
-                          .value=${prefs.pinned?.includes(generator.uri)}
-                      ></icon-toggle>
-                      ${prefs.saved?.includes(generator.uri) || prefs.pinned?.includes(generator.uri)
-                          ? html`<button @click=${() => this.removeFeed()}>
-                                <i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</i>
-                            </button>`
-                          : html`<button @click=${() => this.addFeed()}>
-                                <i class="icon !w-6 !h-6 fill-primary">${plusIcon}</i>
-                            </button>`}`
-                : nothing}
+            ${this.editable ? editButtons : nothing}
         </div>`;
 
         const header = html`<div class="flex items-center gap-2 ${this.viewStyle == "topbar" ? "flex-grow -ml-3" : ""}">
-            ${generator.avatar
+            ${list.avatar
                 ? html`<img
-                      src="${generator.avatar}"
+                      src="${list.avatar}"
                       class="${this.viewStyle == "topbar" ? "w-8 h-8" : "w-10 h-10"} object-cover rounded-md fancy-shadow"
                   />`
                 : html`<div class="fancy-shadow">
                       <i class="icon ${this.viewStyle == "topbar" ? "!w-8 !h-8" : "!w-10 !h-10"} fancy-shadow">${defaultFeed}</i>
                   </div>`}
             <div class="flex flex-col">
-                <div class="font-semibold">${generator.displayName}</div>
+                <div class="font-semibold">${list.name}</div>
                 ${this.viewStyle != "topbar" && this.expandDetails ? createdBy : nothing}
             </div>
         </div>`;
 
         const details = html`${this.viewStyle == "topbar" && this.expandDetails ? createdBy : nothing}
-            <div class="mt-1">${generator.description ? renderRichText(richText) : nothing}</div>
-            <icon-toggle
-                @change=${(ev: CustomEvent) => this.toggleLike(ev)}
-                .icon=${html`<i class="icon w-4 h-4">${heartIcon}</i>`}
-                class="h-4 mt-1 mr-auto"
-                .value=${generator.viewer?.like}
-                .text=${generator.likeCount}
-            ></icon-toggle>`;
+            <div class="mt-1">${list.description ? renderRichText(richText) : nothing}</div>`;
 
         return html`<div
             class="flex flex-col cursor-pointer"
@@ -145,7 +152,7 @@ export class GeneratorViewElement extends LitElement {
                 if (window.getSelection() && window.getSelection()?.toString().length != 0) return;
                 if (hasLinkOrButtonParent(ev.target as HTMLElement)) return;
                 ev.stopPropagation();
-                this.action("clicked", generator);
+                this.action("clicked", list);
             }}
         >
             <div class="flex items-center">${header} ${buttons}</div>
@@ -161,88 +168,56 @@ export class GeneratorViewElement extends LitElement {
         </div>`;
     }
 
-    async toggleLike(ev: CustomEvent) {
-        const toggle = ev.target as IconToggle;
-        const user = Store.getUser();
-        if (!user) return;
-        if (!State.bskyClient) return;
-        if (!this.generator) return;
-        if (!this.generator.viewer) this.generator.viewer = {};
-        if (ev.detail.value) {
-            const likeRecord = {
-                subject: {
-                    uri: this.generator.uri,
-                    cid: this.generator.cid,
-                },
-                createdAt: new Date().toISOString(),
-                $type: "app.bsky.feed.like",
-            };
-            const response = await State.bskyClient.com.atproto.repo.createRecord({
-                record: likeRecord,
-                collection: "app.bsky.feed.like",
-                repo: user.profile.did,
-            });
-            if (!response.success) toggle.value = !toggle.value;
-            this.generator.viewer.like = response.data.uri;
-            this.generator.likeCount = this.generator.likeCount ? this.generator.likeCount + 1 : 1;
-        } else {
-            if (this.generator.viewer.like)
-                await State.bskyClient.com.atproto.repo.deleteRecord({
-                    collection: "app.bsky.feed.like",
-                    repo: user.profile.did,
-                    rkey: splitAtUri(this.generator.viewer.like).rkey,
-                });
-            delete this.generator.viewer.like;
-            this.generator.likeCount = this.generator.likeCount ? this.generator.likeCount - 1 : 0;
-        }
-        State.notify("feed", "updated", this.generator);
-    }
+    toggleBlock(ev: CustomEvent) {}
+
+    toggleMute(ev: CustomEvent) {}
 
     togglePin(ev: CustomEvent) {
         const user = Store.getUser();
         if (!user) return;
         if (!State.bskyClient) return;
-        if (!this.generator) return;
+        if (!this.list) return;
 
         if (this.defaultActions) {
             if (ev.detail.value) {
-                State.addPinnedFeed(this.generator.uri);
+                State.addPinnedList(this.list.uri);
             } else {
-                State.removePinnedFeed(this.generator.uri);
+                State.removePinnedList(this.list.uri);
             }
         }
 
         this.requestUpdate();
-        State.notify("feed", "updated", this.generator);
-        this.action(ev.detail.value ? "pinned" : "unpinned", this.generator);
+        State.notify("list", "updated", this.list);
+        this.action(ev.detail.value ? "pinned" : "unpinned", this.list);
     }
 
-    removeFeed() {
+    removeList() {
         const user = Store.getUser();
         if (!user) return;
         if (!State.bskyClient) return;
-        if (!this.generator) return;
+        if (!this.list) return;
 
-        if (this.defaultActions) State.removeSavedFeed(this.generator.uri);
+        if (this.defaultActions) State.removeSavedList(this.list.uri);
         this.requestUpdate();
-        State.notify("feed", "updated", this.generator);
-        this.action("unsaved", this.generator);
+        State.notify("list", "updated", this.list);
+        this.action("unsaved", this.list);
     }
 
-    addFeed() {
+    addList() {
         const user = Store.getUser();
         if (!user) return;
         if (!State.bskyClient) return;
-        if (!this.generator) return;
-        if (this.defaultActions) State.addSavedFeed(this.generator.uri);
-        this.generator = { ...this.generator };
-        State.notify("feed", "updated", this.generator);
-        this.action("saved", this.generator);
+        if (!this.list) return;
+        if (this.defaultActions) State.addSavedList(this.list.uri);
+        this.list = { ...this.list };
+        State.notify("list", "updated", this.list);
+        this.action("saved", this.list);
     }
 }
 
-@customElement("feed-picker")
-export class FeedPicker extends HashNavOverlay {
+/*
+@customElement("list-picker")
+export class ListPicker extends HashNavOverlay {
     @property()
     isLoading = true;
 
@@ -466,15 +441,15 @@ export class FeedPicker extends HashNavOverlay {
         this.setFeedPreferences();
         State.setPinnedAndSavedFeeds(State.preferences?.feeds.pinned ?? [], State.preferences?.feeds.saved ?? []);
     }
-}
+}*/
 
-@customElement("feed-overlay") //
-export class FeedOverlay extends HashNavOverlay {
+@customElement("list-overlay")
+export class ListOverlay extends HashNavOverlay {
     @property()
-    feedUri?: string;
+    listUri?: string;
 
     @property()
-    generator?: GeneratorView;
+    list?: ListView;
 
     @property()
     isLoading = true;
@@ -483,9 +458,9 @@ export class FeedOverlay extends HashNavOverlay {
     error?: string;
 
     getHash(): string {
-        if (!this.feedUri) return "feed/unknown";
-        const atUri = splitAtUri(this.feedUri);
-        return "feed/" + atUri.repo + "/" + atUri.rkey;
+        if (!this.listUri) return "list/unknown";
+        const atUri = splitAtUri(this.listUri);
+        return "list/" + atUri.repo + "/" + atUri.rkey;
     }
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
@@ -495,35 +470,35 @@ export class FeedOverlay extends HashNavOverlay {
 
     async load() {
         try {
-            if (!this.feedUri) throw new Error();
-            if (State.preferences && State.getObject("feed", this.feedUri)) {
-                this.generator = State.getObject("feed", this.feedUri);
+            if (!this.listUri) throw new Error();
+            if (State.getObject("list", this.listUri)) {
+                this.list = State.getObject("list", this.listUri);
             } else {
-                const generator = await State.getFeeds([this.feedUri]);
-                if (generator instanceof Error) throw generator;
-                this.generator = generator[0];
+                const list = await State.getList(this.listUri);
+                if (list instanceof Error) throw list;
+                this.list = list;
             }
         } catch (e) {
-            error("Could not load feed" + this.feedUri, e);
-            this.error = i18n("Could not load feed");
+            error("Could not load list feed" + this.listUri, e);
+            this.error = i18n("Could not load list feed");
         } finally {
             this.isLoading = false;
         }
     }
 
     renderHeader(): TemplateResult {
-        if (!this.generator) return renderTopbar("Feed", this.closeButton(false), false);
-        const generator = this.generator;
-        const feedName = html`<generator-view class="flex-grow" .viewStyle=${"topbar"} .generator=${generator}></generator-view>`;
-        return renderTopbar(dom(feedName)[0], this.closeButton(), false);
+        if (!this.list) return renderTopbar("List", this.closeButton(false), false);
+        const list = this.list;
+        const listName = html`<list-view class="flex-grow" .viewStyle=${"topbar"} .list=${list}></list-view>`;
+        return renderTopbar(dom(listName)[0], this.closeButton(), false);
     }
 
     renderContent(): TemplateResult {
         if (this.error) return html`<div id="error" class="align-top p-4">${this.error}</div>`;
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
-        return html`<feed-stream-view
-                .stream=${new FeedPostsStream(this.feedUri!, true, FEED_CHECK_INTERVAL)}
+        return html`<list-feed-stream-view
+                .stream=${new ListFeedPostsStream(this.listUri!, true, FEED_CHECK_INTERVAL)}
                 .newItems=${async (newItems: FeedViewPost[] | Error) => {
                     if (newItems instanceof Error) {
                         this.error = i18n("Could not load newer items");

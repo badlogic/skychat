@@ -4,6 +4,7 @@ import { ActorFeedType, State } from "./state";
 import { error, fetchApi } from "./utils";
 import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { date, record } from "./bsky";
+import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 
 export type StreamPage<T> = { cursor?: string; items: T[] };
 
@@ -183,6 +184,18 @@ export class FeedPostsStream extends FeedViewPostStream {
     }
 }
 
+export class ListFeedPostsStream extends FeedViewPostStream {
+    constructor(readonly feedUri: string, pollNew = false, pollInterval?: number) {
+        super(
+            (cursor?: string, limit?: number, notify?: boolean) => {
+                return State.getListFeed(this.feedUri, cursor, limit, notify);
+            },
+            pollNew,
+            pollInterval
+        );
+    }
+}
+
 export abstract class PostViewStream extends Stream<PostView> {
     async loadDependencies(newItems: PostView[]) {}
 
@@ -349,6 +362,36 @@ export class FeedSuggestionStream extends GeneratorViewStream {
     constructor() {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.suggestFeeds(cursor, limit);
+        });
+    }
+}
+
+export class ActorGeneratorsStream extends GeneratorViewStream {
+    constructor(did: string) {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
+            return State.getActorGenerators(did, cursor, limit, notify);
+        });
+    }
+}
+
+export abstract class ListViewStream extends Stream<ListView> {
+    getItemKey(item: ListView): string {
+        return item.uri;
+    }
+
+    getItemDate(item: ListView): Date {
+        return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
+    }
+
+    async loadDependencies(newItems: ListView[]) {
+        // no-op
+    }
+}
+
+export class ActorListsStream extends ListViewStream {
+    constructor(did: string) {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
+            return State.getActorLists(did, cursor, limit, notify);
         });
     }
 }

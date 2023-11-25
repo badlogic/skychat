@@ -18,6 +18,7 @@ import { AsyncQueue, assertNever, error, fetchApi, getDateString, splitAtUri } f
 import { FeedViewPost, GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { record } from "./bsky";
 import { StreamPage } from "./streams";
+import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 
 export interface NumQuote {
     postUri: string;
@@ -28,6 +29,7 @@ export interface Events {
     post: PostView;
     profile: ProfileViewDetailed;
     feed: GeneratorView;
+    list: ListView;
     numQuote: NumQuote;
     unreadNotifications: number;
     theme: string;
@@ -93,6 +95,9 @@ export class State {
             case "feed":
                 id = (payload as GeneratorView).uri;
                 break;
+            case "list":
+                id = (payload as ListView).uri;
+                break;
             case "unreadNotifications":
             case "theme":
             case "preferences":
@@ -130,6 +135,9 @@ export class State {
                 break;
             case "feed":
                 id = (payload as GeneratorView).uri;
+                break;
+            case "list":
+                id = (payload as ListView).uri;
                 break;
             case "unreadNotifications":
             case "theme":
@@ -481,6 +489,30 @@ export class State {
         }
     }
 
+    static async getActorGenerators(did: string, cursor?: string, limit = 20, notify = true): Promise<Error | StreamPage<GeneratorView>> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const result = await State.bskyClient.app.bsky.feed.getActorFeeds({ actor: did, cursor, limit });
+            if (!result.success) throw new Error();
+            if (notify) this.notifyBatch("feed", "updated", result.data.feeds);
+            return { cursor: result.data.cursor, items: result.data.feeds };
+        } catch (e) {
+            return error("Couldn't load actor generators", e);
+        }
+    }
+
+    static async getActorLists(did: string, cursor?: string, limit = 20, notify = true): Promise<Error | StreamPage<ListView>> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const result = await State.bskyClient.app.bsky.graph.getLists({ actor: did, cursor, limit });
+            if (!result.success) throw new Error();
+            if (notify) this.notifyBatch("list", "updated", result.data.lists);
+            return { cursor: result.data.cursor, items: result.data.lists };
+        } catch (e) {
+            return error("Couldn't load actor lists", e);
+        }
+    }
+
     static async getPostLikes(postUri: string, cursor?: string, limit = 20): Promise<Error | StreamPage<ProfileView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
@@ -625,6 +657,46 @@ export class State {
         }
     }
 
+    static async getList(list: string): Promise<Error | ListView> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const response = await State.bskyClient.app.bsky.graph.getList({ list, limit: 1 });
+            if (!response.success) throw new Error();
+            this.notify("list", "updated", response.data.list);
+            return response.data.list;
+        } catch (e) {
+            return error("Couldn't suggest feeds", e);
+        }
+    }
+
+    static async getListItems(list: string, cursor?: string): Promise<Error | StreamPage<ProfileView>> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const response = await State.bskyClient.app.bsky.graph.getList({ list, cursor });
+            if (!response.success) throw new Error();
+            const profiles = response.data.items.map((item) => item.subject);
+            this.notifyBatch("profile", "updated", profiles);
+            return { cursor: response.data.cursor, items: profiles };
+        } catch (e) {
+            return error("Couldn't suggest feeds", e);
+        }
+    }
+
+    static async getListFeed(listUri: string, cursor?: string, limit = 20, notify = true): Promise<Error | StreamPage<FeedViewPost>> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            let data: StreamPage<FeedViewPost> | undefined;
+
+            const response = await State.bskyClient.app.bsky.feed.getListFeed({ list: listUri, cursor, limit });
+            if (!response.success) throw new Error();
+            data = { cursor: response.data.cursor, items: response.data.feed };
+            if (notify) await State.loadFeedViewPostsDependencies(data.items);
+            return data;
+        } catch (e) {
+            return error("Couldn't load list feed " + listUri, e);
+        }
+    }
+
     static async detectFacets(richText: RichText): Promise<Error | undefined> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
@@ -756,6 +828,7 @@ export class State {
             return;
         })()
     );
+
     static async getPreferences() {
         if (!State.bskyClient) return new Error("Not connected");
         try {
@@ -898,5 +971,21 @@ export class State {
         } catch (e) {
             return error("Couldn't add pinned feed", e);
         }
+    }
+
+    static async addSavedList(v: string) {
+        return State.addSavedFeed(v);
+    }
+
+    static async removeSavedList(v: string) {
+        return State.removeSavedFeed(v);
+    }
+
+    static async addPinnedList(v: string) {
+        return State.addPinnedFeed(v);
+    }
+
+    static async removePinnedList(v: string) {
+        return State.removePinnedFeed(v);
     }
 }

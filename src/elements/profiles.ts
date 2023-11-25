@@ -10,7 +10,19 @@ import { defaultAvatar, dom, error, getNumber, getScrollParent, hasLinkOrButtonP
 import { HashNavOverlay, renderTopbar } from "./overlay";
 import { PopupMenu } from "./popup";
 import { renderRichText } from "./posts";
-import { ActorFeedStream, ActorLikesStream, FollowersStream, FollowingStream, LoggedInActorLikesStream } from "../streams";
+import {
+    ActorFeedStream,
+    ActorGeneratorsStream,
+    ActorLikesStream,
+    ActorListsStream,
+    FollowersStream,
+    FollowingStream,
+    LoggedInActorLikesStream,
+} from "../streams";
+import { GeneratorViewElementAction } from "./feeds";
+import { GeneratorView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { ListViewElementAction } from "./lists";
+import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 
 // FIXME add open-edito-button that will prefill the shown profiles handle
 @customElement("profile-overlay")
@@ -28,7 +40,7 @@ export class ProfileOverlay extends HashNavOverlay {
     error?: string;
 
     @state()
-    filter: ActorFeedType | "likes" = "posts_no_replies";
+    filter: ActorFeedType | "likes" | "generators" | "lists" = "posts_no_replies";
 
     async load() {
         const errorMessage = "Couldn't load profile of " + this.did;
@@ -113,6 +125,34 @@ export class ProfileOverlay extends HashNavOverlay {
                     } else {
                         feed = dom(html`<posts-stream-view .stream=${new ActorLikesStream(this.profile.did)}></posts-stream-view>`)[0];
                     }
+                    break;
+                case "generators":
+                    const generatorAction = (action: GeneratorViewElementAction, generator: GeneratorView) => {
+                        if (action == "clicked") {
+                            document.body.append(dom(html`<feed-overlay .feedUri=${generator.uri}></feed-overlay>`)[0]);
+                        }
+                    };
+                    feed = dom(
+                        html`<generators-stream-view
+                            .minimal=${false}
+                            .stream=${new ActorGeneratorsStream(this.profile.did)}
+                            .action=${(action: GeneratorViewElementAction, generator: GeneratorView) => generatorAction(action, generator)}
+                        ></generators-stream-view>`
+                    )[0];
+                    break;
+                case "lists":
+                    const listAction = (action: ListViewElementAction, list: ListView) => {
+                        if (action == "clicked") {
+                            document.body.append(dom(html`<list-overlay .listUri=${list.uri}></list-overlay>`)[0]);
+                        }
+                    };
+                    feed = dom(
+                        html`<lists-stream-view
+                            .minimal=${false}
+                            .stream=${new ActorListsStream(this.profile.did)}
+                            .action=${(action: ListViewElementAction, list: ListView) => listAction(action, list)}
+                        ></lists-stream-view>`
+                    )[0];
                     break;
                 default:
                     feed = dom(html`<div class="p-4 text-center">${i18n("Nothing to show")}</div>`)[0];
@@ -205,6 +245,18 @@ export class ProfileOverlay extends HashNavOverlay {
                     @click=${() => (this.filter = "likes")}
                 >
                     ${i18n("Likes")}
+                </button>
+                <button
+                    class="whitespace-nowrap ${this.filter == "generators" ? "border-b-2 border-primary font-semibold" : "text-muted-fg"} px-2 h-10"
+                    @click=${() => (this.filter = "generators")}
+                >
+                    ${i18n("Feeds")}
+                </button>
+                <button
+                    class="whitespace-nowrap ${this.filter == "lists" ? "border-b-2 border-primary font-semibold" : "text-muted-fg"} px-2 h-10"
+                    @click=${() => (this.filter = "lists")}
+                >
+                    ${i18n("Lists")}
                 </button>
             </div>
             <div class="min-h-screen">${feed}</div>
