@@ -2,7 +2,7 @@ import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { arrowUpDoubleIcon, bellIcon, cloudIcon, editIcon, spinnerIcon } from "../icons";
+import { arrowUpDoubleIcon, bellIcon, cloudIcon, editIcon, listIcon, spinnerIcon } from "../icons";
 import { dom, getScrollParent } from "../utils";
 import { setupPushNotifications } from "./notifications";
 import { State } from "../state";
@@ -166,6 +166,19 @@ export class FeedsButton extends FloatingButton {
     }
     getOffset(): string {
         return "- 12em";
+    }
+}
+
+@customElement("lists-button")
+export class ListsButton extends FloatingButton {
+    handleClick(): void {
+        document.body.append(dom(html`<list-picker></list-picker>`)[0]);
+    }
+    getIcon(): TemplateResult {
+        return html`${listIcon}`;
+    }
+    getOffset(): string {
+        return "- 16em";
     }
 }
 

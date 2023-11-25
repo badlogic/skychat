@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/badlogic/skychat#readme",
   "dependencies": {
-    "@atproto/api": "^0.6.20",
+    "@atproto/api": "^0.6.23",
     "@intrnl/bluesky-client": "^0.2.5",
     "@ipld/car": "^5.2.4",
     "@ipld/dag-cbor": "^9.0.6",

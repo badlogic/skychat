@@ -65,6 +65,8 @@ export class GeneratorViewElement extends LitElement {
 
     render() {
         if (!this.generator) return html`${nothing}`;
+        const user = Store.getUser();
+        if (!user) return html`${nothing}`;
 
         const generator = this.generator;
         const prefs = State.preferences?.feeds ?? {
@@ -104,13 +106,15 @@ export class GeneratorViewElement extends LitElement {
                           .icon=${html`<i class="icon !w-5 !h-5">${pinIcon}</i>`}
                           .value=${prefs.pinned?.includes(generator.uri)}
                       ></icon-toggle>
-                      ${prefs.saved?.includes(generator.uri) || prefs.pinned?.includes(generator.uri)
-                          ? html`<button @click=${() => this.removeFeed()}>
-                                <i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</i>
-                            </button>`
-                          : html`<button @click=${() => this.addFeed()}>
-                                <i class="icon !w-6 !h-6 fill-primary">${plusIcon}</i>
-                            </button>`}`
+                      ${splitAtUri(generator.uri).repo != user.profile.did
+                          ? html`${prefs.saved?.includes(generator.uri) || prefs.pinned?.includes(generator.uri)
+                                ? html`<button @click=${() => this.removeFeed()}>
+                                      <i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</i>
+                                  </button>`
+                                : html`<button @click=${() => this.addFeed()}>
+                                      <i class="icon !w-6 !h-6 fill-primary">${plusIcon}</i>
+                                  </button>`}`
+                          : nothing}`
                 : nothing}
         </div>`;
 
@@ -262,6 +266,8 @@ export class FeedPicker extends HashNavOverlay {
 
     search?: HTMLElement;
 
+    ownFeeds: GeneratorView[] = [];
+
     getHash(): string {
         return "feeds";
     }
@@ -312,6 +318,23 @@ export class FeedPicker extends HashNavOverlay {
                 }
                 this.pinned = promises[0];
                 this.saved = promises[1];
+            }
+
+            const user = Store.getUser();
+            if (user) {
+                const feeds: GeneratorView[] = [];
+                let cursor: string | undefined;
+                while (true) {
+                    const response = await State.getActorGenerators(user.profile.did, cursor);
+                    if (response instanceof Error) {
+                        // FIXME show this somehow?
+                        return;
+                    }
+                    if (response.items.length == 0) break;
+                    feeds.push(...response.items);
+                    cursor = response.cursor;
+                }
+                this.ownFeeds = feeds;
             }
         } catch (e) {
             error("Couldn't load preferences and feeds", e);
@@ -365,6 +388,26 @@ export class FeedPicker extends HashNavOverlay {
                         ></generator-view>
                     </div>`
             )}
+            ${this.ownFeeds.length > 0
+                ? html`<div class="px-4 h-12 flex items-center font-semibold">${i18n("Feeds by me")}</div>
+                      ${this.saved.length == 0
+                          ? html`<div class="bg-muted text-muted-fg px-4 py-2 rounded">${i18n("You don't have saved feeds")}</div>`
+                          : nothing}
+                      ${repeat(
+                          this.ownFeeds,
+                          (generator) => generator.uri,
+                          (generator) =>
+                              html`<div class="px-4 py-2 border-b border-divider">
+                                  <generator-view
+                                      .generator=${generator}
+                                      .viewStyle=${"minimal"}
+                                      .action=${(action: GeneratorViewElementAction, generator: GeneratorView) => this.feedAction(action, generator)}
+                                      .editable=${this.editing}
+                                      .defaultActions=${false}
+                                  ></generator-view>
+                              </div>`
+                      )}`
+                : nothing}
             <div class="px-4 h-12 flex items-center font-semibold">${i18n("Saved Feeds")}</div>
             ${this.saved.length == 0
                 ? html`<div class="bg-muted text-muted-fg px-4 py-2 rounded">${i18n("You don't have saved feeds")}</div>`

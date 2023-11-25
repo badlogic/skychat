@@ -235,8 +235,9 @@ export class HomeOverlay extends Overlay {
                 }}
                 .stream=${new ActorFeedStream("home", undefined, true, FEED_CHECK_INTERVAL)}
             ></feed-stream-view>
-            <open-post-editor-button id="post"></open-post-editor-button>
-            <notifications-button id="notifications"></notifications-button>
-            <feeds-button id="feeds"></feeds-button>`;
+            <open-post-editor-button></open-post-editor-button>
+            <notifications-button></notifications-button>
+            <feeds-button></feeds-button>
+            <lists-button></lists-button>`;
     }
 }

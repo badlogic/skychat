@@ -149,6 +149,9 @@ export interface Messages {
     "Copied link to clipboard": string;
     List: string;
     Lists: string;
+    "Curation list": string;
+    "Moderation list": string;
+    "Feeds by me": string;
 }
 
 const english: Messages = {
@@ -311,6 +314,9 @@ const english: Messages = {
     "Copied link to clipboard": "Copied link to clipboard",
     List: "List",
     Lists: "Lists",
+    "Curation list": "Curation list",
+    "Moderation list": "Moderation list",
+    "Feeds by me": "Feeds by me",
 };
 
 const german: Messages = {
@@ -475,6 +481,9 @@ const german: Messages = {
     "Copied link to clipboard": "Link in Zwischenablage kopiert",
     List: "Liste",
     Lists: "Listen",
+    "Curation list": "Kuratierte Liste",
+    "Moderation list": "Moderations Liste",
+    "Feeds by me": "Feeds von mir",
 };
 
 export type LanguageCode = "en" | "de";

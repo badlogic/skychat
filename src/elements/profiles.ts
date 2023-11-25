@@ -42,6 +42,9 @@ export class ProfileOverlay extends HashNavOverlay {
     @state()
     filter: ActorFeedType | "likes" | "generators" | "lists" = "posts_no_replies";
 
+    hasGenerators = false;
+    hasLists = false;
+
     async load() {
         const errorMessage = "Couldn't load profile of " + this.did;
         try {
@@ -50,6 +53,10 @@ export class ProfileOverlay extends HashNavOverlay {
             const profiles = await State.getProfiles([this.did]);
             if (profiles instanceof Error) throw profiles;
             this.profile = profiles[0];
+            const promises = [State.getActorGenerators(this.profile.did, undefined, 1), State.getActorLists(this.profile.did, undefined, 1)];
+            const results = await Promise.all(promises);
+            this.hasGenerators = !(results[0] instanceof Error) && results[0].items.length > 0;
+            this.hasLists = !(results[1] instanceof Error) && results[1].items.length > 0;
         } catch (e) {
             this.error = errorMessage;
             error("Couldn't load profile", e);
@@ -246,18 +253,24 @@ export class ProfileOverlay extends HashNavOverlay {
                 >
                     ${i18n("Likes")}
                 </button>
-                <button
-                    class="whitespace-nowrap ${this.filter == "generators" ? "border-b-2 border-primary font-semibold" : "text-muted-fg"} px-2 h-10"
-                    @click=${() => (this.filter = "generators")}
-                >
-                    ${i18n("Feeds")}
-                </button>
-                <button
-                    class="whitespace-nowrap ${this.filter == "lists" ? "border-b-2 border-primary font-semibold" : "text-muted-fg"} px-2 h-10"
-                    @click=${() => (this.filter = "lists")}
-                >
-                    ${i18n("Lists")}
-                </button>
+                ${this.hasGenerators
+                    ? html`<button
+                          class="whitespace-nowrap ${this.filter == "generators"
+                              ? "border-b-2 border-primary font-semibold"
+                              : "text-muted-fg"} px-2 h-10"
+                          @click=${() => (this.filter = "generators")}
+                      >
+                          ${i18n("Feeds")}
+                      </button>`
+                    : nothing}
+                ${this.hasLists
+                    ? html` <button
+                          class="whitespace-nowrap ${this.filter == "lists" ? "border-b-2 border-primary font-semibold" : "text-muted-fg"} px-2 h-10"
+                          @click=${() => (this.filter = "lists")}
+                      >
+                          ${i18n("Lists")}
+                      </button>`
+                    : nothing}
             </div>
             <div class="min-h-screen">${feed}</div>
         </div>`;

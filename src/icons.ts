@@ -80,6 +80,8 @@ import infoIconSvg from "remixicon/icons/System/information-line.svg";
 import articleIconSvg from "remixicon/icons/Document/article-line.svg";
 // @ts-ignore
 import downloadIconSvg from "remixicon/icons/System/download-cloud-line.svg";
+// @ts-ignore
+import listIconSvg from "remixicon/icons/Editor/list-unordered.svg";
 
 import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 
@@ -124,3 +126,4 @@ export const minusIcon = unsafeHTML(minusIconSvg);
 export const infoIcon = unsafeHTML(infoIconSvg);
 export const articleIcon = unsafeHTML(articleIconSvg);
 export const downloadIcon = unsafeHTML(downloadIconSvg);
+export const listIcon = unsafeHTML(listIconSvg);

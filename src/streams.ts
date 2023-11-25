@@ -212,22 +212,17 @@ export class PostSearchStream extends PostViewStream {
     constructor(readonly query: string, readonly reversStream = true) {
         const provider: StreamProvider<PostView> = async (cursor?: string, limit?: number, notify?: boolean) => {
             try {
-                const response = await fetch(
-                    `https://palomar.bsky.social/xrpc/app.bsky.unspecced.searchPostsSkeleton?q=${encodeURIComponent(this.query)}&limit=${limit}${
-                        cursor ? `&cursor=${cursor}` : ""
-                    }`
-                );
-                if (response.status != 200) throw new Error();
-                const result = (await response.json()) as { cursor: string; totalHits: number; posts: { uri: string }[] };
+                const response = await State.bskyClient!.app.bsky.feed.searchPosts({ q: this.query, cursor, limit });
+                if (!response.success) throw new Error();
                 let postsResponse = await State.getPosts(
-                    result.posts.map((post) => post.uri),
+                    response.data.posts.map((post) => post.uri),
                     true,
                     notify
                 );
                 if (postsResponse instanceof Error) throw new Error();
                 postsResponse = postsResponse.filter((post) => post != undefined);
                 if (this.reversStream) postsResponse.reverse();
-                return { cursor: result.cursor, items: postsResponse };
+                return { cursor: response.data.cursor, items: postsResponse };
             } catch (e) {
                 return error(`Couldn't load posts for query ${this.query}, offset ${cursor}`, e);
             }

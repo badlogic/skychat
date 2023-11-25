@@ -5,7 +5,20 @@ import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { HashNavOverlay, UpButton, renderTopbar } from ".";
 import { i18n } from "../i18n";
-import { blockIcon, editIcon, heartIcon, infoIcon, minusIcon, muteIcon, pinIcon, plusIcon, searchIcon, spinnerIcon } from "../icons";
+import {
+    blockIcon,
+    editIcon,
+    heartIcon,
+    infoIcon,
+    listIcon,
+    minusIcon,
+    muteIcon,
+    pinIcon,
+    plusIcon,
+    searchIcon,
+    shieldIcon,
+    spinnerIcon,
+} from "../icons";
 import { EventAction, FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
 import { defaultFeed, dom, error, getScrollParent, hasLinkOrButtonParent, splitAtUri, waitForNavigation as waitForNavigation } from "../utils";
@@ -144,7 +157,14 @@ export class ListViewElement extends LitElement {
         </div>`;
 
         const details = html`${this.viewStyle == "topbar" && this.expandDetails ? createdBy : nothing}
-            <div class="mt-1">${list.description ? renderRichText(richText) : nothing}</div>`;
+            <div class="mt-1 flex flex-col">
+                <div class="self-start p-1 text-xs rounded bg-muted text-muted-fg flex items-center gap-1">
+                    ${this.list.purpose == "app.bsky.graph.defs#curatelist"
+                        ? html`<i class="icon !w-4 !h-4 fill-muted-fg">${listIcon}</i>${i18n("Curation list")}`
+                        : html`<i class="icon !w-4 !h-4 fill-muted-fg">${shieldIcon}</i>${i18n("Moderation list")}`}
+                </div>
+                ${list.description ? renderRichText(richText) : nothing}
+            </div>`;
 
         return html`<div
             class="flex flex-col cursor-pointer"
