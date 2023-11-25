@@ -6,15 +6,19 @@
         <title>Document</title>
         <link rel="stylesheet" href="build/styles-bundle.css" />
     </head>
-    <body class="flex flex-col w-full h-full">
-        <main class="max-w-[600px] w-full mx-auto bg-red/20 flex flex-col" style="overflow-anchor: auto">
-            <div id="posts" class="flex flex-col w-full">
-                <button id="loader" class="bg-green-100 flex items-center justify-center flex flex-col">
-                    <div id="spacer" class="h-[56px] w-full bg-blue-100"></div>
-                    <span class="h-8">Load more posts</span>
-                </button>
+    <body class="flex flex-col w-full h-full bg-background dark:text-white dark:fill-white no-touch-highlight">
+        <div>
+            <div id="container" class="fixed top-0 left-0 w-full h-full bg-background overflow-auto z-10" style="overflow-anchor: none">
+                <main class="max-w-[600px] w-full mx-auto bg-red/20 flex flex-col">
+                    <div id="posts" class="flex flex-col w-full">
+                        <button id="loader" class="bg-green-100 flex items-center justify-center flex flex-col">
+                            <div id="spacer" class="h-[56px] w-full bg-blue-100"></div>
+                            <span class="h-8">Load more posts</span>
+                        </button>
+                    </div>
+                </main>
             </div>
-        </main>
+        </div>
     </body>
     <script>
         const main = document.documentElement;
@@ -50,12 +54,20 @@
             observer.observe(target);
         }
 
+        function getScrollParent(parent) {
+            while (parent) {
+                if (parent.classList.contains("overflow-auto")) return parent;
+                parent = parent.parentElement;
+            }
+            return null;
+        }
+
         const renderPost = (post) => {
             return dom(`<div class="flex flex-col w-full border-t border-gray/50 p-4">
                             <span class="font-bold">${post.title}</span>
                             <span>${post.date}</span>
                             <p>${post.text}</p>
-                            <div class="flex items-center justify-center"><img src="${post.img}" class="h-[30vw] max-h-[30vh]"></div>
+                            <div class="flex items-center justify-center"><img src="${post.img}" class="h-auto max-h-[30vh]"></div>
                         </div>`)[0];
         };
 
@@ -90,19 +102,82 @@
         document.querySelector("#loader").addEventListener("click", () => loadPosts());
         loadPosts();
         main.scrollTop = 0;
+        // fixScrollTop(document.querySelector("#posts"));
 
-        let previousLastChild = main.lastElementChild;
-        let previousScrollHeight = main.scrollHeight;
-        const observer = new ResizeObserver(function () {
-            let isHeightIncreased = main.scrollHeight != previousScrollHeight;
-            let isAppend = main.lastElementChild !== previousLastChild;
-            if (isHeightIncreased && !isAppend) {
-                let newScrollYPosition = main.scrollTop + main.scrollHeight - previousScrollHeight;
-                previousScrollHeight = main.scrollHeight;
-                main.scrollTop = newScrollYPosition;
+        {
+            let scrollParent = getScrollParent(postsDom);
+            let previousLastChild = postsDom.lastElementChild;
+            let previousScrollHeight = scrollParent.scrollHeight;
+            const observer = new ResizeObserver(function () {
+                let isHeightIncreased = scrollParent.scrollHeight != previousScrollHeight;
+                let isAppend = postsDom.lastElementChild !== previousLastChild;
+                if (isHeightIncreased && !isAppend) {
+                    let newScrollYPosition = scrollParent.scrollTop + scrollParent.scrollHeight - previousScrollHeight;
+                    previousScrollHeight = scrollParent.scrollHeight;
+                    scrollParent.scrollTop = newScrollYPosition;
+                }
+            });
+            // observer.observe(document.body.querySelector("main"));
+        }
+
+        {
+            function fixScrollTop(container, lastChilddOffset = 0) {
+                let scrollParent = getScrollParent(container);
+                let previousLastChild = postsDom.lastElementChild;
+                let previousScrollHeight = scrollParent.scrollHeight;
+                const observer = new ResizeObserver(function () {
+                    let isHeightIncreased = scrollParent.scrollHeight != previousScrollHeight;
+                    let isAppend = postsDom.lastElementChild !== previousLastChild;
+                    if (isHeightIncreased && !isAppend) {
+                        let newScrollYPosition = scrollParent.scrollTop + scrollParent.scrollHeight - previousScrollHeight;
+                        previousScrollHeight = scrollParent.scrollHeight;
+                        scrollParent.scrollTop = newScrollYPosition;
+                    }
+                });
+                observer.observe(container);
             }
-        });
+            // fixScrollTop(postsDom);
+        }
 
-        observer.observe(document.body.querySelector("main"));
+        {
+            let container = document.querySelector("#container");
+            let prevChild = container.children[container.children.length - 1];
+            let prevHeight = container.scrollHeight;
+            const scrollAdjustment = () => {
+                let newHeight = container.scrollHeight;
+                let newChild = container.children[container.children.length - 1];
+                let isHeightIncreased = newHeight !== prevHeight;
+                let isAppending = newChild != prevChild;
+                if (isHeightIncreased && !isAppending) {
+                    container.scrollTop = container.scrollTop + newHeight - prevHeight;
+                    prevHeight = newHeight;
+                    prevChild = newChild;
+                }
+                requestAnimationFrame(scrollAdjustment);
+            };
+            document.documentElement.scrollTop = 0;
+            // requestAnimationFrame(scrollAdjustment);
+        }
+
+        {
+            const fixScrollTop = (container) => {
+                let scrollParent = getScrollParent(container);
+                let prevChild = container.children[container.children.length - 1];
+                let prevHeight = scrollParent.scrollHeight;
+                const observer = new ResizeObserver(function () {
+                    let newHeight = scrollParent.scrollHeight;
+                    let newChild = container.children[container.children.length - 1];
+                    let isHeightIncreased = newHeight !== prevHeight;
+                    let isAppending = newChild != prevChild;
+                    if (isHeightIncreased && !isAppending) {
+                        scrollParent.scrollTop = scrollParent.scrollTop + newHeight - prevHeight;
+                        prevHeight = newHeight;
+                        prevChild = newChild;
+                    }
+                });
+                observer.observe(container);
+            };
+            fixScrollTop(postsDom);
+        }
     </script>
 </html>

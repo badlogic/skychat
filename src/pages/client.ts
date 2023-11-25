@@ -123,7 +123,7 @@ class SkychatClient extends LitElement {
     renderMain() {
         if (!State.isConnected()) return html`<div>${i18n("Not connected")}</div>`;
 
-        document.body.append(dom(html`<home-overlay></home-overlay>`)[0]);
+        document.body.append(dom(html`<home-overlay class="w-full h-full"></home-overlay>`)[0]);
 
         if (location.hash && location.hash.length > 0) {
             const hash = location.hash;

@@ -2,7 +2,7 @@ import { AppBskyFeedDefs, AppBskyNotificationListNotifications } from "@atproto/
 import { FeedViewPost, GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { ActorFeedType, State } from "./state";
 import { error, fetchApi } from "./utils";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { date, record } from "./bsky";
 
 export type StreamPage<T> = { cursor?: string; items: T[] };
@@ -52,6 +52,13 @@ export abstract class Stream<T> {
             }
 
             if (newItems.length > 0) {
+                const dependencies = await this.loadDependencies(newItems);
+                if (dependencies instanceof Error) {
+                    for (const listener of this.newItemslisteners) {
+                        listener(newItems);
+                    }
+                    return;
+                }
                 const newPage = { cursor, items: newItems };
                 this.pages.unshift(newPage);
                 for (const listener of this.newItemslisteners) {
@@ -70,6 +77,7 @@ export abstract class Stream<T> {
 
     abstract getItemKey(item: T): string;
     abstract getItemDate(item: T): Date;
+    abstract loadDependencies(newItems: T[]): Promise<Error | void>;
 
     newItemslisteners: ((newItems: Error | T[]) => void)[] = [];
     addNewItemsListener(listener: (newItems: Error | T[]) => void): void {
@@ -105,7 +113,89 @@ export abstract class Stream<T> {
     }
 }
 
-export class PostSearchStream extends Stream<PostView> {
+export class NotificationsStream extends Stream<AppBskyNotificationListNotifications.Notification> {
+    constructor(pollNew = false, pollInterval?: number) {
+        super(
+            (cursor?: string, limit?: number, notify?: boolean) => {
+                return State.getNotifications(cursor, limit);
+            },
+            pollNew,
+            pollInterval
+        );
+    }
+
+    getItemKey(item: AppBskyNotificationListNotifications.Notification): string {
+        return item.uri; // BUG?
+    }
+
+    getItemDate(item: AppBskyNotificationListNotifications.Notification): Date {
+        return new Date(item.indexedAt); // BUG?
+    }
+
+    async loadDependencies(newItems: AppBskyNotificationListNotifications.Notification[]) {
+        // no-op
+    }
+}
+
+export abstract class FeedViewPostStream extends Stream<FeedViewPost> {
+    async loadDependencies(newItems: FeedViewPost[]) {
+        return State.loadFeedViewPostsDependencies(newItems);
+    }
+
+    getItemKey(item: FeedViewPost): string {
+        return item.post.uri + (AppBskyFeedDefs.isReasonRepost(item.reason) ? item.reason.by.did : "");
+    }
+
+    getItemDate(item: FeedViewPost): Date {
+        return date(item) ?? new Date();
+    }
+}
+
+export class ActorFeedStream extends FeedViewPostStream {
+    constructor(readonly type: ActorFeedType, readonly actor?: string, pollNew = false, pollInterval?: number) {
+        super(
+            (cursor?: string, limit?: number, notify?: boolean) => {
+                return State.getActorFeed(this.type, this.actor, cursor, limit, notify);
+            },
+            pollNew,
+            pollInterval
+        );
+    }
+}
+
+export class LoggedInActorLikesStream extends FeedViewPostStream {
+    constructor() {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
+            return State.getLoggedInActorLikes(cursor, limit);
+        });
+    }
+}
+
+export class FeedPostsStream extends FeedViewPostStream {
+    constructor(readonly feedUri: string, pollNew = false, pollInterval?: number) {
+        super(
+            (cursor?: string, limit?: number, notify?: boolean) => {
+                return State.getFeed(this.feedUri, cursor, limit, notify);
+            },
+            pollNew,
+            pollInterval
+        );
+    }
+}
+
+export abstract class PostViewStream extends Stream<PostView> {
+    async loadDependencies(newItems: PostView[]) {}
+
+    getItemKey(item: PostView): string {
+        return item.uri;
+    }
+
+    getItemDate(item: PostView): Date {
+        return date(item) ?? new Date();
+    }
+}
+
+export class PostSearchStream extends PostViewStream {
     constructor(readonly query: string, readonly reversStream = true) {
         const provider: StreamProvider<PostView> = async (cursor?: string, limit?: number, notify?: boolean) => {
             try {
@@ -131,153 +221,17 @@ export class PostSearchStream extends Stream<PostView> {
         };
         super(provider);
     }
-
-    getItemKey(item: PostView): string {
-        return item.uri;
-    }
-
-    getItemDate(item: AppBskyFeedDefs.PostView): Date {
-        return date(item) ?? new Date();
-    }
 }
 
-export class NotificationsStream extends Stream<AppBskyNotificationListNotifications.Notification> {
-    constructor(pollNew = false, pollInterval?: number) {
-        super(
-            (cursor?: string, limit?: number, notify?: boolean) => {
-                return State.getNotifications(cursor, limit);
-            },
-            pollNew,
-            pollInterval
-        );
-    }
-
-    getItemKey(item: AppBskyNotificationListNotifications.Notification): string {
-        return item.uri; // BUG?
-    }
-
-    getItemDate(item: AppBskyNotificationListNotifications.Notification): Date {
-        return new Date(item.indexedAt); // BUG?
-    }
-}
-
-export class ActorFeedStream extends Stream<FeedViewPost> {
-    constructor(readonly type: ActorFeedType, readonly actor?: string, pollNew = false, pollInterval?: number) {
-        super(
-            (cursor?: string, limit?: number, notify?: boolean) => {
-                return State.getActorFeed(this.type, this.actor, cursor, limit, notify);
-            },
-            pollNew,
-            pollInterval
-        );
-    }
-
-    getItemKey(item: FeedViewPost): string {
-        return item.post.uri + (AppBskyFeedDefs.isReasonRepost(item.reason) ? item.reason.by.did : "");
-    }
-
-    getItemDate(item: AppBskyFeedDefs.FeedViewPost): Date {
-        return date(item) ?? new Date();
-    }
-}
-
-export class LoggedInActorLikesStream extends Stream<FeedViewPost> {
-    constructor() {
-        super((cursor?: string, limit?: number, notify?: boolean) => {
-            return State.getLoggedInActorLikes(cursor, limit);
-        });
-    }
-
-    getItemKey(item: FeedViewPost): string {
-        return item.post.uri + (AppBskyFeedDefs.isReasonRepost(item.reason) ? item.reason.by.did : "");
-    }
-
-    getItemDate(item: AppBskyFeedDefs.FeedViewPost): Date {
-        return date(item) ?? new Date();
-    }
-}
-
-export class ActorLikesStream extends Stream<PostView> {
+export class ActorLikesStream extends PostViewStream {
     constructor(readonly actor: string) {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.getActorLikes(actor, cursor, limit);
         });
     }
-
-    getItemKey(item: PostView): string {
-        return item.uri;
-    }
-
-    getItemDate(item: PostView): Date {
-        return date(item) ?? new Date();
-    }
 }
 
-export class PostLikesStream extends Stream<ProfileViewDetailed> {
-    constructor(readonly postUri: string) {
-        super((cursor?: string, limit?: number, notify?: boolean) => {
-            return State.getPostLikes(postUri, cursor, limit);
-        });
-    }
-
-    getItemKey(item: ProfileViewDetailed): string {
-        return item.did;
-    }
-
-    getItemDate(item: ProfileViewDetailed): Date {
-        return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
-    }
-}
-
-export class PostRepostsStream extends Stream<ProfileViewDetailed> {
-    constructor(readonly postUri: string) {
-        super((cursor?: string, limit?: number, notify?: boolean) => {
-            return State.getPostReposts(postUri, cursor, limit);
-        });
-    }
-
-    getItemKey(item: ProfileViewDetailed): string {
-        return item.did;
-    }
-
-    getItemDate(item: ProfileViewDetailed): Date {
-        return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
-    }
-}
-
-export class FollowersStream extends Stream<ProfileViewDetailed> {
-    constructor(readonly did: string) {
-        super((cursor?: string, limit?: number, notify?: boolean) => {
-            return State.getFollowers(did, cursor, limit);
-        });
-    }
-
-    getItemKey(item: ProfileViewDetailed): string {
-        return item.did;
-    }
-
-    getItemDate(item: ProfileViewDetailed): Date {
-        return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
-    }
-}
-
-export class FollowingStream extends Stream<ProfileViewDetailed> {
-    constructor(readonly did: string) {
-        super((cursor?: string, limit?: number, notify?: boolean) => {
-            return State.getFollowing(did, cursor, limit);
-        });
-    }
-
-    getItemKey(item: ProfileViewDetailed): string {
-        return item.did;
-    }
-
-    getItemDate(item: ProfileViewDetailed): Date {
-        return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
-    }
-}
-
-export class QuotesStream extends Stream<PostView> {
+export class QuotesStream extends PostViewStream {
     quotes?: string[];
     items: PostView[] = [];
     itemsMap = new Map<string, PostView>();
@@ -305,117 +259,96 @@ export class QuotesStream extends Stream<PostView> {
         };
         super(provider);
     }
+}
 
-    getItemKey(item: PostView): string {
-        return item.uri;
+export class ProfileViewStream extends Stream<ProfileView> {
+    async loadDependencies(newItems: ProfileView[]) {
+        // no-op
     }
 
-    getItemDate(item: AppBskyFeedDefs.PostView): Date {
-        return date(item) ?? new Date();
+    getItemKey(item: ProfileViewDetailed): string {
+        return item.did;
+    }
+
+    getItemDate(item: ProfileViewDetailed): Date {
+        return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
     }
 }
 
-export class UserSearchStream extends Stream<ProfileViewDetailed> {
+export class PostLikesStream extends ProfileViewStream {
+    constructor(readonly postUri: string) {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
+            return State.getPostLikes(postUri, cursor, limit);
+        });
+    }
+}
+
+export class PostRepostsStream extends ProfileViewStream {
+    constructor(readonly postUri: string) {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
+            return State.getPostReposts(postUri, cursor, limit);
+        });
+    }
+}
+
+export class FollowersStream extends ProfileViewStream {
+    constructor(readonly did: string) {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
+            return State.getFollowers(did, cursor, limit);
+        });
+    }
+}
+
+export class FollowingStream extends ProfileViewStream {
+    constructor(readonly did: string) {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
+            return State.getFollowing(did, cursor, limit);
+        });
+    }
+}
+
+export class UserSearchStream extends ProfileViewStream {
     constructor(readonly query: string) {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.searchUsers(query, cursor, limit);
         });
     }
-
-    getItemKey(item: ProfileViewDetailed): string {
-        return item.did;
-    }
-
-    getItemDate(item: ProfileViewDetailed): Date {
-        return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
-    }
 }
 
-export class UserSuggestionStream extends Stream<ProfileViewDetailed> {
+export class UserSuggestionStream extends ProfileViewStream {
     constructor() {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.suggestUsers(cursor, limit);
         });
     }
+}
 
-    getItemKey(item: ProfileViewDetailed): string {
-        return item.did;
+export abstract class GeneratorViewStream extends Stream<GeneratorView> {
+    getItemKey(item: GeneratorView): string {
+        return item.uri;
     }
 
-    getItemDate(item: ProfileViewDetailed): Date {
+    getItemDate(item: GeneratorView): Date {
         return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
+    }
+
+    async loadDependencies(newItems: GeneratorView[]) {
+        // no-op
     }
 }
 
-export class FeedSearchStream extends Stream<GeneratorView> {
+export class FeedSearchStream extends GeneratorViewStream {
     constructor(readonly query: string) {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.searchFeeds(query, cursor, limit);
         });
     }
-
-    getItemKey(item: GeneratorView): string {
-        return item.uri;
-    }
-
-    getItemDate(item: GeneratorView): Date {
-        return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
-    }
 }
 
-export class FeedSuggestionStream extends Stream<GeneratorView> {
+export class FeedSuggestionStream extends GeneratorViewStream {
     constructor() {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.suggestFeeds(cursor, limit);
         });
-    }
-
-    getItemKey(item: GeneratorView): string {
-        return item.uri;
-    }
-
-    getItemDate(item: GeneratorView): Date {
-        return item.indexedAt ? new Date(item.indexedAt) : new Date(); // BUG?
-    }
-}
-
-export class ArrayFeed<T> extends Stream<T> {
-    index = 0;
-    constructor(items: T[], readonly itemKey: (item: T) => string, readonly itemDate: (item: T) => Date) {
-        items = [...items];
-        super(async (cursor?: string, limit?: number, notify?: boolean) => {
-            const batch = items.splice(0, limit);
-            if (batch.length == 0) return { items: [] };
-            this.index += batch.length;
-            return { cursor: this.index.toString(), items: batch };
-        });
-    }
-
-    getItemKey(item: T): string {
-        return this.itemKey(item);
-    }
-
-    getItemDate(item: T): Date {
-        return this.itemDate(item);
-    }
-}
-
-export class FeedPostsStream extends Stream<FeedViewPost> {
-    constructor(readonly feedUri: string, pollNew = false, pollInterval?: number) {
-        super(
-            (cursor?: string, limit?: number, notify?: boolean) => {
-                return State.getFeed(this.feedUri, cursor, limit, notify);
-            },
-            pollNew,
-            pollInterval
-        );
-    }
-
-    getItemKey(item: FeedViewPost): string {
-        return item.post.uri + (AppBskyFeedDefs.isReasonRepost(item.reason) ? item.reason.by.did : "");
-    }
-
-    getItemDate(item: AppBskyFeedDefs.FeedViewPost): Date {
-        return date(item) ?? new Date();
     }
 }

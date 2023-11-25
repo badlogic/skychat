@@ -16,7 +16,7 @@ import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from 
 import { State } from "../state";
 import { Store } from "../store";
 import { ActorFeedStream, NotificationsStream, Stream, StreamPage } from "../streams";
-import { collectLitElements, dom, error, fixScrollTop, getScrollParent, getTimeDifference, hasLinkOrButtonParent, onVisibleOnce } from "../utils";
+import { collectLitElements, dom, error, getScrollParent, getTimeDifference, hasLinkOrButtonParent, isSafariBrowser, onVisibleOnce } from "../utils";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { deletePost, quote, reply } from "./posteditor";
 import { renderEmbed, renderRichText } from "./posts";
@@ -29,7 +29,7 @@ export abstract class StreamView<T> extends LitElement {
     stream?: Stream<T>;
 
     @property()
-    newItems?: (newItems: T[] | Error) => void = () => {};
+    newItems?: (newItems: T[] | Error) => Promise<void> = async () => {};
 
     @property()
     wrapItem = true;
@@ -59,42 +59,41 @@ export abstract class StreamView<T> extends LitElement {
             return;
         }
 
-        // Setup scroll position fixes when inserting new items at the top
-        if (this.itemsDom) {
-            const scrollParent = getScrollParent(this.itemsDom);
-            if (scrollParent) {
-                scrollParent.scrollTop = 0;
-                fixScrollTop(scrollParent, this.itemsDom);
-            }
-        }
-
         // Setup polling
         if (this.stream && this.stream.pollNew) {
             this.stream.addNewItemsListener(async (newerItems) => {
+                if (this.newItems) this.newItems(newerItems);
                 if (newerItems instanceof Error) {
                     error("Couldn't load newer items", newerItems);
-                    if (this.newItems) this.newItems(newerItems);
                     return;
-                } else {
-                    if (this.newItems) this.newItems(newerItems);
                 }
 
                 const itemsDom = this.itemsDom;
                 if (itemsDom) {
-                    const lastItemDom = itemsDom.firstElementChild as HTMLElement | null;
-                    const litElements: LitElement[] = [];
+                    const fragment = dom(html`<div></div>`)[0];
                     for (const item of newerItems) {
                         const itemDom = dom(html`${this.renderItem(item)}`)[0];
                         itemDom.classList.add("animate-fade", "animate-duration-[2000ms]");
-                        litElements.push(...collectLitElements(itemDom));
-                        itemsDom.insertBefore(itemDom, itemsDom.firstChild);
+                        fragment.append(itemDom);
                     }
-
-                    const promises: Promise<boolean>[] = [];
-                    for (const element of litElements) {
-                        promises.push(element.updateComplete);
+                    const scrollParent = getScrollParent(this.children[0] as HTMLElement)!;
+                    const upButton = scrollParent.querySelector("up-button") as UpButton;
+                    if (upButton) {
+                        if (isSafariBrowser()) {
+                            upButton.classList.remove("hidden");
+                            upButton.highlight = true;
+                            upButton.renderOnClick.push(() => {
+                                itemsDom.insertBefore(fragment, itemsDom.childNodes[0]);
+                                scrollParent.scrollTo({ top: 0, behavior: "smooth" });
+                            });
+                        } else {
+                            itemsDom.insertBefore(fragment, itemsDom.childNodes[0]);
+                            upButton.classList.remove("hidden");
+                            upButton.highlight = true;
+                        }
+                    } else {
+                        itemsDom.insertBefore(fragment, itemsDom.childNodes[0]);
                     }
-                    await Promise.all(promises);
                 }
             });
         }
@@ -124,7 +123,7 @@ export abstract class StreamView<T> extends LitElement {
                 return;
             }
 
-            const { cursor, items } = page;
+            const { items } = page;
             const itemsDom = this.itemsDom;
             const spinner = this.spinner;
             if (!itemsDom || !spinner) {
@@ -139,16 +138,16 @@ export abstract class StreamView<T> extends LitElement {
                 return;
             }
 
-            spinner.remove();
             const itemDoms: HTMLElement[] = [];
+            const fragment = dom(html`<div></div>`)[0];
             for (const item of items) {
                 const itemDom = this.wrapItem
                     ? dom(html`<div class="px-4 py-2 border-b border-divider">${this.renderItem(item)}</div>`)[0]
                     : dom(this.renderItem(item))[0];
-                itemsDom.append(itemDom);
+                fragment.append(itemDom);
                 itemDoms.push(itemDom);
             }
-            itemsDom.append(spinner);
+            itemsDom.insertBefore(fragment, spinner);
             onVisibleOnce(itemDoms[Math.max(0, itemDoms.length - 1 - 5)], () => this.load());
             onVisibleOnce(spinner, () => this.load());
         } catch (e) {
@@ -212,21 +211,6 @@ export class FeedStreamView extends StreamView<FeedViewPost> {
         this.wrapItem = false;
     }
 
-    protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
-        super.firstUpdated(_changedProperties);
-        if (this.stream?.pollNew)
-            this.stream?.addNewItemsListener((newItems: FeedViewPost[] | Error) => {
-                if (!this.stream) return;
-                if (newItems instanceof Error) {
-                    // alert("Couldn't poll new items"); // FIXME show a toast instead
-                    return;
-                }
-                if (this.newItems) {
-                    this.newItems(newItems);
-                }
-            });
-    }
-
     getItemKey(post: FeedViewPost): string {
         return post.post.uri + (AppBskyFeedDefs.isReasonRepost(post.reason) ? post.reason.by.did : "");
     }
@@ -277,15 +261,6 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
     constructor() {
         super();
         this.stream = new NotificationsStream(true);
-        this.newItems = () => {
-            const scrollParent = getScrollParent(this.children[0] as HTMLElement)!;
-            const upButton = scrollParent.querySelector("up-button") as UpButton;
-            if (upButton) {
-                upButton.classList.remove("hidden");
-                upButton.highlight = true;
-            }
-        };
-
         this.wrapItem = false;
         State.notify("unreadNotifications", "updated", 0);
     }

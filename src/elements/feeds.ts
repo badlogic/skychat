@@ -522,18 +522,9 @@ export class FeedOverlay extends HashNavOverlay {
 
         return html`<feed-stream-view
                 .stream=${new FeedPostsStream(this.feedUri!, true, FEED_CHECK_INTERVAL)}
-                .newItems=${async (newItems: FeedViewPost[]) => {
-                    const result = await State.loadFeedViewPostsDependencies(newItems);
-                    if (result instanceof Error) {
+                .newItems=${async (newItems: FeedViewPost[] | Error) => {
+                    if (newItems instanceof Error) {
                         this.error = i18n("Could not load newer items");
-                    }
-                    const scrollParent = getScrollParent(this.children[0] as HTMLElement);
-                    if (scrollParent) {
-                        const upButton = scrollParent.querySelector("up-button") as UpButton;
-                        if (upButton) {
-                            upButton.classList.remove("hidden");
-                            upButton.highlight = true;
-                        }
                     }
                 }}
             ></feed-stream-view

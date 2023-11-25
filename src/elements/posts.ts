@@ -44,6 +44,7 @@ import {
     fetchApi,
     getTimeDifference,
     hasLinkOrButtonParent,
+    itemPlaceholder,
     onVisibilityChange,
     splitAtUri,
     waitForLitElementsToRender,
@@ -399,13 +400,11 @@ export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
     // FIXME implement support for app.bsky.graph.list and app.bsky.feed.generator and
     // all other record types in an AppBSkyEmbedREcord.VIew
     if (AppBskyEmbedRecord.isViewNotFound(recordEmbed.record)) {
-        return html`<div class="bg-muted text-muted-fg px-4 py-2 rounded">${i18n("Deleted post")}</div>`;
+        return itemPlaceholder(i18n("Deleted post"));
     }
 
     if (AppBskyEmbedRecord.isViewBlocked(recordEmbed.record)) {
-        return html`<div class="bg-muted text-muted-fg px-4 py-2 rounded">
-            ${i18n("You have blocked the author or the author has blocked you.")}
-        </div>`;
+        return itemPlaceholder(i18n("You have blocked the author or the author has blocked you."));
     }
 
     if (AppBskyFeedDefs.isGeneratorView(recordEmbed.record)) {
@@ -606,7 +605,7 @@ export class PostViewElement extends LitElement {
         }
 
         if (this.deleted) {
-            return html`<div class="bg-muted text-muted-fg px-4 py-2 rounded">${i18n("Deleted post")}</div>`;
+            return itemPlaceholder(i18n("Deleted post"));
         }
 
         if ((this.post.author.viewer?.muted || this.post.author.viewer?.mutedByList) && !this.unmuted) {
@@ -955,9 +954,7 @@ export class ThreadViewPostElement extends LitElement {
         };
 
         const postDom = dom(html`<div data-uri="${thread.post.uri}" class="min-h-[80px]">
-            ${AppBskyFeedDefs.isNotFoundPost(thread.parent)
-                ? html`<div class="bg-muted text-muted-fg px-4 py-2 mb-2 rounded">${i18n("Deleted post")}</div>`
-                : nothing}
+            ${AppBskyFeedDefs.isNotFoundPost(thread.parent) ? itemPlaceholder(i18n("Deleted post")) : nothing}
             <div
                 class="${thread.post.uri == uri ? animation : ""} min-w-[350px] mb-2 ml-[-1px] ${!isRoot || (thread.post.uri == uri && isRoot)
                     ? "pl-2"

@@ -100,6 +100,9 @@ export class UpButton extends FloatingButton {
     @property()
     clicked: () => void = () => {};
 
+    @property()
+    renderOnClick: (() => void)[] = [];
+
     constructor() {
         super();
         this.hide = true;
@@ -109,6 +112,15 @@ export class UpButton extends FloatingButton {
     }
 
     handleClick(): void {
+        if (this.renderOnClick.length > 0) {
+            for (const listener of this.renderOnClick) {
+                listener();
+            }
+            this.renderOnClick.length = 0;
+            this.highlight = false;
+            this.hide = true;
+            return;
+        }
         this.highlight = false;
         this.clicked();
     }
@@ -123,7 +135,7 @@ export class UpButton extends FloatingButton {
 
     handleScroll() {
         if (this.highlight) {
-            if (getScrollParent(this.parentElement)!.scrollTop < 10) {
+            if (getScrollParent(this.parentElement)!.scrollTop < 10 && this.renderOnClick.length == 0) {
                 this.hide = true;
                 this.highlight = false;
             }
