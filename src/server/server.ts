@@ -9,14 +9,7 @@ import { AppBskyEmbedRecord, AppBskyFeedPost, AppBskyFeedDefs, FacetMention, App
 import { formatFileSize, getTimeDifference, splitAtUri } from "../utils";
 import * as fsSync from "fs";
 import { FileKeyValueStore, KeyValueStore } from "./keyvalue-store";
-
-type Notification = {
-    type: "like" | "reply" | "quote" | "repost" | "follow" | "mention";
-    fromDid: string;
-    toDid: string;
-    tokens: string[];
-    postUri?: string;
-};
+import { processPushNotification, PushNotification } from "../push-notifications";
 
 const port = process.env.PORT ?? 3333;
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
@@ -67,7 +60,7 @@ const registrations = migrate(
     (v) => v
 );
 const quotes = migrate(oldQuotesFile, quotesFile, compressAtUri, uncompressAtUri);
-const queue: Notification[] = [];
+const queue: PushNotification[] = [];
 const streamErrors: { code: string; reason: string; date: string; postUri?: string }[] = [];
 
 let serverStart = new Date();
@@ -227,22 +220,24 @@ let lastEventTime = new Date().getTime();
         for (const notification of queueCopy) {
             const data = { ...notification } as any;
             delete data.tokens;
-            for (const token of notification.tokens) {
-                try {
-                    numPushMessages++;
-                    pushService
-                        .send({ token, data })
-                        .then(() => {
-                            console.log("Sent " + JSON.stringify(notification));
-                        })
-                        .catch((reason) => {
-                            console.error("Couldn't send notification, removing token", reason);
-                            registrations.remove(notification.toDid, token);
-                        });
-                } catch (e) {}
+            if (notification.tokens) {
+                for (const token of notification.tokens) {
+                    try {
+                        numPushMessages++;
+                        pushService
+                            .send({ token, data })
+                            .then(() => {
+                                console.log("Sent " + JSON.stringify(notification));
+                            })
+                            .catch((reason) => {
+                                console.error("Couldn't send notification, removing token", reason);
+                                registrations.remove(notification.toDid, token);
+                            });
+                    } catch (e) {}
+                }
             }
         }
-    }, 2000);
+    }, 1000);
 
     app.get("/api/register", async (req, res) => {
         try {
