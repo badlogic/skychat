@@ -270,7 +270,7 @@ export class PostEditor extends LitElement {
                           ${map(
                               this.imagesToUpload,
                               (image) => html`<div class="w-1/4 relative">
-                                  <img src="${image.dataUri}" class="animate-jump-in px-1 w-full h-[100px] object-cover" /><button
+                                  <img src="${image.dataUri}" class="animate-jump-in px-1 w-full h-[100px] object-cover rounded" /><button
                                       class="absolute right-2 top-2 bg-background rounded-full p-1"
                                       @click=${(ev: Event) => {
                                           if (!ev.currentTarget) return;
@@ -296,12 +296,12 @@ export class PostEditor extends LitElement {
                     : nothing}
                 ${this.quote
                     ? html`<div class="relative flex flex-col border border-divider rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
-                          ${AppBskyFeedDefs.isPostView(this.quote)
+                          ${(this.quote as any).uri.includes("app.bsky.feed.post")
                               ? renderRecord(
-                                    this.quote.author,
+                                    (this.quote as PostView).author,
                                     splitAtUri(this.quote.uri).rkey,
                                     this.quote.record as AppBskyFeedPost.Record,
-                                    this.quote.embed,
+                                    (this.quote as PostView).embed,
                                     true,
                                     false,
                                     i18n("Quoting"),
@@ -342,11 +342,15 @@ export class PostEditor extends LitElement {
                           </div>
                       </div>`
                     : html`<div class="pl-2 pr-4 py-1 flex items-center min-h-[48px]">
-                    <button class="p-2" @click=${this.addImage}>
-                        <i class="icon !w-6 !h-6 fill-primary">${imageIcon}</i>
-                    </button>
                     ${
-                        this.imagesToUpload.length > 0
+                        !this.embed
+                            ? html`<button class="p-2" @click=${this.addImage}>
+                                  <i class="icon !w-6 !h-6 fill-primary">${imageIcon}</i>
+                              </button>`
+                            : nothing
+                    }
+                    ${
+                        this.imagesToUpload.length > 0 && !this.embed
                             ? html`<icon-toggle
                                   @change=${(ev: CustomEvent) => (this.sensitive = ev.detail.value)}
                                   .icon=${html`<i class="icon !w-6 !h-6">${shieldIcon}</i>`}
@@ -355,17 +359,13 @@ export class PostEditor extends LitElement {
                               </icon-toggle>`
                             : nothing
                     }
-                                        ${
-                                            !this.embed
-                                                ? html`<button
-                                                      class="p-2"
-                                                      @click=${this.addGif}
-                                                      ?disabled=${this.imagesToUpload.length > 0 || this.embed}
-                                                  >
-                                                      <i class="icon !w-6 !h-6 fill-primary">${gifIcon}</i>
-                                                  </button>`
-                                                : nothing
-                                        }
+                    ${
+                        this.imagesToUpload.length == 0 && !this.embed
+                            ? html`<button class="p-2" @click=${this.addGif} ?disabled=${this.imagesToUpload.length > 0 || this.embed}>
+                                  <i class="icon !w-6 !h-6 fill-primary">${gifIcon}</i>
+                              </button>`
+                            : nothing
+                    }
                      <span
                         class="ml-auto mr-2 text-muted-fg text-end text-xs flex items-center ${this.count > totalCount ? "text-red-500" : ""}"
                         >${this.count}/${totalCount}</span

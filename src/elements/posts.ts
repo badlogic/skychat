@@ -402,14 +402,12 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
 }
 
 export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
-    // FIXME implement support for app.bsky.graph.list and app.bsky.feed.generator and
-    // all other record types in an AppBSkyEmbedREcord.VIew
     if (AppBskyEmbedRecord.isViewNotFound(recordEmbed.record)) {
         return itemPlaceholder(i18n("Deleted post"));
     }
 
     if (AppBskyEmbedRecord.isViewBlocked(recordEmbed.record)) {
-        return itemPlaceholder(i18n("You have blocked the author or the author has blocked you."));
+        return itemPlaceholder(i18n("You have blocked the author or the author has blocked you."), html`${shieldIcon}`);
     }
 
     if (AppBskyFeedDefs.isGeneratorView(recordEmbed.record)) {
@@ -626,13 +624,11 @@ export class PostViewElement extends LitElement {
         }
 
         if ((this.post.author.viewer?.muted || this.post.author.viewer?.mutedByList) && !this.unmuted) {
-            return html`<div
-                class="bg-muted text-muted-fg fill-muted-fg px-4 py-2 rounded flex items-center cursor-pointer"
-                @click=${() => (this.unmuted = true)}
-            >
-                <i class="icon !w-6 !h-6">${shieldIcon}</i><span class="ml-2">${i18n("Post by muted user")}</span>
-                <span class="ml-2 text-xs">(${i18n("Click to view")})</span>
-            </div>`;
+            return itemPlaceholder(
+                html`${i18n("Post by muted user")}<span class="ml-2 text-xs"> (${i18n("Click to view")})</span>`,
+                html`${shieldIcon}`,
+                () => (this.unmuted = true)
+            );
         }
 
         const rkey = splitAtUri(this.post.uri)?.rkey;
@@ -993,6 +989,7 @@ export class ThreadViewPostElement extends LitElement {
             showMoredom.classList.toggle("hidden");
         };
 
+        // FIXME handle BlockedPost
         const postDom = dom(html`<div data-uri="${thread.post.uri}" class="min-h-[80px]">
             ${AppBskyFeedDefs.isNotFoundPost(thread.parent) ? itemPlaceholder(i18n("Deleted post")) : nothing}
             <div
