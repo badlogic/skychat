@@ -105,11 +105,13 @@ export class PostEditor extends LitElement {
     connectedCallback(): void {
         super.connectedCallback();
         document.addEventListener("paste", this.pasteImage);
+        document.body.classList.add("overflow-hidden");
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
         document.removeEventListener("paste", this.pasteImage);
+        document.body.classList.remove("overflow-hidden");
     }
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
@@ -792,17 +794,19 @@ export class PostEditorOverlay extends CloseableElement {
     connectedCallback(): void {
         super.connectedCallback();
         if (isMobileBrowser()) visualViewport?.addEventListener("resize", this.resizeInner);
+        document.body.classList.add("overflow-hidden");
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
         if (isMobileBrowser()) visualViewport?.removeEventListener("resize", this.resizeInner);
+        document.body.classList.remove("overflow-hidden");
     }
 
     protected render() {
         const user = Store.getUser();
         if (!user || !State.isConnected()) return nothing;
-        return html`<div class="fixed top-0 w-full h-full overflow-none backdrop-blur z-10">
+        return html`<div class="fixed top-0 w-full h-[100svh] max-h-full backdrop-blur z-10">
             <div
                 class="flex ${isMobileBrowser()
                     ? "h-full"

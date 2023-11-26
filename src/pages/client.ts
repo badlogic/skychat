@@ -170,7 +170,11 @@ class SkychatClient extends LitElement {
             <notifications-button></notifications-button>
             <feeds-button></feeds-button>
             <lists-button></lists-button>`;
-        return html`${topbar} ${content}`;
+        return html`<div class="w-full h-full flex flex-col">
+            <div class="self-center w-full max-w-[640px]">${topbar}</div>
+            <div class="h-[40px]"></div>
+            <div class="mx-auto w-full max-w-[640px] min-h-full flex flex-col">${content}</div>
+        </div> `;
     }
 
     async login() {

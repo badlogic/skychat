@@ -164,7 +164,7 @@ export abstract class StreamView<T> extends LitElement {
             return html`<div class="mt-4 py-4 flex-grow flex items-center justify-center border border-red text-red rounded-md">${this.error}</div>`;
 
         return html` <div id="items" class="flex flex-col">
-            <loading-spinner id="spinner"></loading-spinner>
+            <loading-spinner class="w-full" id="spinner"></loading-spinner>
         </div>`;
     }
 

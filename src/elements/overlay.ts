@@ -131,6 +131,16 @@ export abstract class Overlay extends LitElement {
         if (pushState) history.pushState(null, "", null);
     }
 
+    connectedCallback(): void {
+        super.connectedCallback();
+        document.body.classList.add("overflow-hidden");
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        document.body.classList.remove("overflow-hidden");
+    }
+
     close() {
         if (this.closed) return;
         this.closed = true;
@@ -145,7 +155,7 @@ export abstract class Overlay extends LitElement {
 
     render() {
         return html`<div class="fixed top-0 left-0 w-full h-full bg-background overflow-auto z-10">
-            <div class="mx-auto max-w-[640px] min-h-full flex flex-col">
+            <div class="mx-auto w-full max-w-[640px] min-h-full flex flex-col">
                 ${this.renderHeader()} ${this.renderContent()}
                 ${this.scrollUpButton
                     ? html`<up-button
