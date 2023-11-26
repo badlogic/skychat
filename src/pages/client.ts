@@ -123,14 +123,14 @@ class SkychatClient extends LitElement {
     renderMain() {
         if (!State.isConnected()) return html`<div>${i18n("Not connected")}</div>`;
 
-        // document.body.append(dom(html`<home-overlay class="w-full h-full"></home-overlay>`)[0]);
-
         if (location.hash && location.hash.length > 0) {
             const hash = location.hash;
             const newHref = location.href;
             history.replaceState(null, "", location.href.split("#")[0]);
-            history.pushState(null, "", newHref);
-            routeHash(hash);
+            setTimeout(() => {
+                history.pushState(null, "", newHref);
+                routeHash(hash);
+            }, 100);
         }
         const user = Store.getUser();
         const buttons = html`<div class="ml-auto flex -mr-1">

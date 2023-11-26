@@ -1152,7 +1152,7 @@ export class ThreadOverlay extends HashNavOverlay {
                           ></icon-toggle>`
                         : nothing}
                 </div>
-                ${this.closeButton()}
+                <div class="-ml-2">${this.closeButton()}</div>
             </div>`
         )}`;
     }
