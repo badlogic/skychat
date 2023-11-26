@@ -33,6 +33,7 @@ export class SettingsOverlay extends HashNavOverlay {
     }
 
     renderContent(): TemplateResult {
+        // FIXME enable thread reader mode by default setting, see http://localhost:8080/#thread/did:plc:dgrar7gfp5c7qttox66fspkq/3kf2hop6gzu26
         const user = Store.getUser();
         const pushPrefs = Store.getPushPreferences();
         return html`<div class="px-4 flex flex-col">

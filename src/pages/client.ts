@@ -123,7 +123,7 @@ class SkychatClient extends LitElement {
     renderMain() {
         if (!State.isConnected()) return html`<div>${i18n("Not connected")}</div>`;
 
-        document.body.append(dom(html`<home-overlay class="w-full h-full"></home-overlay>`)[0]);
+        // document.body.append(dom(html`<home-overlay class="w-full h-full"></home-overlay>`)[0]);
 
         if (location.hash && location.hash.length > 0) {
             const hash = location.hash;
@@ -132,7 +132,45 @@ class SkychatClient extends LitElement {
             history.pushState(null, "", newHref);
             routeHash(hash);
         }
-        return html``;
+        const user = Store.getUser();
+        const buttons = html`<div class="ml-auto flex -mr-1">
+            <button
+                class="flex items-center justify-center w-10 h-10"
+                @click=${() => document.body.append(dom(html`<search-overlay></search-overlay>`)[0])}
+            >
+                <i class="icon !w-5 !h-5">${searchIcon}</i>
+            </button>
+            <button
+                class="flex items-center justify-center w-10 h-10"
+                @click=${() => document.body.append(dom(html`<settings-overlay></settings-overlay>`)[0])}
+            >
+                <i class="icon !w-5 !h-5">${settingsIcon}</i>
+            </button>
+            <theme-toggle class="!w-10 !h-10"></theme-toggle>
+            <button
+                class="flex items-center justify-center w-10 h-10"
+                @click=${() => document.body.append(dom(html`<profile-overlay .did=${user?.profile.did}></profile-overlay>`)[0])}
+            >
+                ${user?.profile.avatar
+                    ? html`<img class="w-8 max-w-[none] h-8 rounded-full" src="${user.profile.avatar}" />`
+                    : html`<i class="icon !w-8 !h-8">${defaultAvatar}</i>`}
+            </button>
+        </div> `;
+        const topbar = renderTopbar("Home", buttons);
+
+        const content = html`<feed-stream-view
+                .newItems=${async (newItems: FeedViewPost[]) => {
+                    if (newItems instanceof Error) {
+                        this.error = i18n("Could not load newer items");
+                    }
+                }}
+                .stream=${new ActorFeedStream("home", undefined, true, FEED_CHECK_INTERVAL)}
+            ></feed-stream-view>
+            <open-post-editor-button></open-post-editor-button>
+            <notifications-button></notifications-button>
+            <feeds-button></feeds-button>
+            <lists-button></lists-button>`;
+        return html`${topbar} ${content}`;
     }
 
     async login() {
@@ -184,60 +222,5 @@ class SkychatClient extends LitElement {
     logout() {
         State.logout();
         location.reload();
-    }
-}
-
-@customElement("home-overlay")
-export class HomeOverlay extends Overlay {
-    @property()
-    error?: string;
-
-    constructor() {
-        super(false);
-    }
-
-    close() {}
-
-    renderHeader(): TemplateResult {
-        const user = Store.getUser();
-        const buttons = html`<div class="ml-auto flex -mr-1">
-            <button
-                class="flex items-center justify-center w-10 h-10"
-                @click=${() => document.body.append(dom(html`<search-overlay></search-overlay>`)[0])}
-            >
-                <i class="icon !w-5 !h-5">${searchIcon}</i>
-            </button>
-            <button
-                class="flex items-center justify-center w-10 h-10"
-                @click=${() => document.body.append(dom(html`<settings-overlay></settings-overlay>`)[0])}
-            >
-                <i class="icon !w-5 !h-5">${settingsIcon}</i>
-            </button>
-            <theme-toggle class="!w-10 !h-10"></theme-toggle>
-            <button
-                class="flex items-center justify-center w-10 h-10"
-                @click=${() => document.body.append(dom(html`<profile-overlay .did=${user?.profile.did}></profile-overlay>`)[0])}
-            >
-                ${user?.profile.avatar
-                    ? html`<img class="w-8 max-w-[none] h-8 rounded-full" src="${user.profile.avatar}" />`
-                    : html`<i class="icon !w-8 !h-8">${defaultAvatar}</i>`}
-            </button>
-        </div> `;
-        return renderTopbar("Home", buttons);
-    }
-
-    renderContent(): TemplateResult {
-        return html`<feed-stream-view
-                .newItems=${async (newItems: FeedViewPost[]) => {
-                    if (newItems instanceof Error) {
-                        this.error = i18n("Could not load newer items");
-                    }
-                }}
-                .stream=${new ActorFeedStream("home", undefined, true, FEED_CHECK_INTERVAL)}
-            ></feed-stream-view>
-            <open-post-editor-button></open-post-editor-button>
-            <notifications-button></notifications-button>
-            <feeds-button></feeds-button>
-            <lists-button></lists-button>`;
     }
 }

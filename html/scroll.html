@@ -6,16 +6,18 @@
         <title>Document</title>
         <link rel="stylesheet" href="build/styles-bundle.css" />
     </head>
-    <body class="w-full">
-        <div id="container" class="fixed top-0 left-0 w-full h-[100svh] bg-background overflow-auto z-10" style="overflow-anchor: none">
-            <main class="max-w-[600px] w-full mx-auto bg-red/20 flex flex-col">
-                <div id="posts" class="flex flex-col w-full">
-                    <button id="loader" class="bg-green-100 flex items-center justify-center flex flex-col">
-                        <div id="spacer" class="h-[56px] w-full bg-blue-100"></div>
-                        <span class="h-8">Load more posts</span>
-                    </button>
-                </div>
-            </main>
+    <body class="w-full h-[100%]">
+        <div>
+            <div id="container" class="absolute top-0 left-0 w-full h-[100%] bg-background z-10" style="overflow-anchor: none">
+                <main class="max-w-[600px] w-full mx-auto bg-red/20 flex flex-col">
+                    <div id="posts" class="flex flex-col w-full">
+                        <button id="loader" class="bg-green-100 flex items-center justify-center flex flex-col">
+                            <div id="spacer" class="h-[56px] w-full bg-blue-100"></div>
+                            <span class="h-8">Load more posts</span>
+                        </button>
+                    </div>
+                </main>
+            </div>
         </div>
     </body>
     <script>
