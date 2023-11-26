@@ -8,7 +8,7 @@ import {
     AppBskyGraphDefs,
     RichText,
 } from "@atproto/api";
-import { ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { ProfileView, ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { FeedViewPost, GeneratorView, PostView, ThreadViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -576,6 +576,7 @@ export class PostViewElement extends LitElement {
 
     unsubscribePost: () => void = () => {};
     unsubscribeQuote: () => void = () => {};
+    unsubscribeModeration: () => void = () => {};
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
@@ -589,6 +590,7 @@ export class PostViewElement extends LitElement {
         }
         this.unsubscribePost = State.subscribe("post", (action, post) => this.handlePostUpdate(action, post), this.post.uri);
         this.unsubscribeQuote = State.subscribe("numQuote", (action, quote) => this.handleQuoteUpdate(action, quote), this.post.uri);
+        this.unsubscribeModeration = State.subscribe("profile", (action, profile) => this.handleProfileUpdate(action, profile), this.post.author.did);
     }
 
     handlePostUpdate(action: EventAction, post: PostView): void {
@@ -606,10 +608,20 @@ export class PostViewElement extends LitElement {
         }
     }
 
+    handleProfileUpdate(action: EventAction, profile: ProfileView) {
+        if (action == "updated_profile_moderation" && this.post) {
+            this.post = { ...this.post, viewer: profile.viewer };
+            this.post.author.viewer = profile.viewer;
+            this.unmuted = false;
+            this.requestUpdate();
+        }
+    }
+
     disconnectedCallback(): void {
         super.disconnectedCallback();
         this.unsubscribePost();
         this.unsubscribeQuote();
+        this.unsubscribeModeration();
     }
 
     render() {
@@ -623,11 +635,29 @@ export class PostViewElement extends LitElement {
             return itemPlaceholder(i18n("Deleted post"));
         }
 
+        if (this.post.author.viewer?.blocking || this.post.author.viewer?.blockingByList) {
+            return itemPlaceholder(
+                html`<div class="flex items-center gap-2">
+                    <span>${i18n("Post by blocked user")}</span><span class="text-xs">(${i18n("Click to view")})</span>
+                </div>`,
+                html`${shieldIcon}`,
+                (ev: MouseEvent) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    document.body.append(dom(html`<profile-overlay .did=${this.post?.author.did}></profile-overlay>`)[0]);
+                }
+            );
+        }
+
         if ((this.post.author.viewer?.muted || this.post.author.viewer?.mutedByList) && !this.unmuted) {
             return itemPlaceholder(
                 html`${i18n("Post by muted user")}<span class="ml-2 text-xs"> (${i18n("Click to view")})</span>`,
                 html`${shieldIcon}`,
-                () => (this.unmuted = true)
+                (ev: MouseEvent) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    this.unmuted = true;
+                }
             );
         }
 
@@ -755,8 +785,10 @@ type PostOptions =
     | "quotes"
     | "reposts"
     | "mute_user"
+    | "unmute_user"
     | "mute_thread"
     | "block_user"
+    | "unblock_user"
     | "delete"
     | "open_thread"
     | "open_bluesky"
@@ -858,9 +890,19 @@ export class PostOptionsElement extends PopupMenu {
                 option: "mute_user",
                 text: i18n("Mute User"),
                 icon: html`${muteIcon}`,
-                enabled: did != this.post.author.did,
+                enabled: did != this.post.author.did && !this.post.author.viewer?.muted && !this.post.author.viewer?.mutedByList,
                 click: () => {
-                    this.handleOption("mute_user");
+                    State.muteActor(this.post!.author.did);
+                    this.close();
+                },
+            },
+            {
+                option: "unmute_user",
+                text: i18n("Unmute User"),
+                icon: html`${muteIcon}`,
+                enabled: did != this.post.author.did && (this.post.author.viewer?.muted || this.post.author.viewer?.mutedByList != undefined),
+                click: () => {
+                    State.unmuteActor(this.post!.author.did);
                     this.close();
                 },
             },
@@ -868,9 +910,21 @@ export class PostOptionsElement extends PopupMenu {
                 option: "block_user",
                 text: i18n("Block User"),
                 icon: html`${blockIcon}`,
-                enabled: did != this.post.author.did,
+                enabled: did != this.post.author.did && !this.post.author.viewer?.blocking && !this.post.author.viewer?.blockingByList,
                 click: () => {
-                    this.handleOption("block_user");
+                    State.blockActor(this.post!.author.did);
+                    this.close();
+                },
+            },
+            {
+                option: "unblock_user",
+                text: i18n("Unblock User"),
+                icon: html`${blockIcon}`,
+                enabled:
+                    did != this.post.author.did &&
+                    (this.post.author.viewer?.blocking != undefined || this.post.author.viewer?.blockingByList != undefined),
+                click: () => {
+                    State.unblockActor(this.post!.author.did);
                     this.close();
                 },
             },
@@ -990,7 +1044,7 @@ export class ThreadViewPostElement extends LitElement {
         };
 
         // FIXME handle BlockedPost
-        const postDom = dom(html`<div data-uri="${thread.post.uri}" class="min-h-[80px]">
+        const postDom = dom(html`<div data-uri="${thread.post.uri}">
             ${AppBskyFeedDefs.isNotFoundPost(thread.parent) ? itemPlaceholder(i18n("Deleted post")) : nothing}
             <div
                 class="${thread.post.uri == uri ? animation : ""} min-w-[350px] mb-2 ml-[-1px] ${!isRoot || (thread.post.uri == uri && isRoot)
@@ -1042,7 +1096,7 @@ export class ThreadOverlay extends HashNavOverlay {
     isLoading = true;
 
     @state()
-    error?: string;
+    error?: string | TemplateResult;
 
     @state()
     thread?: ThreadViewPost;
@@ -1067,14 +1121,13 @@ export class ThreadOverlay extends HashNavOverlay {
     }
 
     async load() {
-        const notFoundMessage = i18n("Thread not found. The post may have been deleted, or you were blocked by the user.");
         try {
             if (!State.bskyClient) {
                 this.error = i18n("Not connected");
                 return;
             }
             if (!this.postUri) {
-                this.error = notFoundMessage;
+                this.error = i18n("Post does not exist");
                 return;
             }
             let uri = this.postUri;
@@ -1092,24 +1145,39 @@ export class ThreadOverlay extends HashNavOverlay {
                 uri,
             });
             if (!response.success) {
-                this.error = notFoundMessage;
-                return;
-            }
-            if (!AppBskyFeedDefs.isThreadViewPost(response.data.thread)) {
-                this.error = notFoundMessage;
+                this.error = i18n("Post does not exist");
                 return;
             }
 
-            if (response.data.thread.blocked) {
+            if (AppBskyFeedDefs.isBlockedPost(response.data.thread)) {
+                if (response.data.thread.author.viewer?.blockedBy) {
+                    this.error = i18n("Post author has blocked you");
+                    return;
+                }
+                if (response.data.thread.author.viewer?.blocking || response.data.thread.author.viewer?.blockingByList) {
+                    const showProfile = (ev: MouseEvent) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        document.body.append(dom(html`<profile-overlay .did=${(response.data.thread.author as any).did}></profile-overlay>`)[0]);
+                    };
+                    this.error = html`<div class="flex items-center gap-2 cursor-pointer" @click=${(ev: MouseEvent) => showProfile(ev)}>
+                        <i class="icon !w-5 !h-5 fill-muted-fg">${shieldIcon}</i><span>${i18n("You have blocked the post author")}</span
+                        ><span class="text-xs">(${i18n("Click to view")})</span>
+                    </div>`;
+                    return;
+                }
+
                 this.error = i18n("You have blocked the author or the author has blocked you.");
                 return;
             }
+
             if (response.data.thread.notFound) {
-                this.error = notFoundMessage;
+                this.error = i18n("Post does not exist");
                 return;
             }
+
             if (!AppBskyFeedDefs.isThreadViewPost(response.data.thread)) {
-                this.error = notFoundMessage;
+                this.error = i18n("Post does not exist");
                 return;
             }
 
@@ -1132,7 +1200,7 @@ export class ThreadOverlay extends HashNavOverlay {
             this.thread = response.data.thread;
             if (this.applyFilters(this.thread, true).length > 1) this.canReaderMode = true;
         } catch (e) {
-            this.error = notFoundMessage;
+            this.error = i18n("Post does not exist");
             return;
         } finally {
             this.isLoading = false;
@@ -1219,7 +1287,7 @@ export class ThreadOverlay extends HashNavOverlay {
         // FIXME threads to test sorting and view modes with
         // http://localhost:8080/#thread/did:plc:k3a6s3ac4unrst44te7fd62m/3k7ths5azkx2z
         const result = dom(html`<div class="px-4">
-            ${this.isLoading ? html`<loading-spinner></loading-spinner>` : nothing} ${this.error ? html`<div>${this.error}</div>` : nothing}
+            ${this.isLoading ? html`<loading-spinner></loading-spinner>` : nothing} ${this.error ? itemPlaceholder(this.error) : nothing}
             <div class="mt-2"></div>
             ${thread
                 ? map(

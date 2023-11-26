@@ -462,20 +462,8 @@ export class ProfileActionButton extends LitElement {
         if (!this.profile) return;
 
         try {
-            if (muted) {
-                const response = await State.bskyClient?.app.bsky.graph.muteActor({ actor: this.profile?.did });
-                if (!response?.success) throw Error();
-            } else {
-                const response = await State.bskyClient?.app.bsky.graph.unmuteActor({ actor: this.profile?.did });
-                if (!response?.success) throw Error();
-            }
-            for (let i = 0; i < 5; i++) {
-                const response = await State.bskyClient.getProfile({ actor: this.profile.did });
-                if (response.success) {
-                    this.profile = response.data;
-                }
-            }
-            State.notify("profile", "updated_profile_moderation", this.profile);
+            const result = muted ? State.muteActor(this.profile.did) : State.unmuteActor(this.profile.did);
+            if (result instanceof Error) throw result;
         } catch (e) {
             error("Couldn't (un-)mute actor");
             toast(muted ? i18n("Couldn't mute user") : i18n("Couldn't unmute user"));
@@ -491,23 +479,8 @@ export class ProfileActionButton extends LitElement {
 
         try {
             this.isUpdating = true;
-            if (block) {
-                await State.bskyClient.app.bsky.graph.block.create(
-                    { repo: user.profile.did },
-                    { subject: this.profile.did, createdAt: new Date().toISOString() }
-                );
-            } else {
-                const rkey = this.profile!.viewer!.blocking!.split("/").pop()!;
-                await State.bskyClient.app.bsky.graph.block.delete({ repo: user.profile.did, rkey });
-            }
-            // Need to refetch in this case, as following info in viewer isn't set when blocked.
-            for (let i = 0; i < 5; i++) {
-                const response = await State.bskyClient.getProfile({ actor: this.profile.did });
-                if (response.success) {
-                    this.profile = response.data;
-                }
-            }
-            State.notify("profile", "updated_profile_moderation", this.profile);
+            const result = block ? State.blockActor(this.profile.did) : State.unblockActor(this.profile.did);
+            if (result instanceof Error) throw result;
         } catch (e) {
             error("Couldn't (un-)block actor");
             toast(block ? i18n("Couldn't block user") : i18n("Couldn't unblock user"));

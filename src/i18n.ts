@@ -95,9 +95,12 @@ export interface Messages {
     Reposts: string;
     "Mute Thread": string;
     "Mute User": string;
+    "Unmute User": string;
     "Block User": string;
+    "Unblock User": string;
     "Delete Post": string;
     "Post by muted user": string;
+    "Post by blocked user": string;
     "Click to view": string;
     Settings: string;
     Theme: string;
@@ -157,6 +160,9 @@ export interface Messages {
     "Couldn't unmute user": string;
     "Couldn't block user": string;
     "Couldn't unblock user": string;
+    "Post does not exist": string;
+    "Post author has blocked you": string;
+    "You have blocked the post author": string;
 }
 
 const english: Messages = {
@@ -265,9 +271,12 @@ const english: Messages = {
     Reposts: "Reposts",
     "Mute Thread": "Mute Thread",
     "Mute User": "Mute User",
+    "Unmute User": "Unmute User",
     "Block User": "Block User",
+    "Unblock User": "Unblock User",
     "Delete Post": "Delete Post",
     "Post by muted user": "Post by muted user",
+    "Post by blocked user": "Post by blocked user",
     "Click to view": "Click to view",
     Settings: "Settings",
     Theme: "Theme",
@@ -327,6 +336,9 @@ const english: Messages = {
     "Couldn't unmute user": "Couldn't unmute user",
     "Couldn't block user": "Couldn't block user",
     "Couldn't unblock user": "Couldn't unblock user",
+    "Post does not exist": "Post does not exist",
+    "Post author has blocked you": "Post author has blocked you",
+    "You have blocked the post author": "You have blocked the post author",
 };
 
 const german: Messages = {
@@ -437,9 +449,12 @@ const german: Messages = {
     Reposts: "Reposts",
     "Mute Thread": "Thread ",
     "Mute User": "Benutzerin stummschalten",
+    "Unmute User": "Stummschaltung aufheben",
     "Block User": "Benutzerin blockieren",
+    "Unblock User": "Blockierung aufheben",
     "Delete Post": "Post löschen",
     "Post by muted user": "Post einer stummgeschaltenen Benutzerin",
+    "Post by blocked user": "Post einer geblockten Benutzerin",
     "Click to view": "Zum Anzeigen klicken",
     Settings: "Einstellungen",
     Theme: "Design",
@@ -499,6 +514,9 @@ const german: Messages = {
     "Couldn't unmute user": "Konnte Stummschaltung der Benutzerin nicht aufheben",
     "Couldn't block user": "Konnte Benutzerin nicht blockieren",
     "Couldn't unblock user": "Konnte Blockierung der Benutzerin nicht aufheben",
+    "Post does not exist": "Post existiert nicht",
+    "Post author has blocked you": "Autor des Posts blockiert dich",
+    "You have blocked the post author": "Du blockierst den Autor des Posts",
 };
 
 export type LanguageCode = "en" | "de";

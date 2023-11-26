@@ -695,6 +695,90 @@ export class State {
         }
     }
 
+    static async muteActor(did: string): Promise<Error | undefined> {
+        if (!State.bskyClient) return;
+
+        try {
+            const response = await State.bskyClient?.app.bsky.graph.muteActor({ actor: did });
+            if (!response?.success) throw Error();
+
+            let profile: ProfileView | undefined;
+            for (let i = 0; i < 3; i++) {
+                const response = await State.bskyClient.getProfile({ actor: did });
+                if (response.success) {
+                    profile = response.data;
+                }
+            }
+            if (profile) State.notify("profile", "updated_profile_moderation", profile);
+        } catch (e) {
+            return error("Couldn't mute actor");
+        }
+    }
+
+    static async unmuteActor(did: string): Promise<Error | undefined> {
+        if (!State.bskyClient) return;
+
+        try {
+            const response = await State.bskyClient?.app.bsky.graph.unmuteActor({ actor: did });
+            if (!response?.success) throw Error();
+
+            let profile: ProfileView | undefined;
+            for (let i = 0; i < 3; i++) {
+                const response = await State.bskyClient.getProfile({ actor: did });
+                if (response.success) {
+                    profile = response.data;
+                }
+            }
+            if (profile) State.notify("profile", "updated_profile_moderation", profile);
+        } catch (e) {
+            return error("Couldn't unmute actor");
+        }
+    }
+
+    static async unblockActor(did: string): Promise<Error | undefined> {
+        if (!State.bskyClient) return;
+        const user = Store.getUser();
+        if (!user) return new Error("Not connected");
+
+        try {
+            let profileResponse = await State.bskyClient.getProfile({ actor: did });
+            if (profileResponse instanceof Error) throw profileResponse;
+            let profile = profileResponse.data;
+            const rkey = profile!.viewer!.blocking!.split("/").pop()!;
+            await State.bskyClient.app.bsky.graph.block.delete({ repo: user.profile.did, rkey });
+            for (let i = 0; i < 3; i++) {
+                const response = await State.bskyClient.getProfile({ actor: did });
+                if (response.success) {
+                    profile = response.data;
+                }
+            }
+            if (profile) State.notify("profile", "updated_profile_moderation", profile);
+        } catch (e) {
+            return error("Couldn't unblock actor");
+        }
+    }
+
+    static async blockActor(did: string): Promise<Error | undefined> {
+        if (!State.bskyClient) return;
+        const user = Store.getUser();
+        if (!user) return new Error("Not connected");
+
+        try {
+            await State.bskyClient.app.bsky.graph.block.create({ repo: user.profile.did }, { subject: did, createdAt: new Date().toISOString() });
+
+            let profile: ProfileView | undefined;
+            for (let i = 0; i < 3; i++) {
+                const response = await State.bskyClient.getProfile({ actor: did });
+                if (response.success) {
+                    profile = response.data;
+                }
+            }
+            if (profile) State.notify("profile", "updated_profile_moderation", profile);
+        } catch (e) {
+            return error("Couldn't mute actor");
+        }
+    }
+
     static async detectFacets(richText: RichText): Promise<Error | undefined> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
