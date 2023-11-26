@@ -156,13 +156,7 @@ export abstract class Overlay extends LitElement {
     render() {
         return html`<div class="fixed top-0 left-0 w-full h-full bg-background overflow-auto z-10">
             <div class="mx-auto w-full max-w-[640px] min-h-full flex flex-col">
-                ${this.renderHeader()} ${this.renderContent()}
-                ${this.scrollUpButton
-                    ? html`<up-button
-                          id="up"
-                          @click=${(ev: Event) => getScrollParent(ev.target as HTMLElement)?.scrollTo({ top: 0, behavior: "smooth" })}
-                      ></up-button>`
-                    : nothing}
+                ${this.renderHeader()} ${this.renderContent()} ${this.scrollUpButton ? html`<up-button></up-button>` : nothing}
             </div>
         </div>`;
     }

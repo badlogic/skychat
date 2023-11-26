@@ -467,7 +467,7 @@ export async function waitForLitElementsToRender(element: HTMLElement) {
 
 export function getScrollParent(parent: HTMLElement | null) {
     while (parent) {
-        if (parent.classList.contains("overflow-auto") || parent.tagName == "BODY") return parent;
+        if (parent.classList.contains("overflow-auto") || parent == document.documentElement) return parent;
         parent = parent.parentElement;
     }
     return null;

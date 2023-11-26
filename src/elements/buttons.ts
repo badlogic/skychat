@@ -46,18 +46,25 @@ export abstract class FloatingButton extends LitElement {
             return;
         }
         const dir = this.lastScrollTop - getScrollParent(this.parentElement)!.scrollTop;
-        this.hide = dir <= 0;
+        if (dir != 0) {
+            this.hide = dir < 0;
+        }
         this.lastScrollTop = getScrollParent(this.parentElement)!.scrollTop;
     }
 
     connectedCallback(): void {
         super.connectedCallback();
-        getScrollParent(this.parentElement)!?.addEventListener("scroll", this.scrollHandler);
+        const scrollParent = getScrollParent(this);
+        if (scrollParent == document.documentElement) {
+            window.addEventListener("scroll", this.scrollHandler);
+        } else {
+            getScrollParent(this)!.addEventListener("scroll", this.scrollHandler);
+        }
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
-        getScrollParent(this.parentElement)!?.removeEventListener("scroll", this.scrollHandler);
+        getScrollParent(this)!.removeEventListener("scroll", this.scrollHandler);
     }
 
     protected updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
@@ -98,7 +105,7 @@ export abstract class FloatingButton extends LitElement {
 @customElement("up-button")
 export class UpButton extends FloatingButton {
     @property()
-    clicked: () => void = () => {};
+    clicked: () => void = () => getScrollParent(this)?.scrollTo({ top: 0, behavior: "smooth" });
 
     @property()
     renderOnClick: (() => void)[] = [];
@@ -151,7 +158,9 @@ export class UpButton extends FloatingButton {
         }
 
         const dir = this.lastScrollTop - getScrollParent(this.parentElement)!.scrollTop;
-        this.hide = dir <= 0;
+        if (dir != 0) {
+            this.hide = dir < 0;
+        }
         this.lastScrollTop = getScrollParent(this.parentElement)!.scrollTop;
     }
 }
