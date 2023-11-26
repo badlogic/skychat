@@ -1182,15 +1182,17 @@ export class ThreadOverlay extends HashNavOverlay {
             };
             if (thread.replies) {
                 const posts = thread.replies.filter((reply) => AppBskyFeedDefs.isThreadViewPost(reply)) as ThreadViewPost[];
-                const authorPosts = posts.filter((reply) => reply.post.author.did == parentAuthor.did);
+                const highlightedPost = posts.filter((reply) => reply.post.uri == this.postUri);
+                const authorPosts = posts.filter((reply) => reply.post.author.did == parentAuthor.did && !highlightedPost.includes(reply));
                 authorPosts.sort(dateSort);
-                const otherPosts = posts.filter((reply) => reply.post.author.did != parentAuthor.did);
+                const otherPosts = posts.filter((reply) => reply.post.author.did != parentAuthor.did && !highlightedPost.includes(reply));
                 otherPosts.sort(dateSort);
                 const other = thread.replies.filter((reply) => !AppBskyFeedDefs.isThreadViewPost(reply));
                 thread.replies = [...authorPosts, ...otherPosts, ...other];
                 for (const reply of thread.replies) {
                     if (AppBskyFeedDefs.isThreadViewPost(reply)) sortReplies(reply);
                 }
+                thread.replies = [...highlightedPost, ...thread.replies];
             }
         };
         sortReplies(thread);
