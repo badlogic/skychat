@@ -113,7 +113,7 @@ onBackgroundMessage(messaging, async (payload) => {
                 message = `${from} reposted your post`;
                 break;
             case "mention":
-                if (!pushPrefs?.reposts) return;
+                if (!pushPrefs?.mentions) return;
                 message = `${from} mentioned your post`;
                 break;
             default:
