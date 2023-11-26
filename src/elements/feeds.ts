@@ -5,15 +5,25 @@ import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { HashNavOverlay, UpButton, renderTopbar } from ".";
 import { i18n } from "../i18n";
-import { editIcon, heartIcon, infoIcon, minusIcon, pinIcon, plusIcon, searchIcon, spinnerIcon } from "../icons";
+import { editIcon, heartIcon, infoIcon, linkIcon, minusIcon, pinIcon, plusIcon, searchIcon, spinnerIcon } from "../icons";
 import { EventAction, FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
-import { defaultFeed, dom, error, getScrollParent, hasLinkOrButtonParent, splitAtUri, waitForNavigation as waitForNavigation } from "../utils";
+import {
+    copyTextToClipboard,
+    defaultFeed,
+    dom,
+    error,
+    getScrollParent,
+    hasLinkOrButtonParent,
+    splitAtUri,
+    waitForNavigation as waitForNavigation,
+} from "../utils";
 import { IconToggle } from "./icontoggle";
 import { renderRichText } from "./posts";
 import { getProfileUrl, renderProfileAvatar } from "./profiles";
 import { repeat } from "lit-html/directives/repeat.js";
 import { FeedPostsStream } from "../streams";
+import { toast } from "./toast";
 
 export type GeneratorViewElementAction = "clicked" | "pinned" | "unpinned" | "saved" | "unsaved";
 export type GeneratorViewElementStyle = "topbar" | "minimal" | "full";
@@ -135,13 +145,24 @@ export class GeneratorViewElement extends LitElement {
 
         const details = html`${this.viewStyle == "topbar" && this.expandDetails ? createdBy : nothing}
             <div class="mt-1">${generator.description ? renderRichText(richText) : nothing}</div>
-            <icon-toggle
-                @change=${(ev: CustomEvent) => this.toggleLike(ev)}
-                .icon=${html`<i class="icon w-4 h-4">${heartIcon}</i>`}
-                class="h-4 mt-1 mr-auto"
-                .value=${generator.viewer?.like}
-                .text=${generator.likeCount}
-            ></icon-toggle>`;
+            <div class="flex mt-2">
+                <icon-toggle
+                    @change=${(ev: CustomEvent) => this.toggleLike(ev)}
+                    .icon=${html`<i class="icon !w-5 !h-5">${heartIcon}</i>`}
+                    class="w-10 h-10"
+                    .value=${generator.viewer?.like}
+                    .text=${generator.likeCount}
+                ></icon-toggle
+                ><button
+                    class="flex items-center justify-center w-10 h-10"
+                    @click=${() => {
+                        copyTextToClipboard("https://bsky.app/profile/" + generator.creator.did + "/feed/" + splitAtUri(generator.uri).rkey);
+                        toast(i18n("Copied link to clipboard"));
+                    }}
+                >
+                    <i class="icon !w-5 !h-5 fill-muted-fg">${linkIcon}</i>
+                </button>
+            </div>`;
 
         return html`<div
             class="flex flex-col cursor-pointer"
@@ -294,6 +315,7 @@ export class FeedPicker extends HashNavOverlay {
                 throw prefs;
             }
 
+            const user = Store.getUser();
             prefs = prefs ?? State.preferences;
             if (prefs) {
                 this.pinned = (prefs.feeds.pinned ?? [])
@@ -302,7 +324,8 @@ export class FeedPicker extends HashNavOverlay {
                 this.saved = (prefs.feeds.saved ?? [])
                     .map((feedUri) => State.getObject("feed", feedUri))
                     .filter((feed) => feed != undefined)
-                    .filter((feed) => !this.pinned.some((other) => other.uri == feed!.uri)) as GeneratorView[];
+                    .filter((feed) => !this.pinned.some((other) => other.uri == feed!.uri))
+                    .filter((feed) => feed?.creator.did != user?.profile.did) as GeneratorView[];
             } else {
                 prefs = await State.getPreferences();
                 if (prefs instanceof Error) {
@@ -320,7 +343,6 @@ export class FeedPicker extends HashNavOverlay {
                 this.saved = promises[1];
             }
 
-            const user = Store.getUser();
             if (user) {
                 const feeds: GeneratorView[] = [];
                 let cursor: string | undefined;
@@ -437,7 +459,7 @@ export class FeedPicker extends HashNavOverlay {
 
         if (action == "unpinned") {
             this.pinned = this.pinned.filter((other) => other.uri != generator.uri);
-            this.saved = [generator, ...this.saved];
+            if (generator.creator.did != Store.getUser()?.profile.did) this.saved = [generator, ...this.saved];
         }
 
         if (action == "unsaved") {

@@ -879,16 +879,6 @@ export class PostOptionsElement extends PopupMenu {
                 },
             },
             {
-                option: "open_bluesky",
-                text: i18n("Open in Bluesky"),
-                icon: html`${cloudIcon}`,
-                enabled: true,
-                click: () => {
-                    if (this.post) window.open(getBskyPostUrl(this.post), "_blank");
-                    this.close();
-                },
-            },
-            {
                 option: "copy_link",
                 text: i18n("Copy link"),
                 icon: html`${cloudIcon}`,
@@ -898,6 +888,16 @@ export class PostOptionsElement extends PopupMenu {
                         copyTextToClipboard(getBskyPostUrl(this.post));
                         toast(i18n("Copied link to clipboard"));
                     }
+                    this.close();
+                },
+            },
+            {
+                option: "open_bluesky",
+                text: i18n("Open in Bluesky"),
+                icon: html`${cloudIcon}`,
+                enabled: true,
+                click: () => {
+                    if (this.post) window.open(getBskyPostUrl(this.post), "_blank");
                     this.close();
                 },
             },

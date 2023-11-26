@@ -10,6 +10,7 @@ import {
     editIcon,
     heartIcon,
     infoIcon,
+    linkIcon,
     listIcon,
     minusIcon,
     muteIcon,
@@ -21,13 +22,23 @@ import {
 } from "../icons";
 import { EventAction, FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
-import { defaultFeed, dom, error, getScrollParent, hasLinkOrButtonParent, splitAtUri, waitForNavigation as waitForNavigation } from "../utils";
+import {
+    copyTextToClipboard,
+    defaultFeed,
+    dom,
+    error,
+    getScrollParent,
+    hasLinkOrButtonParent,
+    splitAtUri,
+    waitForNavigation as waitForNavigation,
+} from "../utils";
 import { IconToggle } from "./icontoggle";
 import { renderRichText } from "./posts";
 import { getProfileUrl, renderProfileAvatar } from "./profiles";
 import { repeat } from "lit-html/directives/repeat.js";
 import { FeedPostsStream, ListFeedPostsStream } from "../streams";
 import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
+import { toast } from "./toast";
 
 export type ListViewElementAction = "clicked" | "pinned" | "unpinned" | "saved" | "unsaved";
 export type ListViewElementStyle = "topbar" | "minimal" | "full";
@@ -158,10 +169,21 @@ export class ListViewElement extends LitElement {
 
         const details = html`${this.viewStyle == "topbar" && this.expandDetails ? createdBy : nothing}
             <div class="mt-1 flex flex-col">
-                <div class="self-start p-1 text-xs rounded bg-muted text-muted-fg flex items-center gap-1">
-                    ${this.list.purpose == "app.bsky.graph.defs#curatelist"
-                        ? html`<i class="icon !w-4 !h-4 fill-muted-fg">${listIcon}</i>${i18n("Curation list")}`
-                        : html`<i class="icon !w-4 !h-4 fill-muted-fg">${shieldIcon}</i>${i18n("Moderation list")}`}
+                <div class="flex items-center">
+                    <div class="self-start p-1 text-xs rounded bg-muted text-muted-fg flex items-center gap-1">
+                        ${this.list.purpose == "app.bsky.graph.defs#curatelist"
+                            ? html`<i class="icon !w-4 !h-4 fill-muted-fg">${listIcon}</i>${i18n("Curation list")}`
+                            : html`<i class="icon !w-4 !h-4 fill-muted-fg">${shieldIcon}</i>${i18n("Moderation list")}`}
+                    </div>
+                    <button
+                        class="flex items-center justify-center w-10 h-4"
+                        @click=${() => {
+                            copyTextToClipboard("https://bsky.app/profile/" + list.creator.did + "/lists/" + splitAtUri(list.uri).rkey);
+                            toast(i18n("Copied link to clipboard"));
+                        }}
+                    >
+                        <i class="icon !w-5 !h-5 fill-muted-fg">${linkIcon}</i>
+                    </button>
                 </div>
                 ${list.description ? renderRichText(richText) : nothing}
             </div>`;

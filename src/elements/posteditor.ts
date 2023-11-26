@@ -1,18 +1,22 @@
 import {
+    AppBskyActorDefs,
+    AppBskyActorProfile,
     AppBskyEmbedExternal,
     AppBskyEmbedImages,
     AppBskyEmbedRecord,
     AppBskyEmbedRecordWithMedia,
     AppBskyFeedDefs,
     AppBskyFeedPost,
+    AppBskyGraphDefs,
     AppBskyRichtextFacet,
     BlobRef,
     BskyAgent,
+    ComAtprotoRepoStrongRef,
     RichText,
     RichtextNS,
 } from "@atproto/api";
-import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { ProfileView, ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { SelfLabels } from "@atproto/api/dist/client/types/com/atproto/label/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing, svg } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
@@ -26,6 +30,7 @@ import {
     dom,
     downloadImage,
     downscaleImage,
+    error,
     getCaretPosition,
     isMobileBrowser,
     loadImageFile,
@@ -36,6 +41,7 @@ import { renderEmbed, renderRichText, renderRecord } from "./posts";
 import { CloseableElement, Overlay, navigationGuard, renderTopbar } from "./overlay";
 import { i18n } from "../i18n";
 import { State } from "../state";
+import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -51,7 +57,7 @@ export class PostEditor extends LitElement {
     sent: (post: PostView) => void = () => {};
 
     @property()
-    quote?: PostView;
+    quote?: PostView | ListView | GeneratorView;
 
     @property()
     replyTo?: PostView;
@@ -290,19 +296,27 @@ export class PostEditor extends LitElement {
                     : nothing}
                 ${this.quote
                     ? html`<div class="relative flex flex-col border border-divider rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
-                          ${renderRecord(
-                              this.quote.author,
-                              splitAtUri(this.quote.uri).rkey,
-                              this.quote.record as AppBskyFeedPost.Record,
-                              this.quote.embed,
-                              true,
-                              false,
-                              i18n("Quoting"),
-                              undefined,
-                              undefined,
-                              false,
-                              false
-                          )}
+                          ${AppBskyFeedDefs.isPostView(this.quote)
+                              ? renderRecord(
+                                    this.quote.author,
+                                    splitAtUri(this.quote.uri).rkey,
+                                    this.quote.record as AppBskyFeedPost.Record,
+                                    this.quote.embed,
+                                    true,
+                                    false,
+                                    i18n("Quoting"),
+                                    undefined,
+                                    undefined,
+                                    false,
+                                    false
+                                )
+                              : nothing}
+                          ${(this.quote as any).uri.includes("app.bsky.feed.generator")
+                              ? html`<generator-view .editable=${false} .minimal=${true} .generator=${this.quote}></generator-view>`
+                              : nothing}
+                          ${(this.quote as any).uri.includes("app.bsky.graph.list")
+                              ? html`<list-view .editable=${false} .minimal=${true} .list=${this.quote}></list-view>`
+                              : nothing}
                           <button
                               class="absolute right-2 top-2 bg-background rounded-full p-1"
                               @click=${(ev: Event) => {
@@ -479,6 +493,38 @@ export class PostEditor extends LitElement {
 
     async addLinkCard(url: string) {
         if (!State.isConnected()) return;
+
+        if (url.startsWith("https://bsky.app/profile/")) {
+            try {
+                const atUri = splitAtUri(url.replaceAll("https://bsky.app/profile/", ""));
+                let did = atUri.repo;
+                if (!atUri.repo.startsWith("did:")) {
+                    const response = await State.bskyClient!.app.bsky.actor.getProfile({ actor: did });
+                    did = response.data.did;
+                }
+                if (url.includes("/post/")) {
+                    const response = await State.getPosts(["at://" + did + "/app.bsky.feed.post/" + atUri.rkey]);
+                    if (response instanceof Error) throw response;
+                    this.quote = response[0];
+                    return;
+                }
+                if (url.includes("/lists/")) {
+                    const response = await State.getList("at://" + did + "/app.bsky.graph.list/" + atUri.rkey);
+                    if (response instanceof Error) throw response;
+                    this.quote = response;
+                    return;
+                }
+                if (url.includes("/feed/")) {
+                    const response = await State.getFeeds(["at://" + did + "/app.bsky.feed.generator/" + atUri.rkey]);
+                    if (response instanceof Error) throw response;
+                    this.quote = response[0];
+                    return;
+                }
+            } catch (e) {
+                error("Couldn't load post", e);
+            }
+        }
+
         let cardEmbed: AppBskyEmbedExternal.Main = {
             $type: "app.bsky.embed.external",
             external: {
@@ -645,7 +691,8 @@ export class PostEditor extends LitElement {
                 : undefined;
 
             const externalOrMediaEmbed = this.embed ?? (imagesEmbed.images.length > 0 ? imagesEmbed : undefined);
-            const quoteEmbed = this.quote ? { uri: this.quote.uri, cid: this.quote.cid } : undefined;
+            let quoteEmbed: ComAtprotoRepoStrongRef.Main | undefined;
+            if (this.quote) quoteEmbed = { uri: (this.quote as any).uri, cid: (this.quote as any).cid };
             let embed: AppBskyFeedPost.Record["embed"];
             if (quoteEmbed && externalOrMediaEmbed) {
                 const recordWithMediaEmbed: AppBskyEmbedRecordWithMedia.Main = {

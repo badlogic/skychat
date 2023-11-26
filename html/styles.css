@@ -61,7 +61,11 @@
     }
 
     a {
-        @apply text-blue-500;
+        @apply text-blue-500 break-all;
+    }
+
+    iframe {
+        outline: none;
     }
 }
 

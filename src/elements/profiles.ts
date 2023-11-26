@@ -166,9 +166,18 @@ export class ProfileOverlay extends HashNavOverlay {
             }
         }
 
+        const openGallery = (ev: Event, imageUrl: string) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            ev.stopImmediatePropagation();
+            const galleryImages = [{ url: imageUrl }];
+            document.body.append(dom(html`<image-gallery-overlay .images=${galleryImages} .imageIndex=${0}></image-gallery-overlay>`)[0]);
+        };
+
         return html`<div>
             ${this.profile.banner
                 ? html`<img
+                      @click=${(ev: MouseEvent) => openGallery(ev, this.profile!.banner!)}
                       src="${profile.banner}"
                       class="${this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList
                           ? "blur"
@@ -178,6 +187,7 @@ export class ProfileOverlay extends HashNavOverlay {
             <div class="flex px-4 mt-[-48px] items-end">
                 ${profile.avatar
                     ? html`<img
+                          @click=${(ev: MouseEvent) => openGallery(ev, this.profile!.avatar!)}
                           class="${this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList
                               ? "blur"
                               : ""} w-24 h-24 rounded-full"

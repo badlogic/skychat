@@ -1,18 +1,54 @@
 import { html } from "lit";
-import { FeedOverlay, ProfileOverlay, ThreadOverlay } from ".";
+import { FeedOverlay, ListOverlay, ProfileOverlay, ThreadOverlay } from ".";
 import { dom, splitAtUri, combineAtUri } from "../utils";
 import { i18n } from "../i18n";
 import { FollowersStream, FollowingStream, PostLikesStream, PostRepostsStream } from "../streams";
+import { DidResolver } from "@atproto/identity";
+import { State } from "../state";
 
-export async function routeHash(hash: string) {
-    hash = hash.replace("#", "");
-
+async function fromBlueSkyLink(hash: string) {
     // Allow BlueSky links directly
     if (hash.startsWith("https://bsky.app/profile/")) {
         if (hash.includes("/post/")) {
             hash = "thread/" + hash.replaceAll("https://bsky.app/profile/", "").replace("post/", "");
         }
+        if (hash.includes("/profile/") && hash.split("/").length == 5) {
+            const atUri = splitAtUri(hash.replaceAll("https://bsky.app/profile/", ""));
+            let did = atUri.repo;
+            if (!atUri.repo.startsWith("did:")) {
+                const response = await State.bskyClient!.app.bsky.actor.getProfile({ actor: did });
+                did = response.data.did;
+            }
+            hash = "profile/" + did;
+        }
+        if (hash.includes("/lists/")) {
+            const atUri = splitAtUri(hash.replaceAll("https://bsky.app/profile/", ""));
+            let did = atUri.repo;
+            if (!atUri.repo.startsWith("did:")) {
+                const response = await State.bskyClient!.app.bsky.actor.getProfile({ actor: did });
+                did = response.data.did;
+            }
+            hash = "list/" + did + "/" + atUri.rkey;
+        }
+
+        if (hash.includes("/feed/")) {
+            const atUri = splitAtUri(hash.replaceAll("https://bsky.app/profile/", ""));
+            let did = atUri.repo;
+            if (!atUri.repo.startsWith("did:")) {
+                const response = await State.bskyClient!.app.bsky.actor.getProfile({ actor: did });
+                did = response.data.did;
+            }
+            hash = "feed/" + did + "/" + atUri.rkey;
+        }
     }
+
+    return hash;
+}
+
+export async function routeHash(hash: string) {
+    hash = hash.replace("#", "");
+
+    hash = await fromBlueSkyLink(hash);
 
     if (hash && hash.length > 0) {
         const tokens = hash.split("/");
@@ -136,6 +172,15 @@ export async function routeHash(hash: string) {
                     if (profileOverlay.feedUri == atUri) return;
                 }
                 document.body.append(dom(html`<feed-overlay .feedUri=${atUri} .pushState=${false}></feed-overlay>`)[0]);
+            }
+            if (tokens[0] == "list" && tokens[1] && tokens[2]) {
+                const child = document.body.children[document.body.children.length - 1];
+                const atUri = combineAtUri(tokens[1], tokens[2], "app.bsky.graph.list");
+                if (child.tagName == "LIST-OVERLAY") {
+                    const listOverlay = child as ListOverlay;
+                    if (listOverlay.listUri == atUri) return;
+                }
+                document.body.append(dom(html`<list-overlay .listUri=${atUri} .pushState=${false}></list-overlay>`)[0]);
             }
         }
     }

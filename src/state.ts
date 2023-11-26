@@ -416,9 +416,7 @@ export class State {
                 }
             }
             const promises = await Promise.all([State.getProfiles(profilesToFetch), State.getNumQuotes(postUrisToFetch)]);
-            for (const promise of promises) {
-                if (promise instanceof Error) throw promise;
-            }
+            if (promises[0] instanceof Error) throw promises[0];
             this.notifyBatch("post", "updated", posts);
         } catch (e) {
             return error("Couldn't fetch feed view post dependencies");
@@ -483,7 +481,7 @@ export class State {
 
             const postsResult = await State.getPosts(postUris);
             if (postsResult instanceof Error) throw postsResult;
-            return { cursor: result.data.cursor, items: postsResult };
+            return { cursor: result.data.cursor, items: postsResult.filter((post) => post != undefined) };
         } catch (e) {
             return error("Couldn't load actor likes", e);
         }
