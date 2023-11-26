@@ -3,10 +3,10 @@ import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Messages, i18n } from "../i18n";
-import { moreIcon, spinnerIcon } from "../icons";
-import { ActorFeedType, State } from "../state";
+import { blockIcon, moreIcon, muteIcon, shieldIcon, spinnerIcon } from "../icons";
+import { ActorFeedType, EventAction, State } from "../state";
 import { Store } from "../store";
-import { defaultAvatar, dom, error, getNumber, getScrollParent, hasLinkOrButtonParent } from "../utils";
+import { defaultAvatar, dom, error, getNumber, getScrollParent, hasLinkOrButtonParent, itemPlaceholder } from "../utils";
 import { HashNavOverlay, renderTopbar } from "./overlay";
 import { PopupMenu } from "./popup";
 import { renderRichText } from "./posts";
@@ -23,6 +23,8 @@ import { GeneratorViewElementAction } from "./feeds";
 import { GeneratorView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { ListViewElementAction } from "./lists";
 import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
+import { toast } from "./toast";
+import { IconToggle } from "./icontoggle";
 
 // FIXME add open-edito-button that will prefill the shown profiles handle
 @customElement("profile-overlay")
@@ -57,6 +59,15 @@ export class ProfileOverlay extends HashNavOverlay {
             const results = await Promise.all(promises);
             this.hasGenerators = !(results[0] instanceof Error) && results[0].items.length > 0;
             this.hasLists = !(results[1] instanceof Error) && results[1].items.length > 0;
+            State.subscribe(
+                "profile",
+                (action: EventAction, profile: ProfileView) => {
+                    if (action == "updated_profile_moderation") {
+                        this.profile = profile;
+                    }
+                },
+                this.profile.did
+            );
         } catch (e) {
             this.error = errorMessage;
             error("Couldn't load profile", e);
@@ -227,9 +238,13 @@ export class ProfileOverlay extends HashNavOverlay {
                             createdAt: "",
                         })}</div>`
                     : nothing}
-                ${this.profile.viewer?.blockedBy ? html`<span>${i18n("You are blocked by the user.")}</span>` : nothing}
+                ${this.profile.viewer?.muted || this.profile.viewer?.mutedByList
+                    ? itemPlaceholder(i18n("You are muting the user."), html`${shieldIcon}`)
+                    : nothing}
+                ${this.profile.viewer?.m ? itemPlaceholder(i18n("You are blocked by the user."), html`${shieldIcon}`) : nothing}
+                ${this.profile.viewer?.blockedBy ? itemPlaceholder(i18n("You are blocked by the user."), html`${shieldIcon}`) : nothing}
                 ${this.profile.viewer?.blocking || this.profile.viewer?.blockingByList
-                    ? html`<span>${i18n("You are blocking the user.")}</span>`
+                    ? itemPlaceholder(i18n("You are blocking the user."), html`${shieldIcon}`)
                     : nothing}
             </div>
             <div class="overflow-x-auto flex flex-nowrap border-b border-divider">
@@ -418,15 +433,91 @@ export class ProfileActionButton extends LitElement {
         }
 
         const viewer = this.profile.viewer;
-        let action = i18n("Follow");
-        if (viewer?.following) action = i18n("Unfollow");
-        if (viewer?.blocking) action = i18n("Unblock");
-        return html`<button @click=${() => this.handleClick(action)} class="btn-toggle ${action == i18n("Follow") ? "active" : "inactive"}">
-            ${action}
-        </button>`;
+        let action = !viewer?.following ? i18n("Follow") : i18n("Unfollow");
+        return html`<div class="flex items-center">
+            ${!viewer?.blocking && !viewer?.blockingByList
+                ? html`<icon-toggle
+                      @change=${(ev: CustomEvent) => this.handleMute(ev.target as IconToggle, ev.detail.value)}
+                      .icon=${html`<i class="icon !w-5 !h-5">${muteIcon}</i>`}
+                      .value=${viewer?.muted || viewer?.mutedByList}
+                      class="w-8 h-8"
+                  ></icon-toggle>`
+                : nothing}
+            <icon-toggle
+                @change=${(ev: CustomEvent) => this.handleBlock(ev.target as IconToggle, ev.detail.value)}
+                .icon=${html`<i class="icon !w-5 !h-5">${blockIcon}</i>`}
+                .value=${viewer?.blocking || viewer?.blockingByList}
+                class="w-8 h-8 mr-1"
+            ></icon-toggle>
+            ${!viewer?.blocking && !viewer?.blockingByList
+                ? html`<button @click=${() => this.handleFollow(action)} class="btn-toggle ${action == i18n("Follow") ? "active" : "inactive"}">
+                      ${action}
+                  </button>`
+                : nothing}
+        </div>`;
     }
 
-    async handleClick(action: string) {
+    async handleMute(toggle: IconToggle, muted: boolean) {
+        if (!State.bskyClient) return;
+        if (!this.profile) return;
+
+        try {
+            if (muted) {
+                const response = await State.bskyClient?.app.bsky.graph.muteActor({ actor: this.profile?.did });
+                if (!response?.success) throw Error();
+            } else {
+                const response = await State.bskyClient?.app.bsky.graph.unmuteActor({ actor: this.profile?.did });
+                if (!response?.success) throw Error();
+            }
+            for (let i = 0; i < 5; i++) {
+                const response = await State.bskyClient.getProfile({ actor: this.profile.did });
+                if (response.success) {
+                    this.profile = response.data;
+                }
+            }
+            State.notify("profile", "updated_profile_moderation", this.profile);
+        } catch (e) {
+            error("Couldn't (un-)mute actor");
+            toast(muted ? i18n("Couldn't mute user") : i18n("Couldn't unmute user"));
+            toggle.value = !toggle.value;
+        }
+    }
+
+    async handleBlock(toggle: IconToggle, block: boolean) {
+        if (!State.bskyClient) return;
+        if (!this.profile) return;
+        const user = Store.getUser();
+        if (!user) return;
+
+        try {
+            this.isUpdating = true;
+            if (block) {
+                await State.bskyClient.app.bsky.graph.block.create(
+                    { repo: user.profile.did },
+                    { subject: this.profile.did, createdAt: new Date().toISOString() }
+                );
+            } else {
+                const rkey = this.profile!.viewer!.blocking!.split("/").pop()!;
+                await State.bskyClient.app.bsky.graph.block.delete({ repo: user.profile.did, rkey });
+            }
+            // Need to refetch in this case, as following info in viewer isn't set when blocked.
+            for (let i = 0; i < 5; i++) {
+                const response = await State.bskyClient.getProfile({ actor: this.profile.did });
+                if (response.success) {
+                    this.profile = response.data;
+                }
+            }
+            State.notify("profile", "updated_profile_moderation", this.profile);
+        } catch (e) {
+            error("Couldn't (un-)block actor");
+            toast(block ? i18n("Couldn't block user") : i18n("Couldn't unblock user"));
+            toggle.value = !toggle.value;
+        } finally {
+            this.isUpdating = false;
+        }
+    }
+
+    async handleFollow(action: string) {
         // FIXME this is fucked! Needs to notify state
         const user = Store.getUser();
         if (!user) return;
@@ -434,17 +525,6 @@ export class ProfileActionButton extends LitElement {
         if (!State.bskyClient) return;
 
         this.isUpdating = true;
-        if (action == i18n("Unblock")) {
-            const rkey = this.profile!.viewer!.blocking!.split("/").pop()!;
-            await State.bskyClient.app.bsky.graph.block.delete({ repo: user.profile.did, rkey }, {});
-            // Need to refetch in this case, as following info in viewer isn't set when blocked.
-            for (let i = 0; i < 2; i++) {
-                const response = await State.bskyClient.getProfile({ actor: this.profile.did });
-                if (response.success) {
-                    this.profile = response.data;
-                }
-            }
-        }
         if (action == i18n("Unfollow")) {
             const rkey = this.profile!.viewer!.following!.split("/").pop();
             const result = await State.bskyClient.app.bsky.graph.follow.delete({ repo: user.profile.did, rkey }, {});
@@ -467,5 +547,7 @@ export class ProfileActionButton extends LitElement {
                 detail: this.profile,
             })
         );
+
+        State.notify("profile", "updated_profile_moderation", this.profile);
     }
 }

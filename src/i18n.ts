@@ -42,6 +42,7 @@ export interface Messages {
     posts: string;
     "You are blocked by the user.": string;
     "You are blocking the user.": string;
+    "You are muting the user.": string;
     Posts: string;
     "Posts & Replies": string;
     Media: string;
@@ -152,6 +153,10 @@ export interface Messages {
     "Curation list": string;
     "Moderation list": string;
     "Feeds by me": string;
+    "Couldn't mute user": string;
+    "Couldn't unmute user": string;
+    "Couldn't block user": string;
+    "Couldn't unblock user": string;
 }
 
 const english: Messages = {
@@ -198,6 +203,7 @@ const english: Messages = {
     posts: "posts",
     "You are blocked by the user.": "You are blocked by the user.",
     "You are blocking the user.": "You are blocking the user.",
+    "You are muting the user.": "You are muting the user.",
     Posts: "Posts",
     "Posts & Replies": "Posts & Replies",
     Media: "Media",
@@ -317,6 +323,10 @@ const english: Messages = {
     "Curation list": "Curation list",
     "Moderation list": "Moderation list",
     "Feeds by me": "Feeds by me",
+    "Couldn't mute user": "Couldn't mute user",
+    "Couldn't unmute user": "Couldn't unmute user",
+    "Couldn't block user": "Couldn't block user",
+    "Couldn't unblock user": "Couldn't unblock user",
 };
 
 const german: Messages = {
@@ -363,6 +373,7 @@ const german: Messages = {
     posts: "posts",
     "You are blocked by the user.": "Die Benutzerin blockiert dich.",
     "You are blocking the user.": "Du blockierst die Benutzerin.",
+    "You are muting the user.": "Du hast die Benutzerin stumm geschaltet.",
     Posts: "Posts",
     "Posts & Replies": "Posts & Antworten",
     Media: "Medien",
@@ -484,6 +495,10 @@ const german: Messages = {
     "Curation list": "Kuratierte Liste",
     "Moderation list": "Moderations Liste",
     "Feeds by me": "Feeds von mir",
+    "Couldn't mute user": "Konnte Benutzerin nicht stumm schalten",
+    "Couldn't unmute user": "Konnte Stummschaltung der Benutzerin nicht aufheben",
+    "Couldn't block user": "Konnte Benutzerin nicht blockieren",
+    "Couldn't unblock user": "Konnte Blockierung der Benutzerin nicht aufheben",
 };
 
 export type LanguageCode = "en" | "de";

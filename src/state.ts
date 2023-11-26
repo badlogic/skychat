@@ -36,7 +36,7 @@ export interface Events {
     preferences: BskyPreferences;
 }
 
-export type EventAction = "updated" | "deleted";
+export type EventAction = "updated" | "updated_profile_moderation" | "deleted";
 
 export type ActorFeedType = "home" | "posts_with_replies" | "posts_no_replies" | "posts_with_media";
 
@@ -78,7 +78,7 @@ export class State {
     }
 
     static notify<K extends keyof Events>(event: K, action: EventAction, payload: Events[K]) {
-        this.storeObject(event, payload);
+        this.storeObject(event, payload); // We always store, even in case of a delete
         this.generalListeners[event]?.forEach((listener) => listener(action, payload));
         let id: string | undefined;
 

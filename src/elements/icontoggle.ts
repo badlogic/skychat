@@ -1,4 +1,4 @@
-import { LitElement, TemplateResult, html } from "lit";
+import { LitElement, TemplateResult, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { globalStyles } from "./styles";
 import { Store } from "../store";
@@ -31,9 +31,11 @@ export class IconToggle extends LitElement {
 
     render() {
         const isDark = Store.getTheme() == "dark";
-        return html` <div class="h-full w-full flex items-center justify-center cursor-pointer gap-1" @click=${(ev: MouseEvent) => this.toggle(ev)}>
+        return html` <div class="h-full w-full flex items-center justify-center cursor-pointer" @click=${(ev: MouseEvent) => this.toggle(ev)}>
             <div class="${this.value ? "fill-primary animate-jump" : "fill-muted-fg"}">${this.icon}</div>
-            <span class="${this.value ? "text-primary animate-jump" : "text-muted-fg"}">${this.text}</span>
+            ${this.text.length > 0
+                ? html`<span class="ml-1 ${this.value ? "text-primary animate-jump" : "text-muted-fg"}">${this.text}</span>`
+                : nothing}
         </div>`;
     }
 
