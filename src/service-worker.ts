@@ -46,7 +46,7 @@ const firebaseConfig = {
     messagingSenderId: "693556593993",
     appId: "1:693556593993:web:8137dd0568c75b50d1c698",
 };
-type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow"; fromDid: string; toDid: string; token: string };
+type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow" | "mention"; fromDid: string; toDid: string; token: string };
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
@@ -111,6 +111,10 @@ onBackgroundMessage(messaging, async (payload) => {
             case "repost":
                 if (!pushPrefs?.reposts) return;
                 message = `${from} reposted your post`;
+                break;
+            case "mention":
+                if (!pushPrefs?.reposts) return;
+                message = `${from} mentioned your post`;
                 break;
             default:
                 message = "You have a new notification";

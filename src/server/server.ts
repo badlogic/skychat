@@ -5,12 +5,18 @@ import cors from "cors";
 import * as admin from "firebase-admin";
 import { applicationDefault } from "firebase-admin/app";
 import { ComAtprotoSyncSubscribeRepos, SubscribeReposMessage, XrpcEventStreamClient, subscribeRepos } from "atproto-firehose";
-import { AppBskyEmbedRecord, AppBskyFeedPost } from "@atproto/api";
+import { AppBskyEmbedRecord, AppBskyFeedPost, AppBskyFeedDefs, FacetMention, AppBskyRichtextFacet } from "@atproto/api";
 import { formatFileSize, getTimeDifference, splitAtUri } from "../utils";
 import * as fsSync from "fs";
 import { FileKeyValueStore, KeyValueStore } from "./keyvalue-store";
 
-type Notification = { type: "like" | "reply" | "quote" | "repost" | "follow"; fromDid: string; toDid: string; tokens: string[]; postUri?: string };
+type Notification = {
+    type: "like" | "reply" | "quote" | "repost" | "follow" | "mention";
+    fromDid: string;
+    toDid: string;
+    tokens: string[];
+    postUri?: string;
+};
 
 const port = process.env.PORT ?? 3333;
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
@@ -70,7 +76,8 @@ let isStreaming = false;
 let numStreamEvents = 0;
 let numStreamRestarts = 0;
 let numPushMessages = 0;
-let numQuotes = 0 + 0;
+let numQuotes = 0;
+let numMentions = 0;
 for (const quote of quotes.keys()) {
     numQuotes += quotes.get(quote)?.length ?? 0;
 }
@@ -125,6 +132,22 @@ let lastEventTime = new Date().getTime();
                                             const tokens = registrations.get(to);
                                             if (tokens && from != to) {
                                                 queue.push({ type: "reply", fromDid: from, toDid: to, tokens, postUri });
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (payload.facets) {
+                                    for (const facet of payload.facets) {
+                                        for (const feature of facet.features) {
+                                            if (AppBskyRichtextFacet.isMention(feature)) {
+                                                const to = feature.did;
+                                                const tokens = registrations.get(to);
+                                                if (tokens && from != to) {
+                                                    postUri = "at://" + from + "/" + op.path;
+                                                    queue.push({ type: "mention", fromDid: from, toDid: to, tokens, postUri });
+                                                }
+                                                numMentions++;
                                             }
                                         }
                                     }
@@ -288,6 +311,7 @@ let lastEventTime = new Date().getTime();
                 numPushMessages,
                 numQuotes,
                 numQuotedPosts: quotes.keys().length,
+                numMentions,
                 quotesFileSize: formatFileSize(fsSync.statSync(quotesFile).size),
                 registrationsFileSize: formatFileSize(fsSync.statSync(registrationsFile).size),
                 numDidWebRequests,
