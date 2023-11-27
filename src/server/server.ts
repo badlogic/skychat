@@ -79,12 +79,6 @@ let numHtmlRequests = 0;
 let lastEventTime = new Date().getTime();
 
 (async () => {
-    const app = express();
-    app.set("json spaces", 2);
-    app.use(cors());
-    app.use(compression());
-    app.use(express.static("./"));
-
     const firebase = admin.initializeApp({ credential: applicationDefault() });
     const pushService = firebase.messaging();
 
@@ -238,6 +232,12 @@ let lastEventTime = new Date().getTime();
             }
         }
     }, 1000);
+
+    const app = express();
+    app.set("json spaces", 2);
+    app.use(cors());
+    app.use(compression());
+    app.use(express.static("./"));
 
     app.get("/api/register", async (req, res) => {
         try {

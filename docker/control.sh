@@ -29,6 +29,8 @@ printHelp () {
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 pushd $dir > /dev/null
 
+mkdir -p data/postgres
+
 case "$1" in
 start)
 	docker-compose -p $project -f docker-compose.base.yml -f docker-compose.prod.yml build

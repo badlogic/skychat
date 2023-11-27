@@ -18,19 +18,23 @@ services:
             context: .
             dockerfile: Dockerfile
         container_name: skychat_server
+        stop_grace_period: 0s
         volumes:
             - ~/firebase-service-credentials.json:/firebase-service-credentials.json
             - ./data:/data
             - ../build:/app
         environment:
             GOOGLE_APPLICATION_CREDENTIALS: /firebase-service-credentials.json
+            POSTGRES_DB: skychat_db
+            POSTGRES_USER: skychat
+            POSTGRES_PASSWORD: ${SKYCHAT_DB_PASSWORD}
         links:
             - database
         networks:
             - skychat_network
 
     database:
-        image: postgres:latest
+        image: postgres:16-alpine
         container_name: skychat_postgres
         restart: always
         environment:
