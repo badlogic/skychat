@@ -13,9 +13,11 @@ export async function initializePushNotifications(firehose: Firehose) {
         numPushMessages: 0,
     };
 
-    registrations.initialize();
+    await registrations.initialize();
     const firebase = admin.initializeApp({ credential: applicationDefault() });
     const pushService = firebase.messaging();
+
+    console.log("Initialized push notifications");
 
     firehose.listeners.push((event: FirehoseEvent) => {
         const tokens = registrations.get(event.toDid);

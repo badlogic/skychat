@@ -1,6 +1,7 @@
 import * as fs from "fs";
-
+import * as path from "path";
 import { Pool } from "pg";
+
 const pool = new Pool({
     user: "skychat",
     host: "skychat_postgres",
@@ -54,6 +55,12 @@ export class FileIdToStringsStore implements IdToStringsStore {
     constructor(readonly filePath: string) {}
 
     async initialize() {
+        const dir = path.dirname(this.filePath);
+
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+
         if (!fs.existsSync(this.filePath)) {
             fs.writeFileSync(this.filePath, "");
         }
@@ -112,7 +119,9 @@ export class CompressingIdToStringsStore implements IdToStringsStore {
         readonly uncompress: (v: string, isKey: boolean) => string
     ) {}
 
-    async initialize() {}
+    async initialize() {
+        await this.store.initialize();
+    }
 
     add(key: string, value: string): void {
         key = this.compress(key, true);
@@ -247,6 +256,7 @@ export class CachingIdToStringsStore {
     constructor(readonly store: IdToStringsStore) {}
 
     async initialize() {
+        await this.store.initialize();
         const result = await this.store.getAll();
         for (const key of result.keys()) {
             this.memory.set(key, new Set<string>(result.get(key)));

@@ -16,6 +16,7 @@ const quotes = new CachingIdToStringsStore(new CompressingIdToStringsStore(new F
 
 export async function initializeQuotes(firehose: Firehose) {
     await quotes.initialize();
+    console.log("Initialized quotes");
     const stats = {
         numQuotes: 0,
     };
