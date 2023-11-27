@@ -3,10 +3,10 @@ import * as path from "path";
 import { Pool } from "pg";
 
 const pool = new Pool({
-    user: "skychat",
+    user: process.env.POSTGRES_USER,
     host: "skychat_postgres",
-    database: "skychat_db",
-    password: process.env.SKYCHAT_DB_PASSWORD,
+    database: process.env.POSTGRES_DB,
+    password: process.env.POSTGRES_PASSWORD,
     port: 5432,
 });
 
