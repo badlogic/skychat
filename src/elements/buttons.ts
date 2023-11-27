@@ -399,7 +399,7 @@ export class SlideButton extends LitElement {
     }
 
     render() {
-        return html`<label class="relative inline-flex items-center cursor-pointer">
+        return html`<label class="relative inline-flex items-center justify-center cursor-pointer">
             <input
                 type="checkbox"
                 class="sr-only peer outline-none"
@@ -418,7 +418,7 @@ export class SlideButton extends LitElement {
     handleChange(el: HTMLInputElement) {
         this.checked = el.checked;
         this.dispatchEvent(
-            new CustomEvent("change", {
+            new CustomEvent("changed", {
                 detail: {
                     value: this.checked,
                 },

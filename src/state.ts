@@ -563,6 +563,32 @@ export class State {
         }
     }
 
+    static async getMutedUsers(cursor?: string, limit = 20): Promise<Error | StreamPage<ProfileView>> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const result = await State.bskyClient.app.bsky.graph.getMutes({ cursor, limit });
+            if (!result.success) throw new Error();
+            const profiles = result.data.mutes;
+            this.notifyBatch("profile", "updated", profiles);
+            return { cursor: result.data.cursor, items: profiles };
+        } catch (e) {
+            return error("Couldn't load muted users", e);
+        }
+    }
+
+    static async getBlockedUsers(cursor?: string, limit = 20): Promise<Error | StreamPage<ProfileView>> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const result = await State.bskyClient.app.bsky.graph.getBlocks({ cursor, limit });
+            if (!result.success) throw new Error();
+            const profiles = result.data.blocks;
+            this.notifyBatch("profile", "updated", profiles);
+            return { cursor: result.data.cursor, items: profiles };
+        } catch (e) {
+            return error("Couldn't load blocked users", e);
+        }
+    }
+
     static async searchUsers(query: string, cursor?: string, limit = 20): Promise<Error | StreamPage<ProfileView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {

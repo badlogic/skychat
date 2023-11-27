@@ -315,6 +315,22 @@ export class FollowingStream extends ProfileViewStream {
     }
 }
 
+export class MutedUsersStream extends ProfileViewStream {
+    constructor() {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
+            return State.getMutedUsers(cursor, limit);
+        });
+    }
+}
+
+export class BlockedUsersStream extends ProfileViewStream {
+    constructor() {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
+            return State.getBlockedUsers(cursor, limit);
+        });
+    }
+}
+
 export class UserSearchStream extends ProfileViewStream {
     constructor(readonly query: string) {
         super((cursor?: string, limit?: number, notify?: boolean) => {

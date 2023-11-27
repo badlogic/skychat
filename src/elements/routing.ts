@@ -150,6 +150,20 @@ export async function routeHash(hash: string) {
                 }
                 document.body.append(dom(html`<settings-overlay .pushState=${false}></settings-overlay>`)[0]);
             }
+            if (tokens[0] == "muted") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "MUTED-USERS-OVERLAY") {
+                    return;
+                }
+                document.body.append(dom(html`<muted-users-overlay .pushState=${false}></muted-users-overlay>`)[0]);
+            }
+            if (tokens[0] == "blocks") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "BLOCKED-USERS-OVERLAY") {
+                    return;
+                }
+                document.body.append(dom(html`<blocked-users-overlay .pushState=${false}></blocked-users-overlay>`)[0]);
+            }
             if (tokens[0] == "search") {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "SEARCH-OVERLAY") {

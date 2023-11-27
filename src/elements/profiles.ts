@@ -462,8 +462,9 @@ export class ProfileActionButton extends LitElement {
         if (!this.profile) return;
 
         try {
-            const result = muted ? State.muteActor(this.profile.did) : State.unmuteActor(this.profile.did);
+            const result = muted ? await State.muteActor(this.profile.did) : await State.unmuteActor(this.profile.did);
             if (result instanceof Error) throw result;
+            this.profile = State.getObject("profile", this.profile.did);
         } catch (e) {
             error("Couldn't (un-)mute actor");
             toast(muted ? i18n("Couldn't mute user") : i18n("Couldn't unmute user"));
@@ -479,8 +480,9 @@ export class ProfileActionButton extends LitElement {
 
         try {
             this.isUpdating = true;
-            const result = block ? State.blockActor(this.profile.did) : State.unblockActor(this.profile.did);
+            const result = block ? await State.blockActor(this.profile.did) : await State.unblockActor(this.profile.did);
             if (result instanceof Error) throw result;
+            this.profile = State.getObject("profile", this.profile.did);
         } catch (e) {
             error("Couldn't (un-)block actor");
             toast(block ? i18n("Couldn't block user") : i18n("Couldn't unblock user"));
