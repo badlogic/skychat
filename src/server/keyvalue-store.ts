@@ -1,5 +1,13 @@
 import * as fs from "fs";
-import * as readline from "readline";
+
+import { Pool } from "pg";
+const pool = new Pool({
+    user: "skychat",
+    host: "skychat_postgres",
+    database: "skychat_db",
+    password: process.env.SKYCHAT_DB_PASSWORD,
+    port: 5432,
+});
 
 function readFileSyncLineByLine(filePath: string, lineCallback: (line: string) => void) {
     try {
@@ -31,42 +39,218 @@ function readFileSyncLineByLine(filePath: string, lineCallback: (line: string) =
     }
 }
 
-export interface KeyValueStore {
+export interface IdToStringsStore {
+    initialize(): Promise<void>;
     add(key: string, value: string): void;
     remove(key: string, value: string): void;
-    keys(): string[];
-    has(key: string): boolean;
-    numEntries(key: string): number;
-    get(key: string): string[] | undefined;
+    keys(): Promise<string[]>;
+    has(key: string): Promise<boolean>;
+    numEntries(key: string): Promise<number>;
+    get(key: string): Promise<string[] | undefined>;
+    getAll(): Promise<Map<string, Set<string>>>;
 }
 
-export class FileKeyValueStore implements KeyValueStore {
-    private memory: Map<string, Set<string>>;
-    private filePath: string;
+export class FileIdToStringsStore implements IdToStringsStore {
+    constructor(readonly filePath: string) {}
 
-    constructor(
-        filePath: string,
-        readonly compress: (v: string, isKey: boolean) => string,
-        readonly uncompress: (v: string, isKey: boolean) => string
-    ) {
-        this.filePath = filePath;
-        this.memory = new Map<string, Set<string>>();
-        this.initializeStore();
-    }
-
-    private initializeStore(): void {
+    async initialize() {
         if (!fs.existsSync(this.filePath)) {
             fs.writeFileSync(this.filePath, "");
         }
+    }
 
+    add(key: string, value: string): void {
+        fs.appendFileSync(this.filePath, `+ ${key} ${value}\n`);
+    }
+
+    remove(key: string, value: string): void {
+        fs.appendFileSync(this.filePath, `- ${key} ${value}\n`);
+    }
+
+    async keys() {
+        return Array.from((await this.getAll()).keys());
+    }
+
+    async has(key: string) {
+        return (await this.getAll()).has(key);
+    }
+
+    async numEntries(key: string) {
+        return (await this.getAll()).size;
+    }
+
+    async get(key: string) {
+        const values = (await this.getAll()).get(key);
+        if (values) return Array.from(values);
+        else return values;
+    }
+
+    async getAll(): Promise<Map<string, Set<string>>> {
+        const result = new Map<string, Set<string>>();
         readFileSyncLineByLine(this.filePath, (line) => {
             const [command, key, value] = line.split(" ");
             if (command === "+") {
-                this.addToMemory(key, value);
+                let values = result.get(key);
+                if (!values) {
+                    values = new Set<string>();
+                    result.set(key, values);
+                }
+                values.add(value);
             } else if (command === "-") {
-                this.removeFromMemory(key, value);
+                const values = result.get(key);
+                if (values) values.delete(value);
             }
         });
+        return result;
+    }
+}
+
+export class CompressingIdToStringsStore implements IdToStringsStore {
+    constructor(
+        readonly store: IdToStringsStore,
+        readonly compress: (v: string, isKey: boolean) => string,
+        readonly uncompress: (v: string, isKey: boolean) => string
+    ) {}
+
+    async initialize() {}
+
+    add(key: string, value: string): void {
+        key = this.compress(key, true);
+        value = this.compress(value, false);
+        this.store.add(key, value);
+    }
+
+    remove(key: string, value: string): void {
+        key = this.compress(key, true);
+        value = this.compress(value, false);
+        this.store.remove(key, value);
+    }
+
+    async keys() {
+        return (await this.store.keys()).map((key) => this.uncompress(key, true));
+    }
+
+    async has(key: string) {
+        key = this.compress(key, true);
+        return this.store.has(key);
+    }
+
+    async numEntries(key: string) {
+        key = this.compress(key, true);
+        return this.store.numEntries(key);
+    }
+
+    async get(key: string) {
+        key = this.compress(key, true);
+        const values = await this.store.get(key);
+        if (!values) return values;
+        return values.map((value) => this.uncompress(value, false));
+    }
+
+    async getAll() {
+        const result = new Map<string, Set<string>>();
+        const all = await this.store.getAll();
+        for (const key of all.keys()) {
+            const values = all.get(key);
+            if (values) {
+                let resultValues = result.get(key);
+                if (!resultValues) {
+                    resultValues = new Set<string>();
+                    result.set(key, resultValues);
+                }
+                for (const value of values) {
+                    resultValues.add(value);
+                }
+            }
+        }
+        return result;
+    }
+}
+
+export class PostgresIdToStringsStore implements IdToStringsStore {
+    constructor(readonly tableName: string) {}
+
+    async initialize(): Promise<void> {
+        const tableExistsQuery = `
+            SELECT EXISTS (
+                SELECT FROM pg_tables
+                WHERE  schemaname = 'public'
+                AND    tablename  = $1
+            );
+        `;
+
+        const tableExistsResult = await pool.query(tableExistsQuery, [this.tableName]);
+        if (!tableExistsResult.rows[0].exists) {
+            await pool.query(`
+                CREATE TABLE ${this.tableName} (
+                    key TEXT NOT NULL,
+                    value TEXT NOT NULL
+                );
+                CREATE INDEX idx_${this.tableName}_key ON ${this.tableName}(key);
+            `);
+        }
+    }
+
+    public async add(key: string, value: string): Promise<void> {
+        await pool.query(`INSERT INTO ${this.tableName}(key, value) VALUES($1, $2)`, [key, value]);
+    }
+
+    public async remove(key: string, value: string): Promise<void> {
+        await pool.query(`DELETE FROM ${this.tableName} WHERE key = $1 AND value = $2`, [key, value]);
+    }
+
+    public async keys(): Promise<string[]> {
+        const result = await pool.query(`SELECT DISTINCT key FROM ${this.tableName}`);
+        return result.rows;
+    }
+
+    public async has(key: string) {
+        const result = await pool.query(`SELECT 1 FROM ${this.tableName} WHERE key = $1 LIMIT 1`, [key]);
+        return (result.rowCount ?? 0) > 0;
+    }
+
+    public async numEntries(key: string): Promise<number> {
+        const result = await pool.query(`SELECT COUNT(*) FROM ${this.tableName} WHERE key = $1`, [key]);
+        return parseInt(result.rows[0].count, 10);
+    }
+
+    public async get(key: string): Promise<string[] | undefined> {
+        const result = await pool.query(`SELECT value FROM ${this.tableName} WHERE key = $1`, [key]);
+        return result.rows.length > 0 ? result.rows : undefined;
+    }
+
+    public async getAll(): Promise<Map<string, Set<string>>> {
+        const result = await pool.query(`SELECT key, value FROM ${this.tableName}`);
+        const keyValuePairs: Map<string, Set<string>> = new Map();
+
+        result.rows.forEach((row) => {
+            const key = row.key;
+            const value = row.value;
+
+            const values = keyValuePairs.get(key);
+            if (values) {
+                let resultValues = keyValuePairs.get(key);
+                if (!resultValues) {
+                    resultValues = new Set<string>();
+                    keyValuePairs.set(key, resultValues);
+                }
+                resultValues.add(value);
+            }
+        });
+        return keyValuePairs;
+    }
+}
+
+export class CachingIdToStringsStore {
+    private memory = new Map<string, Set<string>>();
+
+    constructor(readonly store: IdToStringsStore) {}
+
+    async initialize() {
+        const result = await this.store.getAll();
+        for (const key of result.keys()) {
+            this.memory.set(key, new Set<string>(result.get(key)));
+        }
     }
 
     private addToMemory(key: string, value: string): boolean {
@@ -86,36 +270,28 @@ export class FileKeyValueStore implements KeyValueStore {
     }
 
     add(key: string, value: string): void {
-        key = this.compress(key, true);
-        value = this.compress(value, true);
-        if (!this.addToMemory(key, value)) fs.appendFileSync(this.filePath, `+ ${key} ${value}\n`);
+        if (!this.addToMemory(key, value)) this.store.add(key, value);
     }
 
     remove(key: string, value: string): void {
-        key = this.compress(key, true);
-        value = this.compress(value, true);
-        if (this.removeFromMemory(key, value)) fs.appendFileSync(this.filePath, `- ${key} ${value}\n`);
+        if (this.removeFromMemory(key, value)) this.store.remove(key, value);
     }
 
-    keys(): string[] {
-        return [...this.memory.keys()].map((key) => this.uncompress(key, true));
+    keys() {
+        return [...this.memory.keys()];
     }
 
-    has(key: string): boolean {
-        key = this.compress(key, true);
+    has(key: string) {
         return this.memory.has(key);
     }
 
-    numEntries(key: string): number {
-        key = this.compress(key, true);
+    numEntries(key: string) {
         if (!this.memory.has(key)) return 0;
         return this.memory.get(key)!.size;
     }
 
-    get(key: string): string[] | undefined {
-        key = this.compress(key, true);
+    get(key: string) {
         const values = Array.from(this.memory.get(key) || []);
-        const result = values.map((value) => this.uncompress(value, false));
-        return result.length > 0 ? result : undefined;
+        return values.length > 0 ? values : undefined;
     }
 }

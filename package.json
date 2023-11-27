@@ -11,6 +11,7 @@
     "build:worker": "node ./esbuild.worker.mjs",
     "build:server": "node ./esbuild.server.mjs",
     "dev": "concurrently \"npx tsc --noEmit --preserveWatchOutput --watch\" \"PORT=3333 node --watch build/server.js\" \"npm run build:site -- --watch\" \"npm run build:worker -- --watch\" \"npm run build:css -- --watch\" \"npm run build:server -- --watch\"",
+    "dev-docker": "concurrently \"npx tsc --noEmit --preserveWatchOutput --watch\" \"npm run build:site -- --watch\" \"npm run build:worker -- --watch\" \"npm run build:css -- --watch\" \"npm run build:server -- --watch\" \"./docker/control.sh startdev\"",
     "build": "npm run build:css && npm run build:site && npm run build:worker && npm run build:server"
   },
   "repository": {
@@ -41,6 +42,7 @@
     "isomorphic-ws": "github:heineiuo/isomorphic-ws",
     "lit": "^2.8.0",
     "openai": "^4.17.4",
+    "pg": "^8.11.3",
     "remixicon": "^3.5.0",
     "sqlite3": "^5.1.6",
     "tailwindcss-animated": "^1.0.1",
@@ -52,6 +54,7 @@
     "@types/compression": "^1.7.3",
     "@types/cors": "^2.8.14",
     "@types/express": "^4.17.18",
+    "@types/pg": "^8.10.9",
     "@types/ws": "^8.5.9",
     "autoprefixer": "^10.4.14",
     "concurrently": "^8.1.0",

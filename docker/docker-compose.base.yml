@@ -22,7 +22,7 @@ services:
         volumes:
             - ~/firebase-service-credentials.json:/firebase-service-credentials.json
             - ./data:/data
-            - ../build:/app
+            - ../:/app
         environment:
             GOOGLE_APPLICATION_CREDENTIALS: /firebase-service-credentials.json
             POSTGRES_DB: skychat_db

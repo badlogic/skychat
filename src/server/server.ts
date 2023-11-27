@@ -1,15 +1,11 @@
 import compression from "compression";
+import cors from "cors";
 import express from "express";
 import * as http from "http";
-import cors from "cors";
-import * as admin from "firebase-admin";
-import { applicationDefault } from "firebase-admin/app";
-import { ComAtprotoSyncSubscribeRepos, SubscribeReposMessage, XrpcEventStreamClient, subscribeRepos } from "atproto-firehose";
-import { AppBskyEmbedRecord, AppBskyFeedPost, AppBskyFeedDefs, FacetMention, AppBskyRichtextFacet } from "@atproto/api";
-import { formatFileSize, getTimeDifference, splitAtUri } from "../utils";
-import * as fsSync from "fs";
-import { FileKeyValueStore, KeyValueStore } from "./keyvalue-store";
-import { processPushNotification, PushNotification } from "../push-notifications";
+import { getTimeDifference } from "../utils";
+import { Firehose } from "./firehose";
+import { initializePushNotifications } from "./pushnotifications";
+import { initializeQuotes } from "./quotes";
 
 const port = process.env.PORT ?? 3333;
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
@@ -17,227 +13,21 @@ if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     process.exit(-1);
 }
 
-if (!fsSync.existsSync("data")) {
-    fsSync.mkdirSync("data");
-}
-
-const compressAtUri = (v: string, isKey: boolean) => {
-    return v.replace("at://", "").replace("app.bsky.feed.post/", "");
-};
-const uncompressAtUri = (v: string, isKey: boolean) => {
-    const tokens = v.split("/");
-    if (tokens.length == 2) return "at://" + tokens[0] + "/app.bsky.feed.post/" + tokens[1];
-    return "at://" + v;
-};
-
-function migrate(
-    oldFile: string,
-    newFile: string,
-    compress: (v: string, isKey: boolean) => string,
-    uncompress: (v: string, isKey: boolean) => string
-): KeyValueStore {
-    if (fsSync.existsSync(oldFile) && !fsSync.existsSync(newFile) && oldFile.endsWith(".json")) {
-        const oldData = JSON.parse(fsSync.readFileSync(oldFile, "utf8")) as Record<string, string[]>;
-        const store = new FileKeyValueStore(newFile, compress, uncompress);
-        for (const key of Object.keys(oldData)) {
-            const values = oldData[key];
-            for (const value of values) store.add(key, value);
-        }
-        return store;
-    }
-    return new FileKeyValueStore(newFile, compress, uncompress);
-}
-
-const oldRegistrationsFile = "data/registrations.json";
-const registrationsFile = "data/registrations.kvdb";
-const oldQuotesFile = "data/quotes.json";
-const quotesFile = "data/quotes.kvdb";
-
-const registrations = migrate(
-    oldRegistrationsFile,
-    registrationsFile,
-    (v) => v,
-    (v) => v
-);
-const quotes = migrate(oldQuotesFile, quotesFile, compressAtUri, uncompressAtUri);
-const queue: PushNotification[] = [];
-const streamErrors: { code: string; reason: string; date: string; postUri?: string }[] = [];
-
 let serverStart = new Date();
-let streamStartNano = performance.now();
-let isStreaming = false;
-let numStreamEvents = 0;
-let numStreamRestarts = 0;
-let numPushMessages = 0;
-let numQuotes = 0;
-let numMentions = 0;
-for (const quote of quotes.keys()) {
-    numQuotes += quotes.get(quote)?.length ?? 0;
-}
 let numDidWebRequests = 0;
 let numHtmlRequests = 0;
-let lastEventTime = new Date().getTime();
 
 (async () => {
-    const firebase = admin.initializeApp({ credential: applicationDefault() });
-    const pushService = firebase.messaging();
-
-    const onMessage = (message: SubscribeReposMessage) => {
-        isStreaming = true;
-        lastEventTime = new Date().getTime();
-        if (ComAtprotoSyncSubscribeRepos.isCommit(message)) {
-            numStreamEvents++;
-            message.ops.forEach((op) => {
-                const from = message.repo;
-                const payload = op.payload as any;
-                let postUri: string | undefined;
-                try {
-                    switch (payload?.$type) {
-                        case "app.bsky.feed.like":
-                            if (payload.subject?.uri) {
-                                const to = splitAtUri(payload.subject.uri).repo;
-                                postUri = payload.subject?.uri;
-                                const tokens = registrations.get(to);
-                                if (tokens && from != to) {
-                                    queue.push({ type: "like", fromDid: from, toDid: to, tokens, postUri });
-                                }
-                            }
-                            break;
-                        case "app.bsky.feed.post":
-                            if (AppBskyFeedPost.isRecord(payload)) {
-                                if (payload.reply) {
-                                    if (payload.reply) {
-                                        let uri;
-                                        if (payload.reply.parent) {
-                                            uri = payload.reply.parent.uri;
-                                        } else {
-                                            uri = payload.reply.root?.uri;
-                                        }
-                                        if (uri) {
-                                            postUri = "at://" + from + "/" + op.path;
-                                            const to = splitAtUri(uri).repo;
-                                            const tokens = registrations.get(to);
-                                            if (tokens && from != to) {
-                                                queue.push({ type: "reply", fromDid: from, toDid: to, tokens, postUri });
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if (payload.facets) {
-                                    for (const facet of payload.facets) {
-                                        for (const feature of facet.features) {
-                                            if (AppBskyRichtextFacet.isMention(feature)) {
-                                                const to = feature.did;
-                                                const tokens = registrations.get(to);
-                                                if (tokens && from != to) {
-                                                    postUri = "at://" + from + "/" + op.path;
-                                                    queue.push({ type: "mention", fromDid: from, toDid: to, tokens, postUri });
-                                                }
-                                                numMentions++;
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if (payload.embed) {
-                                    if (AppBskyEmbedRecord.isMain(payload.embed)) {
-                                        const to = splitAtUri(payload.embed.record.uri).repo;
-                                        postUri = payload.embed.record.uri;
-                                        const tokens = registrations.get(to);
-                                        if (tokens && from != to) {
-                                            queue.push({ type: "quote", fromDid: from, toDid: to, tokens, postUri });
-                                        }
-                                        quotes.add(postUri, "at://" + from + "/" + op.path);
-                                        numQuotes++;
-                                    }
-                                }
-                            }
-                            break;
-                        case "app.bsky.feed.repost":
-                            if (payload.subject?.uri) {
-                                const to = splitAtUri(payload.subject.uri).repo;
-                                postUri = payload.subject.uri;
-                                const tokens = registrations.get(to);
-                                if (tokens && from != to) {
-                                    queue.push({ type: "repost", fromDid: from, toDid: to, tokens, postUri });
-                                }
-                            }
-                            break;
-                        case "app.bsky.graph.follow":
-                            if (payload.subject?.uri) {
-                                const to = splitAtUri(payload.subject).repo;
-                                const tokens = registrations.get(to);
-                                if (tokens && from != to) {
-                                    queue.push({ type: "follow", fromDid: from, toDid: to, tokens });
-                                }
-                            }
-                            break;
-                    }
-                } catch (e) {
-                    console.error("Error processing message op.", e);
-                }
-            });
-        }
-    };
-
-    let firehoseClient: XrpcEventStreamClient;
-    const setupStream = () => {
-        numStreamRestarts++;
-        console.log("(Re-)starting stream");
-        firehoseClient = subscribeRepos(`wss://bsky.network`, { decodeRepoOps: true });
-        firehoseClient.on("message", onMessage);
-        firehoseClient.on("error", (code, reason) => {
-            streamErrors.push({ date: new Date().toString(), code, reason });
-            try {
-                firehoseClient.close();
-            } catch (e) {}
-            setupStream();
-        });
-        firehoseClient.on("close", () => setupStream());
-    };
-    setupStream();
-
-    // Health check of stream
-    setInterval(() => {
-        if (new Date().getTime() - lastEventTime > 10000) {
-            console.error("Firehose timed out, restarting");
-            lastEventTime = new Date().getTime();
-            firehoseClient.close();
-        }
-    }, 2000);
-
-    // Push messaging queue
-    setInterval(() => {
-        const queueCopy = [...queue];
-        queue.length = 0;
-        for (const notification of queueCopy) {
-            const data = { ...notification } as any;
-            delete data.tokens;
-            if (notification.tokens) {
-                for (const token of notification.tokens) {
-                    try {
-                        numPushMessages++;
-                        pushService
-                            .send({ token, data })
-                            .then(() => {
-                                console.log("Sent " + JSON.stringify(notification));
-                            })
-                            .catch((reason) => {
-                                console.error("Couldn't send notification, removing token", reason);
-                                registrations.remove(notification.toDid, token);
-                            });
-                    } catch (e) {}
-                }
-            }
-        }
-    }, 1000);
-
     const app = express();
     app.set("json spaces", 2);
     app.use(cors());
     app.use(compression());
     app.use(express.static("./"));
+
+    const firehose = new Firehose();
+    const pushNotifications = await initializePushNotifications(firehose);
+    const quotes = await initializeQuotes(firehose);
+    firehose.start();
 
     app.get("/api/register", async (req, res) => {
         try {
@@ -249,8 +39,8 @@ let lastEventTime = new Date().getTime();
                 return;
             }
             console.log("Registration: " + token + ", " + did);
-            registrations.add(did, token);
-            console.log(`${did}: ${registrations.get(did)?.length} tokens`);
+            pushNotifications.registrations.add(did, token);
+            console.log(`${did}: ${pushNotifications.registrations.get(did)?.length} tokens`);
             res.send();
         } catch (e) {
             res.status(400).json(e);
@@ -268,14 +58,14 @@ let lastEventTime = new Date().getTime();
                 did.length == 0 ||
                 typeof token != "string" ||
                 typeof did != "string" ||
-                !registrations.has(did)
+                !pushNotifications.registrations.has(did)
             ) {
                 console.error("Invalid token or did, or token not registered. token: " + token + ", did: " + did);
                 res.status(400).send();
                 return;
             }
-            registrations.remove(did, token);
-            console.log(`Removed token for ${did}: ${registrations.get(did)?.length} tokens`);
+            pushNotifications.registrations.remove(did, token);
+            console.log(`Removed token for ${did}: ${pushNotifications.registrations.get(did)?.length} tokens`);
             res.send();
         } catch (e) {
             res.status(400).json(e);
@@ -285,8 +75,8 @@ let lastEventTime = new Date().getTime();
     app.get("/api/status", (req, res) => {
         try {
             const regs: Record<string, number> = {};
-            for (const did of registrations.keys()) {
-                regs[did] = registrations.get(did)?.length || 0;
+            for (const did of pushNotifications.registrations.keys()) {
+                regs[did] = pushNotifications.registrations.get(did)?.length || 0;
             }
 
             const uptime = getTimeDifference(serverStart.getTime());
@@ -296,23 +86,16 @@ let lastEventTime = new Date().getTime();
             res.json({
                 serverStart,
                 uptime,
-                queue,
                 registrations: regs,
-                isStreaming,
-                numStreamEvents,
-                numStreamEventsPerSecond: numStreamEvents / ((performance.now() - streamStartNano) / 1000),
-                numStreamRestarts,
-                streamErrors,
-                numPushMessages,
-                numQuotes,
-                numQuotedPosts: quotes.keys().length,
-                numMentions,
-                quotesFileSize: formatFileSize(fsSync.statSync(quotesFile).size),
-                registrationsFileSize: formatFileSize(fsSync.statSync(registrationsFile).size),
+                firehoseStats: {
+                    ...firehose.stats,
+                    numStreamEventsPerSecond: firehose.stats.numStreamEvents / ((performance.now() - firehose.stats.streamStartNano) / 1000),
+                },
+                pushNotificationStats: pushNotifications.stats,
+                quotesStats: quotes.stats,
                 numDidWebRequests,
                 numHtmlRequests,
                 memoryUsage: memory.heapUsed.toFixed(2) + " / " + memory.heapTotal.toFixed(2) + " MB",
-                cpuUsage: process.cpuUsage(),
             });
         } catch (e) {
             res.status(400).json(e);
@@ -325,10 +108,10 @@ let lastEventTime = new Date().getTime();
             const quotesPerUri: Record<string, number> = {};
             if (Array.isArray(uris)) {
                 uris.forEach((uri) => {
-                    quotesPerUri[uri] = quotes.get(uri)?.length ?? 0;
+                    quotesPerUri[uri] = quotes.store.get(uri)?.length ?? 0;
                 });
             } else if (uris) {
-                quotesPerUri[uris] = quotes.get(uris)?.length ?? 0;
+                quotesPerUri[uris] = quotes.store.get(uris)?.length ?? 0;
             }
             res.json(quotesPerUri);
         } catch (e) {
@@ -338,7 +121,7 @@ let lastEventTime = new Date().getTime();
 
     app.get("/api/quotes", (req, res) => {
         try {
-            res.json(quotes.get(req.query.uri as string) ?? []);
+            res.json(quotes.store.get(req.query.uri as string) ?? []);
         } catch (e) {
             res.status(400).json(e);
         }

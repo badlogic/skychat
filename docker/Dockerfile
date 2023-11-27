@@ -1,5 +1,5 @@
 FROM node:19
 
-WORKDIR /app
+WORKDIR /app/docker
 
-CMD ["node", "--enable-source-maps", "/app/server.js"]
+CMD ["./server.sh"]
