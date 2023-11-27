@@ -9,3 +9,5 @@ html/service-worker.js.map
 repos.json
 session.json
 html/version.json
+docker/data
+docker/data
