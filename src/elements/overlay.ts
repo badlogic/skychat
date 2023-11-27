@@ -103,6 +103,16 @@ export class CloseableElement extends LitElement {
         if (pushState) history.pushState(null, "", null);
     }
 
+    connectedCallback(): void {
+        super.connectedCallback();
+        document.body.classList.add("overflow-hidden");
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        document.body.classList.remove("overflow-hidden");
+    }
+
     close() {
         if (this.closed) return;
         this.closed = true;

@@ -5,6 +5,7 @@ import { State } from "./state";
 
 export type PostRef = { cid: string; uri: string };
 export type HashTagThread = { parent: PostRef; root: PostRef };
+
 export type User = {
     account: string;
     password: string;
@@ -13,6 +14,7 @@ export type User = {
     hashTagThreads: Record<string, HashTagThread>;
     pushToken?: string;
 };
+
 export type PushPreferences = {
     enabled: boolean;
     newFollowers: boolean;
@@ -22,11 +24,31 @@ export type PushPreferences = {
     mentions: boolean;
     likes: boolean;
 };
-export type StoreKey = "user" | "theme" | "pushPrefs";
+
 export type Theme = "dark" | "light";
+
+export type Settings = {
+    theme: Theme;
+    pinchZoom: boolean;
+    pushPrefs: PushPreferences;
+};
+
+export type StoreKey = "user" | "settings";
 
 export class Store {
     static db = new IndexedDBStorage("skychat", 1);
+
+    static {
+        let settings: Settings | undefined = Store.get<Settings>("settings");
+        if (!settings) {
+            settings = {
+                theme: "dark",
+                pushPrefs: { enabled: true, likes: true, mentions: true, newFollowers: true, quotes: true, replies: true, reposts: true },
+                pinchZoom: true,
+            };
+            Store.set<Settings>("settings", settings);
+        }
+    }
 
     private static get<T>(key: StoreKey) {
         try {
@@ -58,20 +80,28 @@ export class Store {
     }
 
     static getTheme() {
-        return Store.get<{ theme: Theme }>("theme")?.theme;
+        return Store.get<Settings>("settings")?.theme;
     }
 
     static setTheme(theme: Theme) {
-        Store.set("theme", { theme });
+        Store.set("settings", { ...Store.get<Settings>("settings"), theme });
         State.notify("theme", "updated", theme);
         return theme;
     }
 
+    static getPinchZoom() {
+        return Store.get<Settings>("settings")?.pinchZoom;
+    }
+
+    static setPinchZoom(pinchZoom: boolean) {
+        Store.set("settings", { ...Store.get<Settings>("settings"), pinchZoom });
+    }
+
     static getPushPreferences() {
-        return Store.get<PushPreferences>("pushPrefs");
+        return Store.get<Settings>("settings")?.pushPrefs;
     }
 
     static setPushPreferences(pushPrefs: PushPreferences) {
-        return Store.set("pushPrefs", pushPrefs);
+        Store.set("settings", { ...Store.get<Settings>("settings"), pushPrefs });
     }
 }

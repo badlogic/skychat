@@ -38,6 +38,7 @@ export class SettingsOverlay extends HashNavOverlay {
         // FIXME enable thread reader mode by default setting, see http://localhost:8080/#thread/did:plc:dgrar7gfp5c7qttox66fspkq/3kf2hop6gzu26
         const user = Store.getUser();
         const pushPrefs = Store.getPushPreferences();
+        const pinchZoom = Store.getPinchZoom();
         return html`<div class="px-4 flex flex-col">
             ${user
                 ? html`<div class="h-12 flex items-center font-semibold">${i18n("Logged in as")}</div>
@@ -47,13 +48,22 @@ export class SettingsOverlay extends HashNavOverlay {
                       </div>`
                 : nothing}
             <div class="mt-4 border-t border-divider"></div>
-            <div class="h-12 flex items-center font-semibold gap-2"><i class="icon !w-5 !h-5">${brushIcon}</i>${i18n("Design")}</div>
+            <div class="h-12 flex items-center font-semibold gap-2"><i class="icon !w-5 !h-5">${brushIcon}</i>${i18n("User Interface")}</div>
             <button-group
                 @change=${(ev: CustomEvent) => this.setTheme(ev.detail.value)}
                 .values=${[i18n("Dark"), i18n("Light")]}
                 .selected=${Store.getTheme() == "dark" ? "Dark" : "Light"}
                 class="self-start"
             ></button-group>
+            <slide-button
+                class="mt-4"
+                .checked=${pinchZoom}
+                .text=${i18n("Allow pinch-zoom")}
+                @changed=${(ev: CustomEvent) => {
+                    Store.setPinchZoom(ev.detail.value);
+                    togglePinchZoom(ev.detail.value);
+                }}
+            ></slide-button>
             <div class="mt-4 border-t border-divider"></div>
             <div class="h-12 flex items-center font-semibold gap-2"><i class="icon !w-5 !h-5">${shieldIcon}</i>${i18n("Moderation")}</div>
             <div class="flex flex-col gap-2">
@@ -185,6 +195,24 @@ export class BlockedUsersOverlay extends HashNavOverlay {
     }
 }
 
-let theme = Store.getTheme();
+function preventPinchZoom(event: TouchEvent): void {
+    if (event.touches.length > 1) {
+        event.preventDefault();
+    }
+}
+document.addEventListener("touchstart", preventPinchZoom, { passive: false });
+
+export function togglePinchZoom(enable: boolean): void {
+    if (enable) {
+        document.removeEventListener("touchstart", preventPinchZoom);
+    } else {
+        document.addEventListener("touchstart", preventPinchZoom, { passive: false });
+    }
+}
+
+const theme = Store.getTheme();
 if (theme == "dark") document.documentElement.classList.add("dark");
 else document.documentElement.classList.remove("dark");
+
+const pinchZoom = Store.getPinchZoom();
+togglePinchZoom(pinchZoom ?? true);

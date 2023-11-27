@@ -3,6 +3,8 @@ import { CloseableElement } from "./overlay";
 import { PropertyValueMap, html, nothing } from "lit";
 import { arrowLeftIcon, arrowRightIcon, downloadIcon } from "../icons";
 import { dom, downloadImageAsFile } from "../utils";
+import { togglePinchZoom } from "./settings";
+import { Store } from "../store";
 
 @customElement("image-gallery-overlay")
 export class ImageGalleryOverlay extends CloseableElement {
@@ -17,6 +19,17 @@ export class ImageGalleryOverlay extends CloseableElement {
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
+    }
+
+    pinchZoom = Store.getPinchZoom();
+    connectedCallback(): void {
+        super.connectedCallback();
+        togglePinchZoom(true);
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        togglePinchZoom(this.pinchZoom ?? true);
     }
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {

@@ -163,9 +163,10 @@ export interface Messages {
     "Post does not exist": string;
     "Post author has blocked you": string;
     "You have blocked the post author": string;
-    Design: string;
+    "User Interface": string;
     "Muted users": string;
     "Blocked users": string;
+    "Allow pinch-zoom": string;
 }
 
 const english: Messages = {
@@ -342,9 +343,10 @@ const english: Messages = {
     "Post does not exist": "Post does not exist",
     "Post author has blocked you": "Post author has blocked you",
     "You have blocked the post author": "You have blocked the post author",
-    Design: "Design",
+    "User Interface": "User Interface",
     "Muted users": "Muted users",
     "Blocked users": "Blocked users",
+    "Allow pinch-zoom": "Allow pinch-zoom",
 };
 
 const german: Messages = {
@@ -523,9 +525,10 @@ const german: Messages = {
     "Post does not exist": "Post existiert nicht",
     "Post author has blocked you": "Autor des Posts blockiert dich",
     "You have blocked the post author": "Du blockierst den Autor des Posts",
-    Design: "Design",
+    "User Interface": "Benutzeroberfläche",
     "Muted users": "Stummgeschaltene Benutzerinnen",
     "Blocked users": "Blockierte Benutzerinnen",
+    "Allow pinch-zoom": "Pinch-Zoom erlauben",
 };
 
 export type LanguageCode = "en" | "de";
