@@ -4,6 +4,7 @@ import {
     AppBskyEmbedRecord,
     AppBskyEmbedRecordWithMedia,
     AppBskyFeedDefs,
+    AppBskyFeedGetPostThread,
     AppBskyFeedPost,
     AppBskyGraphDefs,
     RichText,
@@ -1123,6 +1124,7 @@ export class ThreadOverlay extends HashNavOverlay {
 
     async load() {
         try {
+            // FIXME go through State instead
             if (!State.bskyClient) {
                 this.error = i18n("Not connected");
                 return;
@@ -1131,38 +1133,74 @@ export class ThreadOverlay extends HashNavOverlay {
                 this.error = i18n("Post does not exist");
                 return;
             }
-            let uri = this.postUri;
-            let atUri = splitAtUri(uri);
+
+            let atUri = splitAtUri(this.postUri);
             const postResponse = await State.bskyClient.getPost({ repo: atUri.repo, rkey: atUri.rkey });
 
-            if (AppBskyFeedPost.isRecord(postResponse.value) && postResponse.value.reply) {
-                uri = postResponse.value.reply.root.uri;
+            // First, try to get the thread from the root downwards. This will work 99% of the time.
+            let threadResponse: AppBskyFeedGetPostThread.Response | undefined;
+            let rootUri = postResponse.value?.reply ? postResponse.value.reply.root.uri : this.postUri;
+            try {
+                threadResponse = await State.bskyClient.getPostThread({
+                    depth: 1000,
+                    parentHeight: 1000,
+                    uri: rootUri,
+                });
+            } catch (e) {
+                // Happens if the post could not be found.
             }
 
-            // FIXME go through State instead
-            // FIXME if the root doesn't exist, then we only show "Post does not exist"
-            //       and don't show replies.
-            const response = await State.bskyClient.getPostThread({
-                depth: 1000,
-                parentHeight: 1000,
-                uri,
-            });
+            // Whoops, root couldn't be fetched.
+            if (!threadResponse || !threadResponse.success) {
+                // The post itself was the root, nothing we can do, bail
+                if (!postResponse.value.reply) {
+                    this.error = i18n("Post does not exist");
+                    return;
+                }
 
-            if (!response.success) {
+                // Try to walk up the tree, to find the oldest viable parent.
+                let parentUri = postResponse.value.reply.parent.uri;
+                let finalParentUri = this.postUri;
+                while (true) {
+                    const atUri = splitAtUri(parentUri);
+                    try {
+                        const parentResponse = await State.bskyClient.getPost({ repo: atUri.repo, rkey: atUri.rkey });
+                        finalParentUri = parentUri;
+                        if (!parentResponse.value.reply) {
+                            break;
+                        } else {
+                            parentUri = parentResponse.value.reply.parent.uri;
+                        }
+                    } catch (e) {
+                        // Happens if the post doesn't exist, so we know the last parentUri is the good one
+                        break;
+                    }
+                }
+
+                // OK, we re-anchored to some parent, let's try to fetch the thread
+                threadResponse = await State.bskyClient.getPostThread({
+                    depth: 1000,
+                    parentHeight: 1000,
+                    uri: finalParentUri,
+                });
+            }
+
+            if (AppBskyFeedDefs.isNotFoundPost(threadResponse.data.thread)) {
                 this.error = i18n("Post does not exist");
                 return;
             }
 
-            if (AppBskyFeedDefs.isBlockedPost(response.data.thread)) {
-                if (response.data.thread.author.viewer?.blockedBy) {
+            if (AppBskyFeedDefs.isBlockedPost(threadResponse.data.thread)) {
+                if (threadResponse.data.thread.author.viewer?.blockedBy) {
                     this.error = i18n("Post author has blocked you");
                     return;
                 }
-                if (response.data.thread.author.viewer?.blocking || response.data.thread.author.viewer?.blockingByList) {
+                if (threadResponse.data.thread.author.viewer?.blocking || threadResponse.data.thread.author.viewer?.blockingByList) {
+                    const author = threadResponse.data.thread.author;
                     const showProfile = (ev: MouseEvent) => {
                         ev.preventDefault();
                         ev.stopPropagation();
-                        document.body.append(dom(html`<profile-overlay .did=${(response.data.thread.author as any).did}></profile-overlay>`)[0]);
+                        document.body.append(dom(html`<profile-overlay .did=${author.did}></profile-overlay>`)[0]);
                     };
                     this.error = html`<div class="flex items-center gap-2 cursor-pointer" @click=${(ev: MouseEvent) => showProfile(ev)}>
                         <i class="icon !w-5 !h-5 fill-muted-fg">${shieldIcon}</i><span>${i18n("You have blocked the post author")}</span
@@ -1175,18 +1213,8 @@ export class ThreadOverlay extends HashNavOverlay {
                 return;
             }
 
-            if (response.data.thread.notFound) {
+            if (!AppBskyFeedDefs.isThreadViewPost(threadResponse.data.thread)) {
                 this.error = i18n("Post does not exist");
-                return;
-            }
-
-            if (!AppBskyFeedDefs.isThreadViewPost(response.data.thread)) {
-                this.error = i18n("Post does not exist");
-                return;
-            }
-
-            if (AppBskyFeedDefs.isNotFoundPost(response.data.thread.parent)) {
-                this.thread = response.data.thread;
                 return;
             }
 
@@ -1199,9 +1227,9 @@ export class ThreadOverlay extends HashNavOverlay {
                     }
                 }
             };
-            collectPostUris(response.data.thread);
+            collectPostUris(threadResponse.data.thread);
             await State.getNumQuotes(postUris);
-            this.thread = response.data.thread;
+            this.thread = threadResponse.data.thread;
             if (this.applyFilters(this.thread, true).length > 1) this.canReaderMode = true;
         } catch (e) {
             this.error = i18n("Post does not exist");
@@ -1209,24 +1237,6 @@ export class ThreadOverlay extends HashNavOverlay {
         } finally {
             this.isLoading = false;
         }
-    }
-
-    renderHeader() {
-        return html`${renderTopbar(
-            "Thread",
-            html`<div class="ml-auto flex">
-                <div class="flex">
-                    ${this.canReaderMode
-                        ? html`<icon-toggle
-                              @change=${(ev: CustomEvent) => (this.readerMode = ev.detail.value)}
-                              .icon=${html`<i class="icon !w-5 !h-5">${articleIcon}</i>`}
-                              class="w-10 h-10"
-                          ></icon-toggle>`
-                        : nothing}
-                </div>
-                <div class="-ml-2">${this.closeButton()}</div>
-            </div>`
-        )}`;
     }
 
     applyFilters(thread: ThreadViewPost, readerMode = false): ThreadViewPost[] {
@@ -1283,6 +1293,24 @@ export class ThreadOverlay extends HashNavOverlay {
             return [thread, ...threadPosts];
         }
         return [thread];
+    }
+
+    renderHeader() {
+        return html`${renderTopbar(
+            "Thread",
+            html`<div class="ml-auto flex">
+                <div class="flex">
+                    ${this.canReaderMode
+                        ? html`<icon-toggle
+                              @change=${(ev: CustomEvent) => (this.readerMode = ev.detail.value)}
+                              .icon=${html`<i class="icon !w-5 !h-5">${articleIcon}</i>`}
+                              class="w-10 h-10"
+                          ></icon-toggle>`
+                        : nothing}
+                </div>
+                <div class="-ml-2">${this.closeButton()}</div>
+            </div>`
+        )}`;
     }
 
     renderContent() {

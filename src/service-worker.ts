@@ -48,7 +48,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
-// FIXME i18n, notifications from muted accounts
 onBackgroundMessage(messaging, async (payload) => {
     console.log("Background message received. ", payload);
     processPushNotification(payload, (title, options) => self.registration.showNotification(title, options));
