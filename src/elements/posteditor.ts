@@ -150,6 +150,7 @@ export class PostEditor extends LitElement {
         // FIXME add image captions via GPT-4, upload as blob to network, send only link to GPT-4
         // FIXME add translations via Google Translate
         // FIXME handle suggestions are not properly offset on y if replying to a post
+        // FIXME thread gates https://github.com/bluesky-social/social-app/pull/1954#issuecomment-1816823439
 
         let placeholder = "";
         if (this.quote) {

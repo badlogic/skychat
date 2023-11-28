@@ -352,18 +352,20 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
     };
 
     const renderImage = (image: ViewImage, index: number) => html`<div
-        class="relative w-full h-full"
+        class="w-full h-full"
         @click=${(ev: MouseEvent) => openGallery(ev, index)}
     >
-        <img src="${image.thumb}" alt="${image.alt}" class="w-full h-full object-cover rounded ${sensitive ? "blur-lg" : ""}" />
-        ${renderAlt(image)}
+            <img src="${image.thumb}" alt="${image.alt}" class="relative w-full h-full object-cover rounded ${sensitive ? "blur-lg" : ""}" />
+            ${renderAlt(image)}
     </div>`;
 
     const renderImages: ((images: AppBskyEmbedImages.ViewImage[]) => TemplateResult)[] = [
         (images: AppBskyEmbedImages.ViewImage[]) => {
-            return html` <div class="relative w-full">
-                <img src="${images[0].thumb}" alt="${images[0].alt}" class="max-h-[40vh] w-auto mx-auto rounded ${sensitive ? "blur-lg" : ""}" />
-                ${renderAlt(images[0])}
+            return html`<div class="w-full flex justify-center">
+                <div class="relative">
+                    <img src="${images[0].thumb}" alt="${images[0].alt}" class="max-h-[40vh] w-auto rounded ${sensitive ? "blur-lg" : ""}" />
+                    ${renderAlt(images[0])}
+                </div>
             </div>`;
         },
         (images: AppBskyEmbedImages.ViewImage[]) => {
