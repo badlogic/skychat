@@ -65,6 +65,7 @@ import { ViewImage } from "@atproto/api/dist/client/types/app/bsky/embed/images"
 import { toast } from "./toast";
 import { GeneratorViewElementAction } from "./feeds";
 import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
+import { Block } from "@ipld/car/dist/src/reader-browser";
 
 export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {
@@ -1303,20 +1304,39 @@ export class ThreadOverlay extends HashNavOverlay {
                 if (aRecord && bRecord) return aRecord.getTime() - bRecord.getTime();
                 return 0;
             };
+            let hasHighlightedPost = thread.post.uri == this.postUri;
+            if (hasHighlightedPost) {
+                console.log();
+            }
             if (thread.replies) {
                 const posts = thread.replies.filter((reply) => AppBskyFeedDefs.isThreadViewPost(reply)) as ThreadViewPost[];
-                const highlightedPost = posts.filter((reply) => reply.post.uri == this.postUri);
-                const authorPosts = posts.filter((reply) => reply.post.author.did == parentAuthor.did && !highlightedPost.includes(reply));
+                const authorPosts = posts.filter((reply) => reply.post.author.did == parentAuthor.did);
                 authorPosts.sort(dateSort);
-                const otherPosts = posts.filter((reply) => reply.post.author.did != parentAuthor.did && !highlightedPost.includes(reply));
+                const otherPosts = posts.filter((reply) => reply.post.author.did != parentAuthor.did);
                 otherPosts.sort(dateSort);
                 const other = thread.replies.filter((reply) => !AppBskyFeedDefs.isThreadViewPost(reply));
                 thread.replies = [...authorPosts, ...otherPosts, ...other];
+                let highlightedPost: ThreadViewPost | NotFoundPost | BlockedPost | undefined;
                 for (const reply of thread.replies) {
-                    if (AppBskyFeedDefs.isThreadViewPost(reply)) sortReplies(reply);
+                    if (AppBskyFeedDefs.isThreadViewPost(reply)) {
+                        if (sortReplies(reply)) {
+                            highlightedPost = reply;
+                        }
+                    } else {
+                        if ((AppBskyFeedDefs.isBlockedPost(reply) || AppBskyFeedDefs.isNotFoundPost(reply)) && reply.uri == this.postUri) {
+                            highlightedPost = reply;
+                        }
+                    }
                 }
-                thread.replies = [...highlightedPost, ...thread.replies];
+                if (highlightedPost) {
+                    thread.replies = thread.replies.filter((reply) => reply != highlightedPost);
+                    thread.replies = [highlightedPost, ...thread.replies];
+                } else {
+                    thread.replies = [...thread.replies];
+                }
+                hasHighlightedPost ||= highlightedPost != undefined;
             }
+            return hasHighlightedPost;
         };
         sortReplies(thread);
         if (this.readerMode || readerMode) {
