@@ -1,5 +1,3 @@
-import { TemplateResult, html } from "lit";
-
 export interface Messages {
     "Not connected": string;
     "Couldn't delete post": string;
@@ -65,7 +63,7 @@ export interface Messages {
     "Explore & create hashtag threads in real-time on BlueSky": string;
     "Hashtag, e.g. #imzentrum": string;
     "You are logged in as": string;
-    "Want to post and reply to other posts? Enter your username and an app password below. (optional)": TemplateResult;
+    "Want to post and reply to other posts? Enter your username and an app password below. (optional)": string;
     "Account, e.g. badlogic.bsky.social": string;
     "App password": string;
     "Go live!": string;
@@ -73,13 +71,13 @@ export interface Messages {
     "Log out": string;
     "How does it work?": string;
     "Trending hashtags": string;
-    footer: TemplateResult;
+    footer: string;
     "Please specify a hashtag": string;
     "Please specify an app password for your account. You can get one in your BlueSky app's settings.": string;
     "Log out?": string;
     "No hashtag given": string;
     "Couldn't log in with your BlueSky credentials": string;
-    "You have an existing thread for ": (rootUrl: string, hashtag: string) => TemplateResult;
+    "You have an existing thread for ": (rootUrl: string, hashtag: string) => string;
     "Do you want to add new posts to the existing thread, or start a new thread?": string;
     "Use existing thread": string;
     "Start new thread": string;
@@ -167,6 +165,14 @@ export interface Messages {
     "Muted users": string;
     "Blocked users": string;
     "Allow pinch-zoom": string;
+    "is following you": (handle: string) => string;
+    "liked your post": (handle: string) => string;
+    "quoted your post": (handle: string) => string;
+    "replied to your post": (handle: string) => string;
+    "reposted your post": (handle: string) => string;
+    "mentioned you": (handle: string) => string;
+    "You have a new notification": string;
+    "New notification": string;
 }
 
 const english: Messages = {
@@ -236,7 +242,7 @@ const english: Messages = {
     "Explore & create hashtag threads in real-time on BlueSky": "Explore & create hashtag threads in real-time on BlueSky",
     "Hashtag, e.g. #imzentrum": "Hashtag, e.g. #imzentrum",
     "You are logged in as": "You are logged in as",
-    "Want to post and reply to other posts? Enter your username and an app password below. (optional)": html`Want to post and reply to other posts?
+    "Want to post and reply to other posts? Enter your username and an app password below. (optional)": `Want to post and reply to other posts?
         Enter your username and an <a href="https://bsky.app/settings/app-passwords">app password</a> below. (optional)`,
     "Account, e.g. badlogic.bsky.social": "Account, e.g. badlogic.bsky.social",
     "App password": "App password",
@@ -245,7 +251,7 @@ const english: Messages = {
     "Log out": "Log out",
     "How does it work?": "How does it work?",
     "Trending hashtags": "Trending hashtags",
-    footer: html`<a href="https://skychat.social" target="_blank">Skychat</a>
+    footer: `<a href="https://skychat.social" target="_blank">Skychat</a>
         is lovingly made by
         <a href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
         No data is collected, not even your IP address.<br />
@@ -256,8 +262,7 @@ const english: Messages = {
     "Log out?": "Log out?",
     "No hashtag given": "No hashtag given",
     "Couldn't log in with your BlueSky credentials": "Couldn't log in with your BlueSky credentials",
-    "You have an existing thread for ": (rootUrl: string, hashtag: string) =>
-        html`You have an <a href="${rootUrl}">existing thread</a> for ${hashtag}`,
+    "You have an existing thread for ": (rootUrl: string, hashtag: string) => `You have an <a href="${rootUrl}">existing thread</a> for ${hashtag}`,
     "Do you want to add new posts to the existing thread, or start a new thread?":
         "Do you want to add new posts to the existing thread, or start a new thread?",
     "Use existing thread": "Use existing thread",
@@ -347,6 +352,14 @@ const english: Messages = {
     "Muted users": "Muted users",
     "Blocked users": "Blocked users",
     "Allow pinch-zoom": "Allow pinch-zoom",
+    "is following you": (handle: string) => handle + " is following you",
+    "liked your post": (handle: string) => handle + " liked your post",
+    "quoted your post": (handle: string) => handle + " quoted your post",
+    "replied to your post": (handle: string) => handle + " replied to your post",
+    "reposted your post": (handle: string) => handle + " reposted your post",
+    "mentioned you": (handle: string) => handle + " mentioned you",
+    "You have a new notification": "You have a new notification",
+    "New notification": "New notification",
 };
 
 const german: Messages = {
@@ -416,7 +429,7 @@ const german: Messages = {
     "Explore & create hashtag threads in real-time on BlueSky": "Hashtag Threads auf BlueSky folgen und erstellen",
     "Hashtag, e.g. #imzentrum": "Hashtag, z.B. #imzentrum",
     "You are logged in as": "Angemeldet als ",
-    "Want to post and reply to other posts? Enter your username and an app password below. (optional)": html`Willst du selbst einen Hashtag Thread
+    "Want to post and reply to other posts? Enter your username and an app password below. (optional)": `Willst du selbst einen Hashtag Thread
         schreiben und auf Posts anderer Benutzerinnen antworten können? Dann gib deinen BlueSky Benutzernamen und ein
         <a href="https://bsky.app/settings/app-passwords">App Passwort</a> an. (Optional)`,
     "Account, e.g. badlogic.bsky.social": "Account, z.B. badlogic.bsky.social",
@@ -426,7 +439,7 @@ const german: Messages = {
     "Log out": "Abmelden",
     "How does it work?": "Wie funktioniert es?",
     "Trending hashtags": "Hashtag Trends",
-    footer: html`<a href="https://skychat.social" target="_blank">Skychat</a>
+    footer: `<a href="https://skychat.social" target="_blank">Skychat</a>
         wird liebevoll von
         <a href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a> gebaut<br />
         Es werden keine Daten von dir gespeichert, nicht einmal deine IP Adresse<br />
@@ -438,7 +451,7 @@ const german: Messages = {
     "No hashtag given": "Hashtag fehlt",
     "Couldn't log in with your BlueSky credentials": "Anmeldung mit deinen BlueSky Benutzerdaten fehlgeschlagen",
     "You have an existing thread for ": (rootUrl: string, hashtag: string) =>
-        html`Du hast für den Hashtag ${hashtag} bereits einen bestehenden <a href="${rootUrl}">Thread</a>`,
+        `Du hast für den Hashtag ${hashtag} bereits einen bestehenden <a href="${rootUrl}">Thread</a>`,
     "Do you want to add new posts to the existing thread, or start a new thread?":
         "Willst du neue Posts an den bestehenden Thread hinzufügen oder einen neuen Thread starten?",
     "Use existing thread": "Bestehenden Thread verwenden",
@@ -529,6 +542,14 @@ const german: Messages = {
     "Muted users": "Stummgeschaltene Benutzerinnen",
     "Blocked users": "Blockierte Benutzerinnen",
     "Allow pinch-zoom": "Pinch-Zoom erlauben",
+    "is following you": (handle: string) => handle + " folgt dir",
+    "liked your post": (handle: string) => handle + " hat dein Post geliked",
+    "quoted your post": (handle: string) => handle + " hat dich zitiert",
+    "replied to your post": (handle: string) => handle + " hat dir geantwortet",
+    "reposted your post": (handle: string) => handle + " hat dein Post reposted",
+    "mentioned you": (handle: string) => handle + " hat dich erwähnt",
+    "You have a new notification": "Du hast eine neue Notifikation",
+    "New notification": "Neue Notifikation",
 };
 
 export type LanguageCode = "en" | "de";

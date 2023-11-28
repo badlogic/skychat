@@ -59,7 +59,7 @@ export class SearchOverlay extends HashNavOverlay {
                         @input=${() => this.handleSearch()}
                         id="search"
                         class="flex-grow bg-transparent"
-                        placeholder="${i18n("Search for") + this.showTypes.join(", ") + " ..."}"
+                        placeholder="${i18n("Search for") + " " + this.showTypes.join(", ") + " ..."}"
                         autocomplete="off"
                     />
                     <button

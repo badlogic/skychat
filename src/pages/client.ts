@@ -101,7 +101,7 @@ class SkychatClient extends LitElement {
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
             >
             <div class="flex-grow flex flex-col">${content}</div>
-            <div class="text-center text-xs italic my-4 pb-4">${i18n("footer")}</div>
+            <div class="text-center text-xs italic my-4 pb-4">${unsafeHTML(i18n("footer"))}</div>
         </main>`;
     }
 
@@ -116,7 +116,7 @@ class SkychatClient extends LitElement {
                     <div class="align-top"><loading-spinner></loading-spinner></div>
                 </div>
             </div>
-            <div class="text-center text-xs italic my-4 pb-4">${i18n("footer")}</div>
+            <div class="text-center text-xs italic my-4 pb-4">${unsafeHTML(i18n("footer"))}</div>
         </main>`;
     }
 

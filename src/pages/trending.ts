@@ -89,7 +89,7 @@ class Trending extends LitElement {
                 )}
             </div>
 
-            <div class="text-center text-xs italic my-4 pb-4">${i18n("footer")}</div>
+            <div class="text-center text-xs italic my-4 pb-4">${unsafeHTML(i18n("footer"))}</div>
         </main>`;
     }
 }

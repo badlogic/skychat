@@ -1,6 +1,7 @@
 import { AtpSessionData, AtpSessionEvent, BskyAgent } from "@atproto/api";
 import { IndexedDBStorage } from "./indexeddb";
 import { PushPreferences, User } from "./store";
+import { i18n } from "./i18n";
 
 export type PushNotification = {
     type: "like" | "reply" | "quote" | "repost" | "follow" | "mention";
@@ -45,6 +46,7 @@ export async function getBskyClientAndUser(): Promise<{ bskyClient: BskyAgent; u
     }
 }
 
+// FIXME server should batch notifications, less logins/less wake-ups
 export async function processPushNotification(payload: any, showNotification: (title: string, options: any) => void) {
     if (payload.data && payload.data.type && payload.data.fromDid) {
         const { bskyClient, user, pushPrefs } = await getBskyClientAndUser();
@@ -70,7 +72,10 @@ export async function processPushNotification(payload: any, showNotification: (t
                         response.data.viewer.muted ||
                         response.data.viewer.mutedByList
                     ) {
-                        console.error("Originator of notification blocked or muted", response.data.viewer);
+                        console.error(
+                            "Originator of notification (" + (response.data.displayName ?? response.data.handle) + ") blocked or muted",
+                            response.data.viewer
+                        );
                         return;
                     }
                 }
@@ -95,30 +100,30 @@ export async function processPushNotification(payload: any, showNotification: (t
         switch (notification.type) {
             case "follow":
                 if (!pushPrefs?.newFollowers) return;
-                message = `${from} is following you`;
+                message = i18n("is following you")(from);
                 break;
             case "like":
                 if (!pushPrefs?.likes) return;
-                message = `${from} liked your post`;
+                message = i18n("liked your post")(from);
                 break;
             case "quote":
                 if (!pushPrefs?.quotes) return;
-                message = `${from} quoted your post`;
+                message = i18n("quoted your post")(from);
                 break;
             case "reply":
                 if (!pushPrefs?.replies) return;
-                message = `${from} replied to your post`;
+                message = i18n("replied to your post")(from);
                 break;
             case "repost":
                 if (!pushPrefs?.reposts) return;
-                message = `${from} reposted your post`;
+                message = i18n("reposted your post")(from);
                 break;
             case "mention":
                 if (!pushPrefs?.mentions) return;
-                message = `${from} mentioned your post`;
+                message = i18n("mentioned you")(from);
                 break;
             default:
-                message = "You have a new notification";
+                message = i18n("You have a new notification");
         }
 
         if (postText.length > 0) message += `\n${postText}`;
@@ -129,7 +134,7 @@ export async function processPushNotification(payload: any, showNotification: (t
                 icon: "./logo.png",
             } as any);
         } else {
-            showNotification("New notification", {
+            showNotification(i18n("New notification"), {
                 body: postText.length > 0 ? message + `\n${postText}` : message,
                 icon: "./logo.png",
             } as any);

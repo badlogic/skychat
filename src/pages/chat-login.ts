@@ -57,8 +57,9 @@ export class ChatLogin extends LitElement {
                           </p>`
                         : html`
                               <p class="text-center">
-                                  Want to post and reply to other posts? Enter your username and an
-                                  <a href="https://bsky.app/settings/app-passwords">app password</a> below. (optional)
+                                  ${unsafeHTML(
+                                      i18n("Want to post and reply to other posts? Enter your username and an app password below. (optional)")
+                                  )}
                               </p>
                               <input
                                   id="account"
@@ -97,7 +98,7 @@ export class ChatLogin extends LitElement {
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat Live</span></a
             >
             <div class="flex-grow flex flex-col items-center">${content}</div>
-            <div class="text-center text-xs italic my-4 pb-4">${i18n("footer")}</div>
+            <div class="text-center text-xs italic my-4 pb-4">${unsafeHTML(i18n("footer"))}</div>
         </main>`;
     }
 

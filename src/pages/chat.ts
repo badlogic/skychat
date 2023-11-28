@@ -159,7 +159,7 @@ export class Chat extends LitElement {
                 return html`<div class="w-full max-w-[640px] mx-auto h-full flex flex-col">
                     ${this.renderHeader()}
                     <div class="flex flex-col px-4">
-                        <p class="text-center pt-[56px] mt-4">${i18n("You have an existing thread for ")(rootUrl, this.hashtag!)}</p>
+                        <p class="text-center pt-[56px] mt-4">${unsafeHTML(i18n("You have an existing thread for ")(rootUrl, this.hashtag!))}</p>
                         <p class="text-center mt-4">${i18n("Do you want to add new posts to the existing thread, or start a new thread?")}</p>
                         <div class="flex flex-col mx-auto gap-4 mt-4">
                             <button
@@ -198,7 +198,7 @@ export class Chat extends LitElement {
                 <p class="text-center">${i18n("Connecting")}</p>
                 <div class="align-top"><loading-spinner></loading-spinner></div>
             </div>
-            <div class="text-center text-xs italic my-4 pb-4">${i18n("footer")}</div>
+            <div class="text-center text-xs italic my-4 pb-4">${unsafeHTML(i18n("footer"))}</div>
         </main>`;
     }
 
