@@ -10,7 +10,7 @@ import {
     RichText,
 } from "@atproto/api";
 import { ProfileView, ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { FeedViewPost, GeneratorView, PostView, ThreadViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { BlockedPost, FeedViewPost, GeneratorView, NotFoundPost, PostView, ThreadViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
@@ -686,7 +686,7 @@ export class PostViewElement extends LitElement {
             ${this.contentDom}
             <div class="flex items-center ${this.centerButtons ? "justify-center" : ""} text-muted-fg fill-muted-fg gap-4 mt-2">
                 <button @click=${() => this.replyCallback(this.post!)} class="flex gap-1 items-center">
-                    <i class="icon !w-4 !h-4">${replyIcon}</i><span>${this.post.replyCount}</span>
+                    <i class="icon !w-4 !h-4">${replyIcon}</i><span>${this.post.replyCount ?? 0}</span>
                 </button>
                 <button @click=${() => this.quoteCallback(this.post!)} class="flex gap-1 items-center">
                     <i class="icon !w-4 !h-4">${quoteIcon}</i><span>${State.getObject("numQuote", this.post.uri)?.numQuotes ?? 0}</span>
@@ -1146,6 +1146,47 @@ export class ThreadOverlay extends HashNavOverlay {
                     parentHeight: 1000,
                     uri: rootUri,
                 });
+
+                // OK, we got the root, but is our post part of the tree? If not
+                // we need to walk up its parents.
+                if (threadResponse.success) {
+                    let found = false;
+                    const findPost = (thread: ThreadViewPost | NotFoundPost | BlockedPost) => {
+                        if (!AppBskyFeedDefs.isThreadViewPost(thread)) {
+                            found = thread.uri == this.postUri;
+                            return;
+                        }
+
+                        if (thread.post.uri == this.postUri) {
+                            found = true;
+                            return;
+                        }
+                        if (thread.replies) {
+                            for (const reply of thread.replies) {
+                                if (
+                                    AppBskyFeedDefs.isThreadViewPost(reply) ||
+                                    AppBskyFeedDefs.isNotFoundPost(reply) ||
+                                    AppBskyFeedDefs.isBlockedPost(reply)
+                                ) {
+                                    findPost(reply);
+                                }
+                            }
+                        }
+                    };
+                    if (
+                        AppBskyFeedDefs.isThreadViewPost(threadResponse.data.thread) ||
+                        AppBskyFeedDefs.isNotFoundPost(threadResponse.data.thread) ||
+                        AppBskyFeedDefs.isBlockedPost(threadResponse.data.thread)
+                    ) {
+                        findPost(threadResponse.data.thread);
+                    }
+                    // Well, we didn't find the highlighted post in the thread, so
+                    // we'll traverse up its parents instead. Likely, it's parented
+                    // to a deleted post in the thread.
+                    if (!found) {
+                        threadResponse = undefined;
+                    }
+                }
             } catch (e) {
                 // Happens if the post could not be found.
             }
