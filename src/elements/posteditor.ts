@@ -57,6 +57,9 @@ export class PostEditor extends LitElement {
     replyTo?: PostView;
 
     @property()
+    text = "";
+
+    @property()
     hashtag?: string;
 
     @property()
@@ -211,6 +214,7 @@ export class PostEditor extends LitElement {
                     class="${this.fullscreen ? "flex-grow" : "min-h-[64px]"} max-w-[100vw]"
                     .onInput=${(ev: any) => this.input(ev)}
                     .fullscreen=${this.fullscreen}
+                    .text=${this.text}
                 ></text-editor>
                 ${!this.embed && this.imagesToUpload.length == 0 && (this.cardSuggestions?.length ?? 0 > 0)
                     ? html`<div class="flex flex-col my-2 mx-2 gap-2">
@@ -760,6 +764,9 @@ ${alt}</textarea
 @customElement("post-editor-overlay")
 export class PostEditorOverlay extends CloseableElement {
     @property()
+    text = "";
+
+    @property()
     bskyClient?: BskyAgent;
 
     @property()
@@ -809,6 +816,7 @@ export class PostEditorOverlay extends CloseableElement {
                     .replyTo=${this.replyTo}
                     .sent=${(post: PostView) => navigationGuard.afterNextPopstate.push(() => this.sent(post))}
                     .fullscreen=${isMobileBrowser()}
+                    .text=${this.text}
                 ></post-editor>
             </div>
         </div>`;
@@ -911,6 +919,9 @@ export class TextEditor extends LitElement {
     placeholder = "";
 
     @property()
+    text = "";
+
+    @property()
     onInput: (ev: any) => void = () => {};
 
     @property()
@@ -924,7 +935,10 @@ export class TextEditor extends LitElement {
     }
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
-        this.editable?.focus();
+        if (this.editable) {
+            this.editable.focus();
+            this.editable.value = this.text;
+        }
     }
 
     render() {

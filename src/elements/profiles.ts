@@ -298,6 +298,8 @@ export class ProfileOverlay extends HashNavOverlay {
                     : nothing}
             </div>
             <div class="min-h-screen">${feed}</div>
+            <open-post-editor-button .text=${"@" + this.profile.handle + " "}></open-post-editor-button>
+            <notifications-button id="notifications"></notifications-button>
         </div>`;
     }
 

@@ -193,8 +193,13 @@ export class ListsButton extends FloatingButton {
 
 @customElement("open-post-editor-button")
 export class OpenPostEditorButton extends FloatingButton {
+    @property()
+    text = "";
+
     handleClick(): void {
-        document.body.append(dom(html`<post-editor-overlay .sent=${(post: PostView) => this.sentPost(post)}></post-editor-overly>`)[0]);
+        document.body.append(
+            dom(html`<post-editor-overlay .text=${this.text} .sent=${(post: PostView) => this.sentPost(post)}></post-editor-overly>`)[0]
+        );
     }
     getIcon(): TemplateResult {
         return html`${editIcon}`;

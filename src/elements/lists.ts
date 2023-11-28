@@ -70,6 +70,7 @@ export class ListViewElement extends LitElement {
             pinned: [],
             saved: [],
         };
+        const muteAndBlockLists = State.muteAndBlockLists;
         const richText = new RichText({ text: list.description ?? "" });
         richText.detectFacetsWithoutResolution();
 
@@ -108,15 +109,15 @@ export class ListViewElement extends LitElement {
                   </div>`
                 : html`<div class="flex gap-2">
                       <icon-toggle
+                          @change=${(ev: CustomEvent) => this.toggleMute(ev)}
+                          .icon=${html`<i class="icon !w-5 !h-5">${muteIcon}</i>`}
+                          .value=${muteAndBlockLists.muteListUris.has(this.list.uri)}
+                          class="w-6 h-6"
+                      ></icon-toggle>
+                      <icon-toggle
                           @change=${(ev: CustomEvent) => this.toggleBlock(ev)}
                           .icon=${html`<i class="icon !w-5 !h-5">${blockIcon}</i>`}
-                          .value=${false}
-                          class="w-6 h-6"
-                      ></icon-toggle
-                      ><icon-toggle
-                          @change=${(ev: CustomEvent) => this.toggleBlock(ev)}
-                          .icon=${html`<i class="icon !w-5 !h-5">${muteIcon}</i>`}
-                          .value=${false}
+                          .value=${muteAndBlockLists.blockListUris.has(this.list.uri)}
                           class="w-6 h-6"
                       ></icon-toggle>
                   </div>`;
@@ -190,14 +191,25 @@ export class ListViewElement extends LitElement {
         </div>`;
     }
 
-    toggleBlock(ev: CustomEvent) {}
+    toggleBlock(ev: CustomEvent) {
+        if (!this.list) return;
+        if (ev.detail.value) {
+            State.subscribeBlockList(this.list);
+        } else {
+            State.unsubscribeBlockList(this.list);
+        }
+    }
 
-    toggleMute(ev: CustomEvent) {}
+    toggleMute(ev: CustomEvent) {
+        if (!this.list) return;
+        if (ev.detail.value) {
+            State.subscribeMuteList(this.list);
+        } else {
+            State.unsubscribeMuteList(this.list);
+        }
+    }
 
     togglePin(ev: CustomEvent) {
-        const user = Store.getUser();
-        if (!user) return;
-        if (!State.bskyClient) return;
         if (!this.list) return;
 
         if (this.defaultActions) {
@@ -214,11 +226,7 @@ export class ListViewElement extends LitElement {
     }
 
     removeList() {
-        const user = Store.getUser();
-        if (!user) return;
-        if (!State.bskyClient) return;
         if (!this.list) return;
-
         if (this.defaultActions) State.removeSavedList(this.list.uri);
         this.requestUpdate();
         State.notify("list", "updated", this.list);
@@ -226,9 +234,6 @@ export class ListViewElement extends LitElement {
     }
 
     addList() {
-        const user = Store.getUser();
-        if (!user) return;
-        if (!State.bskyClient) return;
         if (!this.list) return;
         if (this.defaultActions) State.addSavedList(this.list.uri);
         this.list = { ...this.list };

@@ -5,6 +5,8 @@ import {
     AppBskyFeedDefs,
     AppBskyFeedGetFeedGenerator,
     AppBskyFeedPost,
+    AppBskyGraphGetListBlocks,
+    AppBskyGraphGetListMutes,
     AppBskyNotificationListNotifications,
     AtpSessionData,
     AtpSessionEvent,
@@ -42,6 +44,7 @@ export type ActorFeedType = "home" | "posts_with_replies" | "posts_no_replies" |
 
 export const NOTIFICATION_CHECK_INTERVAL = 5000;
 export const PREFERENCES_CHECK_INTERVAL = 15000;
+export const MUTE_AND_BLOCK_LIST_CHECK_INTERVAL = 15000;
 export const FEED_CHECK_INTERVAL = 5000;
 
 export class State {
@@ -857,6 +860,7 @@ export class State {
                 }
             }
             const preferencesPromise = this.getPreferences();
+            const muteAndBlockListsPromise = this.getMuteAndBlockLists();
             const profileResponse = await State.bskyClient.app.bsky.actor.getProfile({ actor: account });
             if (!profileResponse.success) {
                 Store.setUser(undefined);
@@ -884,9 +888,10 @@ export class State {
                     reposts: true,
                 });
             }
-            await preferencesPromise;
+            await Promise.all([await preferencesPromise, await muteAndBlockListsPromise]);
             this.checkUnreadNotifications();
             this.checkPreferences();
+            this.checkMuteAndBlockLists();
         } catch (e) {
             Store.setUser(undefined);
             State.bskyClient = undefined;
@@ -929,6 +934,131 @@ export class State {
         setTimeout(() => this.checkUnreadNotifications(), NOTIFICATION_CHECK_INTERVAL);
     }
 
+    static muteAndBlockLists: { muteLists: ListView[]; muteListUris: Set<string>; blockLists: ListView[]; blockListUris: Set<string> } = {
+        muteLists: [],
+        muteListUris: new Set<string>(),
+        blockLists: [],
+        blockListUris: new Set<string>(),
+    };
+    static async getMuteAndBlockLists() {
+        if (!State.bskyClient) return new Error("Not connected");
+        const user = Store.getUser();
+        if (!user) return new Error("Not logged in");
+        try {
+            let cursor: string | undefined;
+            const fetchLists = async (
+                fetcher: (cursor?: string) => Promise<AppBskyGraphGetListMutes.Response | AppBskyGraphGetListBlocks.Response>
+            ) => {
+                if (!State.bskyClient) return new Error("Not connected");
+                const lists: ListView[] = [];
+                try {
+                    while (true) {
+                        const response = await fetcher(cursor);
+                        if (!response.success) throw new Error();
+                        lists.push(...response.data.lists);
+                        if (!cursor) break;
+                        if (response.data.lists.length == 0) break;
+                        cursor = response.data.cursor;
+                    }
+                    return lists;
+                } catch (e) {
+                    return error("Couldn't fetch mute or block lists", e);
+                }
+            };
+            const promises = [
+                fetchLists((cursor?: string) => {
+                    return State.bskyClient!.app.bsky.graph.getListMutes({ cursor });
+                }),
+                fetchLists((cursor?: string) => {
+                    return State.bskyClient!.app.bsky.graph.getListBlocks({ cursor });
+                }),
+            ];
+            const results = await Promise.all(promises);
+            if (results[0] instanceof Error) throw results[0];
+            if (results[1] instanceof Error) throw results[1];
+            State.muteAndBlockLists = {
+                muteLists: results[0],
+                muteListUris: new Set<string>(results[0].map((list) => list.uri)),
+                blockLists: results[1],
+                blockListUris: new Set<string>(results[1].map((list) => list.uri)),
+            };
+            this.notifyBatch("list", "updated", State.muteAndBlockLists.muteLists);
+            this.notifyBatch("list", "updated", State.muteAndBlockLists.blockLists);
+            return State.muteAndBlockLists;
+        } catch (e) {
+            return error("Couldn't fetch mute and block lists", e);
+        }
+    }
+
+    static checkMuteAndBlockLists() {
+        if (!State.bskyClient) return;
+
+        try {
+            const response = this.getMuteAndBlockLists();
+            if (response instanceof Error) throw response;
+        } catch (e) {
+            error("Couldn't poll preferences", e);
+        }
+        setTimeout(() => this.checkMuteAndBlockLists(), MUTE_AND_BLOCK_LIST_CHECK_INTERVAL);
+    }
+
+    static async subscribeBlockList(list: ListView) {
+        if (!State.bskyClient) return;
+        if (!Store.getUser()) return;
+
+        try {
+            await State.bskyClient.blockModList(list.uri);
+            if (!this.muteAndBlockLists.blockListUris.has(list.uri)) {
+                this.muteAndBlockLists.blockListUris.add(list.uri);
+                this.muteAndBlockLists.blockLists.push(list);
+            }
+        } catch (e) {
+            error("Couldn't subscribe to block list " + list.uri, e);
+        }
+    }
+
+    static async unsubscribeBlockList(list: ListView) {
+        if (!State.bskyClient) return;
+        if (!Store.getUser()) return;
+
+        try {
+            await State.bskyClient.unblockModList(list.uri);
+            State.muteAndBlockLists.blockListUris.delete(list.uri);
+            State.muteAndBlockLists.blockLists = State.muteAndBlockLists.blockLists.filter((other) => other.uri != list.uri);
+        } catch (e) {
+            error("Couldn't subscribe to block list " + list.uri, e);
+        }
+    }
+
+    static async subscribeMuteList(list: ListView) {
+        if (!State.bskyClient) return;
+        if (!Store.getUser()) return;
+
+        try {
+            await State.bskyClient.muteModList(list.uri);
+            if (!this.muteAndBlockLists.muteListUris.has(list.uri)) {
+                this.muteAndBlockLists.muteListUris.add(list.uri);
+                this.muteAndBlockLists.muteLists.push(list);
+            }
+        } catch (e) {
+            error("Couldn't subscribe to mute list " + list.uri, e);
+        }
+    }
+
+    static async unsubscribeMuteList(list: ListView) {
+        if (!State.bskyClient) return;
+        if (!Store.getUser()) return;
+
+        try {
+            await State.bskyClient.unmuteModList(list.uri);
+            State.muteAndBlockLists.muteListUris.delete(list.uri);
+            State.muteAndBlockLists.muteLists = State.muteAndBlockLists.muteLists.filter((other) => other.uri != list.uri);
+            // FIXME notify?
+        } catch (e) {
+            error("Couldn't subscribe to block list " + list.uri, e);
+        }
+    }
+
     static preferences?: BskyPreferences;
     static preferencesMutationQueue = new AsyncQueue(() =>
         (async () => {
@@ -961,7 +1091,7 @@ export class State {
         } catch (e) {
             error("Couldn't poll preferences", e);
         }
-        // setTimeout(() => this.checkPreferences(), PREFERENCES_CHECK_INTERVAL);
+        setTimeout(() => this.checkPreferences(), PREFERENCES_CHECK_INTERVAL);
     }
 
     private static async updatePreferences(agent: BskyAgent, cb: (prefs: AppBskyActorDefs.Preferences) => AppBskyActorDefs.Preferences | false) {
