@@ -1,28 +1,27 @@
 import { BskyPreferences, RichText } from "@atproto/api";
 import { FeedViewPost, GeneratorView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
+import { repeat } from "lit-html/directives/repeat.js";
 import { customElement, property } from "lit/decorators.js";
-import { map } from "lit/directives/map.js";
-import { HashNavOverlay, UpButton, renderTopbar } from ".";
+import { HashNavOverlay, renderTopbar } from ".";
 import { i18n } from "../i18n";
-import { editIcon, heartIcon, infoIcon, linkIcon, minusIcon, pinIcon, plusIcon, searchIcon, spinnerIcon } from "../icons";
-import { EventAction, FEED_CHECK_INTERVAL, State } from "../state";
+import { heartIcon, infoIcon, linkIcon, minusIcon, pinIcon, plusIcon, searchIcon } from "../icons";
+import { FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
+import { FeedPostsStream } from "../streams";
 import {
     copyTextToClipboard,
     defaultFeed,
     dom,
     error,
-    getScrollParent,
+    getNumber,
     hasLinkOrButtonParent,
     splitAtUri,
-    waitForNavigation as waitForNavigation,
+    waitForNavigation
 } from "../utils";
 import { IconToggle } from "./icontoggle";
 import { renderRichText } from "./posts";
 import { getProfileUrl, renderProfileAvatar } from "./profiles";
-import { repeat } from "lit-html/directives/repeat.js";
-import { FeedPostsStream } from "../streams";
 import { toast } from "./toast";
 
 export type GeneratorViewElementAction = "clicked" | "pinned" | "unpinned" | "saved" | "unsaved";
@@ -115,6 +114,7 @@ export class GeneratorViewElement extends LitElement {
                           @change=${(ev: CustomEvent) => this.togglePin(ev)}
                           .icon=${html`<i class="icon !w-5 !h-5">${pinIcon}</i>`}
                           .value=${prefs.pinned?.includes(generator.uri)}
+                          class="w-6 h-6"
                       ></icon-toggle>
                       ${splitAtUri(generator.uri).repo != user.profile.did
                           ? html`${prefs.saved?.includes(generator.uri) || prefs.pinned?.includes(generator.uri)
@@ -145,16 +145,16 @@ export class GeneratorViewElement extends LitElement {
 
         const details = html`${this.viewStyle == "topbar" && this.expandDetails ? createdBy : nothing}
             <div class="mt-1">${generator.description ? renderRichText(richText) : nothing}</div>
-            <div class="flex mt-2">
+            <div class="flex gap-2 mt-1">
                 <icon-toggle
                     @change=${(ev: CustomEvent) => this.toggleLike(ev)}
                     .icon=${html`<i class="icon !w-5 !h-5">${heartIcon}</i>`}
-                    class="w-10 h-10"
+                    class="h-6"
                     .value=${generator.viewer?.like}
-                    .text=${generator.likeCount}
+                    .text=${getNumber(generator.likeCount ?? 0)}
                 ></icon-toggle
                 ><button
-                    class="flex items-center justify-center w-10 h-10"
+                    class="flex items-center justify-center w-6 h-6"
                     @click=${() => {
                         copyTextToClipboard("https://bsky.app/profile/" + generator.creator.did + "/feed/" + splitAtUri(generator.uri).rkey);
                         toast(i18n("Copied link to clipboard"));

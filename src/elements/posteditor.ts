@@ -10,7 +10,7 @@ import {
     ComAtprotoRepoStrongRef,
     RichText,
 } from "@atproto/api";
-import { ProfileView, ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 import { SelfLabels } from "@atproto/api/dist/client/types/com/atproto/label/defs";
@@ -19,7 +19,7 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { extractLinkCard } from "../bsky";
 import { i18n } from "../i18n";
-import { atIcon, closeIcon, deleteIcon, editIcon, gifIcon, imageIcon, searchIcon, shieldIcon, spinnerIcon } from "../icons";
+import { atIcon, closeIcon, deleteIcon, editIcon, gifIcon, imageIcon, shieldIcon, spinnerIcon } from "../icons";
 import { State } from "../state";
 import { Store } from "../store";
 import {

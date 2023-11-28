@@ -192,16 +192,16 @@ export class ProfileOverlay extends HashNavOverlay {
                       src="${profile.banner}"
                       class="${this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList
                           ? "blur"
-                          : ""} w-full h-[150px] object-cover"
+                          : ""} w-full h-[150px] object-cover -mt-2"
                   />`
-                : html`<div class="bg-blue-500 h-[150px]"></div>`}
+                : html`<div class="bg-blue-500 h-[150px] -mt-2"></div>`}
             <div class="flex px-4 mt-[-48px] items-end">
                 ${profile.avatar
                     ? html`<img
                           @click=${(ev: MouseEvent) => openGallery(ev, this.profile!.avatar!)}
                           class="${this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList
                               ? "blur"
-                              : ""} w-24 h-24 rounded-full"
+                              : ""} w-24 h-24 rounded-full fancy-shadow"
                           src="${profile.avatar}"
                       />`
                     : html`<i class="icon !w-24 !h-24">${defaultAvatar}</i>`}
@@ -383,7 +383,7 @@ export class ProfileViewElement extends LitElement {
 
 export function renderProfileAvatar(profile: ProfileView, smallAvatar = false) {
     return html`${profile.avatar
-        ? html`<img loading="lazy" class="${smallAvatar ? "w-4 h-4" : "w-8 h-8"} rounded-full" src="${profile.avatar}" />`
+        ? html`<img loading="lazy" class="${smallAvatar ? "w-4 h-4" : "w-8 h-8 fancy-shadow"} rounded-full" src="${profile.avatar}" />`
         : defaultAvatar}`;
 }
 
@@ -434,20 +434,20 @@ export class ProfileActionButton extends LitElement {
 
         const viewer = this.profile.viewer;
         let action = !viewer?.following ? i18n("Follow") : i18n("Unfollow");
-        return html`<div class="flex items-center">
+        return html`<div class="flex items-center gap-2">
             ${!viewer?.blocking && !viewer?.blockingByList
                 ? html`<icon-toggle
                       @change=${(ev: CustomEvent) => this.handleMute(ev.target as IconToggle, ev.detail.value)}
                       .icon=${html`<i class="icon !w-5 !h-5">${muteIcon}</i>`}
                       .value=${viewer?.muted || viewer?.mutedByList}
-                      class="w-8 h-8"
+                      class="w-6 h-6"
                   ></icon-toggle>`
                 : nothing}
             <icon-toggle
                 @change=${(ev: CustomEvent) => this.handleBlock(ev.target as IconToggle, ev.detail.value)}
                 .icon=${html`<i class="icon !w-5 !h-5">${blockIcon}</i>`}
                 .value=${viewer?.blocking || viewer?.blockingByList}
-                class="w-8 h-8 mr-1"
+                class="w-6 h-6"
             ></icon-toggle>
             ${!viewer?.blocking && !viewer?.blockingByList
                 ? html`<button @click=${() => this.handleFollow(action)} class="btn-toggle ${action == i18n("Follow") ? "active" : "inactive"}">

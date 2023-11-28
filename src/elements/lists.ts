@@ -118,7 +118,7 @@ export class ListViewElement extends LitElement {
         // FIXME need to display mod list toggles according to settings
         const editButtons =
             list.purpose == "app.bsky.graph.defs#curatelist"
-                ? html` <icon-toggle
+                ? html` <div class="flex gap-2"><icon-toggle
                           @change=${(ev: CustomEvent) => this.togglePin(ev)}
                           .icon=${html`<i class="icon !w-5 !h-5">${pinIcon}</i>`}
                           .value=${prefs.pinned?.includes(list.uri)}
@@ -129,17 +129,19 @@ export class ListViewElement extends LitElement {
                             </button>`
                           : html`<button @click=${() => this.addList()}>
                                 <i class="icon !w-6 !h-6 fill-primary">${plusIcon}</i>
-                            </button>`}`
-                : html`<icon-toggle
+                            </button>`}</div>`
+                : html`<div class="flex gap-2"><icon-toggle
                           @change=${(ev: CustomEvent) => this.toggleBlock(ev)}
                           .icon=${html`<i class="icon !w-5 !h-5">${blockIcon}</i>`}
                           .value=${false}
+                          class="w-6 h-6"
                       ></icon-toggle
                       ><icon-toggle
                           @change=${(ev: CustomEvent) => this.toggleBlock(ev)}
                           .icon=${html`<i class="icon !w-5 !h-5">${muteIcon}</i>`}
                           .value=${false}
-                      ></icon-toggle>`;
+                          class="w-6 h-6"
+                      ></icon-toggle></div>`;
 
         const buttons = html`<div class="flex gap-2 ml-auto">
             ${this.viewStyle != "full"
