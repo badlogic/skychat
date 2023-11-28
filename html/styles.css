@@ -61,7 +61,7 @@
     }
 
     a {
-        @apply text-blue-500 break-all;
+        @apply text-blue-500 break-words;
     }
 
     iframe {

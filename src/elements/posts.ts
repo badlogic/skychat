@@ -306,8 +306,8 @@ export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | A
         ${thumb ? html`<img src="${thumb}" class="w-28 h-28 object-cover" />` : nothing}
         <div class="flex flex-col p-2 justify-center">
             <span class="text-muted-fg text-xs">${new URL(cardEmbed.uri).host}</span>
-            <span class="font-semibold text-sm line-clamp-2">${cardEmbed.title}</span>
-            <div class="text-sm line-clamp-2 break-words">${cardEmbed.description}</div>
+            <span class="font-semibold text-sm line-clamp-2 break-normal">${cardEmbed.title}</span>
+            <div class="text-sm line-clamp-2 break-normal">${cardEmbed.description}</div>
         </div>
     </a>`;
 }

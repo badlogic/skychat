@@ -1,31 +1,28 @@
 import {
-    AppBskyActorDefs,
-    AppBskyActorProfile,
     AppBskyEmbedExternal,
     AppBskyEmbedImages,
     AppBskyEmbedRecord,
     AppBskyEmbedRecordWithMedia,
-    AppBskyFeedDefs,
     AppBskyFeedPost,
-    AppBskyGraphDefs,
     AppBskyRichtextFacet,
     BlobRef,
     BskyAgent,
     ComAtprotoRepoStrongRef,
     RichText,
-    RichtextNS,
 } from "@atproto/api";
 import { ProfileView, ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 import { SelfLabels } from "@atproto/api/dist/client/types/com/atproto/label/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing, svg } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { extractLinkCard } from "../bsky";
-import { deleteIcon, editIcon, gifIcon, imageIcon, shieldIcon, spinnerIcon } from "../icons";
+import { i18n } from "../i18n";
+import { atIcon, closeIcon, deleteIcon, editIcon, gifIcon, imageIcon, searchIcon, shieldIcon, spinnerIcon } from "../icons";
+import { State } from "../state";
 import { Store } from "../store";
 import {
-    Caret,
     ImageInfo,
     dom,
     downloadImage,
@@ -37,11 +34,8 @@ import {
     loadImageFiles,
     splitAtUri,
 } from "../utils";
-import { renderEmbed, renderRichText, renderRecord } from "./posts";
 import { CloseableElement, Overlay, navigationGuard, renderTopbar } from "./overlay";
-import { i18n } from "../i18n";
-import { State } from "../state";
-import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
+import { renderEmbed, renderRecord, renderRichText } from "./posts";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -76,10 +70,6 @@ export class PostEditor extends LitElement {
 
     @state()
     isSending = false;
-
-    @state()
-    handleSuggestions?: ProfileViewBasic[];
-    insert?: { start: number; end: number };
 
     @state()
     cardSuggestions?: AppBskyRichtextFacet.Link[];
@@ -131,8 +121,9 @@ export class PostEditor extends LitElement {
         }
     }
 
-    render() {
-        const totalCount = 300 - (1 + (this.hashtag?.length ?? 0));
+    insertSuggestion(handle: string) {
+        if (!this.messageElement) return;
+
         const replaceSubstring = (original: string, startIndex: number, endIndex: number, replacement: string) => {
             if (startIndex < 0 || startIndex >= original.length || endIndex < startIndex || endIndex > original.length) {
                 throw new Error("Invalid indices");
@@ -142,21 +133,18 @@ export class PostEditor extends LitElement {
             return prefix + replacement + suffix;
         };
 
-        const insertSuggestion = (handle: string) => {
-            if (!this.messageElement) return;
-            if (!this.insert) return;
-            this.messageElement.editable!.value = replaceSubstring(
-                this.messageElement.editable!.value,
-                this.insert.start,
-                this.insert.end,
-                handle + " "
-            );
-            this.message = this.messageElement?.editable!.value;
-            this.handleSuggestions = [];
-            this.insert = undefined;
-            this.messageElement.editable?.focus();
-            this.messageElement.requestUpdate();
-        };
+        const start = (this.messageElement?.editable?.selectionStart ?? 0) - 1;
+        const end = start + 1;
+        this.messageElement.editable!.value = replaceSubstring(this.messageElement.editable!.value, start, end, handle + " ");
+        this.message = this.messageElement?.editable!.value;
+        this.messageElement.editable!.selectionStart = start + (handle + " ").length;
+        this.messageElement.editable!.selectionEnd = start + (handle + " ").length;
+        this.messageElement.editable!.focus();
+        this.messageElement.requestUpdate();
+    }
+
+    render() {
+        const totalCount = 300 - (1 + (this.hashtag?.length ?? 0));
 
         // FIXME add language detection via tinyld
         // FIXME add image captions via GPT-4, upload as blob to network, send only link to GPT-4
@@ -391,25 +379,6 @@ export class PostEditor extends LitElement {
                         ${i18n("Post")}
                     </button>
                 </div>
-                ${
-                    this.handleSuggestions && this.handleSuggestions.length > 0
-                        ? html`<div id="handles" class="mx-auto flex flex-col bg-background border border-divider rounded fixed max-w-[100vw]">
-                              ${map(
-                                  this.handleSuggestions,
-                                  (suggestion) => html` <button
-                                      @click=${() => insertSuggestion(suggestion.handle)}
-                                      class="flex items-center gap-2 p-2 border-bottom border-divider hover:bg-primary hover:text-primary-fg"
-                                  >
-                                      ${suggestion.avatar
-                                          ? html`<img class="w-6 h-6 rounded-full" src="${suggestion.avatar}" />`
-                                          : html`<i class="icon !w-6 !h-6">${defaultAvatar}</i>`}
-                                      <span class="truncate">${suggestion.displayName ?? suggestion.handle}</span>
-                                      <span class="ml-auto text-muted-fg text-sm">${suggestion.displayName ? suggestion.handle : ""}</span>
-                                  </button>`
-                              )}
-                          </div>`
-                        : nothing
-                }
             </div>`}
             </div>
         </div>`;
@@ -581,33 +550,7 @@ export class PostEditor extends LitElement {
         }
     }
 
-    isInHandle(text: string, cursorPosition: number, found: (match: string, start: number, end: number) => void, notFound: () => void) {
-        const findTextAfterAt = (text: string, startIndex: number) => {
-            let endIndex = startIndex;
-            while (endIndex < text.length && !/\s/.test(text[endIndex])) {
-                endIndex++;
-            }
-            return {
-                text: text.slice(startIndex, endIndex),
-                startIndex,
-                endIndex,
-            };
-        };
-
-        for (let i = cursorPosition - 1; i >= 0; i--) {
-            if (/\s/.test(text[i])) break;
-            if (text[i] === "@") {
-                const result = findTextAfterAt(text, i + 1);
-                const matchedText = result.text;
-                const startIndex = result.startIndex;
-                const endIndex = result.endIndex;
-                found(matchedText, startIndex, endIndex);
-                return;
-            }
-        }
-        notFound();
-    }
-
+    lastValue = "";
     input(ev: InputEvent) {
         const message = ev.target as HTMLTextAreaElement;
         this.count = message.value.length;
@@ -616,26 +559,26 @@ export class PostEditor extends LitElement {
             message.style.height = "auto";
             message.style.height = Math.min(16 * 15, message.scrollHeight) + "px";
         }
-
-        this.isInHandle(
-            message.value,
-            message.selectionStart,
-            async (match, start, end) => {
-                if (match.length == 0) return;
-                const response = await State.bskyClient?.app.bsky.actor.searchActorsTypeahead({
-                    limit: 8,
-                    q: match,
-                });
-                if (!response?.success) return;
-                this.handleSuggestions = response.data.actors;
-                this.insert = { start, end };
-            },
-            () => {
-                this.handleSuggestions = [];
-                this.insert = undefined;
-            }
-        );
         this.message = message.value;
+        if (message.selectionStart === message.selectionEnd && this.lastValue != this.message) {
+            const position = message.selectionStart;
+            const charBeforeCursor = message.value.charAt(position - 1);
+            if (charBeforeCursor === "@") {
+                document.body.append(
+                    dom(
+                        html`<actor-search-overlay
+                            .selectedActor=${(actor: ProfileView) => this.insertSuggestion("@" + actor.handle.replace("@", ""))}
+                            .cancled=${() => {
+                                requestAnimationFrame(() => {
+                                    message.focus();
+                                });
+                            }}
+                        ></actor-search-overlay>`
+                    )[0]
+                );
+            }
+        }
+        this.lastValue = message.value;
 
         const rt = new RichText({ text: message.value });
         rt.detectFacetsWithoutResolution();
@@ -764,7 +707,6 @@ export class PostEditor extends LitElement {
             this.embed = undefined;
             this.embedRendered = undefined;
             this.cardSuggestions = undefined;
-            this.handleSuggestions = undefined;
             this.imagesToUpload.length = 0;
             this.replyTo = undefined;
             this.quote = undefined;
@@ -873,6 +815,87 @@ export class PostEditorOverlay extends CloseableElement {
     }
 }
 
+@customElement("actor-search-overlay")
+export class ActorSearchOverlay extends Overlay {
+    @query("#search")
+    searchElement?: HTMLInputElement;
+
+    @state()
+    searchResult: ProfileView[] = [];
+
+    @property()
+    selectedActor = (actor: ProfileView) => {};
+
+    @property()
+    cancled = () => {};
+
+    callCancel = true;
+
+    protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        super.firstUpdated(_changedProperties);
+        this.searchElement?.focus();
+    }
+
+    renderHeader(): TemplateResult {
+        return html`<div class="sticky top-2 search bg-background flex items-center gap-2 fancy-shadow mt-2 mx-4">
+            <i class="icon !w-5 !h-5 fill-muted-fg">${atIcon}</i>
+            <input
+                @input=${() => this.handleSearch()}
+                id="search"
+                class="flex-grow bg-transparent"
+                placeholder="${i18n("Search for") + i18n("Users") + " ..."}"
+                autocomplete="off"
+            />
+            <button
+                @click=${() => {
+                    this.close();
+                }}
+            >
+                <i class="icon !w-5 !h-5 fill-muted-fg hover:fill-primary">${closeIcon}</i>
+            </button>
+        </div>`;
+    }
+
+    close() {
+        super.close();
+        if (this.callCancel) this.cancled();
+    }
+
+    renderContent(): TemplateResult {
+        return html`<div class="px-4 mt-2 w-full flex flex-col bg-background rounded">
+            ${map(
+                this.searchResult,
+                (actor) => html` <button
+                    @click=${() => {
+                        this.selectedActor(actor);
+                        this.callCancel = false;
+                        this.close();
+                    }}
+                    class="flex items-center gap-2 p-2 border-bottom border-muted hover:bg-primary hover:text-primary-fg"
+                >
+                    ${actor.avatar
+                        ? html`<img class="w-6 h-6 rounded-full" src="${actor.avatar}" />`
+                        : html`<i class="icon !w-6 !h-6">${defaultAvatar}</i>`}
+                    <span class="truncate">${actor.displayName ?? actor.handle}</span>
+                    <span class="ml-auto text-muted-fg text-sm line-clamp-1">${actor.displayName ? actor.handle : ""}</span>
+                </button>`
+            )}
+        </div>`;
+    }
+
+    async handleSearch() {
+        const response = await State.bskyClient?.app.bsky.actor.searchActorsTypeahead({
+            limit: 25,
+            q: this.searchElement!.value,
+        });
+        if (!response?.success) {
+            this.searchResult = [];
+        } else {
+            this.searchResult = response.data.actors;
+        }
+    }
+}
+
 @customElement("text-editor")
 export class TextEditor extends LitElement {
     @query("#editable")
@@ -890,6 +913,12 @@ export class TextEditor extends LitElement {
     @property()
     onInput: (ev: any) => void = () => {};
 
+    @property()
+    onKeydown: (ev: KeyboardEvent) => void = () => {};
+
+    @property()
+    onKeyup: (ev: KeyboardEvent) => void = () => {};
+
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
@@ -903,16 +932,17 @@ export class TextEditor extends LitElement {
             <div class="relative flex ${this.fullscreen ? "w-full h-full" : "min-h-[64px]"}">
                 <div
                     id="highlights"
-                    class="whitespace-pre-wrap flex-grow overflow-auto outline-none bg-transparent dark:text-white p-4 break-words"
+                    class="whitespace-pre-wrap flex-grow overflow-auto outline-none bg-transparent dark:text-white p-4 !break-words"
                     aria-hidden="true"
                 ></div>
                 <textarea
                     id="editable"
-                    class="absolute overflow-none top-0 left-0 w-full h-full resize-none outline-none bg-transparent text-transparent caret-black dark:caret-white p-4 break-words"
+                    class="absolute overflow-none top-0 left-0 w-full h-full resize-none outline-none bg-transparent text-transparent caret-black dark:caret-white p-4 !break-words"
                     @input=${(ev: any) => this.handleInput(ev)}
                     @selectionchanged=${(ev: any) => this.handleInput(ev)}
-                    @mouseup=${(ev: any) => this.handleInput(ev)}
                     @scroll="${this.syncScroll}"
+                    @keydown=${(ev: KeyboardEvent) => this.onKeydown(ev)}
+                    @keyup=${(ev: KeyboardEvent) => this.onKeyup(ev)}
                     placeholder="${this.placeholder}"
                 ></textarea>
             </div>
