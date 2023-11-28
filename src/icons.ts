@@ -27,6 +27,8 @@ import githubIconSvg from "remixicon/icons/Logos/github-line.svg";
 // @ts-ignore
 import heartIconSvg from "remixicon/icons/Health & Medical/heart-line.svg";
 // @ts-ignore
+import heartFilledIconSvg from "remixicon/icons/Health & Medical/heart-fill.svg";
+// @ts-ignore
 import editIconSvg from "remixicon/icons/Design/edit-line.svg";
 // @ts-ignore
 import deleteIconSvg from "remixicon/icons/System/delete-bin-line.svg";
@@ -103,6 +105,7 @@ export const bellIcon = unsafeHTML(bellIconSvg);
 export const checkmarkIcon = unsafeHTML(checkmarkIconSvg);
 export const githubIcon = unsafeHTML(githubIconSvg);
 export const heartIcon = unsafeHTML(heartIconSvg);
+export const heartFilledIcon = unsafeHTML(heartFilledIconSvg);
 export const editIcon = unsafeHTML(editIconSvg);
 export const deleteIcon = unsafeHTML(deleteIconSvg);
 export const shieldIcon = unsafeHTML(shieldIconSvg);

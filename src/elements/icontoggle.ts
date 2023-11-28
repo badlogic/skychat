@@ -17,6 +17,9 @@ export class IconToggle extends LitElement {
     @property()
     icon?: TemplateResult;
 
+    @property()
+    iconFilled?: TemplateResult;
+
     unsubscribe = () => {};
 
     connectedCallback(): void {
@@ -30,9 +33,13 @@ export class IconToggle extends LitElement {
     }
 
     render() {
-        const isDark = Store.getTheme() == "dark";
+        if (this.value) {
+            console.log();
+        }
         return html` <div class="h-full w-full flex items-center justify-center cursor-pointer" @click=${(ev: MouseEvent) => this.toggle(ev)}>
-            <div class="${this.value ? "fill-primary animate-jump" : "fill-muted-fg"}">${this.icon}</div>
+            ${this.value
+                ? html`<div class="fill-primary animate-jump">${this.iconFilled ?? this.icon}</div>`
+                : html`<div class="fill-muted-fg">${this.icon}</div>`}
             ${this.text.length > 0
                 ? html`<span class="ml-1 ${this.value ? "text-primary animate-jump" : "text-muted-fg"}">${this.text}</span>`
                 : nothing}

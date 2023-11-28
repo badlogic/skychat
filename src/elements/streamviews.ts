@@ -12,7 +12,7 @@ import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit
 import { customElement, property, query, state } from "lit/decorators.js";
 import { GeneratorViewElementAction, UpButton } from ".";
 import { Messages, i18n } from "../i18n";
-import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
+import { atIcon, followIcon, heartFilledIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
 import { State } from "../state";
 import { Store } from "../store";
 import { ActorFeedStream, NotificationsStream, Stream, StreamPage } from "../streams";

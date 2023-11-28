@@ -5,20 +5,11 @@ import { repeat } from "lit-html/directives/repeat.js";
 import { customElement, property } from "lit/decorators.js";
 import { HashNavOverlay, renderTopbar } from ".";
 import { i18n } from "../i18n";
-import { heartIcon, infoIcon, linkIcon, minusIcon, pinIcon, plusIcon, searchIcon } from "../icons";
+import { heartFilledIcon, heartIcon, infoIcon, linkIcon, minusIcon, pinIcon, plusIcon, searchIcon } from "../icons";
 import { FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
 import { FeedPostsStream } from "../streams";
-import {
-    copyTextToClipboard,
-    defaultFeed,
-    dom,
-    error,
-    getNumber,
-    hasLinkOrButtonParent,
-    splitAtUri,
-    waitForNavigation
-} from "../utils";
+import { copyTextToClipboard, defaultFeed, dom, error, getNumber, hasLinkOrButtonParent, splitAtUri, waitForNavigation } from "../utils";
 import { IconToggle } from "./icontoggle";
 import { renderRichText } from "./posts";
 import { getProfileUrl, renderProfileAvatar } from "./profiles";
@@ -149,6 +140,7 @@ export class GeneratorViewElement extends LitElement {
                 <icon-toggle
                     @change=${(ev: CustomEvent) => this.toggleLike(ev)}
                     .icon=${html`<i class="icon !w-5 !h-5">${heartIcon}</i>`}
+                    .iconFilled=${html`<i class="icon !w-5 !h-5">${heartFilledIcon}</i>`}
                     class="h-6"
                     .value=${generator.viewer?.like}
                     .text=${getNumber(generator.likeCount ?? 0)}

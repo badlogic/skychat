@@ -1,4 +1,4 @@
-import { BskyAgent } from "@atproto/api";
+import { AtpSessionData, AtpSessionEvent, BskyAgent } from "@atproto/api";
 import { IndexedDBStorage } from "./indexeddb";
 import { PushPreferences, User } from "./store";
 
@@ -10,27 +10,70 @@ export type PushNotification = {
     postUri?: string;
 };
 
+export async function getBskyClientAndUser(): Promise<{ bskyClient: BskyAgent; user?: User; pushPrefs?: PushPreferences }> {
+    const db = new IndexedDBStorage("skychat", 1);
+    const user = (await db.get("user")) as User | undefined;
+
+    try {
+        if (!user) throw Error();
+        let session: AtpSessionData | undefined;
+        const persistSession = (evt: AtpSessionEvent, s?: AtpSessionData) => {
+            if (evt == "create" || evt == "update") {
+                user.session = s;
+                db.set("user", user);
+            }
+        };
+        const bskyClient = new BskyAgent({ service: "https://bsky.social", persistSession });
+        let resumeSuccess = false;
+        if (user.session) {
+            const resume = await bskyClient.resumeSession(user.session);
+            resumeSuccess = resume.success;
+        }
+        if (!resumeSuccess) {
+            const response = await bskyClient.login({
+                identifier: user.account,
+                password: user.password,
+            });
+            if (!response.success) {
+                throw Error();
+            }
+        }
+        return { bskyClient, user, pushPrefs: (await db.get("pushPrefs")) as PushPreferences | undefined };
+    } catch (e) {
+        // no-op in case resume didn't work.
+        return { bskyClient: new BskyAgent({ service: "https://api.bsky.app" }) };
+    }
+}
+
 export async function processPushNotification(payload: any, showNotification: (title: string, options: any) => void) {
     if (payload.data && payload.data.type && payload.data.fromDid) {
-        const db = new IndexedDBStorage("skychat", 1);
-        const user = (await db.get("user")) as User | undefined;
+        const { bskyClient, user, pushPrefs } = await getBskyClientAndUser();
         if (!user || user.profile.did != payload.data.toDid) {
             console.error("Received notification for other user, or not logged in.");
             return;
         }
-        const pushPrefs = (await db.get("pushPrefs")) as PushPreferences | undefined;
         if (!pushPrefs) {
             console.error("No push preferences found.");
             return;
         }
 
         const notification = payload.data as PushNotification;
-        const bskyClient = new BskyAgent({ service: "https://api.bsky.app" });
         let from = "Someone";
         let postText = "";
         try {
             const response = await bskyClient.getProfile({ actor: notification.fromDid });
             if (response.success) {
+                if (response.data.viewer) {
+                    if (
+                        response.data.viewer.blocking ||
+                        response.data.viewer.blockingByList ||
+                        response.data.viewer.muted ||
+                        response.data.viewer.mutedByList
+                    ) {
+                        console.error("Originator of notification blocked or muted", response.data.viewer);
+                        return;
+                    }
+                }
                 from = response.data.displayName ?? response.data.handle;
             }
         } catch (e) {

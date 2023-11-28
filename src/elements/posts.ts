@@ -23,6 +23,7 @@ import {
     cloudIcon,
     deleteIcon,
     downloadIcon,
+    heartFilledIcon,
     heartIcon,
     moreIcon,
     muteIcon,
@@ -351,12 +352,9 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
             : html`${nothing}`;
     };
 
-    const renderImage = (image: ViewImage, index: number) => html`<div
-        class="w-full h-full"
-        @click=${(ev: MouseEvent) => openGallery(ev, index)}
-    >
-            <img src="${image.thumb}" alt="${image.alt}" class="relative w-full h-full object-cover rounded ${sensitive ? "blur-lg" : ""}" />
-            ${renderAlt(image)}
+    const renderImage = (image: ViewImage, index: number) => html`<div class="w-full h-full" @click=${(ev: MouseEvent) => openGallery(ev, index)}>
+        <img src="${image.thumb}" alt="${image.alt}" class="relative w-full h-full object-cover rounded ${sensitive ? "blur-lg" : ""}" />
+        ${renderAlt(image)}
     </div>`;
 
     const renderImages: ((images: AppBskyEmbedImages.ViewImage[]) => TemplateResult)[] = [
@@ -702,6 +700,7 @@ export class PostViewElement extends LitElement {
                 <icon-toggle
                     @change=${(ev: CustomEvent) => this.toggleLike(ev)}
                     .icon=${html`<i class="icon !w-4 !h-4">${heartIcon}</i>`}
+                    .iconFilled=${html`<i class="icon !w-4 !h-4">${heartFilledIcon}</i>`}
                     class="h-4"
                     .value=${this.post.viewer?.like ?? false}
                     .text=${"" + (this.post.likeCount ?? 0)}
@@ -1141,11 +1140,14 @@ export class ThreadOverlay extends HashNavOverlay {
             }
 
             // FIXME go through State instead
+            // FIXME if the root doesn't exist, then we only show "Post does not exist"
+            //       and don't show replies.
             const response = await State.bskyClient.getPostThread({
                 depth: 1000,
                 parentHeight: 1000,
                 uri,
             });
+
             if (!response.success) {
                 this.error = i18n("Post does not exist");
                 return;

@@ -1,43 +1,17 @@
-import { BskyPreferences, RichText } from "@atproto/api";
-import { FeedViewPost, GeneratorView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { RichText } from "@atproto/api";
+import { FeedViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { map } from "lit/directives/map.js";
-import { HashNavOverlay, UpButton, renderTopbar } from ".";
+import { HashNavOverlay, renderTopbar } from ".";
 import { i18n } from "../i18n";
-import {
-    blockIcon,
-    editIcon,
-    heartIcon,
-    infoIcon,
-    linkIcon,
-    listIcon,
-    minusIcon,
-    muteIcon,
-    pinIcon,
-    plusIcon,
-    searchIcon,
-    shieldIcon,
-    spinnerIcon,
-} from "../icons";
-import { EventAction, FEED_CHECK_INTERVAL, State } from "../state";
+import { blockIcon, infoIcon, linkIcon, listIcon, minusIcon, muteIcon, pinIcon, plusIcon, shieldIcon } from "../icons";
+import { FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
-import {
-    copyTextToClipboard,
-    defaultFeed,
-    dom,
-    error,
-    getScrollParent,
-    hasLinkOrButtonParent,
-    splitAtUri,
-    waitForNavigation as waitForNavigation,
-} from "../utils";
-import { IconToggle } from "./icontoggle";
+import { ListFeedPostsStream } from "../streams";
+import { copyTextToClipboard, defaultFeed, dom, error, hasLinkOrButtonParent, splitAtUri } from "../utils";
 import { renderRichText } from "./posts";
 import { getProfileUrl, renderProfileAvatar } from "./profiles";
-import { repeat } from "lit-html/directives/repeat.js";
-import { FeedPostsStream, ListFeedPostsStream } from "../streams";
-import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 import { toast } from "./toast";
 
 export type ListViewElementAction = "clicked" | "pinned" | "unpinned" | "saved" | "unsaved";
@@ -118,7 +92,8 @@ export class ListViewElement extends LitElement {
         // FIXME need to display mod list toggles according to settings
         const editButtons =
             list.purpose == "app.bsky.graph.defs#curatelist"
-                ? html` <div class="flex gap-2"><icon-toggle
+                ? html` <div class="flex gap-2">
+                      <icon-toggle
                           @change=${(ev: CustomEvent) => this.togglePin(ev)}
                           .icon=${html`<i class="icon !w-5 !h-5">${pinIcon}</i>`}
                           .value=${prefs.pinned?.includes(list.uri)}
@@ -129,8 +104,10 @@ export class ListViewElement extends LitElement {
                             </button>`
                           : html`<button @click=${() => this.addList()}>
                                 <i class="icon !w-6 !h-6 fill-primary">${plusIcon}</i>
-                            </button>`}</div>`
-                : html`<div class="flex gap-2"><icon-toggle
+                            </button>`}
+                  </div>`
+                : html`<div class="flex gap-2">
+                      <icon-toggle
                           @change=${(ev: CustomEvent) => this.toggleBlock(ev)}
                           .icon=${html`<i class="icon !w-5 !h-5">${blockIcon}</i>`}
                           .value=${false}
@@ -141,7 +118,8 @@ export class ListViewElement extends LitElement {
                           .icon=${html`<i class="icon !w-5 !h-5">${muteIcon}</i>`}
                           .value=${false}
                           class="w-6 h-6"
-                      ></icon-toggle></div>`;
+                      ></icon-toggle>
+                  </div>`;
 
         const buttons = html`<div class="flex gap-2 ml-auto">
             ${this.viewStyle != "full"
