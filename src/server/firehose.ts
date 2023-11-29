@@ -64,6 +64,9 @@ export class Firehose {
             message.ops.forEach((op) => {
                 const from = message.repo;
                 const payload = op.payload as any;
+                if (op.action == "delete") {
+                    // FIXME do something with deletes.
+                }
                 let postUri: string | undefined;
                 try {
                     switch (payload?.$type) {

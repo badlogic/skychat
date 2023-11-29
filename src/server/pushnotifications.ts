@@ -20,6 +20,7 @@ export async function initializePushNotifications(firehose: Firehose) {
     console.log("Initialized push notifications");
 
     firehose.listeners.push((event: FirehoseEvent) => {
+        if (event.fromDid == event.toDid) return;
         const tokens = registrations.get(event.toDid);
         if (!tokens) return;
         queue.push({ ...event, tokens });

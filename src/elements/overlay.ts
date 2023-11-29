@@ -216,9 +216,6 @@ export class Topbar extends LitElement {
     @property()
     buttons?: TemplateResult;
 
-    @property()
-    renderLogo = true;
-
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
@@ -228,11 +225,6 @@ export class Topbar extends LitElement {
             <div
                 class="fixed top-0 z-10 w-[640px] max-w-[100%] h-10 px-4 flex items-center bg-background border-divider fancy-shadow sm:rounded-b-lg"
             >
-                ${this.renderLogo
-                    ? /*html`<a class="w-10 h-10 flex items-center justify-center font-semibold text-center" href="/"
-                          ><i class="icon !w-5 !h-5 fill-primary">${unsafeHTML(logoSvg)}</i></a
-                      >`*/ nothing
-                    : nothing}
                 ${this.heading instanceof HTMLElement ? this.heading : html`<span class="font-semibold">${this.heading}</span>`} ${this.buttons}
             </div>
             <div class="w-full h-10"></div>

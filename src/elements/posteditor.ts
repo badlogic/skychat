@@ -36,6 +36,7 @@ import {
 } from "../utils";
 import { CloseableElement, Overlay, navigationGuard, renderTopbar } from "./overlay";
 import { renderEmbed, renderRecord, renderRichText } from "./posts";
+import { QuillEditor } from "./text-editor";
 
 const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
 
@@ -88,10 +89,7 @@ export class PostEditor extends LitElement {
     imagesToUpload: { alt: string; dataUri: string; data: Uint8Array; mimeType: string }[] = [];
 
     @query("#message")
-    messageElement?: TextEditor;
-
-    @query("#handles")
-    handlesElement?: HTMLTextAreaElement;
+    editor?: QuillEditor;
 
     message: string = "";
 
@@ -104,47 +102,18 @@ export class PostEditor extends LitElement {
     connectedCallback(): void {
         super.connectedCallback();
         document.addEventListener("paste", this.pasteImage);
-        document.body.classList.add("overflow-hidden");
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
         document.removeEventListener("paste", this.pasteImage);
-        document.body.classList.remove("overflow-hidden");
     }
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         this.querySelector("#handles");
     }
 
-    protected updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
-        if (this.handlesElement) {
-            const caret = this.messageElement ? getCaretPosition(this.messageElement.editable!) : { x: 0, y: 0 };
-            this.handlesElement.style.top = caret.y + 32 + "px";
-        }
-    }
-
-    insertSuggestion(handle: string) {
-        if (!this.messageElement) return;
-
-        const replaceSubstring = (original: string, startIndex: number, endIndex: number, replacement: string) => {
-            if (startIndex < 0 || startIndex >= original.length || endIndex < startIndex || endIndex > original.length) {
-                throw new Error("Invalid indices");
-            }
-            const prefix = original.substring(0, startIndex);
-            const suffix = original.substring(endIndex);
-            return prefix + replacement + suffix;
-        };
-
-        const start = (this.messageElement?.editable?.selectionStart ?? 0) - 1;
-        const end = start + 1;
-        this.messageElement.editable!.value = replaceSubstring(this.messageElement.editable!.value, start, end, handle + " ");
-        this.message = this.messageElement?.editable!.value;
-        this.messageElement.editable!.selectionStart = start + (handle + " ").length;
-        this.messageElement.editable!.selectionEnd = start + (handle + " ").length;
-        this.messageElement.editable!.focus();
-        this.messageElement.requestUpdate();
-    }
+    protected updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {}
 
     render() {
         const totalCount = 300 - (1 + (this.hashtag?.length ?? 0));
@@ -209,13 +178,13 @@ export class PostEditor extends LitElement {
                           </button>
                       </div>`
                     : nothing}
-                <text-editor
+                <quill-text-editor
                     id="message"
-                    class="${this.fullscreen ? "flex-grow" : "min-h-[64px]"} max-w-[100vw]"
-                    .onInput=${(ev: any) => this.input(ev)}
+                    class="${this.fullscreen ? "flex-grow overflow-auto" : "min-h-[64px]"} max-w-[100vw]"
+                    .onInput=${(text: string, start: number, end: number, insert: (text: string) => void) => this.input(text, start, end, insert)}
                     .fullscreen=${this.fullscreen}
                     .text=${this.text}
-                ></text-editor>
+                ></quill-text-editor>
                 ${!this.embed && this.imagesToUpload.length == 0 && (this.cardSuggestions?.length ?? 0 > 0)
                     ? html`<div class="flex flex-col my-2 mx-2 gap-2">
                           ${map(
@@ -235,7 +204,11 @@ export class PostEditor extends LitElement {
                 ${AppBskyEmbedExternal.isMain(this.embed)
                     ? html`<div class="flex relative px-2 items-center justify-center">
                           <div class="w-full">${this.embedRendered}</div>
-                          ${this.isLoadingCard ? html`<i class="absolute ml-2 icon !w-6 !h-6 fill-primary animate-spin">${spinnerIcon}</i>` : nothing}
+                          ${this.isLoadingCard
+                              ? html`<div class="absolute h-10 flex items-center">
+                                    <i class="ml-2 icon !w-6 !h-6 fill-primary animate-spin">${spinnerIcon}</i>
+                                </div>`
+                              : nothing}
                           <button
                               class="absolute right-4 top-4"
                               @click=${(ev: Event) => {
@@ -396,13 +369,13 @@ export class PostEditor extends LitElement {
     setQuote(post: PostView | undefined) {
         this.quote = post;
         this.replyTo = undefined;
-        this.messageElement?.focus();
+        this.editor?.focus();
     }
 
     setReply(post: PostView | undefined) {
         this.replyTo = post;
         this.quote = undefined;
-        this.messageElement?.focus();
+        this.editor?.focus();
     }
 
     pasteImage = async (ev: ClipboardEvent | DragEvent) => {
@@ -555,26 +528,25 @@ export class PostEditor extends LitElement {
     }
 
     lastValue = "";
-    input(ev: InputEvent) {
-        const message = ev.target as HTMLTextAreaElement;
-        this.count = message.value.length;
+    input(text: string, cursorStart: number, cursorEnd: number, insert: (text: string) => void) {
+        this.count = text.length;
         this.checkCanPost();
         if (!this.fullscreen) {
-            message.style.height = "auto";
-            message.style.height = Math.min(16 * 15, message.scrollHeight) + "px";
+            // FIXME
+            this.editor!.style.height = "auto";
+            this.editor!.style.height = Math.min(16 * 15, this.editor!.scrollHeight) + "px";
         }
-        this.message = message.value;
-        if (message.selectionStart === message.selectionEnd && this.lastValue != this.message) {
-            const position = message.selectionStart;
-            const charBeforeCursor = message.value.charAt(position - 1);
+        this.message = text;
+        if (cursorStart == cursorEnd && this.lastValue != this.message) {
+            const charBeforeCursor = text.charAt(cursorStart - 1);
             if (charBeforeCursor === "@") {
                 document.body.append(
                     dom(
                         html`<actor-search-overlay
-                            .selectedActor=${(actor: ProfileView) => this.insertSuggestion("@" + actor.handle.replace("@", ""))}
+                            .selectedActor=${(actor: ProfileView) => insert(actor.handle.replace("@", "") + " ")}
                             .cancled=${() => {
                                 requestAnimationFrame(() => {
-                                    message.focus();
+                                    this.editor?.focus();
                                 });
                             }}
                         ></actor-search-overlay>`
@@ -582,9 +554,9 @@ export class PostEditor extends LitElement {
                 );
             }
         }
-        this.lastValue = message.value;
+        this.lastValue = text;
 
-        const rt = new RichText({ text: message.value });
+        const rt = new RichText({ text });
         rt.detectFacetsWithoutResolution();
         if (rt.facets) {
             const cardSuggestions: AppBskyRichtextFacet.Link[] = [];
@@ -704,10 +676,10 @@ export class PostEditor extends LitElement {
                 hashTagThread.parent = post;
                 Store.setUser(user);
             }
-            this.messageElement!.editable!.value = "";
             this.count = 0;
-            this.messageElement!.style.height = "auto";
-            this.messageElement!.style.height = this.messageElement!.scrollHeight + "px";
+            this.editor!.setText("");
+            this.editor!.style.height = "auto";
+            this.editor!.style.height = this.editor!.scrollHeight + "px";
             this.embed = undefined;
             this.embedRendered = undefined;
             this.cardSuggestions = undefined;
@@ -790,13 +762,11 @@ export class PostEditorOverlay extends CloseableElement {
     connectedCallback(): void {
         super.connectedCallback();
         if (isMobileBrowser()) visualViewport?.addEventListener("resize", this.resizeInner);
-        document.body.classList.add("overflow-hidden");
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
         if (isMobileBrowser()) visualViewport?.removeEventListener("resize", this.resizeInner);
-        document.body.classList.remove("overflow-hidden");
     }
 
     protected render() {
@@ -900,99 +870,6 @@ export class ActorSearchOverlay extends Overlay {
             this.searchResult = [];
         } else {
             this.searchResult = response.data.actors;
-        }
-    }
-}
-
-@customElement("text-editor")
-export class TextEditor extends LitElement {
-    @query("#editable")
-    editable?: HTMLTextAreaElement;
-
-    @query("#highlights")
-    highlights?: HTMLDivElement;
-
-    @property()
-    fullscreen = false;
-
-    @property()
-    placeholder = "";
-
-    @property()
-    text = "";
-
-    @property()
-    onInput: (ev: any) => void = () => {};
-
-    @property()
-    onKeydown: (ev: KeyboardEvent) => void = () => {};
-
-    @property()
-    onKeyup: (ev: KeyboardEvent) => void = () => {};
-
-    protected createRenderRoot(): Element | ShadowRoot {
-        return this;
-    }
-
-    protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
-        if (this.editable) {
-            this.editable.focus();
-            this.editable.value = this.text;
-        }
-    }
-
-    render() {
-        return html`
-            <div class="relative flex ${this.fullscreen ? "w-full h-full" : "min-h-[64px]"}">
-                <div
-                    id="highlights"
-                    class="whitespace-pre-wrap flex-grow overflow-auto outline-none bg-transparent dark:text-white p-4 !break-words"
-                    aria-hidden="true"
-                ></div>
-                <textarea
-                    id="editable"
-                    class="absolute overflow-none top-0 left-0 w-full h-full resize-none outline-none bg-transparent text-transparent caret-black dark:caret-white p-4 !break-words"
-                    @input=${(ev: any) => this.handleInput(ev)}
-                    @selectionchanged=${(ev: any) => this.handleInput(ev)}
-                    @scroll="${this.syncScroll}"
-                    @keydown=${(ev: KeyboardEvent) => this.onKeydown(ev)}
-                    @keyup=${(ev: KeyboardEvent) => this.onKeyup(ev)}
-                    placeholder="${this.placeholder}"
-                ></textarea>
-            </div>
-        `;
-    }
-
-    handleInput(e: any) {
-        const target = e.target as HTMLTextAreaElement;
-        this.onInput(e);
-        this.requestUpdate();
-    }
-
-    renderHighlights(text: string) {
-        if (text[text.length - 1] == "\n") text += " ";
-        const rt = new RichText({ text });
-        rt.detectFacetsWithoutResolution();
-        if (this.highlights) {
-            const textDom = dom(renderRichText(rt));
-            this.highlights.innerHTML = "";
-            for (const node of textDom) {
-                this.highlights.append(node);
-            }
-        }
-    }
-
-    protected updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
-        if (this.highlights && this.editable) {
-            this.renderHighlights(this.editable.value);
-            this.syncScroll();
-        }
-    }
-
-    syncScroll() {
-        if (this.highlights && this.editable) {
-            this.highlights.scrollTop = this.editable.scrollTop;
-            this.highlights.style.height = this.editable.style.height;
         }
     }
 }

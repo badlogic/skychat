@@ -524,7 +524,7 @@ export class ListOverlay extends HashNavOverlay {
         if (this.error) return html`<div id="error" class="align-top p-4">${this.error}</div>`;
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
-        return html`<list-feed-stream-view
+        return html`<feed-stream-view
                 .stream=${new ListFeedPostsStream(this.listUri!, true, FEED_CHECK_INTERVAL)}
                 .newItems=${async (newItems: FeedViewPost[] | Error) => {
                     if (newItems instanceof Error) {

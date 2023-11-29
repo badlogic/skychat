@@ -14,4 +14,5 @@ export * from "./search";
 export * from "./settings";
 export * from "./streamviews";
 export * from "./styles";
+export * from "./text-editor";
 export * from "./themetoggle";

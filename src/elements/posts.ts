@@ -95,7 +95,7 @@ export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
                 >`
             );
         } else if (segment.isLink()) {
-            segments.push(html`<a href="${segment.link?.uri}" target="_blank">${segment.text}</a>`);
+            segments.push(html`<a href="${segment.link?.uri}" target="_blank" class="break-all">${segment.text}</a>`);
         } else if (segment.isTag()) {
             segments.push(html`<span class="text-blue-500">${segment.text}</span>`);
         } else {

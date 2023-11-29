@@ -222,22 +222,6 @@ export class FeedStreamView extends StreamView<FeedViewPost> {
     }
 }
 
-@customElement("list-feed-stream-view")
-export class ListFeedStreamView extends StreamView<FeedViewPost> {
-    constructor() {
-        super();
-        this.wrapItem = false;
-    }
-
-    getItemKey(post: FeedViewPost): string {
-        return post.post.uri + (AppBskyFeedDefs.isReasonRepost(post.reason) ? post.reason.by.did : "");
-    }
-
-    renderItem(feedViewPost: FeedViewPost): TemplateResult {
-        return html`<feed-view-post-view .feedViewPost=${feedViewPost}></feed-view-post-view>`;
-    }
-}
-
 @customElement("feed-stream-overlay")
 export class FeedStreamOverlay extends Overlay {
     @property()
