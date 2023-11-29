@@ -1071,10 +1071,12 @@ export class State {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             State.preferences = await State.bskyClient.getPreferences();
-            const response = await this.getFeeds([
-                ...(State.preferences.feeds.saved?.filter((feed) => feed.includes("app.bsky.feed.generator")) ?? []),
+            const responses = await Promise.all([
+                this.getFeeds([...(State.preferences.feeds.saved?.filter((feed) => feed.includes("app.bsky.feed.generator")) ?? [])]),
             ]);
-            if (response instanceof Error) throw response;
+            for (const response of responses) {
+                if (response instanceof Error) throw response;
+            }
             this.notify("preferences", "updated", State.preferences);
             return State.preferences;
         } catch (e) {
@@ -1148,6 +1150,7 @@ export class State {
             const feeds = State.preferences.feeds;
             if (!feeds.saved) feeds.saved = [];
             feeds.saved = [...feeds.saved?.filter((o) => o != v), v];
+            State.notify("preferences", "updated", State.preferences); // FIXME notifying before this is stored is kinda not good, but necessary for feedpicker to work
             State.preferencesMutationQueue.enqueue(async () => {
                 await State.bskyClient!.addSavedFeed(v);
             });
@@ -1165,6 +1168,7 @@ export class State {
             if (!feeds.pinned) feeds.pinned = [];
             feeds.saved = feeds.saved?.filter((o) => o != v);
             feeds.pinned = feeds.pinned?.filter((o) => o != v);
+            State.notify("preferences", "updated", State.preferences); // FIXME notifying before this is stored is kinda not good, but necessary for feedpicker to work
             State.preferencesMutationQueue.enqueue(async () => {
                 await State.bskyClient!.removeSavedFeed(v);
             });

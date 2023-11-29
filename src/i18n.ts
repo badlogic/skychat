@@ -173,6 +173,8 @@ export interface Messages {
     "mentioned you": (handle: string) => string;
     "You have a new notification": string;
     "New notification": string;
+    "Couldn't load your lists": string;
+    "You have not created feeds yourself yet": string;
 }
 
 const english: Messages = {
@@ -360,6 +362,8 @@ const english: Messages = {
     "mentioned you": (handle: string) => handle + " mentioned you",
     "You have a new notification": "You have a new notification",
     "New notification": "New notification",
+    "Couldn't load your lists": "Couldn't load your lists",
+    "You have not created feeds yourself yet": "You have not created feeds yourself yet",
 };
 
 const german: Messages = {
@@ -550,6 +554,8 @@ const german: Messages = {
     "mentioned you": (handle: string) => handle + " hat dich erwähnt",
     "You have a new notification": "Du hast eine neue Notifikation",
     "New notification": "Neue Notifikation",
+    "Couldn't load your lists": "Konnte deine Listen nicht laden",
+    "You have not created feeds yourself yet": "Du hast selbst noch keine Feeds kreirt",
 };
 
 export type LanguageCode = "en" | "de";

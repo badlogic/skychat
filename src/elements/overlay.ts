@@ -179,6 +179,10 @@ export abstract class Overlay extends LitElement {
             <i class="icon !w-5 !h-5 fill-muted-fg">${closeIcon}</i>
         </button>`;
     }
+
+    isOnTop() {
+        return document.body.lastElementChild == this;
+    }
 }
 
 export abstract class HashNavOverlay extends Overlay {

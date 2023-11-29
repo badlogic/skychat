@@ -101,21 +101,15 @@ export class GeneratorViewElement extends LitElement {
                   ></icon-toggle>`
                 : nothing}
             ${this.editable
-                ? html` <icon-toggle
-                          @change=${(ev: CustomEvent) => this.togglePin(ev)}
-                          .icon=${html`<i class="icon !w-5 !h-5">${pinIcon}</i>`}
-                          .value=${prefs.pinned?.includes(generator.uri)}
-                          class="w-6 h-6"
-                      ></icon-toggle>
-                      ${splitAtUri(generator.uri).repo != user.profile.did
-                          ? html`${prefs.saved?.includes(generator.uri) || prefs.pinned?.includes(generator.uri)
-                                ? html`<button @click=${() => this.removeFeed()}>
-                                      <i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</i>
-                                  </button>`
-                                : html`<button @click=${() => this.addFeed()}>
-                                      <i class="icon !w-6 !h-6 fill-primary">${plusIcon}</i>
-                                  </button>`}`
-                          : nothing}`
+                ? html` ${splitAtUri(generator.uri).repo != user.profile.did
+                      ? html`${prefs.saved?.includes(generator.uri) || prefs.pinned?.includes(generator.uri)
+                            ? html`<button @click=${() => this.removeFeed()}>
+                                  <i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</i>
+                              </button>`
+                            : html`<button @click=${() => this.addFeed()}>
+                                  <i class="icon !w-6 !h-6 fill-primary">${plusIcon}</i>
+                              </button>`}`
+                      : nothing}`
                 : nothing}
         </div>`;
 
@@ -215,35 +209,16 @@ export class GeneratorViewElement extends LitElement {
         State.notify("feed", "updated", this.generator);
     }
 
-    togglePin(ev: CustomEvent) {
-        const user = Store.getUser();
-        if (!user) return;
-        if (!State.bskyClient) return;
-        if (!this.generator) return;
-
-        if (this.defaultActions) {
-            if (ev.detail.value) {
-                State.addPinnedFeed(this.generator.uri);
-            } else {
-                State.removePinnedFeed(this.generator.uri);
-            }
-        }
-
-        this.requestUpdate();
-        State.notify("feed", "updated", this.generator);
-        this.action(ev.detail.value ? "pinned" : "unpinned", this.generator);
-    }
-
     removeFeed() {
         const user = Store.getUser();
         if (!user) return;
         if (!State.bskyClient) return;
         if (!this.generator) return;
 
+        this.action("unsaved", this.generator);
         if (this.defaultActions) State.removeSavedFeed(this.generator.uri);
         this.requestUpdate();
         State.notify("feed", "updated", this.generator);
-        this.action("unsaved", this.generator);
     }
 
     addFeed() {
@@ -251,10 +226,10 @@ export class GeneratorViewElement extends LitElement {
         if (!user) return;
         if (!State.bskyClient) return;
         if (!this.generator) return;
+        this.action("saved", this.generator);
         if (this.defaultActions) State.addSavedFeed(this.generator.uri);
         this.generator = { ...this.generator };
         State.notify("feed", "updated", this.generator);
-        this.action("saved", this.generator);
     }
 }
 
@@ -267,19 +242,12 @@ export class FeedPicker extends HashNavOverlay {
     error?: string;
 
     @property()
-    pinned: GeneratorView[] = [];
+    feeds: GeneratorView[] = [];
 
     @property()
-    saved: GeneratorView[] = [];
-
-    @property()
-    editing = false;
+    ownFeeds: GeneratorView[] = [];
 
     unsubscribe = () => {};
-
-    search?: HTMLElement;
-
-    ownFeeds: GeneratorView[] = [];
 
     getHash(): string {
         return "feeds";
@@ -289,8 +257,9 @@ export class FeedPicker extends HashNavOverlay {
         super.firstUpdated(_changedProperties);
         this.load();
         this.unsubscribe = State.subscribe("preferences", (action, payload) => {
-            if (action == "updated" && !this.editing) {
+            if (action == "updated" && !this.isOnTop()) {
                 this.load(payload);
+                console.log(payload);
             }
         });
     }
@@ -310,13 +279,9 @@ export class FeedPicker extends HashNavOverlay {
             const user = Store.getUser();
             prefs = prefs ?? State.preferences;
             if (prefs) {
-                this.pinned = (prefs.feeds.pinned ?? [])
-                    .map((feedUri) => State.getObject("feed", feedUri))
-                    .filter((feed) => feed != undefined) as GeneratorView[];
-                this.saved = (prefs.feeds.saved ?? [])
+                this.feeds = (prefs.feeds.saved ?? [])
                     .map((feedUri) => State.getObject("feed", feedUri))
                     .filter((feed) => feed != undefined)
-                    .filter((feed) => !this.pinned.some((other) => other.uri == feed!.uri))
                     .filter((feed) => feed?.creator.did != user?.profile.did) as GeneratorView[];
             } else {
                 prefs = await State.getPreferences();
@@ -324,31 +289,31 @@ export class FeedPicker extends HashNavOverlay {
                     this.error = i18n("Couldn't load your feeds");
                     throw prefs;
                 }
-                const pinnedUris = prefs.feeds.pinned ?? [];
-                const savedUris = (prefs.feeds.saved ?? []).filter((feed) => !pinnedUris.includes(feed));
-                const promises = await Promise.all([State.getFeeds(pinnedUris), State.getFeeds(savedUris)]);
-                if (promises[0] instanceof Error || promises[1] instanceof Error) {
+                const savedUris = (prefs.feeds.saved ?? []).filter((feed) => !feed.includes("app.bsky.graph.list"));
+                const response = await State.getFeeds(savedUris);
+                if (response instanceof Error) {
                     this.error = i18n("Couldn't load your feeds");
                     return;
                 }
-                this.pinned = promises[0];
-                this.saved = promises[1];
+                this.feeds = response;
             }
 
             if (user) {
-                const feeds: GeneratorView[] = [];
-                let cursor: string | undefined;
-                while (true) {
-                    const response = await State.getActorGenerators(user.profile.did, cursor);
-                    if (response instanceof Error) {
-                        // FIXME show this somehow?
-                        return;
+                (async () => {
+                    const feeds: GeneratorView[] = [];
+                    let cursor: string | undefined;
+                    while (true) {
+                        const response = await State.getActorGenerators(user.profile.did, cursor);
+                        if (response instanceof Error) {
+                            this.error = i18n("Couldn't load your feeds");
+                            return;
+                        }
+                        if (response.items.length == 0) break;
+                        feeds.push(...response.items);
+                        cursor = response.cursor;
                     }
-                    if (response.items.length == 0) break;
-                    feeds.push(...response.items);
-                    cursor = response.cursor;
-                }
-                this.ownFeeds = feeds;
+                    this.ownFeeds = feeds;
+                })();
             }
         } catch (e) {
             error("Couldn't load preferences and feeds", e);
@@ -370,158 +335,63 @@ export class FeedPicker extends HashNavOverlay {
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
         return html`<div class="flex flex-col">
-            <button @click=${() => this.discoverFeeds()} class="btn rounded-full self-right mt-4 mx-auto flex gap-2 items-center justify-center">
-                <i class="icon !w-4 !h-4 fill-current">${searchIcon}</i>
-                ${i18n("Discover more feeds")}
-            </button>
-            <div class="px-4 h-12 flex items-center font-semibold">
-                <span>${i18n("Pinned Feeds")}</span>
-                <div class="ml-auto flex items-center gap-2">
-                    ${!this.editing
-                        ? html`<button @click=${() => this.startEdit()} class="btn">${i18n("Edit")}</button>`
-                        : html`
-                              <button @click=${() => this.cancelEdit()} class="font-normal text-muted-fg">${i18n("Cancel")}</button
-                              ><button @click=${() => this.saveEdit()} class="btn font-normal">${i18n("Save")}</button>
-                          `}
-                </div>
+            <div class="flex items-center justify-center py-4">
+                <button @click=${() => this.discoverFeeds()} class="btn rounded-full flex gap-2 items-center">
+                    <i class="icon !w-4 !h-4 fill-current">${searchIcon}</i>
+                    ${i18n("Discover more feeds")}
+                </button>
             </div>
-            ${this.pinned.length == 0
-                ? html`<div class="bg-muted text-muted-fg px-4 py-2 rounded">${i18n("You don't have pinned feeds")}</div>`
-                : nothing}
+            <div class="px-4 flex items-center bg-muted text-muted-fg text-muted-fg">${i18n("Saved Feeds")}</div>
+            ${this.feeds.length == 0 ? html`<div class="py-4 rounded text-center">${i18n("You don't have saved feeds")}</div>` : nothing}
             ${repeat(
-                this.pinned,
+                this.feeds,
                 (generator) => generator.uri,
                 (generator) =>
-                    html`<div class="px-4 py-2 border-b border-divider">
+                    html`<div class="px-4 py-2">
                         <generator-view
                             .generator=${generator}
                             .viewStyle=${"minimal"}
                             .action=${(action: GeneratorViewElementAction, generator: GeneratorView) => this.feedAction(action, generator)}
-                            .editable=${this.editing}
-                            .defaultActions=${false}
+                            .editable=${true}
+                            .defaultActions=${true}
                         ></generator-view>
                     </div>`
             )}
             ${this.ownFeeds.length > 0
-                ? html`<div class="px-4 h-12 flex items-center font-semibold">${i18n("Feeds by me")}</div>
-                      ${this.saved.length == 0
-                          ? html`<div class="bg-muted text-muted-fg px-4 py-2 rounded">${i18n("You don't have saved feeds")}</div>`
-                          : nothing}
+                ? html`<div class="px-4 flex items-center bg-muted text-muted-fg">${i18n("Feeds by me")}</div>
                       ${repeat(
                           this.ownFeeds,
                           (generator) => generator.uri,
                           (generator) =>
-                              html`<div class="px-4 py-2 border-b border-divider">
+                              html`<div class="px-4 py-2">
                                   <generator-view
                                       .generator=${generator}
                                       .viewStyle=${"minimal"}
                                       .action=${(action: GeneratorViewElementAction, generator: GeneratorView) => this.feedAction(action, generator)}
-                                      .editable=${this.editing}
+                                      .editable=${false}
                                       .defaultActions=${false}
                                   ></generator-view>
                               </div>`
                       )}`
                 : nothing}
-            <div class="px-4 h-12 flex items-center font-semibold">${i18n("Saved Feeds")}</div>
-            ${this.saved.length == 0
-                ? html`<div class="bg-muted text-muted-fg px-4 py-2 rounded">${i18n("You don't have saved feeds")}</div>`
-                : nothing}
-            ${repeat(
-                this.saved,
-                (generator) => generator.uri,
-                (generator) =>
-                    html`<div class="px-4 py-2 border-b border-divider">
-                        <generator-view
-                            .generator=${generator}
-                            .viewStyle=${"minimal"}
-                            .action=${(action: GeneratorViewElementAction, generator: GeneratorView) => this.feedAction(action, generator)}
-                            .editable=${this.editing}
-                            .defaultActions=${false}
-                        ></generator-view>
-                    </div>`
-            )}
         </div>`;
     }
 
     async feedAction(action: GeneratorViewElementAction, generator: GeneratorView) {
-        if (action == "pinned") {
-            this.pinned = [...this.pinned, generator];
-            this.saved = this.saved.filter((other) => other.uri != generator.uri);
-        }
-
-        if (action == "unpinned") {
-            this.pinned = this.pinned.filter((other) => other.uri != generator.uri);
-            if (generator.creator.did != Store.getUser()?.profile.did) this.saved = [generator, ...this.saved];
-        }
-
         if (action == "unsaved") {
-            this.pinned = this.pinned.filter((other) => other.uri != generator.uri);
-            this.saved = this.saved.filter((other) => other.uri != generator.uri);
+            this.feeds = this.feeds.filter((other) => other.uri != generator.uri);
         }
 
-        if (action != "clicked") {
-            this.setFeedPreferences();
+        if (action == "clicked") {
+            // this.close();
+            // await waitForNavigation();
+            document.body.append(dom(html`<feed-overlay .feedUri=${generator.uri}></feed-overlay>`)[0]);
         }
-
-        if (action)
-            if (action == "clicked" && !this.editing) {
-                this.close();
-                await waitForNavigation();
-                document.body.append(dom(html`<feed-overlay .feedUri=${generator.uri}></feed-overlay>`)[0]);
-            }
     }
 
     discoverFeeds() {
-        this.search = dom(html`<search-overlay .showTypes=${[i18n("Feeds")]}></search-overlay>`)[0];
-        document.body.append(this.search);
-    }
-
-    lastPinned: GeneratorView[] = [];
-    lastSaved: GeneratorView[] = [];
-    lastPinnedPrefs: string[] = [];
-    lastSavedPrefs: string[] = [];
-    startEdit() {
-        this.lastPinned = [...this.pinned];
-        this.lastSaved = [...this.saved];
-        this.lastPinnedPrefs = [...(State.preferences?.feeds.pinned ?? [])];
-        this.lastSavedPrefs = [...(State.preferences?.feeds.saved ?? [])];
-        this.editing = true;
-    }
-
-    cancelEdit() {
-        this.pinned = this.lastPinned;
-        this.saved = this.lastSaved;
-        if (State.preferences) {
-            State.preferences.feeds.pinned = this.lastPinnedPrefs;
-            State.preferences.feeds.saved = this.lastSavedPrefs;
-        }
-        this.editing = false;
-    }
-
-    setFeedPreferences() {
-        const pinned = [...this.lastPinnedPrefs].filter((uri) => splitAtUri(uri).type != "app.bsky.feed.generator");
-        const saved = [...this.lastSavedPrefs].filter((uri) => splitAtUri(uri).type != "app.bsky.feed.generator");
-
-        for (const feed of this.pinned) {
-            pinned.push(feed.uri);
-            saved.push(feed.uri);
-        }
-        for (const feed of this.saved) {
-            saved.push(feed.uri);
-        }
-        if (State.preferences) {
-            State.preferences.feeds.pinned = pinned;
-            State.preferences.feeds.saved = saved;
-            State.notify("preferences", "updated", State.preferences); // necessary?
-        }
-    }
-
-    saveEdit() {
-        this.editing = false;
-        this.pinned = [...this.pinned];
-        this.saved = [...this.saved];
-        this.setFeedPreferences();
-        State.setPinnedAndSavedFeeds(State.preferences?.feeds.pinned ?? [], State.preferences?.feeds.saved ?? []);
+        const search = dom(html`<search-overlay .showTypes=${[i18n("Feeds")]}></search-overlay>`)[0];
+        document.body.append(search);
     }
 }
 
