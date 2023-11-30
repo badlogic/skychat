@@ -2,17 +2,32 @@ import { BskyPreferences, RichText } from "@atproto/api";
 import { FeedViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
-import { customElement, property } from "lit/decorators.js";
-import { HashNavOverlay, renderTopbar } from ".";
+import { customElement, property, query, state } from "lit/decorators.js";
+import { HashNavOverlay, QuillEditor, renderTopbar } from ".";
 import { i18n } from "../i18n";
-import { blockIcon, infoIcon, linkIcon, listIcon, minusIcon, muteIcon, pinIcon, plusIcon, shieldIcon } from "../icons";
+import {
+    blockIcon,
+    cameraIcon,
+    errorIcon,
+    imageIcon,
+    infoIcon,
+    linkIcon,
+    listIcon,
+    minusIcon,
+    muteIcon,
+    pinIcon,
+    plusIcon,
+    shieldIcon,
+} from "../icons";
 import { FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
 import { ListFeedPostsStream } from "../streams";
-import { copyTextToClipboard, defaultFeed, dom, error, hasLinkOrButtonParent, splitAtUri } from "../utils";
+import { ImageInfo, copyTextToClipboard, defaultFeed, dom, error, hasLinkOrButtonParent, loadImageFiles, splitAtUri } from "../utils";
 import { renderRichText } from "./posts";
 import { getProfileUrl, renderProfileAvatar } from "./profiles";
 import { toast } from "./toast";
+import { repeat } from "lit-html/directives/repeat.js";
+import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 
 export type ListViewElementAction = "clicked" | "pinned" | "unpinned" | "saved" | "unsaved";
 export type ListViewElementStyle = "topbar" | "minimal" | "full";
@@ -90,22 +105,20 @@ export class ListViewElement extends LitElement {
             >
         </div>`;
 
-        // FIXME need to display mod list toggles according to settings
         const editButtons =
             list.purpose == "app.bsky.graph.defs#curatelist"
                 ? html` <div class="flex gap-2">
                       <icon-toggle
-                          @change=${(ev: CustomEvent) => this.togglePin(ev)}
-                          .icon=${html`<i class="icon !w-5 !h-5">${pinIcon}</i>`}
-                          .value=${prefs.pinned?.includes(list.uri)}
+                          @change=${(ev: CustomEvent) => (!ev.detail.value ? this.addList() : this.removeList())}
+                          .icon=${html`<i class="icon !w-5 !h-5">${minusIcon}</i>`}
+                          .iconTrue=${html`<i class="icon !w-5 !h-5">${plusIcon}</i>`}
+                          .value=${!(
+                              prefs.saved?.includes(list.uri) ||
+                              prefs.pinned?.includes(list.uri) ||
+                              list.creator.did == Store.getUser()?.profile.did
+                          )}
+                          class="w-6 h-6"
                       ></icon-toggle>
-                      ${prefs.saved?.includes(list.uri) || prefs.pinned?.includes(list.uri)
-                          ? html`<button @click=${() => this.removeList()}>
-                                <i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</i>
-                            </button>`
-                          : html`<button @click=${() => this.addList()}>
-                                <i class="icon !w-6 !h-6 fill-primary">${plusIcon}</i>
-                            </button>`}
                   </div>`
                 : html`<div class="flex gap-2">
                       <icon-toggle
@@ -209,25 +222,15 @@ export class ListViewElement extends LitElement {
         }
     }
 
-    togglePin(ev: CustomEvent) {
-        if (!this.list) return;
-
-        if (this.defaultActions) {
-            if (ev.detail.value) {
-                State.addPinnedList(this.list.uri);
-            } else {
-                State.removePinnedList(this.list.uri);
-            }
-        }
-
-        this.requestUpdate();
-        State.notify("list", "updated", this.list);
-        this.action(ev.detail.value ? "pinned" : "unpinned", this.list);
-    }
-
     removeList() {
         if (!this.list) return;
-        if (this.defaultActions) State.removeSavedList(this.list.uri);
+        const isOwnList = this.list.creator.did == Store.getUser()?.profile.did;
+        if (this.defaultActions) {
+            State.removeSavedList(this.list.uri);
+            if (isOwnList) {
+                State.removeActorList(this.list.uri);
+            }
+        }
         this.requestUpdate();
         State.notify("list", "updated", this.list);
         this.action("unsaved", this.list);
@@ -235,6 +238,7 @@ export class ListViewElement extends LitElement {
 
     addList() {
         if (!this.list) return;
+        const isOwnList = this.list.creator.did == Store.getUser()?.profile.did;
         if (this.defaultActions) State.addSavedList(this.list.uri);
         this.list = { ...this.list };
         State.notify("list", "updated", this.list);
@@ -305,5 +309,294 @@ export class ListOverlay extends HashNavOverlay {
                 }}
             ></feed-stream-view
             ><open-post-editor-button id="post"></open-post-editor-button> <notifications-button id="notifications"></notifications-button>`;
+    }
+}
+
+@customElement("list-picker")
+export class ListPicker extends HashNavOverlay {
+    @property()
+    isLoading = true;
+
+    @property()
+    error?: string;
+
+    @property()
+    lists: ListView[] = [];
+
+    @property()
+    ownLists: ListView[] = [];
+
+    unsubscribe = () => {};
+
+    getHash(): string {
+        return "lists";
+    }
+
+    protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        super.firstUpdated(_changedProperties);
+        this.load();
+        this.unsubscribe = State.subscribe("preferences", (action, payload) => {
+            if (action == "updated" && !this.isOnTop()) {
+                this.load(payload);
+                console.log(payload);
+            }
+        });
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        this.unsubscribe();
+    }
+
+    async load(prefs?: BskyPreferences | Error) {
+        try {
+            if (prefs instanceof Error) {
+                this.error = i18n("Couldn't load your feeds");
+                throw prefs;
+            }
+
+            const user = Store.getUser();
+            prefs = prefs ?? State.preferences;
+            if (prefs) {
+                this.lists = (prefs.feeds.saved ?? [])
+                    .map((listUri) => State.getObject("list", listUri))
+                    .filter((list) => list != undefined)
+                    .filter((list) => list?.creator.did != user?.profile.did) as ListView[];
+            } else {
+                prefs = await State.getPreferences();
+                if (prefs instanceof Error) {
+                    this.error = i18n("Couldn't load your lists");
+                    throw prefs;
+                }
+                const savedUris = (prefs.feeds.saved ?? []).filter((feed) => feed.includes("app.bsky.graph.list"));
+                const response = await State.getLists(savedUris);
+                if (response instanceof Error) {
+                    this.error = i18n("Couldn't load your lists");
+                    return;
+                }
+                this.lists = response;
+            }
+
+            if (user) {
+                (async () => {
+                    const lists: ListView[] = [];
+                    let cursor: string | undefined;
+                    while (true) {
+                        const response = await State.getActorLists(user.profile.did, cursor);
+                        if (response instanceof Error) {
+                            this.error = i18n("Couldn't load your lists");
+                            return;
+                        }
+                        if (response.items.length == 0) break;
+                        lists.push(...response.items);
+                        cursor = response.cursor;
+                    }
+                    this.ownLists = lists.filter((list) => list.purpose == "app.bsky.graph.defs#curatelist");
+                })();
+            }
+        } catch (e) {
+            error("Couldn't load preferences and lists", e);
+            this.error = i18n("Couldn't load your lists");
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    renderHeader(): TemplateResult {
+        return renderTopbar("Lists", this.closeButton(), false);
+    }
+
+    protected update(changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        super.update(changedProperties);
+    }
+
+    renderContent(): TemplateResult {
+        if (this.error) return html`<div id="error" class="align-top p-4">${this.error}</div>`;
+        if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
+
+        return html`<div class="flex flex-col">
+            <div class="flex items-center justify-center py-4">
+                <button @click=${() => this.newList()} class="btn rounded-full flex gap-2 items-center">${i18n("Create a new list")}</button>
+            </div>
+            <div class="px-4 flex items-center bg-muted text-muted-fg text-muted-fg">${i18n("Saved Lists")}</div>
+            ${this.lists.length == 0 ? html`<div class="py-4 rounded text-center">${i18n("You don't have saved lists")}</div>` : nothing}
+            ${repeat(
+                this.lists,
+                (list) => list.uri,
+                (list) =>
+                    html`<div class="px-4 py-2">
+                        <list-view
+                            .list=${list}
+                            .viewStyle=${"minimal"}
+                            .action=${(action: ListViewElementAction, list: ListView) => this.listAction(action, list)}
+                            .editable=${true}
+                            .defaultActions=${true}
+                        ></generator-view>
+                    </div>`
+            )}
+            ${this.ownLists.length > 0
+                ? html`<div class="px-4 flex items-center bg-muted text-muted-fg">${i18n("Lists by me")}</div>
+                      ${repeat(
+                          this.ownLists,
+                          (list) => list.uri,
+                          (list) =>
+                              html`<div class="px-4 py-2">
+                                  <list-view
+                                      .list=${list}
+                                      .viewStyle=${"minimal"}
+                                      .action=${(action: ListViewElementAction, list: ListView) => this.listAction(action, list)}
+                                      .editable=${true}
+                                      .defaultActions=${true}
+                                  ></generator-view>
+                              </div>`
+                      )}`
+                : nothing}
+        </div>`;
+    }
+
+    newList() {
+        document.body.append(dom(html`<list-editor></list-editor>`)[0]);
+    }
+
+    async listAction(action: ListViewElementAction, list: ListView) {
+        if (action == "unsaved") {
+            this.lists = this.lists.filter((other) => other.uri != list.uri);
+            this.ownLists = this.ownLists.filter((other) => other.uri != list.uri);
+        }
+
+        if (action == "clicked") {
+            // this.close();
+            // await waitForNavigation();
+            document.body.append(dom(html`<list-overlay .listUri=${list.uri}></list-overlay>`)[0]);
+        }
+    }
+}
+
+@customElement("list-editor")
+export class ListEditor extends HashNavOverlay {
+    @property()
+    listUri?: string;
+
+    @property()
+    list?: ListView;
+
+    @property()
+    saved = (list: ListView) => {};
+
+    @property()
+    isLoading = true;
+
+    @query("#name")
+    nameElement?: HTMLInputElement;
+
+    @query("#description")
+    descriptionElement?: QuillEditor;
+
+    @state()
+    error?: string;
+
+    @state()
+    editError?: string;
+
+    @state()
+    imageToUpload?: ImageInfo;
+
+    protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        super.firstUpdated(_changedProperties);
+        this.load();
+        setTimeout(() => {
+            this.nameElement?.focus();
+        }, 0);
+    }
+
+    async load() {
+        try {
+            if (!this.listUri || !this.list) return;
+            const list = await State.getList(this.listUri);
+            if (list instanceof Error) throw list;
+            this.list = list;
+            this.listUri = list.uri;
+        } catch (e) {
+            this.error = i18n("Could not load list");
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    getHash(): string {
+        if (!this.list) return "list/new";
+        return "list/edit/" + this.listUri;
+    }
+
+    renderHeader(): TemplateResult {
+        const buttons = html`<div class="flex items-center ml-auto -mr-2 gap-2">
+            <button class="text-muted-fg" @click=${() => this.close()}>${i18n("Cancel")}</button>
+            <button class="btn py-1" style="height: initial;" @click=${() => this.save()}>${i18n("Save")}</button>
+        </div> `;
+        return renderTopbar(this.list ? "Edit List" : "New List", buttons, false);
+    }
+
+    save() {
+        if (!this.nameElement || !this.descriptionElement) {
+            this.close();
+            return;
+        }
+        if (this.nameElement.value.trim().length == 0) {
+            this.editError = i18n("Name is required");
+            return;
+        }
+        this.close();
+    }
+
+    renderContent(): TemplateResult {
+        if (this.error) return html`<div id="error" class="align-top p-4">${this.error}</div>`;
+        if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
+
+        // FIXME all errors should look like the below
+        return html`<div class="flex flex-col w-full h-full overflow-auto px-4 gap-2 mx-auto mt-4">
+            ${
+                this.editError
+                    ? html`<div class="bg-red-500 w-full h-8 flex items-center px-4 text-[#fff] gap-2 rounded-md">
+                          <i class="icon !w-6 !h-6 fill-[#fff]">${errorIcon}</i><span>${this.editError}</span>
+                      </div>`
+                    : nothing
+            }
+            <div class="flex gap-2 items-center">
+                <div
+                    class="flex-grow-0 flex-shrink-0 w-[66px] h-[66px] rounded overflow-x-clip flex items-center justify-center border border-divider"
+                    @click=${() => this.addImage()}
+                >
+                    ${
+                        this.imageToUpload
+                            ? html`<img src="${this.imageToUpload.dataUri}" class="w-full h-full object-fill" />`
+                            : html` <i class="icon !w-[32px] !h-[32px] dark:fill-[#fff]">${cameraIcon}</i> `
+                    }
+                </div>
+                <div class="flex flex-col gap-2 w-full">
+                    <div class="text-muted-fg">${i18n("Name")}</div>
+                    <input id="name" class="textinput text-black dark:text-white" placeholder="${i18n("E.g. 'Cool people'")}" />
+                </div>
+            </div>
+            <div id="description" class="text-muted-fg">${i18n("Description")}</div>
+            <quill-text-editor class="h-36 border border-divider rounded"></quill-text-editor>
+            <button class="btn self-end" @click=${() => this.addPeople()}>${i18n("Add people")}<button>
+        </div>`;
+    }
+
+    addImage() {
+        const input = dom(html`<input type="file" id="file" accept=".jpg, .jpeg, .png" class="hidden" multiple />`)[0] as HTMLInputElement;
+        document.body.append(input);
+        input.addEventListener("change", async () => {
+            if (!input.files || input.files.length == 0) return;
+            const files = input.files;
+            this.imageToUpload = (await loadImageFiles(files))[0];
+            input.remove();
+        });
+        input.click();
+    }
+
+    addPeople() {
+        const add = (actor: ProfileView) => {};
+        document.body.append(dom(html`<actor-search-overlay .selectedActor=${(actor: ProfileView) => add(actor)}></actor-search-overlay>`)[0]);
     }
 }

@@ -862,6 +862,10 @@ export class ActorSearchOverlay extends Overlay {
     }
 
     async handleSearch() {
+        if (this.searchElement!.value.trim().length == 0) {
+            this.searchResult = [];
+            return;
+        }
         const response = await State.bskyClient?.app.bsky.actor.searchActorsTypeahead({
             limit: 25,
             q: this.searchElement!.value,

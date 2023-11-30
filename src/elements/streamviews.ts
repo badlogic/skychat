@@ -410,7 +410,7 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
 
         notificationDom = dom(html`<div
             data-type="${notification.reason}"
-            class="notification ${this.shouldShowNotification(notification.reason)
+            class="notification cursor-pointer ${this.shouldShowNotification(notification.reason)
                 ? ""
                 : "hidden"} px-4 py-4 border-b border-divider flex flex-col ${notification.isRead ? "" : "bg-[#d8e4ff4a] dark:bg-[#001040]"}"
         >
@@ -425,6 +425,7 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
     }
 }
 
+// FIXME topbar buttons are foobar on <= 350px screens like Nexus 4
 @customElement("notifications-stream-overlay")
 export class NotificationsStreamOverlay extends HashNavOverlay {
     @query("#notifications")
@@ -436,7 +437,7 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
 
     renderHeader(): TemplateResult {
         const buttons = html`<div class="ml-auto flex">
-            <div class="flex">
+            <div class="flex items-center">
                 <icon-toggle
                     .value=${true}
                     @change=${(ev: CustomEvent) => {
@@ -444,7 +445,7 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
                         this.handleFilter();
                     }}
                     .icon=${html`<i class="icon !w-5 !h-5">${followIcon}</i>`}
-                    class="w-10 h-10"
+                    class="w-8 h-8"
                 ></icon-toggle>
                 <icon-toggle
                     .value=${true}
@@ -453,7 +454,7 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
                         this.handleFilter();
                     }}
                     .icon=${html`<i class="icon !w-5 !h-5">${replyIcon}</i>`}
-                    class="w-10 h-10"
+                    class="w-8 h-8"
                 ></icon-toggle>
                 <icon-toggle
                     .value=${true}
@@ -462,7 +463,7 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
                         this.handleFilter();
                     }}
                     .icon=${html`<i class="icon !w-5 !h-5">${quoteIcon}</i>`}
-                    class="w-10 h-10"
+                    class="w-8 h-8"
                 ></icon-toggle>
                 <icon-toggle
                     .value=${true}
@@ -471,7 +472,7 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
                         this.handleFilter();
                     }}
                     .icon=${html`<i class="icon !w-5 !h-5">${reblogIcon}</i>`}
-                    class="w-10 h-10"
+                    class="w-8 h-8"
                 ></icon-toggle>
                 <icon-toggle
                     .value=${true}
@@ -480,7 +481,7 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
                         this.handleFilter();
                     }}
                     .icon=${html`<i class="icon !w-5 !h-5">${atIcon}</i>`}
-                    class="w-10 h-10"
+                    class="w-8 h-8"
                 ></icon-toggle>
                 <icon-toggle
                     .value=${true}
@@ -489,7 +490,7 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
                         this.handleFilter();
                     }}
                     .icon=${html`<i class="icon !w-5 !h-5">${heartIcon}</i>`}
-                    class="w-10 h-10"
+                    class="w-8 h-8"
                 ></icon-toggle>
             </div>
             <div class="-ml-2">${this.closeButton()}</div>

@@ -13,6 +13,7 @@ import {
     BskyAgent,
     BskyPreferences,
     RichText,
+    AppBskyGraphGetList,
 } from "@atproto/api";
 import { Preferences, ProfileView, ProfileViewDetailed, SavedFeedsPref } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { Store, User } from "./store";
@@ -514,6 +515,47 @@ export class State {
         }
     }
 
+    static async removeActorList(listUri: string): Promise<Error | undefined> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const { repo, type, rkey } = splitAtUri(listUri);
+            await State.bskyClient.com.atproto.repo.deleteRecord({
+                collection: type,
+                repo: repo,
+                rkey: rkey,
+            });
+        } catch (e) {
+            return error("Couldn't delete actor list", e);
+        }
+    }
+
+    static async getLists(listUris: string[], notify = true): Promise<Error | ListView[]> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const promises: Promise<any>[] = [];
+            const listsToFetch: string[] = [...listUris];
+            const listsMap = new Map<string, ListView>();
+            while (listsToFetch.length > 0) {
+                const batch = listsToFetch.splice(0, 10);
+
+                const promises: Promise<AppBskyGraphGetList.Response>[] = [];
+                for (const listUri of batch) {
+                    promises.push(State.bskyClient.app.bsky.graph.getList({ list: listUri, limit: 1 }));
+                }
+                const results = await Promise.all(promises);
+                for (const result of results) {
+                    if (!result.success) throw new Error();
+                    listsMap.set(result.data.list.uri, result.data.list);
+                }
+            }
+            const fetchedLists = listUris.map((uri) => listsMap.get(uri)).filter((list) => list != undefined) as ListView[];
+            this.notifyBatch("list", "updated", fetchedLists);
+            return fetchedLists;
+        } catch (e) {
+            return error("Couldn't get lists", e);
+        }
+    }
+
     static async getPostLikes(postUri: string, cursor?: string, limit = 20): Promise<Error | StreamPage<ProfileView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
@@ -662,11 +704,11 @@ export class State {
         }
     }
 
-    static async getFeeds(feeds: string[]): Promise<Error | GeneratorView[]> {
+    static async getFeeds(feedUris: string[]): Promise<Error | GeneratorView[]> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             const promises: Promise<any>[] = [];
-            const feedsToFetch: string[] = [...feeds];
+            const feedsToFetch: string[] = [...feedUris];
             const feedsMap = new Map<string, GeneratorView>();
             while (feedsToFetch.length > 0) {
                 const batch = feedsToFetch.splice(0, 25);
@@ -676,7 +718,7 @@ export class State {
                     feedsMap.set(feed.uri, feed);
                 }
             }
-            const fetchedFeeds = feeds.map((uri) => feedsMap.get(uri)).filter((feed) => feed != undefined) as GeneratorView[];
+            const fetchedFeeds = feedUris.map((uri) => feedsMap.get(uri)).filter((feed) => feed != undefined) as GeneratorView[];
             this.notifyBatch("feed", "updated", fetchedFeeds);
             return fetchedFeeds;
         } catch (e) {
@@ -1070,12 +1112,41 @@ export class State {
     static async getPreferences() {
         if (!State.bskyClient) return new Error("Not connected");
         try {
-            State.preferences = await State.bskyClient.getPreferences();
-            const responses = await Promise.all([
-                this.getFeeds([...(State.preferences.feeds.saved?.filter((feed) => feed.includes("app.bsky.feed.generator")) ?? [])]),
-            ]);
-            for (const response of responses) {
-                if (response instanceof Error) throw response;
+            const newPreferences = await State.bskyClient.getPreferences();
+            let fetchFeedsAndLists = false;
+            if (State.preferences) {
+                if (
+                    newPreferences.feeds.pinned?.length != State.preferences.feeds.pinned?.length ||
+                    newPreferences.feeds.saved?.length != State.preferences.feeds.saved?.length
+                ) {
+                    fetchFeedsAndLists = true;
+                }
+                if (newPreferences.feeds.pinned && State.preferences.feeds.pinned) {
+                    const newPinned = new Set<string>(newPreferences.feeds.pinned);
+                    for (const feed of State.preferences.feeds.pinned) {
+                        newPinned.delete(feed);
+                    }
+                    fetchFeedsAndLists ||= newPinned.size > 0;
+                }
+                if (newPreferences.feeds.saved && State.preferences.feeds.saved) {
+                    const newSaved = new Set<string>(newPreferences.feeds.saved);
+                    for (const feed of State.preferences.feeds.saved) {
+                        newSaved.delete(feed);
+                    }
+                    fetchFeedsAndLists ||= newSaved.size > 0;
+                }
+            } else {
+                fetchFeedsAndLists = true;
+            }
+            State.preferences = newPreferences;
+            if (fetchFeedsAndLists) {
+                const responses = await Promise.all([
+                    this.getFeeds([...(State.preferences.feeds.saved?.filter((feed) => feed.includes("app.bsky.feed.generator")) ?? [])]),
+                    this.getLists([...(State.preferences.feeds.saved?.filter((feed) => feed.includes("app.bsky.graph.list")) ?? [])]),
+                ]);
+                for (const response of responses) {
+                    if (response instanceof Error) throw response;
+                }
             }
             this.notify("preferences", "updated", State.preferences);
             return State.preferences;

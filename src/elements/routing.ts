@@ -1,5 +1,5 @@
 import { html } from "lit";
-import { FeedOverlay, ListOverlay, ProfileOverlay, ThreadOverlay } from ".";
+import { FeedOverlay, ListEditor, ListOverlay, ProfileOverlay, ThreadOverlay } from ".";
 import { dom, splitAtUri, combineAtUri } from "../utils";
 import { i18n } from "../i18n";
 import { FollowersStream, FollowingStream, PostLikesStream, PostRepostsStream } from "../streams";
@@ -187,7 +187,22 @@ export async function routeHash(hash: string) {
                 }
                 document.body.append(dom(html`<feed-overlay .feedUri=${atUri} .pushState=${false}></feed-overlay>`)[0]);
             }
-            if (tokens[0] == "list" && tokens[1] && tokens[2]) {
+            if (tokens[0] == "lists") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "LIST-PICKER") {
+                    return;
+                }
+                document.body.append(dom(html`<list-picker .pushState=${false}></list-picker>`)[0]);
+            }
+            if (tokens[0] == "list") {
+                if (tokens[1] == "new") {
+                    const child = document.body.children[document.body.children.length - 1];
+                    if (child.tagName == "LIST-EDITOR" && !(child as ListEditor).listUri) return;
+                    document.body.append(dom(html`<list-editor></list-editor>`)[0]);
+                    return;
+                }
+                if (tokens[1] && tokens[2]) {
+                }
                 const child = document.body.children[document.body.children.length - 1];
                 const atUri = combineAtUri(tokens[1], tokens[2], "app.bsky.graph.list");
                 if (child.tagName == "LIST-OVERLAY") {

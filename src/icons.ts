@@ -88,6 +88,10 @@ import listIconSvg from "remixicon/icons/Editor/list-unordered.svg";
 import linkIconSvg from "remixicon/icons/Editor/link.svg";
 // @ts-ignore
 import brushIconSvg from "remixicon/icons/Design/brush-line.svg";
+// @ts-ignore
+import errorIconSvg from "remixicon/icons/System/error-warning-line.svg";
+// @ts-ignore
+import cameraIconSvg from "remixicon/icons/Media/camera-line.svg";
 
 import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 
@@ -136,3 +140,5 @@ export const downloadIcon = unsafeHTML(downloadIconSvg);
 export const listIcon = unsafeHTML(listIconSvg);
 export const linkIcon = unsafeHTML(linkIconSvg);
 export const brushIcon = unsafeHTML(brushIconSvg);
+export const errorIcon = unsafeHTML(errorIconSvg);
+export const cameraIcon = unsafeHTML(cameraIconSvg);

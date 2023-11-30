@@ -125,6 +125,10 @@
     .search > input {
         @apply outline-none bg-transparent;
     }
+
+    .textinput {
+        @apply outline-none bg-transparent border border-divider rounded px-2 py-1;
+    }
 }
 
 @layer utilities {

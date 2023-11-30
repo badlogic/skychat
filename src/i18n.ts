@@ -175,6 +175,17 @@ export interface Messages {
     "New notification": string;
     "Couldn't load your lists": string;
     "You have not created feeds yourself yet": string;
+    "Saved Lists": string;
+    "You don't have saved lists": string;
+    "Lists by me": string;
+    "Create a new list": string;
+    "New List": string;
+    "Edit List": string;
+    Name: string;
+    Description: string;
+    "Name is required": string;
+    "E.g. 'Cool people'": string;
+    "Add people": string;
 }
 
 const english: Messages = {
@@ -364,6 +375,17 @@ const english: Messages = {
     "New notification": "New notification",
     "Couldn't load your lists": "Couldn't load your lists",
     "You have not created feeds yourself yet": "You have not created feeds yourself yet",
+    "Saved Lists": "Saved Lists",
+    "You don't have saved lists": "You don't have saved lists",
+    "Lists by me": "Lists by me",
+    "Create a new list": "Create a new list",
+    "New List": "New List",
+    "Edit List": "Edit List",
+    Name: "Name",
+    Description: "Description",
+    "Name is required": "Name is required",
+    "E.g. 'Cool people'": "E.g. 'Cool people'",
+    "Add people": "Add people",
 };
 
 const german: Messages = {
@@ -556,6 +578,17 @@ const german: Messages = {
     "New notification": "Neue Notifikation",
     "Couldn't load your lists": "Konnte deine Listen nicht laden",
     "You have not created feeds yourself yet": "Du hast selbst noch keine Feeds kreirt",
+    "Saved Lists": "Gespeicherte Listen",
+    "You don't have saved lists": "Keine gespeicherten Listen vorhanden",
+    "Lists by me": "Listen von mir",
+    "Create a new list": "Neue Liste erstellen",
+    "New List": "Neue Liste",
+    "Edit List": "Liste editieren",
+    Name: "Name",
+    Description: "Beschreibung",
+    "Name is required": "Name erforderlich",
+    "E.g. 'Cool people'": "Z.B. 'Coole Leute'",
+    "Add people": "Benutzerin hizufügen",
 };
 
 export type LanguageCode = "en" | "de";
