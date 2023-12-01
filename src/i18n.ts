@@ -217,6 +217,7 @@ export interface Messages {
     Science: string;
     "E.g. names, keywords, ...": string;
     "(Click on a post to view the entire thread)": string;
+    people: string;
 }
 
 const english: Messages = {
@@ -450,6 +451,7 @@ const english: Messages = {
     Science: "Science",
     "E.g. names, keywords, ...": "E.g. names, keywords, ...",
     "(Click on a post to view the entire thread)": "(Click on a post to view the entire thread)",
+    people: "people",
 };
 
 const german: Messages = {
@@ -688,6 +690,7 @@ const german: Messages = {
     Science: "Wissenschaft",
     "E.g. names, keywords, ...": "Z.B. Names, phrasen, ...",
     "(Click on a post to view the entire thread)": "(Auf Post klicken, um ganzen Thread anzuzeigen)",
+    people: "Benutzerinnen",
 };
 
 export type LanguageCode = "en" | "de";

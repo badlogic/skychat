@@ -33999,7 +33999,8 @@ if (cid) {
     News: "News",
     Science: "Science",
     "E.g. names, keywords, ...": "E.g. names, keywords, ...",
-    "(Click on a post to view the entire thread)": "(Click on a post to view the entire thread)"
+    "(Click on a post to view the entire thread)": "(Click on a post to view the entire thread)",
+    people: "people"
   };
   var german = {
     "Not connected": "Nicht verbunden",
@@ -34229,7 +34230,8 @@ if (cid) {
     News: "Nachrichten",
     Science: "Wissenschaft",
     "E.g. names, keywords, ...": "Z.B. Names, phrasen, ...",
-    "(Click on a post to view the entire thread)": "(Auf Post klicken, um ganzen Thread anzuzeigen)"
+    "(Click on a post to view the entire thread)": "(Auf Post klicken, um ganzen Thread anzuzeigen)",
+    people: "Benutzerinnen"
   };
   var translations = {
     en: english,

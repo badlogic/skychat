@@ -8,6 +8,7 @@ import { i18n } from "../i18n";
 import {
     blockIcon,
     cameraIcon,
+    editIcon,
     errorIcon,
     imageIcon,
     infoIcon,
@@ -23,7 +24,18 @@ import {
 import { FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
 import { ListFeedPostsStream, ListMembersStream } from "../streams";
-import { ImageInfo, copyTextToClipboard, defaultFeed, dom, error, renderError, hasLinkOrButtonParent, loadImageFiles, splitAtUri } from "../utils";
+import {
+    ImageInfo,
+    copyTextToClipboard,
+    defaultFeed,
+    dom,
+    error,
+    renderError,
+    hasLinkOrButtonParent,
+    loadImageFiles,
+    splitAtUri,
+    getNumber,
+} from "../utils";
 import { renderRichText } from "./posts";
 import { getProfileUrl, renderProfileAvatar } from "./profiles";
 import { toast } from "./toast";
@@ -128,17 +140,23 @@ export class ListViewElement extends LitElement {
 
         const editButtons =
             list.purpose == "app.bsky.graph.defs#curatelist"
-                ? html` <icon-toggle
-                      @change=${(ev: CustomEvent) => (!ev.detail.value ? this.addList() : this.removeList())}
-                      .icon=${html`<i class="icon !w-5 !h-5">${minusIcon}</i>`}
-                      .iconTrue=${html`<i class="icon !w-5 !h-5">${plusIcon}</i>`}
-                      .value=${!(
-                          prefs.saved?.includes(list.uri) ||
-                          prefs.pinned?.includes(list.uri) ||
-                          list.creator.did == Store.getUser()?.profile.did
-                      )}
-                      class="w-8 h-8"
-                  ></icon-toggle>`
+                ? html`
+                      ${this.list.creator.did == Store.getUser()?.profile.did
+                          ? html`
+            <button class="flex items-center justify-center w-8 h-8" @click=${() =>
+                this.editList()}><i class="icon !w-5 !h-5 fill-muted-fg">${editIcon}<i></button>`
+                          : nothing}<icon-toggle
+                          @change=${(ev: CustomEvent) => (!ev.detail.value ? this.addList() : this.removeList())}
+                          .icon=${html`<i class="icon !w-5 !h-5">${minusIcon}</i>`}
+                          .iconTrue=${html`<i class="icon !w-5 !h-5">${plusIcon}</i>`}
+                          .value=${!(
+                              prefs.saved?.includes(list.uri) ||
+                              prefs.pinned?.includes(list.uri) ||
+                              list.creator.did == Store.getUser()?.profile.did
+                          )}
+                          class="w-8 h-8"
+                      ></icon-toggle>
+                  `
                 : html`<div class="flex items-center">
                       <icon-toggle
                           @change=${(ev: CustomEvent) => this.toggleMute(ev)}
@@ -280,6 +298,13 @@ export class ListViewElement extends LitElement {
         State.notify("list", "updated", this.list);
         this.action("saved", this.list);
     }
+
+    editList() {
+        if (!this.list) return;
+        const isOwnList = this.list.creator.did == Store.getUser()?.profile.did;
+        if (!isOwnList) return;
+        document.body.append(dom(html`<list-editor .listUri=${this.list.uri} .list=${this.list}></list-editor>`)[0]);
+    }
 }
 
 @customElement("list-overlay")
@@ -329,7 +354,7 @@ export class ListOverlay extends HashNavOverlay {
         if (!this.list) return renderTopbar("List", this.closeButton(false));
         const list = this.list;
         const listName = html`<list-view class="flex-grow" .viewStyle=${"topbar"} .list=${list}></list-view>`;
-        return renderTopbar(dom(listName)[0], this.closeButton());
+        return renderTopbar(dom(listName)[0], html`<div class="-ml-2">${this.closeButton()}</div>`);
     }
 
     renderContent(): TemplateResult {
@@ -606,6 +631,10 @@ export class ListEditor extends HashNavOverlay {
     @state()
     imageToUpload?: ImageInfo;
 
+    @state()
+    isLoadingMembers = true;
+    members: ProfileView[] = [];
+
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
         this.load();
@@ -616,29 +645,45 @@ export class ListEditor extends HashNavOverlay {
 
     async load() {
         try {
-            if (!this.listUri || !this.list) return;
-            const list = await State.getList(this.listUri);
+            if (!this.listUri) throw new Error();
+            const list = this.list ? this.list : await State.getList(this.listUri);
             if (list instanceof Error) throw list;
+            let cursor: string | undefined;
             this.list = list;
             this.listUri = list.uri;
+            this.isLoading = false;
+            this.requestUpdate();
+
+            const members: ProfileView[] = [];
+            while (true) {
+                const response = await State.getListItems(this.listUri, cursor);
+                if (response instanceof Error) throw response;
+                if (response.items.length == 0) break;
+                members.push(...response.items);
+                cursor = response.cursor;
+            }
+            this.members = members;
+            this.isLoadingMembers = false;
         } catch (e) {
             this.error = i18n("Could not load list");
         } finally {
             this.isLoading = false;
+            this.isLoadingMembers = false;
         }
     }
 
     getHash(): string {
-        if (!this.list) return "list/new";
-        return "list/edit/" + this.listUri;
+        if (!this.listUri) return "list/new";
+        const atUri = splitAtUri(this.listUri);
+        return "list/edit/" + atUri.repo + "/" + atUri.rkey;
     }
 
     renderHeader(): TemplateResult {
-        const buttons = html`<div class="flex items-center ml-auto -mr-2 gap-2">
+        const buttons = html`<div class="flex items-center ml-auto -mr-2 gap-4">
             <button class="text-muted-fg" @click=${() => this.close()}>${i18n("Cancel")}</button>
-            <button class="btn py-1" style="height: initial;" @click=${() => this.save()}>${i18n("Save")}</button>
+            <button class="btn" @click=${() => this.save()}>${i18n("Save")}</button>
         </div> `;
-        return renderTopbar(this.list ? "Edit List" : "New List", buttons);
+        return renderTopbar(this.listUri ? "Edit List" : "New List", buttons);
     }
 
     save() {
@@ -658,27 +703,46 @@ export class ListEditor extends HashNavOverlay {
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
         // FIXME all errors should look like the below
-        return html`<div class="flex flex-col w-full h-full overflow-auto px-4 gap-2 mx-auto mt-4">
+        return html`<div class="flex flex-col w-full h-full overflow-auto gap-2 mx-auto mt-4">
             ${this.editError ? renderError(this.editError) : nothing}
-            <div class="flex gap-2 items-center">
+            <div class="flex gap-2 items-center px-4 ">
                 <div
                     class="flex-grow-0 flex-shrink-0 w-[66px] h-[66px] rounded overflow-x-clip flex items-center justify-center border border-divider"
                     @click=${() => this.addImage()}
                 >
-                    ${
-                        this.imageToUpload
-                            ? html`<img src="${this.imageToUpload.dataUri}" class="w-full h-full object-fill" />`
-                            : html` <i class="icon !w-[32px] !h-[32px] dark:fill-[#fff]">${cameraIcon}</i> `
-                    }
+                    ${this.imageToUpload
+                        ? html`<img src="${this.imageToUpload.dataUri}" class="w-full h-full object-fill" />`
+                        : html` <i class="icon !w-[32px] !h-[32px] dark:fill-[#fff]">${cameraIcon}</i> `}
                 </div>
                 <div class="flex flex-col gap-2 w-full">
                     <div class="text-muted-fg">${i18n("Name")}</div>
-                    <input id="name" class="textinput text-black dark:text-white" placeholder="${i18n("E.g. 'Cool people'")}" />
+                    <input
+                        id="name"
+                        class="textinput text-black dark:text-white"
+                        placeholder="${i18n("E.g. 'Cool people'")}"
+                        value=${this.list?.name ?? ""}
+                    />
                 </div>
             </div>
-            <div id="description" class="text-muted-fg">${i18n("Description")}</div>
-            <quill-text-editor class="h-36 border border-divider rounded"></quill-text-editor>
-            <button class="btn self-end" @click=${() => this.addPeople()}>${i18n("Add people")}<button>
+
+            <div id="description" class="px-4 text-muted-fg">${i18n("Description")}</div>
+
+            <div class="mx-4 border border-divider rounded h-36 flex"><quill-text-editor class="w-full h-full"></quill-text-editor></div>
+
+            ${this.isLoadingMembers
+                ? html`${this.isLoadingMembers ? html`<loading-spinner></loading-spinner>` : nothing}`
+                : html`<div class="flex items-center px-4 pt-4 pb-4 border-b border-divider">
+                    <span>${getNumber(this.members.length)} ${i18n("people")}</span>
+                <button class="btn ml-auto" @click=${() => this.addPeople()}>${i18n("Add people")}<button>
+            </div>
+            <profiles-stream-view
+                .stream=${new ListMembersStream(this.listUri!)}
+                .newItems=${async (newItems: ProfileView[] | Error) => {
+                    if (newItems instanceof Error) {
+                        this.error = i18n("Could not load newer items");
+                    }
+                }}
+            ></profiles-stream-view>`}
         </div>`;
     }
 

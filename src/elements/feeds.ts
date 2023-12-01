@@ -182,7 +182,7 @@ export class GeneratorViewElement extends LitElement {
             ${this.expandDetails
                 ? this.viewStyle == "topbar"
                     ? html`<div
-                          class="absolute animate-fade-down animate-duration-300 top-[40px] left-0 w-full bg-secondary text-secondary-fg font-normal px-4 pb-2 pt-2 rounded-md fancy-shadow"
+                          class="absolute animate-fade-down animate-duration-300 top-[40px] left-0 w-full bg-background font-normal px-4 pb-2 pt-2 rounded-md fancy-shadow"
                       >
                           ${details}
                       </div>`
@@ -461,7 +461,7 @@ export class FeedOverlay extends HashNavOverlay {
         if (!this.generator) return renderTopbar("Feed", this.closeButton(false));
         const generator = this.generator;
         const feedName = html`<generator-view class="flex-grow" .viewStyle=${"topbar"} .generator=${generator}></generator-view>`;
-        return renderTopbar(dom(feedName)[0], this.closeButton());
+        return renderTopbar(dom(feedName)[0], html`<div class="-ml-2">${this.closeButton()}</div>`);
     }
 
     renderContent(): TemplateResult {

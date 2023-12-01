@@ -750,10 +750,10 @@ export class State {
         }
     }
 
-    static async getListItems(list: string, cursor?: string): Promise<Error | StreamPage<ProfileView>> {
+    static async getListItems(list: string, cursor?: string, limit = 100): Promise<Error | StreamPage<ProfileView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
-            const response = await State.bskyClient.app.bsky.graph.getList({ list, cursor });
+            const response = await State.bskyClient.app.bsky.graph.getList({ list, cursor, limit });
             if (!response.success) throw new Error();
             const profiles = response.data.items.map((item) => item.subject);
             this.notifyBatch("profile", "updated", profiles);
