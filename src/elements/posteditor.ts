@@ -22,18 +22,7 @@ import { i18n } from "../i18n";
 import { atIcon, closeIcon, deleteIcon, editIcon, gifIcon, imageIcon, shieldIcon, spinnerIcon } from "../icons";
 import { State } from "../state";
 import { Store } from "../store";
-import {
-    ImageInfo,
-    dom,
-    downloadImage,
-    downscaleImage,
-    error,
-    getCaretPosition,
-    isMobileBrowser,
-    loadImageFile,
-    loadImageFiles,
-    splitAtUri,
-} from "../utils";
+import { ImageInfo, dom, downloadImage, downscaleImage, error, isMobileBrowser, loadImageFile, loadImageFiles, splitAtUri } from "../utils";
 import { CloseableElement, Overlay, navigationGuard, renderTopbar } from "./overlay";
 import { renderEmbed, renderRecord, renderRichText } from "./posts";
 import { QuillEditor } from "./text-editor";
@@ -53,9 +42,11 @@ export class PostEditor extends LitElement {
 
     @property()
     quote?: PostView | ListView | GeneratorView;
+    quoteRendered?: HTMLElement;
 
     @property()
     replyTo?: PostView;
+    replyToRendered?: HTMLElement;
 
     @property()
     text = "";
@@ -113,6 +104,15 @@ export class PostEditor extends LitElement {
         this.querySelector("#handles");
     }
 
+    protected willUpdate(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        if (_changedProperties.has("replyTo")) {
+            this.replyToRendered = undefined;
+        }
+        if (_changedProperties.has("quote")) {
+            this.quoteRendered = undefined;
+        }
+    }
+
     protected updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {}
 
     render() {
@@ -128,12 +128,86 @@ export class PostEditor extends LitElement {
             placeholder = this.hashtag
                 ? i18n("Write your quote. It will be added to your thread about ${this.hashtag!}.")(this.hashtag!)
                 : i18n("Write your quote post.");
+            if (!this.quoteRendered) {
+                this.quoteRendered = dom(html`<div
+                    class="relative flex flex-col border border-divider rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2"
+                >
+                    ${(this.quote as any).uri.includes("app.bsky.feed.post")
+                        ? renderRecord(
+                              (this.quote as PostView).author,
+                              splitAtUri(this.quote.uri).rkey,
+                              this.quote.record as AppBskyFeedPost.Record,
+                              (this.quote as PostView).embed,
+                              true,
+                              false,
+                              i18n("Quoting"),
+                              undefined,
+                              undefined,
+                              false,
+                              false
+                          )
+                        : nothing}
+                    ${(this.quote as any).uri.includes("app.bsky.feed.generator")
+                        ? html`<generator-view .editable=${false} .minimal=${true} .generator=${this.quote}></generator-view>`
+                        : nothing}
+                    ${(this.quote as any).uri.includes("app.bsky.graph.list")
+                        ? html`<list-view .editable=${false} .minimal=${true} .list=${this.quote}></list-view>`
+                        : nothing}
+                    <button
+                        class="absolute right-2 top-2 bg-background rounded-full p-1"
+                        @click=${(ev: Event) => {
+                            if (!ev.currentTarget) return;
+                            const target = ev.currentTarget as HTMLElement;
+                            target.parentElement?.classList.add("animate-jump-out");
+
+                            setTimeout(() => {
+                                this.quote = undefined;
+                            }, 500);
+                        }}
+                        ?disabled=${this.isSending}
+                    >
+                        <i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
+                    </button>
+                </div>`)[0];
+            }
         } else if (this.replyTo) {
             placeholder = this.hashtag
                 ? i18n("Write your reply. It will be added to the thread by ${this.replyTo.author.displayName ?? this.replyTo.author.handle}.")(
                       this.replyTo.author.displayName ?? this.replyTo.author.handle
                   )
                 : i18n("Write your reply");
+            if (!this.replyToRendered) {
+                this.replyToRendered = dom(html`<div class="flex flex-col border border-divider rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
+                    ${renderRecord(
+                        this.replyTo.author,
+                        splitAtUri(this.replyTo.uri).rkey,
+                        this.replyTo.record as AppBskyFeedPost.Record,
+                        this.replyTo.embed,
+                        true,
+                        false,
+                        i18n("Replying to"),
+                        undefined,
+                        undefined,
+                        false,
+                        false
+                    )}
+                    <button
+                        class="absolute right-4 top-4 bg-background rounded-full p-1"
+                        @click=${(ev: Event) => {
+                            if (!ev.currentTarget) return;
+                            const target = ev.currentTarget as HTMLElement;
+                            target.parentElement?.classList.add("animate-jump-out");
+
+                            setTimeout(() => {
+                                this.replyTo = undefined;
+                            }, 500);
+                        }}
+                        ?disabled=${this.isSending}
+                    >
+                        <i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
+                    </button>
+                </div>`)[0];
+            }
         } else {
             placeholder = this.hashtag
                 ? i18n("Add a post to your thread about ${this.hashtag!}. The hashtag will be added automatically.")(this.hashtag!)
@@ -146,38 +220,7 @@ export class PostEditor extends LitElement {
                 @drop=${(ev: DragEvent) => this.pasteImage(ev)}
                 @dragover=${(ev: DragEvent) => ev.preventDefault()}
             >
-                ${this.replyTo
-                    ? html`<div class="flex flex-col border border-divider rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
-                          ${renderRecord(
-                              this.replyTo.author,
-                              splitAtUri(this.replyTo.uri).rkey,
-                              this.replyTo.record as AppBskyFeedPost.Record,
-                              this.replyTo.embed,
-                              true,
-                              false,
-                              i18n("Replying to"),
-                              undefined,
-                              undefined,
-                              false,
-                              false
-                          )}
-                          <button
-                              class="absolute right-4 top-4 bg-background rounded-full p-1"
-                              @click=${(ev: Event) => {
-                                  if (!ev.currentTarget) return;
-                                  const target = ev.currentTarget as HTMLElement;
-                                  target.parentElement?.classList.add("animate-jump-out");
-
-                                  setTimeout(() => {
-                                      this.replyTo = undefined;
-                                  }, 500);
-                              }}
-                              ?disabled=${this.isSending}
-                          >
-                              <i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
-                          </button>
-                      </div>`
-                    : nothing}
+                ${this.replyToRendered}
                 <quill-text-editor
                     id="message"
                     class="${this.fullscreen ? "flex-grow overflow-auto" : "min-h-[64px]"} max-w-[100vw]"
@@ -259,46 +302,7 @@ export class PostEditor extends LitElement {
                           )}
                       </div>`
                     : nothing}
-                ${this.quote
-                    ? html`<div class="relative flex flex-col border border-divider rounded mx-2 p-2 max-h-[10em] overflow-auto mt-2">
-                          ${(this.quote as any).uri.includes("app.bsky.feed.post")
-                              ? renderRecord(
-                                    (this.quote as PostView).author,
-                                    splitAtUri(this.quote.uri).rkey,
-                                    this.quote.record as AppBskyFeedPost.Record,
-                                    (this.quote as PostView).embed,
-                                    true,
-                                    false,
-                                    i18n("Quoting"),
-                                    undefined,
-                                    undefined,
-                                    false,
-                                    false
-                                )
-                              : nothing}
-                          ${(this.quote as any).uri.includes("app.bsky.feed.generator")
-                              ? html`<generator-view .editable=${false} .minimal=${true} .generator=${this.quote}></generator-view>`
-                              : nothing}
-                          ${(this.quote as any).uri.includes("app.bsky.graph.list")
-                              ? html`<list-view .editable=${false} .minimal=${true} .list=${this.quote}></list-view>`
-                              : nothing}
-                          <button
-                              class="absolute right-2 top-2 bg-background rounded-full p-1"
-                              @click=${(ev: Event) => {
-                                  if (!ev.currentTarget) return;
-                                  const target = ev.currentTarget as HTMLElement;
-                                  target.parentElement?.classList.add("animate-jump-out");
-
-                                  setTimeout(() => {
-                                      this.quote = undefined;
-                                  }, 500);
-                              }}
-                              ?disabled=${this.isSending}
-                          >
-                              <i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
-                          </button>
-                      </div>`
-                    : nothing}
+                ${this.quoteRendered}
                 ${this.isSending
                     ? html`<div class="flex items-center min-h-[48px]">
                           <div class="mx-auto flex items-center">

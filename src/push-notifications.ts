@@ -1,6 +1,6 @@
 import { AtpSessionData, AtpSessionEvent, BskyAgent } from "@atproto/api";
 import { IndexedDBStorage } from "./indexeddb";
-import { PushPreferences, User } from "./store";
+import { PushPreferences, Settings, User } from "./store";
 import { i18n } from "./i18n";
 
 export type PushNotification = {
@@ -11,7 +11,7 @@ export type PushNotification = {
     postUri?: string;
 };
 
-export async function getBskyClientAndUser(): Promise<{ bskyClient: BskyAgent; user?: User; pushPrefs?: PushPreferences }> {
+export async function getBskyClientAndUser(): Promise<{ bskyClient: BskyAgent; user?: User; settings?: Settings }> {
     const db = new IndexedDBStorage("skychat", 1);
     const user = (await db.get("user")) as User | undefined;
 
@@ -39,7 +39,7 @@ export async function getBskyClientAndUser(): Promise<{ bskyClient: BskyAgent; u
                 throw Error();
             }
         }
-        return { bskyClient, user, pushPrefs: (await db.get("pushPrefs")) as PushPreferences | undefined };
+        return { bskyClient, user, settings: (await db.get("settings")) as Settings | undefined };
     } catch (e) {
         // no-op in case resume didn't work.
         return { bskyClient: new BskyAgent({ service: "https://api.bsky.app" }) };
@@ -49,17 +49,47 @@ export async function getBskyClientAndUser(): Promise<{ bskyClient: BskyAgent; u
 // FIXME server should batch notifications, less logins/less wake-ups
 export async function processPushNotification(payload: any, showNotification: (title: string, options: any) => void) {
     if (payload.data && payload.data.type && payload.data.fromDid) {
-        const { bskyClient, user, pushPrefs } = await getBskyClientAndUser();
+        const notification = payload.data as PushNotification;
+        const { bskyClient, user, settings } = await getBskyClientAndUser();
         if (!user || user.profile.did != payload.data.toDid) {
             console.error("Received notification for other user, or not logged in.");
             return;
         }
-        if (!pushPrefs) {
+        if (!settings || !settings.pushPrefs) {
             console.error("No push preferences found.");
             return;
         }
+        const pushPrefs = settings.pushPrefs;
+        if (!pushPrefs.enabled) {
+            console.log("User disabled push prefs");
+            return;
+        }
+        try {
+            switch (notification.type) {
+                case "like":
+                    if (!pushPrefs.likes) throw new Error();
+                    break;
+                case "reply":
+                    if (!pushPrefs.replies) throw new Error();
+                    break;
+                case "quote":
+                    if (!pushPrefs.quotes) throw new Error();
+                    break;
+                case "repost":
+                    if (!pushPrefs.reposts) throw new Error();
+                    break;
+                case "follow":
+                    if (!pushPrefs.newFollowers) throw new Error();
+                    break;
+                case "mention":
+                    if (!pushPrefs.mentions) throw new Error();
+                    break;
+            }
+        } catch (e) {
+            console.log("User has disabled " + notification.type + " notifications");
+            return;
+        }
 
-        const notification = payload.data as PushNotification;
         let from = "Someone";
         let postText = "";
         try {

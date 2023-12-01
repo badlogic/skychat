@@ -412,36 +412,6 @@ interface Options {
     debug?: boolean | undefined;
 }
 
-export function getCaretPosition(textarea: HTMLTextAreaElement) {
-    // Create a dummy div that will mimic the textarea
-    let dummyDiv = document.createElement("div");
-    document.body.appendChild(dummyDiv);
-
-    // Apply the same styling to the dummy div as the textarea
-    dummyDiv.style.font = window.getComputedStyle(textarea).font;
-    dummyDiv.style.whiteSpace = "pre-wrap";
-    dummyDiv.style.wordWrap = "break-word";
-    dummyDiv.style.visibility = "hidden"; // Hide the div
-    dummyDiv.style.position = "absolute"; // Avoid affecting layout
-
-    // Replace newline characters with <br> and spaces with non-breaking spaces
-    let content = textarea.value.substring(0, textarea.selectionStart).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;");
-
-    // Set the content of the dummy div
-    dummyDiv.innerHTML = content;
-
-    // Calculate the position
-    let caretPos = {
-        x: dummyDiv.offsetWidth,
-        y: dummyDiv.offsetHeight,
-    };
-
-    // Clean up by removing the dummy div
-    document.body.removeChild(dummyDiv);
-
-    return caretPos;
-}
-
 export function assertNever(x: never) {
     throw new Error("Unexpected object: " + x);
 }
