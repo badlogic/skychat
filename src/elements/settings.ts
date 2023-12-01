@@ -153,6 +153,14 @@ export class SettingsOverlay extends HashNavOverlay {
                 Build: ${this.version?.date}<br />
                 <a href="https://github.com/badlogic/skychat/commit/">${this.version?.commit}</a>
             </div>
+            <slide-button
+                class="mt-4 mb-4"
+                .checked=${Store.getDevMode()}
+                .text=${"Dev mode"}
+                @changed=${(ev: CustomEvent) => {
+                    Store.setDevMode(ev.detail.value);
+                }}
+            ></slide-button>
         </div>`;
     }
 

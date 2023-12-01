@@ -503,6 +503,18 @@ export class State {
         }
     }
 
+    static async getGenerator(feedUri: string): Promise<Error | GeneratorView> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const result = await State.bskyClient.app.bsky.feed.getFeedGenerator({ feed: feedUri });
+            if (!result.success) throw new Error();
+            this.notify("feed", "updated", result.data.view);
+            return result.data.view;
+        } catch (e) {
+            return error("Couldn't load feed generator", e);
+        }
+    }
+
     static async getActorLists(did: string, cursor?: string, limit = 20, notify = true): Promise<Error | StreamPage<ListView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {

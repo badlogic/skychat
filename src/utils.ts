@@ -1,6 +1,6 @@
 import { LitElement, TemplateResult, html, nothing, render, svg } from "lit";
 import { i18n } from "./i18n";
-import { spinnerIcon } from "./icons";
+import { errorIcon, spinnerIcon } from "./icons";
 import { customElement } from "lit/decorators.js";
 
 export const defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
@@ -14,6 +14,13 @@ export function itemPlaceholder(content: TemplateResult | HTMLElement | string, 
         class="bg-muted text-muted-fg fill-muted-fg, px-4 py-2 rounded flex items-center"
     >
         ${icon ? html`<i class="icon !w-6 !h-6 fill-muted-fg mr-2">${icon}</i>` : nothing}${content}
+    </div>`;
+}
+
+export function renderError(error: string) {
+    return html`<div class="bg-red-500 w-full flex items-center px-4 py-2 text-[#fff] gap-2 rounded-md">
+        <i class="icon !w-6 !h-6 fill-[#fff]">${errorIcon}</i>
+        <div>${error}</div>
     </div>`;
 }
 

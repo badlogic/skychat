@@ -55,12 +55,14 @@ class NavigationGuard extends BaseGuard<NavigationCallback> {
     }
 
     register(callback: NavigationCallback): NavigationCallback {
+        document.body.classList.add("overflow-hidden");
         const result = super.register(callback);
         return result;
     }
 
     remove(callback: NavigationCallback) {
         super.remove(callback);
+        if (this.callbacks.length == 0) document.body.classList.remove("overflow-hidden");
         if (!this.inPopState) {
             this._call = false;
             history.back();
@@ -141,16 +143,6 @@ export abstract class Overlay extends LitElement {
         if (pushState) history.pushState(null, "", null);
     }
 
-    connectedCallback(): void {
-        super.connectedCallback();
-        document.body.classList.add("overflow-hidden");
-    }
-
-    disconnectedCallback(): void {
-        super.disconnectedCallback();
-        document.body.classList.remove("overflow-hidden");
-    }
-
     close() {
         if (this.closed) return;
         this.closed = true;
@@ -208,8 +200,8 @@ import { Messages, i18n } from "../i18n";
 import { closeIcon } from "../icons";
 import { dom, getScrollParent } from "../utils";
 
-export function renderTopbar(title: keyof Messages | HTMLElement, buttons?: TemplateResult | HTMLElement, renderLogo = true) {
-    return html`<top-bar .renderLogo=${renderLogo} .heading=${title instanceof HTMLElement ? title : i18n(title)} .buttons=${buttons}> </top-bar>`;
+export function renderTopbar(title: keyof Messages | HTMLElement, buttons?: TemplateResult | HTMLElement) {
+    return html`<top-bar .heading=${title instanceof HTMLElement ? title : i18n(title)} .buttons=${buttons}> </top-bar>`;
 }
 
 @customElement("top-bar")

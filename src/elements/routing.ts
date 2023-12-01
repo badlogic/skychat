@@ -1,5 +1,5 @@
 import { html } from "lit";
-import { FeedOverlay, ListEditor, ListOverlay, ProfileOverlay, ThreadOverlay } from ".";
+import { FeedOverlay, ListEditor, ListMembersOverlay, ListOverlay, ProfileOverlay, ThreadOverlay } from ".";
 import { dom, splitAtUri, combineAtUri } from "../utils";
 import { i18n } from "../i18n";
 import { FollowersStream, FollowingStream, PostLikesStream, PostRepostsStream } from "../streams";
@@ -50,6 +50,8 @@ export async function routeHash(hash: string) {
 
     hash = await fromBlueSkyLink(hash);
 
+    // FIXME if the route can't be deciphered, set to / and reload
+    // FIXME some of the "early aborts" seem wrong
     if (hash && hash.length > 0) {
         const tokens = hash.split("/");
         if (tokens.length > 0) {
@@ -60,7 +62,9 @@ export async function routeHash(hash: string) {
                     if (profileOverlay.did == tokens[1]) return;
                 }
                 document.body.append(dom(html`<profile-overlay .did=${tokens[1]} .pushState=${false}></profile-overlay>`)[0]);
+                return;
             }
+
             if (tokens[0] == "thread" && tokens[1] && tokens[2]) {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "THREAD-OVERLAY") {
@@ -71,19 +75,19 @@ export async function routeHash(hash: string) {
                 document.body.append(
                     dom(html`<thread-overlay .postUri=${combineAtUri(tokens[1], tokens[2])} .pushState=${false}></thread-overlay>`)[0]
                 );
+                return;
             }
+
             if (tokens[0] == "notifications") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "NOTIFICATIONS-STREAM-OVERLAY") {
-                    return;
-                }
+                if (child.tagName == "NOTIFICATIONS-STREAM-OVERLAY") return;
                 document.body.append(dom(html`<notifications-stream-overlay .pushState=${false}></notifications-stream-overlay>`)[0]);
+                return;
             }
+
             if (tokens[0] == "likes") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "PROFILES-STREAM-OVERLAY") {
-                    return;
-                }
+                if (child.tagName == "PROFILES-STREAM-OVERLAY") return;
                 document.body.append(
                     dom(
                         html`<profiles-stream-overlay
@@ -94,12 +98,12 @@ export async function routeHash(hash: string) {
                         ></profiles-stream-overlay>`
                     )[0]
                 );
+                return;
             }
+
             if (tokens[0] == "reposts") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "PROFILES-STREAM-OVERLAY") {
-                    return;
-                }
+                if (child.tagName == "PROFILES-STREAM-OVERLAY") return;
                 document.body.append(
                     dom(
                         html`<profiles-stream-overlay
@@ -110,12 +114,12 @@ export async function routeHash(hash: string) {
                         ></profiles-stream-overlay>`
                     )[0]
                 );
+                return;
             }
+
             if (tokens[0] == "following") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "PROFILES-STREAM-OVERLAY") {
-                    return;
-                }
+                if (child.tagName == "PROFILES-STREAM-OVERLAY") return;
                 document.body.append(
                     dom(
                         html`<profiles-stream-overlay
@@ -126,12 +130,12 @@ export async function routeHash(hash: string) {
                         ></profiles-stream-overlay>`
                     )[0]
                 );
+                return;
             }
+
             if (tokens[0] == "followers") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "PROFILES-STREAM-OVERLAY") {
-                    return;
-                }
+                if (child.tagName == "PROFILES-STREAM-OVERLAY") return;
                 document.body.append(
                     dom(
                         html`<profiles-stream-overlay
@@ -143,73 +147,82 @@ export async function routeHash(hash: string) {
                     )[0]
                 );
             }
+
             if (tokens[0] == "settings") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "SETTINGS-OVERLAY") {
-                    return;
-                }
+                if (child.tagName == "SETTINGS-OVERLAY") return;
                 document.body.append(dom(html`<settings-overlay .pushState=${false}></settings-overlay>`)[0]);
             }
+
             if (tokens[0] == "muted") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "MUTED-USERS-OVERLAY") {
-                    return;
-                }
+                if (child.tagName == "MUTED-USERS-OVERLAY") return;
                 document.body.append(dom(html`<muted-users-overlay .pushState=${false}></muted-users-overlay>`)[0]);
             }
+
             if (tokens[0] == "blocks") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "BLOCKED-USERS-OVERLAY") {
-                    return;
-                }
+                if (child.tagName == "BLOCKED-USERS-OVERLAY") return;
                 document.body.append(dom(html`<blocked-users-overlay .pushState=${false}></blocked-users-overlay>`)[0]);
             }
+
             if (tokens[0] == "search") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "SEARCH-OVERLAY") {
-                    return;
-                }
+                if (child.tagName == "SEARCH-OVERLAY") return;
                 document.body.append(dom(html`<search-overlay .pushState=${false}></search-overlay>`)[0]);
             }
+
             if (tokens[0] == "feeds") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "FEED-PICKER") {
-                    return;
-                }
+                if (child.tagName == "FEED-PICKER") return;
                 document.body.append(dom(html`<feed-picker .pushState=${false}></feed-picker>`)[0]);
             }
+
             if (tokens[0] == "feed" && tokens[1] && tokens[2]) {
                 const child = document.body.children[document.body.children.length - 1];
                 const atUri = combineAtUri(tokens[1], tokens[2], "app.bsky.feed.generator");
-                if (child.tagName == "FEED-OVERLAY") {
-                    const profileOverlay = child as FeedOverlay;
-                    if (profileOverlay.feedUri == atUri) return;
-                }
+                if (child.tagName == "FEED-OVERLAY" && (child as FeedOverlay).feedUri == atUri) return;
                 document.body.append(dom(html`<feed-overlay .feedUri=${atUri} .pushState=${false}></feed-overlay>`)[0]);
             }
+
             if (tokens[0] == "lists") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "LIST-PICKER") {
-                    return;
-                }
+                if (child.tagName == "LIST-PICKER") return;
                 document.body.append(dom(html`<list-picker .pushState=${false}></list-picker>`)[0]);
+                return;
             }
+
             if (tokens[0] == "list") {
                 if (tokens[1] == "new") {
                     const child = document.body.children[document.body.children.length - 1];
                     if (child.tagName == "LIST-EDITOR" && !(child as ListEditor).listUri) return;
-                    document.body.append(dom(html`<list-editor></list-editor>`)[0]);
+                    document.body.append(dom(html`<list-editor .pushState=${false}></list-editor>`)[0]);
                     return;
                 }
+
+                if (tokens[1] == "edit") {
+                    const child = document.body.children[document.body.children.length - 1];
+                    const atUri = combineAtUri(tokens[2], tokens[3], "app.bsky.graph.list");
+                    if (child.tagName == "LIST-EDITOR" && (child as ListEditor).listUri == atUri) return;
+                    document.body.append(dom(html`<list-editor .listUri=${atUri} .pushState=${false}></list-editor>`)[0]);
+                    return;
+                }
+
+                if (tokens[1] == "members") {
+                    const child = document.body.children[document.body.children.length - 1];
+                    const atUri = combineAtUri(tokens[2], tokens[3], "app.bsky.graph.list");
+                    if (child.tagName == "LIST-MEMBERS-OVERLAY" && (child as ListMembersOverlay).listUri == atUri) return;
+                    document.body.append(dom(html`<list-members-overlay .listUri=${atUri} .pushState=${false}></list-members-overlay>`)[0]);
+                    return;
+                }
+
                 if (tokens[1] && tokens[2]) {
+                    const child = document.body.children[document.body.children.length - 1];
+                    const atUri = combineAtUri(tokens[1], tokens[2], "app.bsky.graph.list");
+                    if (child.tagName == "LIST-OVERLAY" && (child as ListOverlay).listUri == atUri) return;
+                    document.body.append(dom(html`<list-overlay .listUri=${atUri} .pushState=${false}></list-overlay>`)[0]);
+                    return;
                 }
-                const child = document.body.children[document.body.children.length - 1];
-                const atUri = combineAtUri(tokens[1], tokens[2], "app.bsky.graph.list");
-                if (child.tagName == "LIST-OVERLAY") {
-                    const listOverlay = child as ListOverlay;
-                    if (listOverlay.listUri == atUri) return;
-                }
-                document.body.append(dom(html`<list-overlay .listUri=${atUri} .pushState=${false}></list-overlay>`)[0]);
             }
         }
     }

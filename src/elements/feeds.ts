@@ -9,7 +9,7 @@ import { heartFilledIcon, heartIcon, infoIcon, linkIcon, minusIcon, pinIcon, plu
 import { FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
 import { FeedPostsStream } from "../streams";
-import { copyTextToClipboard, defaultFeed, dom, error, getNumber, hasLinkOrButtonParent, splitAtUri, waitForNavigation } from "../utils";
+import { copyTextToClipboard, defaultFeed, dom, error, getNumber, hasLinkOrButtonParent, renderError, splitAtUri, waitForNavigation } from "../utils";
 import { IconToggle } from "./icontoggle";
 import { renderRichText } from "./posts";
 import { getProfileUrl, renderProfileAvatar } from "./profiles";
@@ -65,8 +65,6 @@ export class GeneratorViewElement extends LitElement {
 
     render() {
         if (!this.generator) return html`${nothing}`;
-        const user = Store.getUser();
-        if (!user) return html`${nothing}`;
 
         const generator = this.generator;
         const prefs = State.preferences?.feeds ?? {
@@ -100,8 +98,8 @@ export class GeneratorViewElement extends LitElement {
                       .value=${this.expandDetails}
                   ></icon-toggle>`
                 : nothing}
-            ${this.editable
-                ? html` ${splitAtUri(generator.uri).repo != user.profile.did
+            ${this.editable && Store.getUser()
+                ? html` ${splitAtUri(generator.uri).repo != Store.getUser()?.profile.did
                       ? html`${prefs.saved?.includes(generator.uri) || prefs.pinned?.includes(generator.uri)
                             ? html`<button @click=${() => this.removeFeed()}>
                                   <i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</i>
@@ -134,7 +132,7 @@ export class GeneratorViewElement extends LitElement {
                 <icon-toggle
                     @change=${(ev: CustomEvent) => this.toggleLike(ev)}
                     .icon=${html`<i class="icon !w-5 !h-5">${heartIcon}</i>`}
-                    .iconFilled=${html`<i class="icon !w-5 !h-5">${heartFilledIcon}</i>`}
+                    .iconTrue=${html`<i class="icon !w-5 !h-5">${heartFilledIcon}</i>`}
                     class="h-6"
                     .value=${generator.viewer?.like}
                     .text=${getNumber(generator.likeCount ?? 0)}
@@ -148,6 +146,27 @@ export class GeneratorViewElement extends LitElement {
                 >
                     <i class="icon !w-5 !h-5 fill-muted-fg">${linkIcon}</i>
                 </button>
+                ${Store.getDevMode()
+                    ? html`<button
+                          class="text-primary font-bold"
+                          @click=${() => {
+                              copyTextToClipboard(generator.uri);
+                              toast("Copied at-uri to clipboard");
+                          }}
+                      >
+                          at-uri
+                      </button>`
+                    : nothing}
+                ${Store.getDevMode()
+                    ? html`<button
+                          class="text-primary font-bold"
+                          @click=${() => {
+                              console.log(generator);
+                          }}
+                      >
+                          JSON
+                      </button>`
+                    : nothing}
             </div>`;
 
         return html`<div
@@ -323,7 +342,7 @@ export class FeedPicker extends HashNavOverlay {
     }
 
     renderHeader(): TemplateResult {
-        return renderTopbar("Feeds", this.closeButton(), false);
+        return renderTopbar("Feeds", this.closeButton());
     }
 
     protected update(changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
@@ -341,7 +360,7 @@ export class FeedPicker extends HashNavOverlay {
                     ${i18n("Discover more feeds")}
                 </button>
             </div>
-            <div class="px-4 flex items-center bg-muted text-muted-fg text-muted-fg">${i18n("Saved Feeds")}</div>
+            <div class="px-4 flex items-center text-muted-fg text-muted-fg">${i18n("Saved Feeds")}</div>
             ${this.feeds.length == 0 ? html`<div class="py-4 rounded text-center">${i18n("You don't have saved feeds")}</div>` : nothing}
             ${repeat(
                 this.feeds,
@@ -358,7 +377,7 @@ export class FeedPicker extends HashNavOverlay {
                     </div>`
             )}
             ${this.ownFeeds.length > 0
-                ? html`<div class="px-4 flex items-center bg-muted text-muted-fg">${i18n("Feeds by me")}</div>
+                ? html`<div class="px-4 flex items-center text-muted-fg">${i18n("Feeds by me")}</div>
                       ${repeat(
                           this.ownFeeds,
                           (generator) => generator.uri,
@@ -439,14 +458,14 @@ export class FeedOverlay extends HashNavOverlay {
     }
 
     renderHeader(): TemplateResult {
-        if (!this.generator) return renderTopbar("Feed", this.closeButton(false), false);
+        if (!this.generator) return renderTopbar("Feed", this.closeButton(false));
         const generator = this.generator;
         const feedName = html`<generator-view class="flex-grow" .viewStyle=${"topbar"} .generator=${generator}></generator-view>`;
-        return renderTopbar(dom(feedName)[0], this.closeButton(), false);
+        return renderTopbar(dom(feedName)[0], this.closeButton());
     }
 
     renderContent(): TemplateResult {
-        if (this.error) return html`<div id="error" class="align-top p-4">${this.error}</div>`;
+        if (this.error) return renderError(this.error);
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
         return html`<feed-stream-view
@@ -457,6 +476,8 @@ export class FeedOverlay extends HashNavOverlay {
                     }
                 }}
             ></feed-stream-view
-            ><open-post-editor-button id="post"></open-post-editor-button> <notifications-button id="notifications"></notifications-button>`;
+            >${Store.getUser()
+                ? html`<open-post-editor-button id="post"></open-post-editor-button> <notifications-button id="notifications"></notifications-button>`
+                : nothing}`;
     }
 }

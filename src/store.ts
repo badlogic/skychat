@@ -31,6 +31,7 @@ export type Settings = {
     theme: Theme;
     pinchZoom: boolean;
     pushPrefs: PushPreferences;
+    devMode: boolean;
 };
 
 export type StoreKey = "user" | "settings";
@@ -45,6 +46,7 @@ export class Store {
                 theme: "dark",
                 pushPrefs: { enabled: true, likes: true, mentions: true, newFollowers: true, quotes: true, replies: true, reposts: true },
                 pinchZoom: true,
+                devMode: false,
             };
             Store.set<Settings>("settings", settings);
         }
@@ -103,5 +105,13 @@ export class Store {
 
     static setPushPreferences(pushPrefs: PushPreferences) {
         Store.set("settings", { ...Store.get<Settings>("settings"), pushPrefs });
+    }
+
+    static getDevMode() {
+        return Store.get<Settings>("settings")?.devMode;
+    }
+
+    static setDevMode(devMode: boolean) {
+        Store.set("settings", { ...Store.get<Settings>("settings"), devMode });
     }
 }

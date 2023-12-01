@@ -289,6 +289,7 @@ export class ButtonGroup extends LitElement {
             new CustomEvent("change", {
                 detail: {
                     value: this.selected,
+                    index: this.values.indexOf(this.selected),
                 },
             })
         );

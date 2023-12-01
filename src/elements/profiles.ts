@@ -6,7 +6,7 @@ import { Messages, i18n } from "../i18n";
 import { blockIcon, moreIcon, muteIcon, shieldIcon, spinnerIcon } from "../icons";
 import { ActorFeedType, EventAction, State } from "../state";
 import { Store } from "../store";
-import { defaultAvatar, dom, error, getNumber, getScrollParent, hasLinkOrButtonParent, itemPlaceholder } from "../utils";
+import { copyTextToClipboard, defaultAvatar, dom, error, getNumber, getScrollParent, hasLinkOrButtonParent, itemPlaceholder } from "../utils";
 import { HashNavOverlay, renderTopbar } from "./overlay";
 import { PopupMenu } from "./popup";
 import { renderRichText } from "./posts";
@@ -219,6 +219,26 @@ export class ProfileOverlay extends HashNavOverlay {
                 ${profile.viewer?.followedBy ? html`<span class="p-1 text-xs rounded bg-muted text-muted-fg">${i18n("Follows you")}</span>` : nothing}
                 <span class="text-muted-fg text-sm">${profile.handle}</span>
             </div>
+            ${Store.getDevMode()
+                ? html`<div class="flex items-center gap-2 px-4">
+                      <button
+                          class="text-primary font-bold"
+                          @click=${() => {
+                              copyTextToClipboard(this.profile!.did);
+                              toast("Copied did to clipboard");
+                          }}
+                      >
+                          did</button
+                      ><button
+                          class="text-primary font-bold"
+                          @click=${() => {
+                              console.log(this.profile);
+                          }}
+                      >
+                          JSON
+                      </button>
+                  </div>`
+                : nothing}
             <div class="mt-2 text-sm flex flex-col gap-2 px-4">
                 ${!(this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList)
                     ? html`
@@ -298,8 +318,10 @@ export class ProfileOverlay extends HashNavOverlay {
                     : nothing}
             </div>
             <div class="min-h-screen">${feed}</div>
-            <open-post-editor-button .text=${"@" + this.profile.handle + " "}></open-post-editor-button>
-            <notifications-button id="notifications"></notifications-button>
+            ${Store.getUser()
+                ? html`<open-post-editor-button .text=${"@" + this.profile.handle + " "}></open-post-editor-button>
+                      <notifications-button id="notifications"></notifications-button>`
+                : nothing}
         </div>`;
     }
 
@@ -378,6 +400,27 @@ export class ProfileViewElement extends LitElement {
                         : nothing}
                 </div>
                 <div class="text-sm mt-1">${renderRichText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
+
+                ${Store.getDevMode()
+                    ? html`<div class="flex items-center gap-2">
+                          <button
+                              class="text-primary font-bold"
+                              @click=${() => {
+                                  copyTextToClipboard(this.profile!.did);
+                                  toast("Copied did to clipboard");
+                              }}
+                          >
+                              did</button
+                          ><button
+                              class="text-primary font-bold"
+                              @click=${() => {
+                                  console.log(this.profile);
+                              }}
+                          >
+                              JSON
+                          </button>
+                      </div>`
+                    : nothing}
             </div>
         </div>`;
     }
@@ -429,6 +472,7 @@ export class ProfileActionButton extends LitElement {
     render() {
         if (!this.profile) return html`${nothing}`;
         if (this.profile?.did == Store.getUser()?.profile.did) return html`${nothing}`;
+        if (!Store.getUser()) return html`${nothing}`;
 
         if (this.isUpdating) {
             return html`<button class="flex items-center justify-center min-w-[80px] w-[80px] bg-muted text-muted-fg rounded-full h-8 fancy-shadow"><i class="icon !w-6 !h-6 fill-muted-fg animate-spin">${spinnerIcon}</i></div>`;

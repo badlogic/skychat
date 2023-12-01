@@ -3,15 +3,16 @@ import { ButtonGroup, GeneratorViewElementAction, HashNavOverlay, Overlay, rende
 import { customElement, property, query } from "lit/decorators.js";
 import { closeIcon, searchIcon, spinnerIcon } from "../icons";
 import { i18n } from "../i18n";
-import { dom } from "../utils";
+import { dom, renderError, splitAtUri } from "../utils";
 import { FeedSearchStream, FeedSuggestionStream, PostSearchStream, UserSearchStream as UserSearchStream, UserSuggestionStream } from "../streams";
 import { GeneratorView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { Store } from "../store";
+import { State } from "../state";
 
 @customElement("search-overlay")
 export class SearchOverlay extends HashNavOverlay {
     @property()
-    showTypes = [i18n("Users"), i18n("Posts"), i18n("Feeds")];
+    showTypes = Store.getDevMode() ? [i18n("Users"), i18n("Posts"), i18n("Feeds"), "at-uris"] : [i18n("Users"), i18n("Posts"), i18n("Feeds")];
 
     @query("#search")
     searchElement?: HTMLInputElement;
@@ -59,7 +60,7 @@ export class SearchOverlay extends HashNavOverlay {
                         @input=${() => this.handleSearch()}
                         id="search"
                         class="flex-grow bg-transparent"
-                        placeholder="${i18n("Search for") + " " + this.showTypes.join(", ") + " ..."}"
+                        placeholder="${i18n("E.g. names, keywords, ...")}"
                         autocomplete="off"
                     />
                     <button
@@ -83,7 +84,7 @@ export class SearchOverlay extends HashNavOverlay {
                           .selected=${this.showTypes.includes(i18n("Feeds")) ? i18n("Feeds") : this.showTypes[0]}
                       ></button-group>`
                     : nothing}
-                ${this.selectedType == i18n("Posts")
+                ${this.selectedType == i18n("Posts") && Store.getUser()
                     ? html`<slide-button
                           id="self"
                           class="self-center mt-4"
@@ -158,6 +159,54 @@ export class SearchOverlay extends HashNavOverlay {
                     ></generators-stream-view>`
                 )[0]
             );
+        } else if (type == "at-uris") {
+            query = query.trim();
+            if (query.length == 0) return;
+            const atUri = splitAtUri(query);
+            if (atUri.type == "app.bsky.feed.post") {
+                (async () => {
+                    const result = await State.getPosts([query]);
+                    if (result instanceof Error) {
+                        this.resultsElement!.append(dom(renderError(result.message))[0]);
+                        console.error(result);
+                        return;
+                    }
+                    const post = result[0];
+                    this.resultsElement!.append(dom(html`<post-view class="p-4" .post=${post}></post-view>`)[0]);
+                })();
+            } else if (atUri.type == "app.bsky.feed.generator") {
+                (async () => {
+                    const result = await State.getGenerator(query);
+                    if (result instanceof Error) {
+                        this.resultsElement!.append(dom(renderError(result.message))[0]);
+                        console.error(result);
+                        return;
+                    }
+                    this.resultsElement!.append(dom(html`<generator-view class="p-4" .generator=${result}></generator-view>`)[0]);
+                })();
+            } else if (atUri.type == "app.bsky.graph.list") {
+                (async () => {
+                    const result = await State.getList(query);
+                    if (result instanceof Error) {
+                        this.resultsElement!.append(dom(renderError(result.message))[0]);
+                        console.error(result);
+                        return;
+                    }
+                    this.resultsElement!.append(dom(html`<list-view class="p-4" .list=${result}></list-view>`)[0]);
+                })();
+            } else if (atUri.repo.startsWith("did:")) {
+                (async () => {
+                    const result = await State.getProfiles([query]);
+                    if (result instanceof Error) {
+                        this.resultsElement!.append(dom(renderError(result.message))[0]);
+                        console.error(result);
+                        return;
+                    }
+                    this.resultsElement!.append(dom(html`<profile-view class="p-4" .profile=${result[0]}></profile-view>`)[0]);
+                })();
+            } else {
+                this.resultsElement!.append(dom(renderError("Unknown at-uri type: " + query))[0]);
+            }
         }
     }
 

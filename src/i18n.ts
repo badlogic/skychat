@@ -87,7 +87,9 @@ export interface Messages {
     "Failed to download image": string;
     "trend description": string;
     "The better BlueSky app": string;
+    "(Possibly, once it's done, work-in-progress :D)": string;
     "Sign in": string;
+    "Sign up": string;
     "Invalid account or password.": string;
     Quotes: string;
     Reposts: string;
@@ -186,6 +188,35 @@ export interface Messages {
     "Name is required": string;
     "E.g. 'Cool people'": string;
     "Add people": string;
+    "Members of": (name: string) => string;
+    "Explore without an Account": string;
+    Explore: string;
+    "Explore BlueSky with": string;
+    "Search people": string;
+    "Search posts": string;
+    "Search feeds": string;
+    "explore-header": string;
+    "(Viewed through Skychat)": string;
+    "explore-callout": string;
+    "Hello, Anyone There?": string;
+    "explore-box-1-text-1": string;
+    "I need George Takei in my life": string;
+    "(You can view all users' followers, followings, posts, media, likes, feeds, and lists)": string;
+    "My God, It's Full of Posts": string;
+    "explore-box-2-text-1": string;
+    "explore-box-2-text-2": string;
+    "Do you want to see more?": string;
+    "Your Feeds, Your Choice": string;
+    "explore-box-3-text-1": string;
+    "explore-box-3-text-2": string;
+    "explore-box-3-text-3": string;
+    "Time for some ...": string;
+    "(or how I learned to love the algorithm)": string;
+    Entertainment: string;
+    News: string;
+    Science: string;
+    "E.g. names, keywords, ...": string;
+    "(Click on a post to view the entire thread)": string;
 }
 
 const english: Messages = {
@@ -267,7 +298,6 @@ const english: Messages = {
     footer: `<a href="https://skychat.social" target="_blank">Skychat</a>
         is lovingly made by
         <a href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
-        No data is collected, not even your IP address.<br />
         <a href="https://github.com/badlogic/skychat" target="_blank">Source code</a>`,
     "Please specify a hashtag": "Please specify a hashtag",
     "Please specify an app password for your account. You can get one in your BlueSky app's settings.":
@@ -287,7 +317,9 @@ const english: Messages = {
     "trend description":
         "Below you'll see hashtags sorted by the number of posts they are contained in since you opened this page. Updates in real-time. The longer you leave this page open, the more representative the statistics get.",
     "The better BlueSky app": "The better BlueSky app",
+    "(Possibly, once it's done, work-in-progress :D)": "(Possibly, once it's done, work-in-progress :D)",
     "Sign in": "Sign in",
+    "Sign up": "Sign up",
     "Invalid account or password.": "Invalid account or password.",
     Quotes: "Quotes",
     Reposts: "Reposts",
@@ -386,6 +418,38 @@ const english: Messages = {
     "Name is required": "Name is required",
     "E.g. 'Cool people'": "E.g. 'Cool people'",
     "Add people": "Add people",
+    "Members of": (name: string) => "Members of " + name,
+    "Explore without an Account": "Explore BlueSky without account",
+    Explore: "Explore",
+    "Explore BlueSky with": "Explore BlueSky with",
+    "Search people": "Search people",
+    "Search posts": "Search posts",
+    "Search feeds": "Search feeds",
+    "explore-header": `Welcome to <a href="https://bsky.app">BlueSky</a>`,
+    "(Viewed through Skychat)": "(Viewed through Skychat)",
+    "explore-callout": `Scroll down and <span class="text-blue-500 font-bold">explore BlueSky without an account</span>, or ...`,
+    "Hello, Anyone There?": "Hello, Anyone There?",
+    "explore-box-1-text-1": `Not everyone has made the jump yet. But it's cosy and there're plenty of cool peeps around. We have a <span class="text-blue-500 font-bold">freaking George Takei</span>`,
+    "I need George Takei in my life": "I need George Takei in my life",
+    "(You can view all users' followers, followings, posts, media, likes, feeds, and lists)":
+        "(You can view all users' followers, followings, posts, media, likes, feeds, and lists)",
+    "My God, It's Full of Posts": "My God, It's Full of Posts",
+    "explore-box-2-text-1":
+        "It's a hive of conversation here, reminiscent of that other unnamed network. While we're still warming up to hashtags, searching for posts is a breeze.",
+    "explore-box-2-text-2": `Check out the latest three posts on everyone's beloved <span class="text-blue-500 font-bold">Godzilla</span>.`,
+    "Do you want to see more?": "Do you want to see more?",
+    "Your Feeds, Your Choice": "Your Feeds, Your Choice",
+    "explore-box-3-text-1": "BlueSky respects your timeline — posts from people you follow, in chronological order, untouched by algorithms.",
+    "explore-box-3-text-2": `Want a change of pace? Opt for <a href="https://blueskyweb.xyz/blog/7-27-2023-custom-feeds" target="_blank" class="font-bold">algorithmically or manually curated feeds</a> for a dash of serendipity.`,
+    "explore-box-3-text-3":
+        "Plus, you're free to create and share your own feeds, or simply curate lists of users whose posts you want to see separately from your main feed.",
+    "Time for some ...": "Time for some ...",
+    "(or how I learned to love the algorithm)": "(or how I learned to love the algorithm)",
+    Entertainment: "Entertainment",
+    News: "News",
+    Science: "Science",
+    "E.g. names, keywords, ...": "E.g. names, keywords, ...",
+    "(Click on a post to view the entire thread)": "(Click on a post to view the entire thread)",
 };
 
 const german: Messages = {
@@ -490,6 +554,8 @@ const german: Messages = {
     "trend description":
         "Unten siehst du Hashtags sortiert nach der Anzahl and Posts in denen sie vorkommen seit du diese Seite geladen hast. Wird in Echtzeit erhoben. Je länger du die Seite offen lässt, desto representativer werden die Statistiken.",
     "The better BlueSky app": "Die bessere BlueSky App",
+    "(Possibly, once it's done, work-in-progress :D)": "(Möglicherweise, wenn sie fertig ist, work-in-progress :D)",
+    "Sign up": "Account erstellen",
     "Sign in": "Anmelden",
     "Invalid account or password.": "Invalider Benutzername oder Passwort.",
     Quotes: "Zitate",
@@ -589,6 +655,39 @@ const german: Messages = {
     "Name is required": "Name erforderlich",
     "E.g. 'Cool people'": "Z.B. 'Coole Leute'",
     "Add people": "Benutzerin hizufügen",
+    "Members of": (name: string) => "Mitglieder von " + name,
+    "Explore without an Account": "Entdecke BlueSky ohne Account",
+    Explore: "Entdecken",
+    "Explore BlueSky with": "Entdecke BlueSky mit",
+    "Search people": "Leute suchen",
+    "Search posts": "Posts suchen",
+    "Search feeds": "Feeds suchen",
+    "explore-header": `Willkommen bei <a href="https://bsky.app">BlueSky</a>`,
+    "(Viewed through Skychat)": "(Betrachtet via Skychat)",
+    "explore-callout": `Runterscrollen und <span class="text-blue-500 font-bold">BlueSky ohne Account entdecken</span> oder ...`,
+    "Hello, Anyone There?": "Hallo, ist da wer?",
+    "explore-box-1-text-1": `Nicht jeder hat den Sprung schon gewagt. Aber es ist gemütlich und es gibt viele nette Leute hier. Wir haben sogar einen <span class="text-blue-500 font-bold">echten George Takei</span>`,
+    "I need George Takei in my life": "Ich will George Takei",
+    "(You can view all users' followers, followings, posts, media, likes, feeds, and lists)":
+        "(Du kannst hier die Follower, Followings, Posts, Medien, Likes, Feeds und Listen aller Benutzerinnen durchstöbern)",
+    "My God, It's Full of Posts": "Mein Gott, es ist voller Beiträge",
+    "explore-box-2-text-1":
+        "Hier geht's ähnlich zu, wie im Netzwerk das nicht genannt werden soll. Nur (fast) ohne Nazis. Während wir Hashtags noch üben müssen, kann man Beiträge super einfach finden.",
+    "explore-box-2-text-2": `Hier, die letzten 3 Beiträge über <span class="text-blue-500 font-bold">Godzilla</span>. Warum nicht?`,
+    "Do you want to see more?": "Willst du mehr sehen?",
+    "Your Feeds, Your Choice": "Deine Feeds, Deine Wahl",
+    "explore-box-3-text-1":
+        "BlueSky respektiert deine Timeline - Beiträge von Personen, denen du folgst, in chronologischer Reihenfolge, unberührt von Algorithmen.",
+    "explore-box-3-text-2": `Möchtest du etwas Abwechslung? Wähle <a href="https://blueskyweb.xyz/blog/7-27-2023-custom-feeds" target="_blank" class="font-bold">algorithmisch oder manuell kuratierte Feeds</a> und stolpere in neue Themen und Communities hinein.`,
+    "explore-box-3-text-3":
+        "Zudem kannst du deine eigenen Feeds erstellen und teilen, oder einfach Listen von Nutzern zusammenstellen, deren Beiträge du getrennt von deinem Haupt-Feed sehen möchtest.",
+    "Time for some ...": "Zeit für etwas ...",
+    "(or how I learned to love the algorithm)": "(oder wie ich den Algorithmus lieben lernte)",
+    Entertainment: "Unterhaltung",
+    News: "Nachrichten",
+    Science: "Wissenschaft",
+    "E.g. names, keywords, ...": "Z.B. Names, phrasen, ...",
+    "(Click on a post to view the entire thread)": "(Auf Post klicken, um ganzen Thread anzuzeigen)",
 };
 
 export type LanguageCode = "en" | "de";

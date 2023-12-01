@@ -686,10 +686,10 @@ export class PostViewElement extends LitElement {
         return html`<div class="${this.animation} outline-none">
             ${this.contentDom}
             <div class="flex items-center ${this.centerButtons ? "justify-center" : ""} text-muted-fg fill-muted-fg gap-4 mt-2">
-                <button @click=${() => this.replyCallback(this.post!)} class="flex gap-1 items-center">
+                <button @click=${() => (Store.getUser() ? this.replyCallback(this.post!) : undefined)} class="flex gap-1 items-center">
                     <i class="icon !w-4 !h-4">${replyIcon}</i><span>${this.post.replyCount ?? 0}</span>
                 </button>
-                <button @click=${() => this.quoteCallback(this.post!)} class="flex gap-1 items-center">
+                <button @click=${() => (Store.getUser() ? this.quoteCallback(this.post!) : undefined)} class="flex gap-1 items-center">
                     <i class="icon !w-4 !h-4">${quoteIcon}</i><span>${State.getObject("numQuote", this.post.uri)?.numQuotes ?? 0}</span>
                 </button>
                 <icon-toggle
@@ -702,12 +702,33 @@ export class PostViewElement extends LitElement {
                 <icon-toggle
                     @change=${(ev: CustomEvent) => this.toggleLike(ev)}
                     .icon=${html`<i class="icon !w-4 !h-4">${heartIcon}</i>`}
-                    .iconFilled=${html`<i class="icon !w-4 !h-4">${heartFilledIcon}</i>`}
+                    .iconTrue=${html`<i class="icon !w-4 !h-4">${heartFilledIcon}</i>`}
                     class="h-4"
                     .value=${this.post.viewer?.like ?? false}
                     .text=${"" + (this.post.likeCount ?? 0)}
                 ></icon-toggle>
                 <post-options .post=${this.post} .handleOption=${(option: PostOptions) => this.handleOption(option)}></post-options>
+                ${Store.getDevMode()
+                    ? html`<button
+                          class="text-primary font-bold"
+                          @click=${() => {
+                              copyTextToClipboard(this.post!.uri);
+                              toast("Copied at-uri to clipboard");
+                          }}
+                      >
+                          at-uri
+                      </button>`
+                    : nothing}
+                ${Store.getDevMode()
+                    ? html`<button
+                          class="text-primary font-bold"
+                          @click=${() => {
+                              console.log(this.post);
+                          }}
+                      >
+                          JSON
+                      </button>`
+                    : nothing}
             </div>
         </div>`;
     }
@@ -720,7 +741,10 @@ export class PostViewElement extends LitElement {
 
     async toggleRepost(ev: CustomEvent) {
         const toggle = ev.target as IconToggle;
-        if (!Store.getUser()) return;
+        if (!Store.getUser()) {
+            toggle.value = !toggle.value;
+            return;
+        }
         if (!State.bskyClient) return;
         if (!this.post) return;
         if (!this.post.viewer) this.post.viewer = {};
@@ -743,7 +767,10 @@ export class PostViewElement extends LitElement {
     likeUri: string | undefined;
     async toggleLike(ev: CustomEvent) {
         const toggle = ev.target as IconToggle;
-        if (!Store.getUser()) return;
+        if (!Store.getUser()) {
+            toggle.value = !toggle.value;
+            return;
+        }
         if (!State.bskyClient) return;
         if (!this.post) return;
         if (!this.post.viewer) this.post.viewer = {};
@@ -883,7 +910,7 @@ export class PostOptionsElement extends PopupMenu {
                 option: "mute_thread",
                 text: i18n("Mute Thread"),
                 icon: html`${muteIcon}`,
-                enabled: true,
+                enabled: Store.getUser() != undefined,
                 click: () => {
                     this.handleOption("mute_thread");
                     this.close();
@@ -893,7 +920,11 @@ export class PostOptionsElement extends PopupMenu {
                 option: "mute_user",
                 text: i18n("Mute User"),
                 icon: html`${muteIcon}`,
-                enabled: did != this.post.author.did && !this.post.author.viewer?.muted && !this.post.author.viewer?.mutedByList,
+                enabled:
+                    Store.getUser() != undefined &&
+                    did != this.post.author.did &&
+                    !this.post.author.viewer?.muted &&
+                    !this.post.author.viewer?.mutedByList,
                 click: () => {
                     State.muteActor(this.post!.author.did);
                     this.close();
@@ -903,7 +934,10 @@ export class PostOptionsElement extends PopupMenu {
                 option: "unmute_user",
                 text: i18n("Unmute User"),
                 icon: html`${muteIcon}`,
-                enabled: did != this.post.author.did && (this.post.author.viewer?.muted || this.post.author.viewer?.mutedByList != undefined),
+                enabled:
+                    Store.getUser() != undefined &&
+                    did != this.post.author.did &&
+                    (this.post.author.viewer?.muted || this.post.author.viewer?.mutedByList != undefined),
                 click: () => {
                     State.unmuteActor(this.post!.author.did);
                     this.close();
@@ -913,7 +947,11 @@ export class PostOptionsElement extends PopupMenu {
                 option: "block_user",
                 text: i18n("Block User"),
                 icon: html`${blockIcon}`,
-                enabled: did != this.post.author.did && !this.post.author.viewer?.blocking && !this.post.author.viewer?.blockingByList,
+                enabled:
+                    Store.getUser() != undefined &&
+                    did != this.post.author.did &&
+                    !this.post.author.viewer?.blocking &&
+                    !this.post.author.viewer?.blockingByList,
                 click: () => {
                     State.blockActor(this.post!.author.did);
                     this.close();
@@ -924,6 +962,7 @@ export class PostOptionsElement extends PopupMenu {
                 text: i18n("Unblock User"),
                 icon: html`${blockIcon}`,
                 enabled:
+                    Store.getUser() != undefined &&
                     did != this.post.author.did &&
                     (this.post.author.viewer?.blocking != undefined || this.post.author.viewer?.blockingByList != undefined),
                 click: () => {
@@ -958,7 +997,7 @@ export class PostOptionsElement extends PopupMenu {
                 option: "delete",
                 text: i18n("Delete Post"),
                 icon: html`${deleteIcon}`,
-                enabled: did != undefined && this.post.uri.includes(did),
+                enabled: Store.getUser() != undefined && did != undefined && this.post.uri.includes(did),
                 click: () => {
                     this.handleOption("delete");
                     this.close();
@@ -1359,7 +1398,7 @@ export class ThreadOverlay extends HashNavOverlay {
     renderHeader() {
         return html`${renderTopbar(
             "Thread",
-            html`<div class="ml-auto flex">
+            html`<div class="relative ml-auto flex">
                 <div class="flex">
                     ${this.canReaderMode
                         ? html`<icon-toggle
@@ -1370,6 +1409,18 @@ export class ThreadOverlay extends HashNavOverlay {
                         : nothing}
                 </div>
                 <div class="-ml-2">${this.closeButton()}</div>
+                ${Store.getDevMode()
+                    ? html`<div class="absolute top-[40px] right-0 flex items-center bg-white px-4 py-2 rounded-md fancy-shadows">
+                          <button
+                              class="text-primary font-bold"
+                              @click=${() => {
+                                  console.log(this.thread);
+                              }}
+                          >
+                              JSON
+                          </button>
+                      </div>`
+                    : nothing}
             </div>`
         )}`;
     }

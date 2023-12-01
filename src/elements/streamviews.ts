@@ -16,7 +16,17 @@ import { atIcon, followIcon, heartFilledIcon, heartIcon, quoteIcon, reblogIcon, 
 import { State } from "../state";
 import { Store } from "../store";
 import { ActorFeedStream, NotificationsStream, Stream, StreamPage } from "../streams";
-import { collectLitElements, dom, error, getScrollParent, getTimeDifference, hasLinkOrButtonParent, isSafariBrowser, onVisibleOnce } from "../utils";
+import {
+    collectLitElements,
+    dom,
+    error,
+    getScrollParent,
+    getTimeDifference,
+    hasLinkOrButtonParent,
+    isSafariBrowser,
+    onVisibleOnce,
+    renderError,
+} from "../utils";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { deletePost, quote, reply } from "./posteditor";
 import { renderEmbed, renderRichText } from "./posts";
@@ -160,11 +170,24 @@ export abstract class StreamView<T> extends LitElement {
     }
 
     render() {
-        if (this.error)
-            return html`<div class="mt-4 py-4 flex-grow flex items-center justify-center border border-red text-red rounded-md">${this.error}</div>`;
+        if (this.error) return renderError(this.error);
 
-        return html` <div id="items" class="flex flex-col">
-            <loading-spinner class="w-full" id="spinner"></loading-spinner>
+        return html`<div class="relative">
+            <div id="items" class="flex flex-col">
+                <loading-spinner class="w-full" id="spinner"></loading-spinner>
+            </div>
+            ${Store.getDevMode()
+                ? html`<div class="absolute top-0 right-0 flex items-center bg-white px-4 py-2 rounded-md fancy-shadows">
+                      <button
+                          class="text-primary font-bold"
+                          @click=${() => {
+                              console.log(this.stream?.pages);
+                          }}
+                      >
+                          JSON
+                      </button>
+                  </div>`
+                : nothing}
         </div>`;
     }
 

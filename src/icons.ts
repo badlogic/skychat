@@ -92,6 +92,8 @@ import brushIconSvg from "remixicon/icons/Design/brush-line.svg";
 import errorIconSvg from "remixicon/icons/System/error-warning-line.svg";
 // @ts-ignore
 import cameraIconSvg from "remixicon/icons/Media/camera-line.svg";
+// @ts-ignore
+import peopleIconSvg from "remixicon/icons/User & Faces/team-line.svg";
 
 import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 
@@ -142,3 +144,4 @@ export const linkIcon = unsafeHTML(linkIconSvg);
 export const brushIcon = unsafeHTML(brushIconSvg);
 export const errorIcon = unsafeHTML(errorIconSvg);
 export const cameraIcon = unsafeHTML(cameraIconSvg);
+export const peopleIcon = unsafeHTML(peopleIconSvg);

@@ -347,6 +347,14 @@ export class UserSuggestionStream extends ProfileViewStream {
     }
 }
 
+export class ListMembersStream extends ProfileViewStream {
+    constructor(listUri: string) {
+        super((cursor?: string, limit?: number, notify?: boolean) => {
+            return State.getListItems(listUri, cursor);
+        });
+    }
+}
+
 export abstract class GeneratorViewStream extends Stream<GeneratorView> {
     getItemKey(item: GeneratorView): string {
         return item.uri;
