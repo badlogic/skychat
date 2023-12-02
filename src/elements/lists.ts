@@ -3,7 +3,7 @@ import { FeedViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs"
 import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 import { HTMLTemplateResult, LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import { HashNavOverlay, QuillEditor, renderTopbar } from ".";
+import { HashNavOverlay, QuillEditor, StreamView, renderTopbar } from ".";
 import { i18n } from "../i18n";
 import {
     blockIcon,
@@ -37,7 +37,7 @@ import {
     getNumber,
 } from "../utils";
 import { renderRichText } from "./posts";
-import { getProfileUrl, renderProfileAvatar } from "./profiles";
+import { ProfileViewElement, getProfileUrl, renderProfileAvatar } from "./profiles";
 import { toast } from "./toast";
 import { repeat } from "lit-html/directives/repeat.js";
 import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
@@ -79,6 +79,9 @@ export class ListViewElement extends LitElement {
 
     @property()
     editable = true;
+
+    @property()
+    editCheck?: (list: ListView) => boolean;
 
     @property()
     defaultActions = true;
@@ -139,6 +142,8 @@ export class ListViewElement extends LitElement {
             >
         </div>`;
 
+        const defaultEditCheck = () =>
+            !(prefs.saved?.includes(list.uri) || prefs.pinned?.includes(list.uri) || list.creator.did == Store.getUser()?.profile.did);
         const editButtons =
             list.purpose == "app.bsky.graph.defs#curatelist"
                 ? html`
@@ -150,11 +155,7 @@ export class ListViewElement extends LitElement {
                           @change=${(ev: CustomEvent) => (!ev.detail.value ? this.addList() : this.removeList())}
                           .icon=${html`<i class="icon !w-5 !h-5">${minusIcon}</i>`}
                           .iconTrue=${html`<i class="icon !w-5 !h-5">${plusIcon}</i>`}
-                          .value=${!(
-                              prefs.saved?.includes(list.uri) ||
-                              prefs.pinned?.includes(list.uri) ||
-                              list.creator.did == Store.getUser()?.profile.did
-                          )}
+                          .value=${this.editCheck ? this.editCheck(list) : defaultEditCheck()}
                           class="w-8 h-8"
                       ></icon-toggle>
                   `
@@ -634,6 +635,11 @@ export class ListEditor extends HashNavOverlay {
     @state()
     isLoadingMembers = true;
     members: ProfileView[] = [];
+    addedMembers: ProfileView[] = [];
+    removedMembers: ProfileView[] = [];
+
+    @state()
+    canSave = false;
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
@@ -645,7 +651,8 @@ export class ListEditor extends HashNavOverlay {
 
     async load() {
         try {
-            if (!this.listUri) throw new Error();
+            if (!this.listUri) return;
+            this.canSave = true;
             const list = this.list ? this.list : await State.getList(this.listUri);
             if (list instanceof Error) throw list;
             let cursor: string | undefined;
@@ -681,7 +688,7 @@ export class ListEditor extends HashNavOverlay {
     renderHeader(): TemplateResult {
         const buttons = html`<div class="flex items-center ml-auto -mr-2 gap-4">
             <button class="text-muted-fg" @click=${() => this.close()}>${i18n("Cancel")}</button>
-            <button class="btn" @click=${() => this.save()}>${i18n("Save")}</button>
+            <button class="btn" ?disabled=${!this.canSave} @click=${() => this.save()}>${i18n("Save")}</button>
         </div> `;
         return renderTopbar(this.listUri ? "Edit List" : "New List", buttons);
     }
@@ -707,7 +714,7 @@ export class ListEditor extends HashNavOverlay {
             ${this.editError ? renderError(this.editError) : nothing}
             <div class="flex gap-2 items-center px-4 ">
                 <div
-                    class="flex-grow-0 flex-shrink-0 w-[66px] h-[66px] rounded overflow-x-clip flex items-center justify-center border border-divider"
+                    class="cursor-pointer flex-grow-0 flex-shrink-0 w-[66px] h-[66px] rounded overflow-x-clip flex items-center justify-center border border-divider"
                     @click=${() => this.addImage()}
                 >
                     ${this.imageToUpload
@@ -721,6 +728,7 @@ export class ListEditor extends HashNavOverlay {
                         class="textinput text-black dark:text-white"
                         placeholder="${i18n("E.g. 'Cool people'")}"
                         value=${this.list?.name ?? ""}
+                        @input=${() => (this.canSave = (this.nameElement?.value.length ?? 0) > 0)}
                     />
                 </div>
             </div>
@@ -732,8 +740,10 @@ export class ListEditor extends HashNavOverlay {
             ${this.isLoadingMembers
                 ? html`${this.isLoadingMembers ? html`<loading-spinner></loading-spinner>` : nothing}`
                 : html`<div class="flex items-center px-4 pt-4 pb-4 border-b border-divider">
-                    <span>${getNumber(this.members.length)} ${i18n("people")}</span>
+                    <span>${getNumber(this.members.length + this.addedMembers.length)} ${i18n("people")}</span>
                 <button class="btn ml-auto" @click=${() => this.addPeople()}>${i18n("Add people")}<button>
+            </div>
+            <div id="addedMembers">
             </div>
             <profiles-stream-view
                 .stream=${new ProfileViewStream(memoryStreamProvider(this.members))}
@@ -742,6 +752,10 @@ export class ListEditor extends HashNavOverlay {
                         this.error = i18n("Could not load newer items");
                     }
                 }}
+                .showEndOfList=${false}
+                .actionButtons=${(profileElement: ProfileViewElement, profile: ProfileView) =>
+                    html`<button class="ml-auto self-start" @click=${() =>
+                        this.removeMember(profileElement, profile)}><i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</button>`}
             ></profiles-stream-view>`}
         </div>`;
     }
@@ -758,8 +772,52 @@ export class ListEditor extends HashNavOverlay {
         input.click();
     }
 
+    removeMember(profileElement: ProfileViewElement, actor: ProfileView) {
+        this.members = this.members.filter((other) => other.did != actor.did);
+        this.addedMembers = this.addedMembers.filter((other) => other.did != actor.did);
+        this.removedMembers.push(actor);
+        profileElement.parentElement?.remove();
+        this.logChanges();
+    }
+
     addPeople() {
-        const add = (actor: ProfileView) => {};
-        document.body.append(dom(html`<actor-search-overlay .selectedActor=${(actor: ProfileView) => add(actor)}></actor-search-overlay>`)[0]);
+        const add = (actor: ProfileView) => {
+            this.addedMembers.push(actor);
+            const addedMembersElement = this.querySelector("#addedMembers");
+            if (addedMembersElement) {
+                addedMembersElement.append(
+                    dom(
+                        StreamView.renderWrapped(
+                            html`<profile-view
+                                .profile=${actor}
+                                .actionButtons=${(profileElement: ProfileViewElement, profile: ProfileView) =>
+                                    html`<button class="ml-auto self-start" @click=${() =>
+                                        this.removeMember(profileElement, profile)}><i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</button>`}
+                            ></profile-view>`
+                        )
+                    )[0]
+                );
+                this.requestUpdate();
+                this.logChanges();
+            }
+        };
+        document.body.append(
+            dom(
+                html`<actor-search-overlay
+                    .selectedActor=${(actor: ProfileView) => add(actor)}
+                    .filter=${(actor: ProfileView) => {
+                        let found = false;
+                        found ||= this.addedMembers.some((other) => other.did == actor.did);
+                        found ||= this.members.some((other) => other.did == actor.did);
+                        return !found;
+                    }}
+                ></actor-search-overlay>`
+            )[0]
+        );
+    }
+
+    logChanges() {
+        console.log("added: ", this.addedMembers);
+        console.log("removed: ", this.removedMembers);
     }
 }

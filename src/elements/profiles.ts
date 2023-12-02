@@ -374,6 +374,9 @@ export class ProfileViewElement extends LitElement {
     @property()
     profile?: ProfileView;
 
+    @property()
+    actionButtons?: (profileElement: ProfileViewElement, profile: ProfileView) => TemplateResult;
+
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
@@ -407,7 +410,9 @@ export class ProfileViewElement extends LitElement {
                             : nothing}
                     </div>
 
-                    ${this.profile.did != user?.profile.did
+                    ${this.actionButtons
+                        ? this.actionButtons(this, this.profile)
+                        : this.profile.did != user?.profile.did
                         ? html`<profile-action-button class="self-start ml-auto" .profile=${this.profile}></profile-action-button>`
                         : nothing}
                 </div>

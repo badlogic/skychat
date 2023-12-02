@@ -30,7 +30,7 @@ import {
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { deletePost, quote, reply } from "./posteditor";
 import { renderEmbed, renderRichText } from "./posts";
-import { renderProfile } from "./profiles";
+import { ProfileViewElement, renderProfile } from "./profiles";
 import { ListViewElementAction } from "./lists";
 import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 
@@ -153,9 +153,7 @@ export abstract class StreamView<T> extends LitElement {
             const itemDoms: HTMLElement[] = [];
             const fragment = dom(html`<div></div>`)[0];
             for (const item of items) {
-                const itemDom = this.wrapItem
-                    ? dom(html`<div class="px-4 py-2 border-b border-divider">${this.renderItem(item)}</div>`)[0]
-                    : dom(this.renderItem(item))[0];
+                const itemDom = this.wrapItem ? dom(StreamView.renderWrapped(this.renderItem(item)))[0] : dom(this.renderItem(item))[0];
                 fragment.append(itemDom);
                 itemDoms.push(itemDom);
             }
@@ -177,7 +175,7 @@ export abstract class StreamView<T> extends LitElement {
                 <loading-spinner class="w-full" id="spinner"></loading-spinner>
             </div>
             ${Store.getDevMode()
-                ? html`<div class="absolute top-0 right-0 flex items-center bg-white px-4 py-2 rounded-md fancy-shadows">
+                ? html`<div class="absolute top-0 right-0 flex items-center bg-white px-2 rounded-md fancy-shadows">
                       <button
                           class="text-primary font-bold"
                           @click=${() => {
@@ -192,6 +190,10 @@ export abstract class StreamView<T> extends LitElement {
     }
 
     abstract renderItem(item: T): TemplateResult;
+
+    static renderWrapped(item: TemplateResult | HTMLElement): TemplateResult {
+        return html`<div class="px-4 py-2 border-b border-divider">${item}</div>`;
+    }
 }
 
 @customElement("posts-stream-view")
@@ -533,11 +535,14 @@ export class NotificationsStreamOverlay extends HashNavOverlay {
 
 @customElement("profiles-stream-view")
 export class ProfilesStreamView extends StreamView<ProfileView> {
+    @property()
+    actionButtons?: (profileElement: ProfileViewElement, profile: ProfileView) => TemplateResult;
+
     getItemKey(item: ProfileView): string {
         return item.did;
     }
     renderItem(item: ProfileView): TemplateResult {
-        return html`<profile-view .profile=${item}></profile-view>`;
+        return html`<profile-view .actionButtons=${this.actionButtons} .profile=${item}></profile-view>`;
     }
 }
 
