@@ -608,7 +608,17 @@ export class ListPicker extends HashNavOverlay {
     }
 
     newList() {
-        document.body.append(dom(html`<list-editor></list-editor>`)[0]);
+        document.body.append(
+            dom(
+                html`<list-editor
+                    .saved=${(list: ListView) => {
+                        if (this.ownLists.find((other) => other.uri == list.uri)) return;
+                        this.ownLists.unshift(list);
+                        this.ownLists = [...this.ownLists];
+                    }}
+                ></list-editor>`
+            )[0]
+        );
     }
 
     async listAction(action: ListViewElementAction, list: ListView) {
@@ -897,6 +907,11 @@ export class ListEditor extends HashNavOverlay {
                     this.error = i18n("Couldn't save list");
                     return;
                 }
+                const members = await State.addActorListMembers(
+                    list.uri,
+                    this.addedMembers.map((profile) => profile.did)
+                );
+                if (members instanceof Error) throw members;
                 this.saved(list);
             } else {
                 const { repo, type, rkey } = splitAtUri(this.listUri);
