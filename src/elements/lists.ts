@@ -23,7 +23,7 @@ import {
 } from "../icons";
 import { FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
-import { ListFeedPostsStream, ListMembersStream } from "../streams";
+import { ListFeedPostsStream, ListMembersStream, ProfileViewStream, memoryStreamProvider } from "../streams";
 import {
     ImageInfo,
     copyTextToClipboard,
@@ -41,6 +41,7 @@ import { getProfileUrl, renderProfileAvatar } from "./profiles";
 import { toast } from "./toast";
 import { repeat } from "lit-html/directives/repeat.js";
 import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { getSkychatListUrl } from "../bsky.js";
 
 export type ListViewElementAction = "clicked" | "pinned" | "unpinned" | "saved" | "unsaved";
 export type ListViewElementStyle = "topbar" | "minimal" | "full";
@@ -200,7 +201,7 @@ export class ListViewElement extends LitElement {
                     <button
                         class="flex items-center justify-center w-10 h-4"
                         @click=${() => {
-                            copyTextToClipboard("https://bsky.app/profile/" + list.creator.did + "/lists/" + splitAtUri(list.uri).rkey);
+                            copyTextToClipboard(getSkychatListUrl(list));
                             toast(i18n("Copied link to clipboard"));
                         }}
                     >
@@ -466,7 +467,6 @@ export class ListPicker extends HashNavOverlay {
         this.unsubscribe = State.subscribe("preferences", (action, payload) => {
             if (action == "updated" && !this.isOnTop()) {
                 this.load(payload);
-                console.log(payload);
             }
         });
     }
@@ -702,7 +702,7 @@ export class ListEditor extends HashNavOverlay {
         if (this.error) return html`<div id="error" class="align-top p-4">${this.error}</div>`;
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
-        // FIXME all errors should look like the below
+        // FIXME profiles should only have a remove button
         return html`<div class="flex flex-col w-full h-full overflow-auto gap-2 mx-auto mt-4">
             ${this.editError ? renderError(this.editError) : nothing}
             <div class="flex gap-2 items-center px-4 ">
@@ -736,7 +736,7 @@ export class ListEditor extends HashNavOverlay {
                 <button class="btn ml-auto" @click=${() => this.addPeople()}>${i18n("Add people")}<button>
             </div>
             <profiles-stream-view
-                .stream=${new ListMembersStream(this.listUri!)}
+                .stream=${new ProfileViewStream(memoryStreamProvider(this.members))}
                 .newItems=${async (newItems: ProfileView[] | Error) => {
                     if (newItems instanceof Error) {
                         this.error = i18n("Could not load newer items");

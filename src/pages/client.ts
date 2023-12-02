@@ -68,7 +68,13 @@ class SkychatClient extends LitElement {
     }
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
-        if (Store.getUser()) this.login();
+        if (Store.getUser()) {
+            this.login();
+        } else {
+            if (location.hash && location.hash.length > 0) {
+                this.explore();
+            }
+        }
     }
 
     render() {

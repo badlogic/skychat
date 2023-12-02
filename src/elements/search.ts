@@ -49,6 +49,7 @@ export class SearchOverlay extends HashNavOverlay {
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
         this.search("", this.showTypes.length == 1 ? this.showTypes[0] : this.typeElement!.selected);
+        this.searchElement?.focus();
     }
 
     renderContent(): TemplateResult {

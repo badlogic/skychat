@@ -30,6 +30,7 @@
     "@intrnl/bluesky-client": "^0.2.5",
     "@ipld/car": "^5.2.4",
     "@ipld/dag-cbor": "^9.0.6",
+    "@lit-labs/virtualizer": "^2.0.11",
     "atproto-firehose": "^0.2.2",
     "better-sqlite3": "^9.1.1",
     "cbor-x": "^1.5.4",

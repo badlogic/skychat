@@ -22,7 +22,7 @@ import { i18n } from "../i18n";
 import { atIcon, closeIcon, deleteIcon, editIcon, gifIcon, imageIcon, shieldIcon, spinnerIcon } from "../icons";
 import { State } from "../state";
 import { Store } from "../store";
-import { ImageInfo, dom, downloadImage, downscaleImage, error, isMobileBrowser, loadImageFile, loadImageFiles, splitAtUri } from "../utils";
+import { AtUri, ImageInfo, dom, downloadImage, downscaleImage, error, isMobileBrowser, loadImageFile, loadImageFiles, splitAtUri } from "../utils";
 import { CloseableElement, Overlay, navigationGuard, renderTopbar } from "./overlay";
 import { renderEmbed, renderRecord, renderRichText } from "./posts";
 import { QuillEditor } from "./text-editor";
@@ -444,28 +444,74 @@ export class PostEditor extends LitElement {
     async addLinkCard(url: string) {
         if (!State.isConnected()) return;
 
+        let atUri: AtUri | undefined;
         if (url.startsWith("https://bsky.app/profile/")) {
+            atUri = splitAtUri(url.replaceAll("https://bsky.app/profile/", ""));
+        }
+
+        if (url.includes(location.host) && url.includes("/#")) {
+            const hash = url.split("#")[1];
+            if (hash) {
+                const tokens = hash.split("/");
+                atUri = { repo: tokens[1], type: tokens[0], rkey: tokens[2] };
+                if (atUri.type == "thread") atUri.type = "post";
+                if (atUri.type == "list") atUri.type = "lists";
+                if (atUri.type == "feed") atUri.type = "feed";
+            }
+        }
+
+        if (atUri) {
             try {
-                const atUri = splitAtUri(url.replaceAll("https://bsky.app/profile/", ""));
                 let did = atUri.repo;
                 if (!atUri.repo.startsWith("did:")) {
                     const response = await State.bskyClient!.app.bsky.actor.getProfile({ actor: did });
                     did = response.data.did;
                 }
-                if (url.includes("/post/")) {
+                if (atUri.type == "post") {
                     const response = await State.getPosts(["at://" + did + "/app.bsky.feed.post/" + atUri.rkey]);
                     if (response instanceof Error) throw response;
                     this.quote = response[0];
                     return;
                 }
-                if (url.includes("/lists/")) {
+                if (atUri.type == "lists") {
                     const response = await State.getList("at://" + did + "/app.bsky.graph.list/" + atUri.rkey);
                     if (response instanceof Error) throw response;
                     this.quote = response;
                     return;
                 }
-                if (url.includes("/feed/")) {
+                if (atUri.type == "feed") {
                     const response = await State.getFeeds(["at://" + did + "/app.bsky.feed.generator/" + atUri.rkey]);
+                    if (response instanceof Error) throw response;
+                    this.quote = response[0];
+                    return;
+                }
+            } catch (e) {
+                error("Couldn't create card for at-uri", e);
+            }
+        }
+
+        if (url.includes(location.host) && url.includes("/#")) {
+            try {
+                const tokens = url.split("#")[0].split("/");
+                let did = tokens[1];
+                let rkey = tokens[2];
+                const response = await State.bskyClient!.app.bsky.actor.getProfile({ actor: did });
+                did = response.data.did;
+
+                if (url.includes("#thread/")) {
+                    const response = await State.getPosts(["at://" + did + "/app.bsky.feed.post/" + rkey]);
+                    if (response instanceof Error) throw response;
+                    this.quote = response[0];
+                    return;
+                }
+                if (url.includes("/lists/")) {
+                    const response = await State.getList("at://" + did + "/app.bsky.graph.list/" + rkey);
+                    if (response instanceof Error) throw response;
+                    this.quote = response;
+                    return;
+                }
+                if (url.includes("/feed/")) {
+                    const response = await State.getFeeds(["at://" + did + "/app.bsky.feed.generator/" + rkey]);
                     if (response instanceof Error) throw response;
                     this.quote = response[0];
                     return;

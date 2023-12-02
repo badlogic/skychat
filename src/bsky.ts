@@ -1,5 +1,8 @@
 import { AppBskyFeedDefs, AppBskyFeedPost, AppBskyNotificationListNotifications } from "@atproto/api";
-import { FeedViewPost, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { FeedViewPost, GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { splitAtUri } from "./utils.js";
+import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs.js";
+import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs.js";
 
 export type LinkCard = {
     error: string;
@@ -59,4 +62,38 @@ export function text(post: FeedViewPost | PostView) {
         const rec = record(post as PostView);
         return rec?.text;
     }
+}
+
+export function getBskyPostUrl(post: PostView) {
+    const atUri = splitAtUri(post.uri);
+    return `https://bsky.app/profile/${atUri.repo}/post/${atUri.rkey}`;
+}
+
+export function getBskyGeneratorUrl(generator: GeneratorView) {
+    const atUri = splitAtUri(generator.uri);
+    return `https://bsky.app/profile/${atUri.repo}/feed/${atUri.rkey}`;
+}
+
+export function getBskyListUrl(list: ListView) {
+    const atUri = splitAtUri(list.uri);
+    return `https://bsky.app/profile/${atUri.repo}/list/${atUri.rkey}`;
+}
+
+export function getSkychatPostUrl(post: PostView) {
+    const atUri = splitAtUri(post.uri);
+    return location.protocol + "//" + location.host + `/#thread/${atUri.repo}/${atUri.rkey}`;
+}
+
+export function getSkychatGeneratorUrl(generator: GeneratorView) {
+    const atUri = splitAtUri(generator.uri);
+    return location.protocol + "//" + location.host + `/#feed/${atUri.repo}/${atUri.rkey}`;
+}
+
+export function getSkychatListUrl(list: ListView) {
+    const atUri = splitAtUri(list.uri);
+    return location.protocol + "//" + location.host + `/#list/${atUri.repo}/${atUri.rkey}`;
+}
+
+export function getSkychatProfileUrl(profile: ProfileView) {
+    return location.protocol + "//" + location.host + `/#profile/${profile.did}`;
 }

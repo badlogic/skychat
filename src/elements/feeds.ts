@@ -14,6 +14,7 @@ import { IconToggle } from "./icontoggle";
 import { renderRichText } from "./posts";
 import { getProfileUrl, renderProfileAvatar } from "./profiles";
 import { toast } from "./toast";
+import { getSkychatGeneratorUrl } from "../bsky.js";
 
 export type GeneratorViewElementAction = "clicked" | "pinned" | "unpinned" | "saved" | "unsaved";
 export type GeneratorViewElementStyle = "topbar" | "minimal" | "full";
@@ -140,7 +141,7 @@ export class GeneratorViewElement extends LitElement {
                 ><button
                     class="flex items-center justify-center w-6 h-6"
                     @click=${() => {
-                        copyTextToClipboard("https://bsky.app/profile/" + generator.creator.did + "/feed/" + splitAtUri(generator.uri).rkey);
+                        copyTextToClipboard(getSkychatGeneratorUrl(generator));
                         toast(i18n("Copied link to clipboard"));
                     }}
                 >

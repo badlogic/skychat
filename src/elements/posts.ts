@@ -14,7 +14,7 @@ import { BlockedPost, FeedViewPost, GeneratorView, NotFoundPost, PostView, Threa
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { date } from "../bsky";
+import { date, getBskyPostUrl, getSkychatPostUrl } from "../bsky";
 import { i18n } from "../i18n";
 import {
     arrowLeftIcon,
@@ -805,11 +805,6 @@ export class AltText extends Overlay {
     }
 }
 
-export function getBskyPostUrl(post: PostView) {
-    const atUri = splitAtUri(post.uri);
-    return `https://bsky.app/profile/${post.author.did}/post/${atUri.rkey}`;
-}
-
 type PostOptions =
     | "likes"
     | "quotes"
@@ -977,7 +972,7 @@ export class PostOptionsElement extends PopupMenu {
                 enabled: true,
                 click: () => {
                     if (this.post) {
-                        copyTextToClipboard(getBskyPostUrl(this.post));
+                        copyTextToClipboard(getSkychatPostUrl(this.post));
                         toast(i18n("Copied link to clipboard"));
                     }
                     this.close();
@@ -1503,7 +1498,7 @@ export class FeewViewPostElement extends LitElement {
                 .replyCallback=${(post: PostView) => reply(post)}
                 .deleteCallback=${(post: PostView) => deletePost(post, parentDom)}
             ></post-view>`)[0];
-            postDom = dom(html`<div class="ml-2 px-2 mt-2 border-l border-l-primary">
+            postDom = dom(html`<div class="ml-2 pl-2 mt-2 border-l border-l-primary">
                 <post-view
                     .post=${feedViewPost.post}
                     .quoteCallback=${(post: PostView) => quote(post)}

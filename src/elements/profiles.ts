@@ -3,7 +3,7 @@ import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Messages, i18n } from "../i18n";
-import { blockIcon, moreIcon, muteIcon, shieldIcon, spinnerIcon } from "../icons";
+import { blockIcon, linkIcon, moreIcon, muteIcon, shieldIcon, spinnerIcon } from "../icons";
 import { ActorFeedType, EventAction, State } from "../state";
 import { Store } from "../store";
 import { copyTextToClipboard, defaultAvatar, dom, error, getNumber, getScrollParent, hasLinkOrButtonParent, itemPlaceholder } from "../utils";
@@ -25,6 +25,7 @@ import { ListViewElementAction } from "./lists";
 import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 import { toast } from "./toast";
 import { IconToggle } from "./icontoggle";
+import { getSkychatProfileUrl } from "../bsky.js";
 
 // FIXME add open-edito-button that will prefill the shown profiles handle
 @customElement("profile-overlay")
@@ -214,7 +215,18 @@ export class ProfileOverlay extends HashNavOverlay {
                         : nothing}
                 </div>
             </div>
-            <div class="text-2xl px-4">${this.profile.displayName ?? this.profile.handle}</div>
+            <div class="text-2xl px-4 flex items-center">
+                ${this.profile.displayName ?? this.profile.handle}
+                <button
+                    class="flex items-center justify-center w-10 h-4"
+                    @click=${() => {
+                        copyTextToClipboard(getSkychatProfileUrl(this.profile!));
+                        toast(i18n("Copied link to clipboard"));
+                    }}
+                >
+                    <i class="icon !w-5 !h-5 fill-muted-fg">${linkIcon}</i>
+                </button>
+            </div>
             <div class="flex items-center gap-2 mt-2 px-4">
                 ${profile.viewer?.followedBy ? html`<span class="p-1 text-xs rounded bg-muted text-muted-fg">${i18n("Follows you")}</span>` : nothing}
                 <span class="text-muted-fg text-sm">${profile.handle}</span>

@@ -414,3 +414,12 @@ export class ActorListsStream extends ListViewStream {
         });
     }
 }
+
+export function memoryStreamProvider<T>(items: T[]): StreamProvider<T> {
+    return async (cursor?: string, limit: number = 20, notify?: boolean) => {
+        let index = !cursor ? 0 : Number.parseInt(cursor);
+        if (index >= items.length) return { items: [] };
+        const page = { cursor: (index + limit).toString(), items: items.slice(index, index + limit) } as StreamPage<T>;
+        return page;
+    };
+}
