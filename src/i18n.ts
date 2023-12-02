@@ -218,6 +218,9 @@ export interface Messages {
     "E.g. names, keywords, ...": string;
     "(Click on a post to view the entire thread)": string;
     people: string;
+    "Couldn't add user to list": string;
+    "Couldn't save list": string;
+    "Saving list": string;
 }
 
 const english: Messages = {
@@ -452,6 +455,9 @@ const english: Messages = {
     "E.g. names, keywords, ...": "E.g. names, keywords, ...",
     "(Click on a post to view the entire thread)": "(Click on a post to view the entire thread)",
     people: "people",
+    "Couldn't add user to list": "Couldn't add user to list",
+    "Couldn't save list": "Couldn't save list",
+    "Saving list": "Saving list",
 };
 
 const german: Messages = {
@@ -691,6 +697,9 @@ const german: Messages = {
     "E.g. names, keywords, ...": "Z.B. Names, phrasen, ...",
     "(Click on a post to view the entire thread)": "(Auf Post klicken, um ganzen Thread anzuzeigen)",
     people: "Benutzerinnen",
+    "Couldn't add user to list": "Konnte Benutzerin nicht zur Liste hinzufügen",
+    "Couldn't save list": "Konnte Liste nicht speichern",
+    "Saving list": "Speichere Liste",
 };
 
 export type LanguageCode = "en" | "de";

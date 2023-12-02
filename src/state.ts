@@ -14,6 +14,8 @@ import {
     BskyPreferences,
     RichText,
     AppBskyGraphGetList,
+    AppBskyGraphList,
+    AtUri,
 } from "@atproto/api";
 import { Preferences, ProfileView, ProfileViewDetailed, SavedFeedsPref } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { Store, User } from "./store";
@@ -515,6 +517,54 @@ export class State {
         }
     }
 
+    static async createActorList(record: AppBskyGraphList.Record): Promise<Error | ListView> {
+        if (!State.bskyClient) return new Error("Not connected");
+        const user = Store.getUser();
+        if (!user) return new Error("Not connected");
+        try {
+            const response = await State.bskyClient.app.bsky.graph.list.create({ repo: user.profile.did }, record);
+            const start = performance.now();
+            while (true) {
+                const postResponse = await State.getLists([response.uri]);
+                if (postResponse instanceof Error) throw postResponse;
+                if (postResponse.length == 0) {
+                    console.error("Created actor list, but received null response, retrying");
+                    continue;
+                }
+                const list = postResponse[0];
+                if (list) return list;
+                if ((performance.now() - start) / 1000 > 5) return new Error("Couldn't retrieve actor list after creating record");
+            }
+        } catch (e) {
+            return error("Couldn't create actor list", e);
+        }
+    }
+
+    static async updateActorList(listUri: string, record: AppBskyGraphList.Record): Promise<Error | ListView> {
+        if (!State.bskyClient) return new Error("Not connected");
+        const user = Store.getUser();
+        if (!user) return new Error("Not connected");
+        try {
+            const { repo, type, rkey } = splitAtUri(listUri);
+            const response = await State.bskyClient.com.atproto.repo.putRecord({ record, repo, collection: type, rkey });
+            if (!response.success) throw new Error();
+            const start = performance.now();
+            while (true) {
+                const postResponse = await State.getLists([listUri]);
+                if (postResponse instanceof Error) throw postResponse;
+                if (postResponse.length == 0) {
+                    console.error("Updated actor list, but received null response, retrying");
+                    continue;
+                }
+                const list = postResponse[0];
+                if (list) return list;
+                if ((performance.now() - start) / 1000 > 5) return new Error("Couldn't update actor list after creating record");
+            }
+        } catch (e) {
+            return error("Couldn't update actor list", e);
+        }
+    }
+
     static async getActorLists(did: string, cursor?: string, limit = 20, notify = true): Promise<Error | StreamPage<ListView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
@@ -541,13 +591,13 @@ export class State {
         }
     }
 
-    static async addActorListMembers(listUri: string, actors: string[]): Promise<Error | undefined> {
+    static async addActorListMembers(listUri: string, actors: string[]): Promise<Error | string[]> {
         if (!State.bskyClient) return new Error("Not connected");
         const user = Store.getUser();
         if (!user) return new Error("Not connected");
         try {
             // FIXME use smaller batches? applyWrites?
-            const promises: Promise<any>[] = [];
+            const promises: Promise<{ uri: string; cid: string }>[] = [];
             for (const actor of actors) {
                 promises.push(
                     State.bskyClient.app.bsky.graph.listitem.create(
@@ -560,7 +610,12 @@ export class State {
                     )
                 );
             }
-            await Promise.all(promises);
+            const results = await Promise.all(promises);
+            const listMemberUris: string[] = [];
+            for (const result of results) {
+                listMemberUris.push(result.uri);
+            }
+            return listMemberUris;
         } catch (e) {
             return error("Couldn't add actor list members");
         }

@@ -1,4 +1,4 @@
-import { BskyPreferences, RichText } from "@atproto/api";
+import { AppBskyGraphList, BlobRef, BskyPreferences, RichText } from "@atproto/api";
 import { FeedViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { ListItemView, ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 import { HTMLTemplateResult, LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
@@ -20,6 +20,7 @@ import {
     pinIcon,
     plusIcon,
     shieldIcon,
+    spinnerIcon,
 } from "../icons";
 import { FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
@@ -35,6 +36,7 @@ import {
     loadImageFiles,
     splitAtUri,
     getNumber,
+    downscaleImage,
 } from "../utils";
 import { renderRichText } from "./posts";
 import { ProfileViewElement, getProfileUrl, renderProfileAvatar } from "./profiles";
@@ -656,10 +658,12 @@ export class ListEditor extends HashNavOverlay {
     isLoadingMembers = true;
     members: ListItemView[] = [];
     addedMembers: ProfileView[] = [];
-    removedMembers: ProfileView[] = [];
 
     @state()
     canSave = false;
+
+    @state()
+    isSaving = false;
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
@@ -707,22 +711,12 @@ export class ListEditor extends HashNavOverlay {
 
     renderHeader(): TemplateResult {
         const buttons = html`<div class="flex items-center ml-auto -mr-2 gap-4">
-            <button class="text-muted-fg" @click=${() => this.close()}>${i18n("Cancel")}</button>
-            <button class="btn" ?disabled=${!this.canSave} @click=${() => this.save()}>${i18n("Save")}</button>
+            ${this.isSaving
+                ? html`<span>${i18n("Saving list")}</span><i class="-ml-2 icon !w-6 !h-6 animate-spin fill-primary">${spinnerIcon}</i>`
+                : html`<button class="text-muted-fg" @click=${() => this.close()}>${i18n("Cancel")}</button>
+                      <button class="btn" ?disabled=${!this.canSave} @click=${() => this.save()}>${i18n("Save")}</button>`}
         </div> `;
         return renderTopbar(this.listUri ? "Edit List" : "New List", buttons);
-    }
-
-    save() {
-        if (!this.nameElement || !this.descriptionElement) {
-            this.close();
-            return;
-        }
-        if (this.nameElement.value.trim().length == 0) {
-            this.editError = i18n("Name is required");
-            return;
-        }
-        this.close();
     }
 
     renderContent(): TemplateResult {
@@ -738,7 +732,9 @@ export class ListEditor extends HashNavOverlay {
                     @click=${() => this.addImage()}
                 >
                     ${this.imageToUpload
-                        ? html`<img src="${this.imageToUpload.dataUri}" class="w-full h-full object-fill" />`
+                        ? html`<img src="${this.imageToUpload.dataUri}" class="w-full h-full object-cover" />`
+                        : this.list?.avatar
+                        ? html`<img src="${this.list.avatar}" class="w-full h-full object-cover" />`
                         : html` <i class="icon !w-[32px] !h-[32px] dark:fill-[#fff]">${cameraIcon}</i> `}
                 </div>
                 <div class="flex flex-col gap-2 w-full">
@@ -753,9 +749,11 @@ export class ListEditor extends HashNavOverlay {
                 </div>
             </div>
 
-            <div id="description" class="px-4 text-muted-fg">${i18n("Description")}</div>
+            <div class="px-4 text-muted-fg">${i18n("Description")}</div>
 
-            <div class="mx-4 border border-divider rounded h-36 flex"><quill-text-editor class="w-full h-full"></quill-text-editor></div>
+            <div class="mx-4 border border-divider rounded h-36 flex">
+                <quill-text-editor id="description" .initialText=${this.list?.description ?? ""} class="w-full h-full"></quill-text-editor>
+            </div>
 
             ${this.isLoadingMembers
                 ? html`${this.isLoadingMembers ? html`<loading-spinner></loading-spinner>` : nothing}`
@@ -792,17 +790,29 @@ export class ListEditor extends HashNavOverlay {
         input.click();
     }
 
-    removeMember(profileElement: ProfileViewElement, actor: ProfileView) {
-        this.members = this.members.filter((other) => other.did != actor.did);
+    async removeMember(profileElement: ProfileViewElement, actor: ProfileView) {
+        const existingListItem = this.members.find((other) => other.subject.did == actor.did);
+        if (existingListItem && this.listUri) {
+            State.removeActorListMembers(this.listUri, [existingListItem.uri]);
+        }
+        this.members = this.members.filter((other) => other.subject.did != actor.did);
         this.addedMembers = this.addedMembers.filter((other) => other.did != actor.did);
-        this.removedMembers.push(actor);
-        profileElement.parentElement?.remove();
-        this.logChanges();
+        profileElement.parentElement?.parentElement?.remove();
+        this.requestUpdate();
     }
 
     addPeople() {
-        const add = (actor: ProfileView) => {
-            this.addedMembers.push(actor);
+        const add = async (actor: ProfileView) => {
+            if (this.listUri) {
+                const addedListItems = await State.addActorListMembers(this.listUri, [actor.did]);
+                if (addedListItems instanceof Error) {
+                    this.error = i18n("Couldn't add user to list");
+                } else {
+                    this.members.unshift({ subject: actor, uri: addedListItems[0] });
+                }
+            } else {
+                this.addedMembers.push(actor);
+            }
             const addedMembersElement = this.querySelector("#addedMembers");
             if (addedMembersElement) {
                 addedMembersElement.append(
@@ -818,7 +828,6 @@ export class ListEditor extends HashNavOverlay {
                     )[0]
                 );
                 this.requestUpdate();
-                this.logChanges();
             }
         };
         document.body.append(
@@ -836,8 +845,78 @@ export class ListEditor extends HashNavOverlay {
         );
     }
 
-    logChanges() {
-        console.log("added: ", this.addedMembers);
-        console.log("removed: ", this.removedMembers);
+    async save() {
+        try {
+            this.isSaving = true;
+            this.requestUpdate();
+            if (!this.nameElement || !this.descriptionElement) {
+                this.close();
+                return;
+            }
+            if (this.nameElement.value.trim().length == 0) {
+                this.editError = i18n("Name is required");
+                return;
+            }
+
+            let image: BlobRef | undefined;
+            if (this.imageToUpload) {
+                const start = performance.now();
+                const data = await downscaleImage(this.imageToUpload);
+                if (data instanceof Error) throw data;
+                console.log(
+                    "Downscaling image took: " +
+                        (performance.now() - start) / 1000 +
+                        ", old: " +
+                        this.imageToUpload.data.length +
+                        ", new: " +
+                        data.data.length
+                );
+                const response = await State.bskyClient!.com.atproto.repo.uploadBlob(data.data, {
+                    headers: { "Content-Type": this.imageToUpload.mimeType },
+                    encoding: "",
+                });
+                if (!response.success) throw Error();
+                image = response.data.blob;
+            }
+
+            const rt = new RichText({ text: this.descriptionElement.getText() ?? "" });
+            rt.detectFacetsWithoutResolution();
+            const record: AppBskyGraphList.Record = {
+                createdAt: new Date().toISOString(),
+                name: this.nameElement.value.trim(),
+                purpose: "app.bsky.graph.defs#curatelist",
+                avatar: image,
+                description: this.descriptionElement.getText(),
+                descriptionFacets: rt.facets,
+                labels: undefined,
+            };
+
+            if (!this.listUri) {
+                const list = await State.createActorList(record);
+                if (list instanceof Error) {
+                    this.error = i18n("Couldn't save list");
+                    return;
+                }
+                this.saved(list);
+            } else {
+                const { repo, type, rkey } = splitAtUri(this.listUri);
+                const listResponse = await State.bskyClient?.com.atproto.repo.getRecord({ collection: type, repo, rkey });
+                if (listResponse?.success == false) throw new Error();
+                if (!record.avatar) record.avatar = (listResponse?.data.value as any)?.avatar;
+                const list = await State.updateActorList(this.listUri, record);
+                if (list instanceof Error) {
+                    this.error = i18n("Couldn't save list");
+                    return;
+                }
+                this.saved(list);
+            }
+
+            this.close();
+        } catch (e) {
+            this.error = i18n("Couldn't save list");
+            return;
+        } finally {
+            this.isSaving = false;
+        }
     }
 }

@@ -34134,7 +34134,10 @@ if (cid) {
     Science: "Science",
     "E.g. names, keywords, ...": "E.g. names, keywords, ...",
     "(Click on a post to view the entire thread)": "(Click on a post to view the entire thread)",
-    people: "people"
+    people: "people",
+    "Couldn't add user to list": "Couldn't add user to list",
+    "Couldn't save list": "Couldn't save list",
+    "Saving list": "Saving list"
   };
   var german = {
     "Not connected": "Nicht verbunden",
@@ -34365,7 +34368,10 @@ if (cid) {
     Science: "Wissenschaft",
     "E.g. names, keywords, ...": "Z.B. Names, phrasen, ...",
     "(Click on a post to view the entire thread)": "(Auf Post klicken, um ganzen Thread anzuzeigen)",
-    people: "Benutzerinnen"
+    people: "Benutzerinnen",
+    "Couldn't add user to list": "Konnte Benutzerin nicht zur Liste hinzuf\xFCgen",
+    "Couldn't save list": "Konnte Liste nicht speichern",
+    "Saving list": "Speichere Liste"
   };
   var translations = {
     en: english,

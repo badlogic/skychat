@@ -30,6 +30,9 @@ export class QuillEditor extends LitElement {
     @property()
     onInput: QuillEditorCallback = () => {};
 
+    @property()
+    initialText?: string;
+
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
@@ -43,6 +46,7 @@ export class QuillEditor extends LitElement {
         });
 
         this.editor.on("text-change", () => this.highlightText());
+        if (this.initialText) this.editor.setText(this.initialText);
         this.editor.focus();
     }
 
@@ -94,5 +98,9 @@ export class QuillEditor extends LitElement {
 
     setText(text: string) {
         this.editor?.setText(text, "user");
+    }
+
+    getText() {
+        return this.editor?.getText() ?? "";
     }
 }
