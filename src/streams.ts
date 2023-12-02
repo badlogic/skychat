@@ -4,7 +4,7 @@ import { ActorFeedType, State } from "./state";
 import { error, fetchApi } from "./utils";
 import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { date, record } from "./bsky";
-import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
+import { ListItemView, ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 
 export type StreamPage<T> = { cursor?: string; items: T[] };
 
@@ -347,14 +347,6 @@ export class UserSuggestionStream extends ProfileViewStream {
     }
 }
 
-export class ListMembersStream extends ProfileViewStream {
-    constructor(listUri: string) {
-        super((cursor?: string, limit?: number, notify?: boolean) => {
-            return State.getListItems(listUri, cursor);
-        });
-    }
-}
-
 export abstract class GeneratorViewStream extends Stream<GeneratorView> {
     getItemKey(item: GeneratorView): string {
         return item.uri;
@@ -403,6 +395,18 @@ export abstract class ListViewStream extends Stream<ListView> {
     }
 
     async loadDependencies(newItems: ListView[]) {
+        // no-op
+    }
+}
+
+export class ListItemsStream extends Stream<ListItemView> {
+    getItemKey(item: ListItemView): string {
+        return item.uri;
+    }
+    getItemDate(item: ListItemView): Date {
+        return new Date();
+    }
+    async loadDependencies(newItems: ListItemView[]): Promise<void | Error> {
         // no-op
     }
 }

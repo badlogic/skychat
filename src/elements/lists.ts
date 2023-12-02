@@ -1,6 +1,6 @@
 import { BskyPreferences, RichText } from "@atproto/api";
 import { FeedViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
+import { ListItemView, ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 import { HTMLTemplateResult, LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { HashNavOverlay, QuillEditor, StreamView, renderTopbar } from ".";
@@ -23,7 +23,7 @@ import {
 } from "../icons";
 import { FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
-import { ListFeedPostsStream, ListMembersStream, ProfileViewStream, memoryStreamProvider } from "../streams";
+import { ListFeedPostsStream, ListItemsStream, ProfileViewStream, memoryStreamProvider } from "../streams";
 import {
     ImageInfo,
     copyTextToClipboard,
@@ -309,6 +309,24 @@ export class ListViewElement extends LitElement {
     }
 }
 
+@customElement("list-item-view")
+export class ListItemViewElement extends LitElement {
+    @property()
+    listItem?: ListItemView;
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    @property()
+    actionButtons?: (profileElement: ProfileViewElement, profile: ProfileView) => TemplateResult;
+
+    render() {
+        if (!this.listItem) return html`<loading-spinner></loading-spinner>`;
+        return html`<profile-view .profile=${this.listItem.subject} .actionButtons=${this.actionButtons}></profile-view>`;
+    }
+}
+
 @customElement("list-overlay")
 export class ListOverlay extends HashNavOverlay {
     @property()
@@ -431,14 +449,16 @@ export class ListMembersOverlay extends HashNavOverlay {
         if (this.error) return html`<div id="error" class="align-top p-4">${this.error}</div>`;
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
-        return html`<profiles-stream-view
-            .stream=${new ListMembersStream(this.listUri!)}
+        return html`<list-items-stream-view
+            .stream=${new ListItemsStream((cursor?: string, limit?: number, notify?: boolean) => {
+                return State.getListItems(this.listUri!, cursor, limit);
+            })}
             .newItems=${async (newItems: ProfileView[] | Error) => {
                 if (newItems instanceof Error) {
                     this.error = i18n("Could not load newer items");
                 }
             }}
-        ></profiles-stream-view>`;
+        ></list-items-stream-view>`;
     }
 }
 
@@ -634,7 +654,7 @@ export class ListEditor extends HashNavOverlay {
 
     @state()
     isLoadingMembers = true;
-    members: ProfileView[] = [];
+    members: ListItemView[] = [];
     addedMembers: ProfileView[] = [];
     removedMembers: ProfileView[] = [];
 
@@ -661,7 +681,7 @@ export class ListEditor extends HashNavOverlay {
             this.isLoading = false;
             this.requestUpdate();
 
-            const members: ProfileView[] = [];
+            const members: ListItemView[] = [];
             while (true) {
                 const response = await State.getListItems(this.listUri, cursor);
                 if (response instanceof Error) throw response;
@@ -745,8 +765,8 @@ export class ListEditor extends HashNavOverlay {
             </div>
             <div id="addedMembers">
             </div>
-            <profiles-stream-view
-                .stream=${new ProfileViewStream(memoryStreamProvider(this.members))}
+            <list-items-stream-view
+                .stream=${new ListItemsStream(memoryStreamProvider(this.members))}
                 .newItems=${async (newItems: ProfileView[] | Error) => {
                     if (newItems instanceof Error) {
                         this.error = i18n("Could not load newer items");
@@ -756,7 +776,7 @@ export class ListEditor extends HashNavOverlay {
                 .actionButtons=${(profileElement: ProfileViewElement, profile: ProfileView) =>
                     html`<button class="ml-auto self-start" @click=${() =>
                         this.removeMember(profileElement, profile)}><i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</button>`}
-            ></profiles-stream-view>`}
+            ></list-items-stream-view>`}
         </div>`;
     }
 

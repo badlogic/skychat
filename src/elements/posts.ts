@@ -65,7 +65,6 @@ import { ViewImage } from "@atproto/api/dist/client/types/app/bsky/embed/images"
 import { toast } from "./toast";
 import { GeneratorViewElementAction } from "./feeds";
 import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
-import { Block } from "@ipld/car/dist/src/reader-browser";
 
 export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {

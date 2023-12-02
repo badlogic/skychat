@@ -21,7 +21,7 @@ import { AsyncQueue, assertNever, error, fetchApi, getDateString, splitAtUri } f
 import { FeedViewPost, GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { record } from "./bsky";
 import { StreamPage } from "./streams";
-import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
+import { ListItemView, ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 
 export interface NumQuote {
     postUri: string;
@@ -541,6 +541,45 @@ export class State {
         }
     }
 
+    static async addActorListMembers(listUri: string, actors: string[]): Promise<Error | undefined> {
+        if (!State.bskyClient) return new Error("Not connected");
+        const user = Store.getUser();
+        if (!user) return new Error("Not connected");
+        try {
+            // FIXME use smaller batches? applyWrites?
+            const promises: Promise<any>[] = [];
+            for (const actor of actors) {
+                promises.push(
+                    State.bskyClient.app.bsky.graph.listitem.create(
+                        { repo: user.profile.did },
+                        {
+                            createdAt: new Date().toISOString(),
+                            list: listUri,
+                            subject: actor,
+                        }
+                    )
+                );
+            }
+            await Promise.all(promises);
+        } catch (e) {
+            return error("Couldn't add actor list members");
+        }
+    }
+
+    static async removeActorListMembers(listUri: string, listMemberUris: string[]): Promise<Error | undefined> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const promises: Promise<any>[] = [];
+            for (const memberUri of listMemberUris) {
+                const { repo, rkey } = splitAtUri(memberUri);
+                promises.push(State.bskyClient.app.bsky.graph.listitem.delete({ repo, rkey }));
+            }
+            await Promise.all(promises);
+        } catch (e) {
+            return error("Couldn't add actor list members");
+        }
+    }
+
     static async getLists(listUris: string[], notify = true): Promise<Error | ListView[]> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
@@ -750,14 +789,14 @@ export class State {
         }
     }
 
-    static async getListItems(list: string, cursor?: string, limit = 100): Promise<Error | StreamPage<ProfileView>> {
+    static async getListItems(list: string, cursor?: string, limit = 100): Promise<Error | StreamPage<ListItemView>> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
             const response = await State.bskyClient.app.bsky.graph.getList({ list, cursor, limit });
             if (!response.success) throw new Error();
             const profiles = response.data.items.map((item) => item.subject);
             this.notifyBatch("profile", "updated", profiles);
-            return { cursor: response.data.cursor, items: profiles };
+            return response.data;
         } catch (e) {
             return error("Couldn't suggest feeds", e);
         }

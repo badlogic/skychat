@@ -32,7 +32,7 @@ import { deletePost, quote, reply } from "./posteditor";
 import { renderEmbed, renderRichText } from "./posts";
 import { ProfileViewElement, renderProfile } from "./profiles";
 import { ListViewElementAction } from "./lists";
-import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
+import { ListItemView, ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 
 (window as any).emitLitDebugLogEvents = true;
 
@@ -593,5 +593,15 @@ export class ListsStreamView extends StreamView<ListView> {
 
     renderItem(item: ListView): TemplateResult {
         return html`<list-view .minimal=${this.minimal} .list=${item} .action=${this.action}></list-view>`;
+    }
+}
+
+@customElement("list-items-stream-view")
+export class ListItemsStreamView extends StreamView<ListItemView> {
+    @property()
+    actionButtons?: (profileElement: ProfileViewElement, profile: ProfileView) => TemplateResult;
+
+    renderItem(item: ListItemView): TemplateResult {
+        return html`<list-item-view .listItem=${item} .actionButtons=${this.actionButtons}></list-view>`;
     }
 }
