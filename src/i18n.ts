@@ -153,6 +153,7 @@ export interface Messages {
     "Copied link to clipboard": string;
     List: string;
     Lists: string;
+    "Moderation Lists": string;
     "Curation list": string;
     "Moderation list": string;
     "Feeds by me": string;
@@ -182,7 +183,9 @@ export interface Messages {
     "Lists by me": string;
     "Create a new list": string;
     "New List": string;
+    "New Moderation List": string;
     "Edit List": string;
+    "Edit Moderation List": string;
     Name: string;
     Description: string;
     "Name is required": string;
@@ -387,6 +390,7 @@ const english: Messages = {
     "Copied link to clipboard": "Copied link to clipboard",
     List: "List",
     Lists: "Lists",
+    "Moderation Lists": "Moderation Lists",
     "Curation list": "Curation list",
     "Moderation list": "Moderation list",
     "Feeds by me": "Feeds by me",
@@ -416,7 +420,9 @@ const english: Messages = {
     "Lists by me": "Lists by me",
     "Create a new list": "Create a new list",
     "New List": "New List",
+    "New Moderation List": "New Moderation List",
     "Edit List": "Edit List",
+    "Edit Moderation List": "Edit Moderation List",
     Name: "Name",
     Description: "Description",
     "Name is required": "Name is required",
@@ -628,6 +634,7 @@ const german: Messages = {
     "Copied link to clipboard": "Link in Zwischenablage kopiert",
     List: "Liste",
     Lists: "Listen",
+    "Moderation Lists": "Moderations Listen",
     "Curation list": "Kuratierte Liste",
     "Moderation list": "Moderations Liste",
     "Feeds by me": "Feeds von mir",
@@ -657,7 +664,9 @@ const german: Messages = {
     "Lists by me": "Listen von mir",
     "Create a new list": "Neue Liste erstellen",
     "New List": "Neue Liste",
+    "New Moderation List": "Neue Moderations Liste",
     "Edit List": "Liste editieren",
+    "Edit Moderation List": "Moderations Liste editieren",
     Name: "Name",
     Description: "Beschreibung",
     "Name is required": "Name erforderlich",

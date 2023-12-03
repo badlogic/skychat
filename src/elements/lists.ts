@@ -1,6 +1,6 @@
 import { AppBskyGraphList, BlobRef, BskyPreferences, RichText } from "@atproto/api";
 import { FeedViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { ListItemView, ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
+import { ListItemView, ListPurpose, ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 import { HTMLTemplateResult, LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { HashNavOverlay, QuillEditor, StreamView, renderTopbar } from ".";
@@ -146,35 +146,69 @@ export class ListViewElement extends LitElement {
 
         const defaultEditCheck = () =>
             !(prefs.saved?.includes(list.uri) || prefs.pinned?.includes(list.uri) || list.creator.did == Store.getUser()?.profile.did);
-        const editButtons =
-            list.purpose == "app.bsky.graph.defs#curatelist"
-                ? html`
-                      ${this.list.creator.did == Store.getUser()?.profile.did
-                          ? html`
-            <button class="flex items-center justify-center w-8 h-8" @click=${() =>
-                this.editList()}><i class="icon !w-5 !h-5 fill-muted-fg">${editIcon}<i></button>`
-                          : nothing}<icon-toggle
+
+        const ownListEditButton = html`
+            ${this.list.creator.did == Store.getUser()?.profile.did
+                ? html`<div class="flex items-center">
+                      <button class="flex items-center justify-center w-8 h-8" @click=${() => this.editList()}>
+                          <i class="icon !w-5 !h-5 fill-muted-fg">${editIcon}</i>
+                      </button>
+                      ${this.list.purpose == "app.bsky.graph.defs#modlist"
+                          ? html`<icon-toggle
+                                @change=${(ev: CustomEvent) => (!ev.detail.value ? this.addList() : this.removeList())}
+                                .icon=${html`<i class="icon !w-5 !h-5">${minusIcon}</i>`}
+                                .iconTrue=${html`<i class="icon !w-5 !h-5">${plusIcon}</i>`}
+                                .value=${this.editCheck ? this.editCheck(list) : defaultEditCheck()}
+                                class="w-8 h-8"
+                            ></icon-toggle>`
+                          : nothing}
+                  </div>`
+                : nothing}
+        `;
+        const modListEditButtons = html`<div class="flex items-center">
+            <icon-toggle
+                @change=${(ev: CustomEvent) => this.toggleMute(ev)}
+                .icon=${html`<i class="icon !w-5 !h-5">${muteIcon}</i>`}
+                .value=${muteAndBlockLists.muteListUris.has(this.list.uri)}
+                class="w-8 h-8"
+            ></icon-toggle>
+            <icon-toggle
+                @change=${(ev: CustomEvent) => this.toggleBlock(ev)}
+                .icon=${html`<i class="icon !w-5 !h-5">${blockIcon}</i>`}
+                .value=${muteAndBlockLists.blockListUris.has(this.list.uri)}
+                class="w-8 h-8"
+            ></icon-toggle>
+            ${this.list.creator.did == Store.getUser()?.profile.did
+                ? html`<div class="flex items-center">
+                      <button class="flex items-center justify-center w-8 h-8" @click=${() => this.editList()}>
+                          <i class="icon !w-5 !h-5 fill-muted-fg">${editIcon}</i></button
+                      ><icon-toggle
                           @change=${(ev: CustomEvent) => (!ev.detail.value ? this.addList() : this.removeList())}
                           .icon=${html`<i class="icon !w-5 !h-5">${minusIcon}</i>`}
                           .iconTrue=${html`<i class="icon !w-5 !h-5">${plusIcon}</i>`}
                           .value=${this.editCheck ? this.editCheck(list) : defaultEditCheck()}
                           class="w-8 h-8"
                       ></icon-toggle>
-                  `
-                : html`<div class="flex items-center">
-                      <icon-toggle
-                          @change=${(ev: CustomEvent) => this.toggleMute(ev)}
-                          .icon=${html`<i class="icon !w-5 !h-5">${muteIcon}</i>`}
-                          .value=${muteAndBlockLists.muteListUris.has(this.list.uri)}
-                          class="w-8 h-8"
-                      ></icon-toggle>
-                      <icon-toggle
-                          @change=${(ev: CustomEvent) => this.toggleBlock(ev)}
-                          .icon=${html`<i class="icon !w-5 !h-5">${blockIcon}</i>`}
-                          .value=${muteAndBlockLists.blockListUris.has(this.list.uri)}
-                          class="w-8 h-8"
-                      ></icon-toggle>
-                  </div>`;
+                  </div>`
+                : nothing}
+        </div>`;
+
+        const listEditButtons = html`<div class="flex items-center">
+            ${this.list.creator.did == Store.getUser()?.profile.did
+                ? html`<button class="flex items-center justify-center w-8 h-8" @click=${() => this.editList()}>
+                      <i class="icon !w-5 !h-5 fill-muted-fg">${editIcon}</i>
+                  </button>`
+                : nothing}
+            <icon-toggle
+                @change=${(ev: CustomEvent) => (!ev.detail.value ? this.addList() : this.removeList())}
+                .icon=${html`<i class="icon !w-5 !h-5">${minusIcon}</i>`}
+                .iconTrue=${html`<i class="icon !w-5 !h-5">${plusIcon}</i>`}
+                .value=${this.editCheck ? this.editCheck(list) : defaultEditCheck()}
+                class="w-8 h-8"
+            ></icon-toggle>
+        </div>`;
+
+        const editButtons = html` ${this.list.purpose == "app.bsky.graph.defs#modlist" ? modListEditButtons : listEditButtons} `;
 
         const buttons = html`<div class="flex ml-auto">
             ${this.viewStyle != "full"
@@ -296,6 +330,7 @@ export class ListViewElement extends LitElement {
 
     addList() {
         if (!this.list) return;
+        // FIXME what's happening here?
         const isOwnList = this.list.creator.did == Store.getUser()?.profile.did;
         if (this.defaultActions) State.addSavedList(this.list.uri);
         this.list = { ...this.list };
@@ -307,7 +342,15 @@ export class ListViewElement extends LitElement {
         if (!this.list) return;
         const isOwnList = this.list.creator.did == Store.getUser()?.profile.did;
         if (!isOwnList) return;
-        document.body.append(dom(html`<list-editor .listUri=${this.list.uri} .list=${this.list}></list-editor>`)[0]);
+        document.body.append(
+            dom(
+                html`<list-editor
+                    .listUri=${this.list.uri}
+                    .list=${this.list}
+                    .purpose=${this.list.purpose == "app.bsky.graph.defs#curatelist" ? "curation" : "moderation"}
+                ></list-editor>`
+            )[0]
+        );
     }
 }
 
@@ -478,10 +521,13 @@ export class ListPicker extends HashNavOverlay {
     @property()
     ownLists: ListView[] = [];
 
+    @property()
+    purpose: "curation" | "moderation" = "curation";
+
     unsubscribe = () => {};
 
     getHash(): string {
-        return "lists";
+        return this.purpose == "curation" ? "lists" : "modlists";
     }
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
@@ -507,43 +553,69 @@ export class ListPicker extends HashNavOverlay {
             }
 
             const user = Store.getUser();
-            prefs = prefs ?? State.preferences;
-            if (prefs) {
-                this.lists = (prefs.feeds.saved ?? [])
-                    .map((listUri) => State.getObject("list", listUri))
-                    .filter((list) => list != undefined)
-                    .filter((list) => list?.creator.did != user?.profile.did) as ListView[];
-            } else {
-                prefs = await State.getPreferences();
-                if (prefs instanceof Error) {
-                    this.error = i18n("Couldn't load your lists");
-                    throw prefs;
-                }
-                const savedUris = (prefs.feeds.saved ?? []).filter((feed) => feed.includes("app.bsky.graph.list"));
-                const response = await State.getLists(savedUris);
-                if (response instanceof Error) {
-                    this.error = i18n("Couldn't load your lists");
-                    return;
-                }
-                this.lists = response;
-            }
 
-            if (user) {
-                (async () => {
-                    const lists: ListView[] = [];
-                    let cursor: string | undefined;
-                    while (true) {
-                        const response = await State.getActorLists(user.profile.did, cursor);
-                        if (response instanceof Error) {
-                            this.error = i18n("Couldn't load your lists");
-                            return;
-                        }
-                        if (response.items.length == 0) break;
-                        lists.push(...response.items);
-                        cursor = response.cursor;
+            if (this.purpose == "curation") {
+                prefs = prefs ?? State.preferences;
+                if (prefs) {
+                    this.lists = (prefs.feeds.saved ?? [])
+                        .map((listUri) => State.getObject("list", listUri))
+                        .filter((list) => list != undefined)
+                        .filter((list) => list?.creator.did != user?.profile.did) as ListView[];
+                } else {
+                    prefs = await State.getPreferences();
+                    if (prefs instanceof Error) {
+                        this.error = i18n("Couldn't load your lists");
+                        throw prefs;
                     }
-                    this.ownLists = lists.filter((list) => list.purpose == "app.bsky.graph.defs#curatelist");
-                })();
+                    const savedUris = (prefs.feeds.saved ?? []).filter((feed) => feed.includes("app.bsky.graph.list"));
+                    const response = await State.getLists(savedUris);
+                    if (response instanceof Error) {
+                        this.error = i18n("Couldn't load your lists");
+                        return;
+                    }
+                    this.lists = response;
+                }
+
+                if (user) {
+                    (async () => {
+                        const lists: ListView[] = [];
+                        let cursor: string | undefined;
+                        while (true) {
+                            const response = await State.getActorLists(user.profile.did, cursor);
+                            if (response instanceof Error) {
+                                this.error = i18n("Couldn't load your lists");
+                                return;
+                            }
+                            if (response.items.length == 0) break;
+                            lists.push(...response.items);
+                            cursor = response.cursor;
+                        }
+                        this.ownLists = lists.filter((list) => list.purpose == "app.bsky.graph.defs#curatelist");
+                    })();
+                }
+            } else {
+                const muteAndBlockLists = await State.getMuteAndBlockLists();
+                if (muteAndBlockLists instanceof Error) throw muteAndBlockLists;
+
+                this.lists = [...muteAndBlockLists.muteLists, ...muteAndBlockLists.blockLists];
+
+                if (user) {
+                    (async () => {
+                        const lists: ListView[] = [];
+                        let cursor: string | undefined;
+                        while (true) {
+                            const response = await State.getActorLists(user.profile.did, cursor);
+                            if (response instanceof Error) {
+                                this.error = i18n("Couldn't load your lists");
+                                return;
+                            }
+                            if (response.items.length == 0) break;
+                            lists.push(...response.items);
+                            cursor = response.cursor;
+                        }
+                        this.ownLists = lists.filter((list) => list.purpose == "app.bsky.graph.defs#modlist");
+                    })();
+                }
             }
         } catch (e) {
             error("Couldn't load preferences and lists", e);
@@ -554,7 +626,7 @@ export class ListPicker extends HashNavOverlay {
     }
 
     renderHeader(): TemplateResult {
-        return renderTopbar("Lists", this.closeButton());
+        return renderTopbar(this.purpose == "curation" ? "Lists" : "Moderation Lists", this.closeButton());
     }
 
     protected update(changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
@@ -611,6 +683,7 @@ export class ListPicker extends HashNavOverlay {
         document.body.append(
             dom(
                 html`<list-editor
+                    .purpose=${this.purpose}
                     .saved=${(list: ListView) => {
                         if (this.ownLists.find((other) => other.uri == list.uri)) return;
                         this.ownLists.unshift(list);
@@ -645,6 +718,9 @@ export class ListEditor extends HashNavOverlay {
 
     @property()
     saved = (list: ListView) => {};
+
+    @property()
+    purpose: "curation" | "moderation" = "curation";
 
     @property()
     isLoading = true;
@@ -726,7 +802,16 @@ export class ListEditor extends HashNavOverlay {
                 : html`<button class="text-muted-fg" @click=${() => this.close()}>${i18n("Cancel")}</button>
                       <button class="btn" ?disabled=${!this.canSave} @click=${() => this.save()}>${i18n("Save")}</button>`}
         </div> `;
-        return renderTopbar(this.listUri ? "Edit List" : "New List", buttons);
+        return renderTopbar(
+            this.listUri
+                ? this.purpose == "curation"
+                    ? "Edit List"
+                    : "Edit Moderation List"
+                : this.purpose == "curation"
+                ? "New List"
+                : "New Moderation List",
+            buttons
+        );
     }
 
     renderContent(): TemplateResult {
@@ -894,7 +979,7 @@ export class ListEditor extends HashNavOverlay {
             const record: AppBskyGraphList.Record = {
                 createdAt: new Date().toISOString(),
                 name: this.nameElement.value.trim(),
-                purpose: "app.bsky.graph.defs#curatelist",
+                purpose: this.purpose == "curation" ? "app.bsky.graph.defs#curatelist" : "app.bsky.graph.defs#modlist",
                 avatar: image,
                 description: this.descriptionElement.getText(),
                 descriptionFacets: rt.facets,

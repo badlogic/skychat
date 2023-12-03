@@ -1,5 +1,5 @@
 import { html } from "lit";
-import { FeedOverlay, ListEditor, ListMembersOverlay, ListOverlay, ProfileOverlay, ThreadOverlay } from ".";
+import { FeedOverlay, ListEditor, ListMembersOverlay, ListOverlay, ListPicker, ProfileOverlay, ThreadOverlay } from ".";
 import { dom, splitAtUri, combineAtUri } from "../utils";
 import { i18n } from "../i18n";
 import { FollowersStream, FollowingStream, PostLikesStream, PostRepostsStream } from "../streams";
@@ -187,8 +187,15 @@ export async function routeHash(hash: string) {
 
             if (tokens[0] == "lists") {
                 const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "LIST-PICKER") return;
+                if (child.tagName == "LIST-PICKER" && (child as ListPicker).purpose == "curation") return;
                 document.body.append(dom(html`<list-picker .pushState=${false}></list-picker>`)[0]);
+                return;
+            }
+
+            if (tokens[0] == "modlists") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "LIST-PICKER" && (child as ListPicker).purpose == "moderation") return;
+                document.body.append(dom(html`<list-picker .purpose=${"moderation"} .pushState=${false}></list-picker>`)[0]);
                 return;
             }
 
@@ -196,7 +203,7 @@ export async function routeHash(hash: string) {
                 if (tokens[1] == "new") {
                     const child = document.body.children[document.body.children.length - 1];
                     if (child.tagName == "LIST-EDITOR" && !(child as ListEditor).listUri) return;
-                    document.body.append(dom(html`<list-editor .pushState=${false}></list-editor>`)[0]);
+                    document.body.append(dom(html`<list-editor .purpose=${tokens[2] ?? "curation"} .pushState=${false}></list-editor>`)[0]);
                     return;
                 }
 

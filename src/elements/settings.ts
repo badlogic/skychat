@@ -86,7 +86,12 @@ export class SettingsOverlay extends HashNavOverlay {
                 >
                     <span>Blocked users</span><i class="icon !w-8 !h-8 fill-primary ml-auto">${arrowRightIcon}</i>
                 </button>
-                <button class="border border-muted rounded-md pl-4 py-2 flex items-center fancy-shadow">
+                <button
+                    class="border border-muted rounded-md pl-4 py-2 flex items-center fancy-shadow"
+                    @click=${() => {
+                        document.body.append(dom(html`<list-picker .purpose=${"moderation"}></list-picker>`)[0]);
+                    }}
+                >
                     <span>Moderation lists</span><i class="icon !w-8 !h-8 fill-primary ml-auto">${arrowRightIcon}</i>
                 </button>
             </div>
