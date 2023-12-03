@@ -78,29 +78,28 @@ export abstract class StreamView<T> extends LitElement {
                     return;
                 }
 
-                /*const itemsDom = this.itemsDom;
-                if (itemsDom) {
-                    const fragment = dom(html`<div></div>`)[0];
-                    for (const item of newerItems) {
-                        const itemDom = dom(html`${this.renderItem(item)}`)[0];
-                        itemDom.classList.add("animate-fade", "animate-duration-[2000ms]");
-                        fragment.append(itemDom);
-                    }
-                    const scrollParent = getScrollParent(this.children[0] as HTMLElement)!;
-                    const upButton = scrollParent.querySelector("up-button") as UpButton;
-                    if (upButton) {
-                        // FIXME replace with what we got from the Mastodon user maybe.
-                        //       or make lit-virtualizer work for prepending.
-                        upButton.classList.remove("hidden");
-                        upButton.highlight = true;
-                        upButton.renderOnClick.push(() => {
-                            itemsDom.insertBefore(fragment, itemsDom.childNodes[0]);
-                            scrollParent.scrollTo({ top: 0, behavior: "smooth" });
-                        });
-                    } else {
-                        itemsDom.insertBefore(fragment, itemsDom.childNodes[0]);
-                    }
-                }*/
+                const scrollParent = getScrollParent(this.children[0] as HTMLElement)!;
+                const upButton = scrollParent.querySelector("up-button") as UpButton;
+                if (upButton) {
+                    // FIXME replace with what we got from the Mastodon user maybe.
+                    //       or make lit-virtualizer work for prepending.
+                    upButton.classList.remove("hidden");
+                    upButton.highlight = true;
+                    upButton.renderOnClick.push(() => {
+                        if (!this.stream) {
+                            error("Couldn't load newer items");
+                            return;
+                        }
+                        const listVirtualizer = this.querySelector("#listVirtualizer") as LitVirtualizer;
+                        if (listVirtualizer) {
+                            const allItems: T[] = [];
+                            for (const page of this.stream.pages) {
+                                allItems.push(...page.items);
+                            }
+                            listVirtualizer.items = allItems;
+                        }
+                    });
+                }
             });
         }
         this.load();
@@ -150,18 +149,6 @@ export abstract class StreamView<T> extends LitElement {
             }
             listVirtualizer.items = allItems;
             onVisibleOnce(spinner, () => this.load());
-
-            /*const itemDoms: HTMLElement[] = [];
-            const fragment = dom(html`<div></div>`)[0];
-            for (const item of items) {
-                const itemDom = this.wrapItem ? dom(StreamView.renderWrapped(this.renderItem(item)))[0] : dom(this.renderItem(item))[0];
-                fragment.append(itemDom);
-                itemDoms.push(itemDom);
-            }
-            itemsDom.insertBefore(fragment, spinner);
-            onVisibleOnce(itemDoms[Math.max(0, itemDoms.length - 1 - 5)], () => this.load());
-            onVisibleOnce(spinner, () => this.load());
-            */
         } catch (e) {
             this.error = i18n("Sorry, an unknown error occured");
         } finally {
