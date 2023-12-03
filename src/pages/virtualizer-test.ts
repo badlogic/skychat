@@ -6,6 +6,8 @@ import { StreamPage } from "../streams.js";
 import { onVisibleOnce } from "../utils.js";
 export { LitVirtualizer } from "@lit-labs/virtualizer";
 
+const feedFile = "data/yt-feed.json";
+
 @customElement("virtualizer-test")
 export class VirtualizerTest extends LitElement {
     @state()
@@ -26,7 +28,7 @@ export class VirtualizerTest extends LitElement {
     }
 
     async load() {
-        const response = await fetch("data/feed.json");
+        const response = await fetch(feedFile);
         if (!response.ok) {
             alert("Couldn't load feed");
             return;
@@ -88,7 +90,7 @@ export class VirtualizerTest extends LitElement {
 
     async restore() {
         const virtualizer = this.querySelector("lit-virtualizer")!;
-        const json = localStorage.getItem("virtualizer");
+        const json = localStorage.getItem(feedFile + "-virtualizer");
         if (!json) return;
         const restore: { firstVisible: number; lastPage: number } = JSON.parse(json);
         this.items = [];
@@ -104,11 +106,11 @@ export class VirtualizerTest extends LitElement {
     render() {
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
-        const json = localStorage.getItem("virtualizer");
+        const json = localStorage.getItem(feedFile + "-virtualizer");
         let pin = undefined;
         if (json) {
             const restore: { firstVisible: number; lastPage: number } = JSON.parse(json);
-            this.items = [];
+            if (restore.lastPage == this.pages.length) this.items = [];
             for (let i = 0; i < restore.lastPage; i++) {
                 this.items.push(...this.pages[i].items);
             }

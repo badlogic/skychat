@@ -1,0 +1,2432 @@
+[
+    {
+        "cursor": "1701607288538::bafyreibwcgmgkamewppovuewdmfytctfypq43hvkv57h2zkn6qjkejb3sm",
+        "items": [
+            {
+                "post": {
+                    "uri": "at://did:plc:vwzwgnygau7ed7b7wt5ux7y2/app.bsky.feed.post/3kfo5g44mr52b",
+                    "cid": "bafyreih4yyza6sbncgteejah4rw2x7qywmfecifjpjue5bhlecggwuwami",
+                    "author": {
+                        "did": "did:plc:vwzwgnygau7ed7b7wt5ux7y2",
+                        "handle": "retr0.id",
+                        "displayName": "David Buchanan",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:vwzwgnygau7ed7b7wt5ux7y2/bafkreifrtz3ngpzz5qmhjliv5toj4nvyjovijxs5e2la67wddhmdhro5he@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "Stop signing JSON.\n\nJSON was never meant to be signed.\n\n\"I want to preserve map key order within a data model that explicitly disregards it\" - canonicalization rules dreamed up by the utterly deranged.\n\nThey have played us for fools.",
+                        "$type": "app.bsky.feed.post",
+                        "langs": [
+                            "en"
+                        ],
+                        "createdAt": "2023-12-03T20:28:29.189Z"
+                    },
+                    "replyCount": 1,
+                    "repostCount": 6,
+                    "likeCount": 17,
+                    "indexedAt": "2023-12-03T20:28:29.050Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reason": {
+                    "$type": "app.bsky.feed.defs#reasonRepost",
+                    "by": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "indexedAt": "2023-12-03T20:31:16.589Z"
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfo5hvt76h2a",
+                    "cid": "bafyreiahj7dumetrkk4dtab6xl3vpfyr4fznlfqpydoieceja7q5n6umju",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "None of the apps you are testing are native apps.\n\nBugs can only be fixed if they are reported. There shouldn't be any need to open more than a single tab for this. Please describe the issue you are having.\n",
+                        "$type": "app.bsky.feed.post",
+                        "reply": {
+                            "root": {
+                                "cid": "bafyreiehlxgcjfmx4ltf3trp55dqdgxfwp3xxu7ofbcfsrhp2hm6hx7tve",
+                                "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfnxf7b5ds2l"
+                            },
+                            "parent": {
+                                "cid": "bafyreibtcuoqlon4ckn5euiscj5z575hxh65hrwlhrant2ou2p2uk6clz4",
+                                "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfo546c3yi2i"
+                            }
+                        },
+                        "createdAt": "2023-12-03T20:29:29.186Z"
+                    },
+                    "replyCount": 0,
+                    "repostCount": 0,
+                    "likeCount": 1,
+                    "indexedAt": "2023-12-03T20:29:29.186Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reply": {
+                    "root": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfnxf7b5ds2l",
+                        "cid": "bafyreiehlxgcjfmx4ltf3trp55dqdgxfwp3xxu7ofbcfsrhp2hm6hx7tve",
+                        "author": {
+                            "did": "did:plc:wyhkgvljmhh4oo4dudqza52o",
+                            "handle": "dlvienna.bsky.social",
+                            "displayName": "Daniel 🕊",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:wyhkgvljmhh4oo4dudqza52o/bafkreifbrzztrqu7tiitzaaiau5xvsy5drtzdjeb2cc45kzef5zjrzm3ie@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Wäsche aufhängen in 20mins\n\n👀 @remindmeofthis.com",
+                            "$type": "app.bsky.feed.post",
+                            "langs": [
+                                "de"
+                            ],
+                            "facets": [
+                                {
+                                    "$type": "app.bsky.richtext.facet",
+                                    "index": {
+                                        "byteEnd": 54,
+                                        "byteStart": 35
+                                    },
+                                    "features": [
+                                        {
+                                            "did": "did:plc:nzc7t5zwuvfjbst363b7izq5",
+                                            "$type": "app.bsky.richtext.facet#mention"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "createdAt": "2023-12-03T18:40:36.428Z"
+                        },
+                        "replyCount": 5,
+                        "repostCount": 0,
+                        "likeCount": 3,
+                        "indexedAt": "2023-12-03T18:40:36.323Z",
+                        "viewer": {},
+                        "labels": []
+                    },
+                    "parent": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfo546c3yi2i",
+                        "cid": "bafyreibtcuoqlon4ckn5euiscj5z575hxh65hrwlhrant2ou2p2uk6clz4",
+                        "author": {
+                            "did": "did:plc:wyhkgvljmhh4oo4dudqza52o",
+                            "handle": "dlvienna.bsky.social",
+                            "displayName": "Daniel 🕊",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:wyhkgvljmhh4oo4dudqza52o/bafkreifbrzztrqu7tiitzaaiau5xvsy5drtzdjeb2cc45kzef5zjrzm3ie@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "I always test it.\n\nIt's just not a native App. Hat to get 1000s browser tabs open if I click a link shortcut on my home screen for the same url.",
+                            "$type": "app.bsky.feed.post",
+                            "langs": [
+                                "de"
+                            ],
+                            "reply": {
+                                "root": {
+                                    "cid": "bafyreiehlxgcjfmx4ltf3trp55dqdgxfwp3xxu7ofbcfsrhp2hm6hx7tve",
+                                    "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfnxf7b5ds2l"
+                                },
+                                "parent": {
+                                    "cid": "bafyreihfktbxqjze4fhckz4bfcpcwwpsfq5pnxkjibzyzuwkdpz3h6xhoq",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfo4qxuuwf22"
+                                }
+                            },
+                            "createdAt": "2023-12-03T20:22:55.863Z"
+                        },
+                        "replyCount": 2,
+                        "repostCount": 0,
+                        "likeCount": 0,
+                        "indexedAt": "2023-12-03T20:22:55.822Z",
+                        "viewer": {},
+                        "labels": []
+                    }
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfo4qxuuwf22",
+                    "cid": "bafyreihfktbxqjze4fhckz4bfcpcwwpsfq5pnxkjibzyzuwkdpz3h6xhoq",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "You're not using my client at all! I have the biggest disappoint. And a broken heart.\n",
+                        "$type": "app.bsky.feed.post",
+                        "reply": {
+                            "root": {
+                                "cid": "bafyreiehlxgcjfmx4ltf3trp55dqdgxfwp3xxu7ofbcfsrhp2hm6hx7tve",
+                                "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfnxf7b5ds2l"
+                            },
+                            "parent": {
+                                "cid": "bafyreibuhomgfzbay5y5apnlyouwypqxygeqaphahkhtzqigld4v76wr5u",
+                                "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfo4p27h7w2j"
+                            }
+                        },
+                        "createdAt": "2023-12-03T20:16:39.586Z"
+                    },
+                    "replyCount": 1,
+                    "repostCount": 0,
+                    "likeCount": 2,
+                    "indexedAt": "2023-12-03T20:16:39.586Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reply": {
+                    "root": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfnxf7b5ds2l",
+                        "cid": "bafyreiehlxgcjfmx4ltf3trp55dqdgxfwp3xxu7ofbcfsrhp2hm6hx7tve",
+                        "author": {
+                            "did": "did:plc:wyhkgvljmhh4oo4dudqza52o",
+                            "handle": "dlvienna.bsky.social",
+                            "displayName": "Daniel 🕊",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:wyhkgvljmhh4oo4dudqza52o/bafkreifbrzztrqu7tiitzaaiau5xvsy5drtzdjeb2cc45kzef5zjrzm3ie@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Wäsche aufhängen in 20mins\n\n👀 @remindmeofthis.com",
+                            "$type": "app.bsky.feed.post",
+                            "langs": [
+                                "de"
+                            ],
+                            "facets": [
+                                {
+                                    "$type": "app.bsky.richtext.facet",
+                                    "index": {
+                                        "byteEnd": 54,
+                                        "byteStart": 35
+                                    },
+                                    "features": [
+                                        {
+                                            "did": "did:plc:nzc7t5zwuvfjbst363b7izq5",
+                                            "$type": "app.bsky.richtext.facet#mention"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "createdAt": "2023-12-03T18:40:36.428Z"
+                        },
+                        "replyCount": 5,
+                        "repostCount": 0,
+                        "likeCount": 3,
+                        "indexedAt": "2023-12-03T18:40:36.323Z",
+                        "viewer": {},
+                        "labels": []
+                    },
+                    "parent": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfo4p27h7w2j",
+                        "cid": "bafyreibuhomgfzbay5y5apnlyouwypqxygeqaphahkhtzqigld4v76wr5u",
+                        "author": {
+                            "did": "did:plc:wyhkgvljmhh4oo4dudqza52o",
+                            "handle": "dlvienna.bsky.social",
+                            "displayName": "Daniel 🕊",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:wyhkgvljmhh4oo4dudqza52o/bafkreifbrzztrqu7tiitzaaiau5xvsy5drtzdjeb2cc45kzef5zjrzm3ie@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Me, traitor???\nOnly for testing purposes and to share their features.",
+                            "$type": "app.bsky.feed.post",
+                            "langs": [
+                                "de"
+                            ],
+                            "reply": {
+                                "root": {
+                                    "cid": "bafyreiehlxgcjfmx4ltf3trp55dqdgxfwp3xxu7ofbcfsrhp2hm6hx7tve",
+                                    "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfnxf7b5ds2l"
+                                },
+                                "parent": {
+                                    "cid": "bafyreicddg4r2pzkw2apjbbhznjipz5g26lrgwral34jy63pboz42bdrzu",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfo4k4y4sq2u"
+                                }
+                            },
+                            "createdAt": "2023-12-03T20:15:35.281Z"
+                        },
+                        "replyCount": 1,
+                        "repostCount": 0,
+                        "likeCount": 0,
+                        "indexedAt": "2023-12-03T20:15:35.281Z",
+                        "viewer": {},
+                        "labels": []
+                    }
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfo4k4y4sq2u",
+                    "cid": "bafyreicddg4r2pzkw2apjbbhznjipz5g26lrgwral34jy63pboz42bdrzu",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "Aren't you the guy using @deck.blue or @graysky.app you traitor?!\n",
+                        "$type": "app.bsky.feed.post",
+                        "reply": {
+                            "root": {
+                                "cid": "bafyreiehlxgcjfmx4ltf3trp55dqdgxfwp3xxu7ofbcfsrhp2hm6hx7tve",
+                                "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfnxf7b5ds2l"
+                            },
+                            "parent": {
+                                "cid": "bafyreic26ykohnrr2aztinb2cmtls3lon5teuj4jfrh6ouqmojbtwroiwe",
+                                "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfo4i3yxi72a"
+                            }
+                        },
+                        "facets": [
+                            {
+                                "$type": "app.bsky.richtext.facet",
+                                "index": {
+                                    "byteEnd": 35,
+                                    "byteStart": 25
+                                },
+                                "features": [
+                                    {
+                                        "did": "did:plc:w342borqxtyo2pul67ec2pwt",
+                                        "$type": "app.bsky.richtext.facet#mention"
+                                    }
+                                ]
+                            },
+                            {
+                                "$type": "app.bsky.richtext.facet",
+                                "index": {
+                                    "byteEnd": 51,
+                                    "byteStart": 39
+                                },
+                                "features": [
+                                    {
+                                        "did": "did:plc:sq6aa2wa32tiiqrbub64vcja",
+                                        "$type": "app.bsky.richtext.facet#mention"
+                                    }
+                                ]
+                            }
+                        ],
+                        "createdAt": "2023-12-03T20:12:49.961Z"
+                    },
+                    "replyCount": 1,
+                    "repostCount": 0,
+                    "likeCount": 1,
+                    "indexedAt": "2023-12-03T20:12:49.961Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reply": {
+                    "root": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfnxf7b5ds2l",
+                        "cid": "bafyreiehlxgcjfmx4ltf3trp55dqdgxfwp3xxu7ofbcfsrhp2hm6hx7tve",
+                        "author": {
+                            "did": "did:plc:wyhkgvljmhh4oo4dudqza52o",
+                            "handle": "dlvienna.bsky.social",
+                            "displayName": "Daniel 🕊",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:wyhkgvljmhh4oo4dudqza52o/bafkreifbrzztrqu7tiitzaaiau5xvsy5drtzdjeb2cc45kzef5zjrzm3ie@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Wäsche aufhängen in 20mins\n\n👀 @remindmeofthis.com",
+                            "$type": "app.bsky.feed.post",
+                            "langs": [
+                                "de"
+                            ],
+                            "facets": [
+                                {
+                                    "$type": "app.bsky.richtext.facet",
+                                    "index": {
+                                        "byteEnd": 54,
+                                        "byteStart": 35
+                                    },
+                                    "features": [
+                                        {
+                                            "did": "did:plc:nzc7t5zwuvfjbst363b7izq5",
+                                            "$type": "app.bsky.richtext.facet#mention"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "createdAt": "2023-12-03T18:40:36.428Z"
+                        },
+                        "replyCount": 5,
+                        "repostCount": 0,
+                        "likeCount": 3,
+                        "indexedAt": "2023-12-03T18:40:36.323Z",
+                        "viewer": {},
+                        "labels": []
+                    },
+                    "parent": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfo4i3yxi72a",
+                        "cid": "bafyreic26ykohnrr2aztinb2cmtls3lon5teuj4jfrh6ouqmojbtwroiwe",
+                        "author": {
+                            "did": "did:plc:wyhkgvljmhh4oo4dudqza52o",
+                            "handle": "dlvienna.bsky.social",
+                            "displayName": "Daniel 🕊",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:wyhkgvljmhh4oo4dudqza52o/bafkreifbrzztrqu7tiitzaaiau5xvsy5drtzdjeb2cc45kzef5zjrzm3ie@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "👀 @badlogic.bsky.social guess you can do it better!",
+                            "$type": "app.bsky.feed.post",
+                            "langs": [
+                                "de"
+                            ],
+                            "reply": {
+                                "root": {
+                                    "cid": "bafyreiehlxgcjfmx4ltf3trp55dqdgxfwp3xxu7ofbcfsrhp2hm6hx7tve",
+                                    "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfnxf7b5ds2l"
+                                },
+                                "parent": {
+                                    "cid": "bafyreiejrpohzhug4dhgvluwaucjhtgy5dptp2istk6stz3cw4dp44wlsy",
+                                    "uri": "at://did:plc:wyhkgvljmhh4oo4dudqza52o/app.bsky.feed.post/3kfo4bketwg2e"
+                                }
+                            },
+                            "facets": [
+                                {
+                                    "$type": "app.bsky.richtext.facet",
+                                    "index": {
+                                        "byteEnd": 26,
+                                        "byteStart": 5
+                                    },
+                                    "features": [
+                                        {
+                                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                                            "$type": "app.bsky.richtext.facet#mention"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "createdAt": "2023-12-03T20:11:42.374Z"
+                        },
+                        "replyCount": 1,
+                        "repostCount": 0,
+                        "likeCount": 0,
+                        "indexedAt": "2023-12-03T20:11:42.281Z",
+                        "viewer": {},
+                        "labels": []
+                    }
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfo4fkzmn62h",
+                    "cid": "bafyreig4qe54pq232e5eox3vs5cezzxgsefhuk5jisy2ntupvafvwoavii",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "Nice! Good job on the scheduling!\n",
+                        "$type": "app.bsky.feed.post",
+                        "reply": {
+                            "root": {
+                                "cid": "bafyreif4msbnpinrvr2rw6ztosro7anogr3ea4yzcrr7tksigmntd3qqwi",
+                                "uri": "at://did:plc:w342borqxtyo2pul67ec2pwt/app.bsky.feed.post/3kfo4emkehn2u"
+                            },
+                            "parent": {
+                                "cid": "bafyreif4msbnpinrvr2rw6ztosro7anogr3ea4yzcrr7tksigmntd3qqwi",
+                                "uri": "at://did:plc:w342borqxtyo2pul67ec2pwt/app.bsky.feed.post/3kfo4emkehn2u"
+                            }
+                        },
+                        "createdAt": "2023-12-03T20:10:16.923Z"
+                    },
+                    "replyCount": 1,
+                    "repostCount": 0,
+                    "likeCount": 2,
+                    "indexedAt": "2023-12-03T20:10:16.923Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reply": {
+                    "root": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:w342borqxtyo2pul67ec2pwt/app.bsky.feed.post/3kfo4emkehn2u",
+                        "cid": "bafyreif4msbnpinrvr2rw6ztosro7anogr3ea4yzcrr7tksigmntd3qqwi",
+                        "author": {
+                            "did": "did:plc:w342borqxtyo2pul67ec2pwt",
+                            "handle": "deck.blue",
+                            "displayName": "deck.blue",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:w342borqxtyo2pul67ec2pwt/bafkreiec6yihxyfgua7myrxcfx75opofiu6l5wm4jzjrn3irlklynmagmy@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "2.2.0 is up!\n\n- Scheduling\n- Content language filters\n- Multi-language selection in posts\n- Custom column sizes\n- Custom font sizes\n- Custom theme color selection\n- Right-click link cards and images\n\nAnd more! Check the full changelog below!\n\nwww.patreon.com/posts/deck-b...",
+                            "$type": "app.bsky.feed.post",
+                            "embed": {
+                                "$type": "app.bsky.embed.external",
+                                "external": {
+                                    "uri": "https://www.patreon.com/posts/deck-blue-v2-2-0-94015634?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                                    "thumb": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreibsrrgny52yl6kfsff2ujonldfxs5dfsppzg6bc6knkk7w7syfbpq"
+                                        },
+                                        "mimeType": "image/png",
+                                        "size": 103734
+                                    },
+                                    "title": "deck.blue v2.2.0 is up! | deck.blue",
+                                    "description": "Get more from deck.blue on Patreon"
+                                }
+                            },
+                            "langs": [
+                                "en"
+                            ],
+                            "facets": [
+                                {
+                                    "index": {
+                                        "byteEnd": 26,
+                                        "byteStart": 16
+                                    },
+                                    "features": [
+                                        {
+                                            "uri": "https://www.patreon.com/posts/deck-blues-faq-94014314?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                                            "$type": "app.bsky.richtext.facet#link"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "index": {
+                                        "byteEnd": 274,
+                                        "byteStart": 243
+                                    },
+                                    "features": [
+                                        {
+                                            "uri": "https://www.patreon.com/posts/deck-blue-v2-2-0-94015634?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                                            "$type": "app.bsky.richtext.facet#link"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "createdAt": "2023-12-03T20:09:45.110Z"
+                        },
+                        "embed": {
+                            "$type": "app.bsky.embed.external#view",
+                            "external": {
+                                "uri": "https://www.patreon.com/posts/deck-blue-v2-2-0-94015634?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                                "title": "deck.blue v2.2.0 is up! | deck.blue",
+                                "description": "Get more from deck.blue on Patreon",
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:w342borqxtyo2pul67ec2pwt/bafkreibsrrgny52yl6kfsff2ujonldfxs5dfsppzg6bc6knkk7w7syfbpq@jpeg"
+                            }
+                        },
+                        "replyCount": 5,
+                        "repostCount": 10,
+                        "likeCount": 25,
+                        "indexedAt": "2023-12-03T20:09:45.110Z",
+                        "viewer": {},
+                        "labels": []
+                    },
+                    "parent": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:w342borqxtyo2pul67ec2pwt/app.bsky.feed.post/3kfo4emkehn2u",
+                        "cid": "bafyreif4msbnpinrvr2rw6ztosro7anogr3ea4yzcrr7tksigmntd3qqwi",
+                        "author": {
+                            "did": "did:plc:w342borqxtyo2pul67ec2pwt",
+                            "handle": "deck.blue",
+                            "displayName": "deck.blue",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:w342borqxtyo2pul67ec2pwt/bafkreiec6yihxyfgua7myrxcfx75opofiu6l5wm4jzjrn3irlklynmagmy@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "2.2.0 is up!\n\n- Scheduling\n- Content language filters\n- Multi-language selection in posts\n- Custom column sizes\n- Custom font sizes\n- Custom theme color selection\n- Right-click link cards and images\n\nAnd more! Check the full changelog below!\n\nwww.patreon.com/posts/deck-b...",
+                            "$type": "app.bsky.feed.post",
+                            "embed": {
+                                "$type": "app.bsky.embed.external",
+                                "external": {
+                                    "uri": "https://www.patreon.com/posts/deck-blue-v2-2-0-94015634?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                                    "thumb": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreibsrrgny52yl6kfsff2ujonldfxs5dfsppzg6bc6knkk7w7syfbpq"
+                                        },
+                                        "mimeType": "image/png",
+                                        "size": 103734
+                                    },
+                                    "title": "deck.blue v2.2.0 is up! | deck.blue",
+                                    "description": "Get more from deck.blue on Patreon"
+                                }
+                            },
+                            "langs": [
+                                "en"
+                            ],
+                            "facets": [
+                                {
+                                    "index": {
+                                        "byteEnd": 26,
+                                        "byteStart": 16
+                                    },
+                                    "features": [
+                                        {
+                                            "uri": "https://www.patreon.com/posts/deck-blues-faq-94014314?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                                            "$type": "app.bsky.richtext.facet#link"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "index": {
+                                        "byteEnd": 274,
+                                        "byteStart": 243
+                                    },
+                                    "features": [
+                                        {
+                                            "uri": "https://www.patreon.com/posts/deck-blue-v2-2-0-94015634?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                                            "$type": "app.bsky.richtext.facet#link"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "createdAt": "2023-12-03T20:09:45.110Z"
+                        },
+                        "embed": {
+                            "$type": "app.bsky.embed.external#view",
+                            "external": {
+                                "uri": "https://www.patreon.com/posts/deck-blue-v2-2-0-94015634?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                                "title": "deck.blue v2.2.0 is up! | deck.blue",
+                                "description": "Get more from deck.blue on Patreon",
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:w342borqxtyo2pul67ec2pwt/bafkreibsrrgny52yl6kfsff2ujonldfxs5dfsppzg6bc6knkk7w7syfbpq@jpeg"
+                            }
+                        },
+                        "replyCount": 5,
+                        "repostCount": 10,
+                        "likeCount": 25,
+                        "indexedAt": "2023-12-03T20:09:45.110Z",
+                        "viewer": {},
+                        "labels": []
+                    }
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:w342borqxtyo2pul67ec2pwt/app.bsky.feed.post/3kfo4emkehn2u",
+                    "cid": "bafyreif4msbnpinrvr2rw6ztosro7anogr3ea4yzcrr7tksigmntd3qqwi",
+                    "author": {
+                        "did": "did:plc:w342borqxtyo2pul67ec2pwt",
+                        "handle": "deck.blue",
+                        "displayName": "deck.blue",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:w342borqxtyo2pul67ec2pwt/bafkreiec6yihxyfgua7myrxcfx75opofiu6l5wm4jzjrn3irlklynmagmy@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "2.2.0 is up!\n\n- Scheduling\n- Content language filters\n- Multi-language selection in posts\n- Custom column sizes\n- Custom font sizes\n- Custom theme color selection\n- Right-click link cards and images\n\nAnd more! Check the full changelog below!\n\nwww.patreon.com/posts/deck-b...",
+                        "$type": "app.bsky.feed.post",
+                        "embed": {
+                            "$type": "app.bsky.embed.external",
+                            "external": {
+                                "uri": "https://www.patreon.com/posts/deck-blue-v2-2-0-94015634?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                                "thumb": {
+                                    "$type": "blob",
+                                    "ref": {
+                                        "$link": "bafkreibsrrgny52yl6kfsff2ujonldfxs5dfsppzg6bc6knkk7w7syfbpq"
+                                    },
+                                    "mimeType": "image/png",
+                                    "size": 103734
+                                },
+                                "title": "deck.blue v2.2.0 is up! | deck.blue",
+                                "description": "Get more from deck.blue on Patreon"
+                            }
+                        },
+                        "langs": [
+                            "en"
+                        ],
+                        "facets": [
+                            {
+                                "index": {
+                                    "byteEnd": 26,
+                                    "byteStart": 16
+                                },
+                                "features": [
+                                    {
+                                        "uri": "https://www.patreon.com/posts/deck-blues-faq-94014314?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                                        "$type": "app.bsky.richtext.facet#link"
+                                    }
+                                ]
+                            },
+                            {
+                                "index": {
+                                    "byteEnd": 274,
+                                    "byteStart": 243
+                                },
+                                "features": [
+                                    {
+                                        "uri": "https://www.patreon.com/posts/deck-blue-v2-2-0-94015634?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                                        "$type": "app.bsky.richtext.facet#link"
+                                    }
+                                ]
+                            }
+                        ],
+                        "createdAt": "2023-12-03T20:09:45.110Z"
+                    },
+                    "embed": {
+                        "$type": "app.bsky.embed.external#view",
+                        "external": {
+                            "uri": "https://www.patreon.com/posts/deck-blue-v2-2-0-94015634?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                            "title": "deck.blue v2.2.0 is up! | deck.blue",
+                            "description": "Get more from deck.blue on Patreon",
+                            "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:w342borqxtyo2pul67ec2pwt/bafkreibsrrgny52yl6kfsff2ujonldfxs5dfsppzg6bc6knkk7w7syfbpq@jpeg"
+                        }
+                    },
+                    "replyCount": 5,
+                    "repostCount": 10,
+                    "likeCount": 25,
+                    "indexedAt": "2023-12-03T20:09:45.110Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reason": {
+                    "$type": "app.bsky.feed.defs#reasonRepost",
+                    "by": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "indexedAt": "2023-12-03T20:10:00.817Z"
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfo4eg6tix2u",
+                    "cid": "bafyreigryumjir4qvxm3ufbztkp4a5bb6rt2i7wvvaaastr7dmgdyjrogm",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "Jupp, technically not possible anymore sadly.\n",
+                        "$type": "app.bsky.feed.post",
+                        "reply": {
+                            "root": {
+                                "cid": "bafyreiefrkjvnqn7dgegthtaibajexrmfasusvzkptyckxy43fnytrap3m",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnruqzfwt26"
+                            },
+                            "parent": {
+                                "cid": "bafyreibyywfauwyaxhcg3yyhguvh6se7epvcwgt7cmyvwu6akus3ejbapy",
+                                "uri": "at://did:plc:du4pjmjqknrv34s5jx266rxi/app.bsky.feed.post/3kfo4dcidnr2l"
+                            }
+                        },
+                        "createdAt": "2023-12-03T20:09:38.298Z"
+                    },
+                    "replyCount": 0,
+                    "repostCount": 0,
+                    "likeCount": 0,
+                    "indexedAt": "2023-12-03T20:09:38.298Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reply": {
+                    "root": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnruqzfwt26",
+                        "cid": "bafyreiefrkjvnqn7dgegthtaibajexrmfasusvzkptyckxy43fnytrap3m",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "And added moderation list management to my little BlueSky client.\n\nLast missing list feature is adding a profile to any list from anywhere in the UI. This one is a bit foobar, due to kissing server APIs.\n\nThen only one base feature is left!\n\nhttps://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt\n",
+                            "$type": "app.bsky.feed.post",
+                            "embed": {
+                                "$type": "app.bsky.embed.external",
+                                "external": {
+                                    "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                                    "image": "https://cardyb.bsky.app/v1/image?url=https%3A%2F%2Fi.ytimg.com%2Fvi%2FvZKptZzzlmg%2Fmaxres2.jpg%3Fsqp%3D-oaymwEoCIAKENAF8quKqQMcGADwAQH4Ad4GgAKAD4oCDAgAEAEYZSBlKGUwDw%3D%3D%26rs%3DAOn4CLAohjp57SAnAyUC5Q5rrwrdRDODRw",
+                                    "thumb": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreidxaejyellpqpttfs7xcezczdp4l4pxuiawfna5zp2fwxdkfynew4"
+                                        },
+                                        "mimeType": "image/jpeg",
+                                        "size": 46101
+                                    },
+                                    "title": "Skychat moderation lists",
+                                    "description": ""
+                                }
+                            },
+                            "facets": [
+                                {
+                                    "index": {
+                                        "byteEnd": 290,
+                                        "byteStart": 242
+                                    },
+                                    "features": [
+                                        {
+                                            "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                                            "$type": "app.bsky.richtext.facet#link"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "createdAt": "2023-12-03T17:01:57.701Z"
+                        },
+                        "embed": {
+                            "$type": "app.bsky.embed.external#view",
+                            "external": {
+                                "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                                "title": "Skychat moderation lists",
+                                "description": "",
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreidxaejyellpqpttfs7xcezczdp4l4pxuiawfna5zp2fwxdkfynew4@jpeg"
+                            }
+                        },
+                        "replyCount": 1,
+                        "repostCount": 2,
+                        "likeCount": 3,
+                        "indexedAt": "2023-12-03T17:01:56.371Z",
+                        "viewer": {},
+                        "labels": []
+                    },
+                    "parent": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:du4pjmjqknrv34s5jx266rxi/app.bsky.feed.post/3kfo4dcidnr2l",
+                        "cid": "bafyreibyywfauwyaxhcg3yyhguvh6se7epvcwgt7cmyvwu6akus3ejbapy",
+                        "author": {
+                            "did": "did:plc:du4pjmjqknrv34s5jx266rxi",
+                            "handle": "ralf.kotthoff.io",
+                            "displayName": "Ralf Kotthoff",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:du4pjmjqknrv34s5jx266rxi/bafkreicpk36l4kuzv5egbi54uzhp7thsxykmpmq4nwim24grx23cll3p6a@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "didn't you mention something about an edit skeet function?",
+                            "$type": "app.bsky.feed.post",
+                            "langs": [
+                                "de"
+                            ],
+                            "reply": {
+                                "root": {
+                                    "cid": "bafyreiefrkjvnqn7dgegthtaibajexrmfasusvzkptyckxy43fnytrap3m",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnruqzfwt26"
+                                },
+                                "parent": {
+                                    "cid": "bafyreielmpmiwbzrplt42i7jxpfd27dfkff6xmskxkrdj5eqdjnmubwgsm",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfns6v67v22l"
+                                }
+                            },
+                            "createdAt": "2023-12-03T20:09:01.003Z"
+                        },
+                        "replyCount": 1,
+                        "repostCount": 0,
+                        "likeCount": 0,
+                        "indexedAt": "2023-12-03T20:09:01.003Z",
+                        "viewer": {},
+                        "labels": []
+                    }
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.post/3kfo42gpr252q",
+                    "cid": "bafyreidtqgmxbmcgpnsauvqiqijn347oe4f4fjac25dvkxpvhmqrtufeqq",
+                    "author": {
+                        "did": "did:plc:tor3vfreawh4m76ytz4krgtr",
+                        "handle": "badlogictest.bsky.social",
+                        "displayName": "Mario Zechner (Test account don't follow!)",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:tor3vfreawh4m76ytz4krgtr/bafkreid7ezveqqgrwsd3mmjc5g45bsz66b3xbgk3benh3bzioymrwreymi@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "",
+                        "$type": "app.bsky.feed.post",
+                        "embed": {
+                            "$type": "app.bsky.embed.images",
+                            "images": [
+                                {
+                                    "alt": "",
+                                    "image": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreifxwegptmrt36thyuxgxw7wscevkosr54tgqiuz46yphzw2txxui4"
+                                        },
+                                        "mimeType": "image/png",
+                                        "size": 340260
+                                    }
+                                }
+                            ]
+                        },
+                        "labels": {
+                            "$type": "com.atproto.label.defs#selfLabels",
+                            "values": [
+                                {
+                                    "val": "porn"
+                                }
+                            ]
+                        },
+                        "createdAt": "2023-12-03T20:04:03.314Z"
+                    },
+                    "embed": {
+                        "$type": "app.bsky.embed.images#view",
+                        "images": [
+                            {
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:tor3vfreawh4m76ytz4krgtr/bafkreifxwegptmrt36thyuxgxw7wscevkosr54tgqiuz46yphzw2txxui4@jpeg",
+                                "fullsize": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:tor3vfreawh4m76ytz4krgtr/bafkreifxwegptmrt36thyuxgxw7wscevkosr54tgqiuz46yphzw2txxui4@jpeg",
+                                "alt": ""
+                            }
+                        ]
+                    },
+                    "replyCount": 0,
+                    "repostCount": 0,
+                    "likeCount": 0,
+                    "indexedAt": "2023-12-03T20:04:03.314Z",
+                    "viewer": {},
+                    "labels": [
+                        {
+                            "src": "did:plc:tor3vfreawh4m76ytz4krgtr",
+                            "uri": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.post/3kfo42gpr252q",
+                            "cid": "bafyreidtqgmxbmcgpnsauvqiqijn347oe4f4fjac25dvkxpvhmqrtufeqq",
+                            "val": "porn",
+                            "cts": "2023-12-03T20:04:03.314Z",
+                            "neg": false
+                        }
+                    ]
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.post/3kfo3zgmpuh2y",
+                    "cid": "bafyreibhvsbv2awsuraqtebbpssx4g7jznggowchf2kr3cd2jubbyt3oay",
+                    "author": {
+                        "did": "did:plc:tor3vfreawh4m76ytz4krgtr",
+                        "handle": "badlogictest.bsky.social",
+                        "displayName": "Mario Zechner (Test account don't follow!)",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:tor3vfreawh4m76ytz4krgtr/bafkreid7ezveqqgrwsd3mmjc5g45bsz66b3xbgk3benh3bzioymrwreymi@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "",
+                        "$type": "app.bsky.feed.post",
+                        "embed": {
+                            "$type": "app.bsky.embed.images",
+                            "images": [
+                                {
+                                    "alt": "",
+                                    "image": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreicw2f7ddtnwdxmptnwvg6npvuy7p3v5ipv6aeuzrqarijaeimufsq"
+                                        },
+                                        "mimeType": "image/png",
+                                        "size": 406680
+                                    }
+                                }
+                            ]
+                        },
+                        "labels": {
+                            "$type": "com.atproto.label.defs#selfLabels",
+                            "values": [
+                                {
+                                    "val": "porn"
+                                }
+                            ]
+                        },
+                        "createdAt": "2023-12-03T20:03:29.658Z"
+                    },
+                    "embed": {
+                        "$type": "app.bsky.embed.images#view",
+                        "images": [
+                            {
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:tor3vfreawh4m76ytz4krgtr/bafkreicw2f7ddtnwdxmptnwvg6npvuy7p3v5ipv6aeuzrqarijaeimufsq@jpeg",
+                                "fullsize": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:tor3vfreawh4m76ytz4krgtr/bafkreicw2f7ddtnwdxmptnwvg6npvuy7p3v5ipv6aeuzrqarijaeimufsq@jpeg",
+                                "alt": ""
+                            }
+                        ]
+                    },
+                    "replyCount": 0,
+                    "repostCount": 0,
+                    "likeCount": 0,
+                    "indexedAt": "2023-12-03T20:03:29.658Z",
+                    "viewer": {},
+                    "labels": [
+                        {
+                            "src": "did:plc:tor3vfreawh4m76ytz4krgtr",
+                            "uri": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.post/3kfo3zgmpuh2y",
+                            "cid": "bafyreibhvsbv2awsuraqtebbpssx4g7jznggowchf2kr3cd2jubbyt3oay",
+                            "val": "porn",
+                            "cts": "2023-12-03T20:03:29.658Z",
+                            "neg": false
+                        }
+                    ]
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.post/3kfo3jpxs3n2u",
+                    "cid": "bafyreiczyd42el37eyosqpuehol3j5vol5uvpa4xfvoqww4jn5n27zbemy",
+                    "author": {
+                        "did": "did:plc:tor3vfreawh4m76ytz4krgtr",
+                        "handle": "badlogictest.bsky.social",
+                        "displayName": "Mario Zechner (Test account don't follow!)",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:tor3vfreawh4m76ytz4krgtr/bafkreid7ezveqqgrwsd3mmjc5g45bsz66b3xbgk3benh3bzioymrwreymi@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "sdafsdf\n",
+                        "$type": "app.bsky.feed.post",
+                        "createdAt": "2023-12-03T19:54:42.611Z"
+                    },
+                    "replyCount": 0,
+                    "repostCount": 0,
+                    "likeCount": 0,
+                    "indexedAt": "2023-12-03T19:54:42.611Z",
+                    "viewer": {},
+                    "labels": []
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfns6v67v22l",
+                    "cid": "bafyreielmpmiwbzrplt42i7jxpfd27dfkff6xmskxkrdj5eqdjnmubwgsm",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "With that out of the way, I can add more stuff.\n\nFree:\n- End-to-end encrypted direct messages (receiver also needs to use Skychat)\n\nPaid:\n- Private Bookmarks\n- Private lists\n- Analytics\n- Image alt-text generation via OpenAI\n- Post scheduling (maybe)\n\n",
+                        "$type": "app.bsky.feed.post",
+                        "reply": {
+                            "root": {
+                                "cid": "bafyreiefrkjvnqn7dgegthtaibajexrmfasusvzkptyckxy43fnytrap3m",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnruqzfwt26"
+                            },
+                            "parent": {
+                                "cid": "bafyreigyhyhfwygji5cgeod6sbtsvcd54kskvnvhh2uaz7pnw5vajya26m",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfns2klh2225"
+                            }
+                        },
+                        "createdAt": "2023-12-03T17:07:37.667Z"
+                    },
+                    "replyCount": 2,
+                    "repostCount": 0,
+                    "likeCount": 3,
+                    "indexedAt": "2023-12-03T17:07:35.884Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reply": {
+                    "root": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnruqzfwt26",
+                        "cid": "bafyreiefrkjvnqn7dgegthtaibajexrmfasusvzkptyckxy43fnytrap3m",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "And added moderation list management to my little BlueSky client.\n\nLast missing list feature is adding a profile to any list from anywhere in the UI. This one is a bit foobar, due to kissing server APIs.\n\nThen only one base feature is left!\n\nhttps://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt\n",
+                            "$type": "app.bsky.feed.post",
+                            "embed": {
+                                "$type": "app.bsky.embed.external",
+                                "external": {
+                                    "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                                    "image": "https://cardyb.bsky.app/v1/image?url=https%3A%2F%2Fi.ytimg.com%2Fvi%2FvZKptZzzlmg%2Fmaxres2.jpg%3Fsqp%3D-oaymwEoCIAKENAF8quKqQMcGADwAQH4Ad4GgAKAD4oCDAgAEAEYZSBlKGUwDw%3D%3D%26rs%3DAOn4CLAohjp57SAnAyUC5Q5rrwrdRDODRw",
+                                    "thumb": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreidxaejyellpqpttfs7xcezczdp4l4pxuiawfna5zp2fwxdkfynew4"
+                                        },
+                                        "mimeType": "image/jpeg",
+                                        "size": 46101
+                                    },
+                                    "title": "Skychat moderation lists",
+                                    "description": ""
+                                }
+                            },
+                            "facets": [
+                                {
+                                    "index": {
+                                        "byteEnd": 290,
+                                        "byteStart": 242
+                                    },
+                                    "features": [
+                                        {
+                                            "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                                            "$type": "app.bsky.richtext.facet#link"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "createdAt": "2023-12-03T17:01:57.701Z"
+                        },
+                        "embed": {
+                            "$type": "app.bsky.embed.external#view",
+                            "external": {
+                                "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                                "title": "Skychat moderation lists",
+                                "description": "",
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreidxaejyellpqpttfs7xcezczdp4l4pxuiawfna5zp2fwxdkfynew4@jpeg"
+                            }
+                        },
+                        "replyCount": 1,
+                        "repostCount": 2,
+                        "likeCount": 3,
+                        "indexedAt": "2023-12-03T17:01:56.371Z",
+                        "viewer": {},
+                        "labels": []
+                    },
+                    "parent": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfns2klh2225",
+                        "cid": "bafyreigyhyhfwygji5cgeod6sbtsvcd54kskvnvhh2uaz7pnw5vajya26m",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Then I'll have feature parity with the official client plus:\n\n- View quotes of any post\n- YouTube embeds\n- GIFs\n- (Push) notification filtering\n- Image drag and drop/copy and paste in post editor\n- Thread reader mode\n\nall of the above is already implemented and you can try it here:\n",
+                            "$type": "app.bsky.feed.post",
+                            "embed": {
+                                "$type": "app.bsky.embed.external",
+                                "external": {
+                                    "uri": "https://skychat.social",
+                                    "image": "https://cardyb.bsky.app/v1/image?url=https%3A%2F%2Fskychat.social%2Flogo512.png",
+                                    "thumb": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreidetlguut72vegi65afugltl3tjryxppg7e6khmx52lee5ypuujoe"
+                                        },
+                                        "mimeType": "image/png",
+                                        "size": 24563
+                                    },
+                                    "title": "Skychat",
+                                    "description": "A better BlueSky client"
+                                }
+                            },
+                            "reply": {
+                                "root": {
+                                    "cid": "bafyreiefrkjvnqn7dgegthtaibajexrmfasusvzkptyckxy43fnytrap3m",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnruqzfwt26"
+                                },
+                                "parent": {
+                                    "cid": "bafyreiefrkjvnqn7dgegthtaibajexrmfasusvzkptyckxy43fnytrap3m",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnruqzfwt26"
+                                }
+                            },
+                            "createdAt": "2023-12-03T17:05:12.492Z"
+                        },
+                        "embed": {
+                            "$type": "app.bsky.embed.external#view",
+                            "external": {
+                                "uri": "https://skychat.social",
+                                "title": "Skychat",
+                                "description": "A better BlueSky client",
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreidetlguut72vegi65afugltl3tjryxppg7e6khmx52lee5ypuujoe@jpeg"
+                            }
+                        },
+                        "replyCount": 1,
+                        "repostCount": 1,
+                        "likeCount": 3,
+                        "indexedAt": "2023-12-03T17:05:10.391Z",
+                        "viewer": {},
+                        "labels": []
+                    }
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfns2klh2225",
+                    "cid": "bafyreigyhyhfwygji5cgeod6sbtsvcd54kskvnvhh2uaz7pnw5vajya26m",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "Then I'll have feature parity with the official client plus:\n\n- View quotes of any post\n- YouTube embeds\n- GIFs\n- (Push) notification filtering\n- Image drag and drop/copy and paste in post editor\n- Thread reader mode\n\nall of the above is already implemented and you can try it here:\n",
+                        "$type": "app.bsky.feed.post",
+                        "embed": {
+                            "$type": "app.bsky.embed.external",
+                            "external": {
+                                "uri": "https://skychat.social",
+                                "image": "https://cardyb.bsky.app/v1/image?url=https%3A%2F%2Fskychat.social%2Flogo512.png",
+                                "thumb": {
+                                    "$type": "blob",
+                                    "ref": {
+                                        "$link": "bafkreidetlguut72vegi65afugltl3tjryxppg7e6khmx52lee5ypuujoe"
+                                    },
+                                    "mimeType": "image/png",
+                                    "size": 24563
+                                },
+                                "title": "Skychat",
+                                "description": "A better BlueSky client"
+                            }
+                        },
+                        "reply": {
+                            "root": {
+                                "cid": "bafyreiefrkjvnqn7dgegthtaibajexrmfasusvzkptyckxy43fnytrap3m",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnruqzfwt26"
+                            },
+                            "parent": {
+                                "cid": "bafyreiefrkjvnqn7dgegthtaibajexrmfasusvzkptyckxy43fnytrap3m",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnruqzfwt26"
+                            }
+                        },
+                        "createdAt": "2023-12-03T17:05:12.492Z"
+                    },
+                    "embed": {
+                        "$type": "app.bsky.embed.external#view",
+                        "external": {
+                            "uri": "https://skychat.social",
+                            "title": "Skychat",
+                            "description": "A better BlueSky client",
+                            "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreidetlguut72vegi65afugltl3tjryxppg7e6khmx52lee5ypuujoe@jpeg"
+                        }
+                    },
+                    "replyCount": 1,
+                    "repostCount": 1,
+                    "likeCount": 3,
+                    "indexedAt": "2023-12-03T17:05:10.391Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reply": {
+                    "root": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnruqzfwt26",
+                        "cid": "bafyreiefrkjvnqn7dgegthtaibajexrmfasusvzkptyckxy43fnytrap3m",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "And added moderation list management to my little BlueSky client.\n\nLast missing list feature is adding a profile to any list from anywhere in the UI. This one is a bit foobar, due to kissing server APIs.\n\nThen only one base feature is left!\n\nhttps://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt\n",
+                            "$type": "app.bsky.feed.post",
+                            "embed": {
+                                "$type": "app.bsky.embed.external",
+                                "external": {
+                                    "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                                    "image": "https://cardyb.bsky.app/v1/image?url=https%3A%2F%2Fi.ytimg.com%2Fvi%2FvZKptZzzlmg%2Fmaxres2.jpg%3Fsqp%3D-oaymwEoCIAKENAF8quKqQMcGADwAQH4Ad4GgAKAD4oCDAgAEAEYZSBlKGUwDw%3D%3D%26rs%3DAOn4CLAohjp57SAnAyUC5Q5rrwrdRDODRw",
+                                    "thumb": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreidxaejyellpqpttfs7xcezczdp4l4pxuiawfna5zp2fwxdkfynew4"
+                                        },
+                                        "mimeType": "image/jpeg",
+                                        "size": 46101
+                                    },
+                                    "title": "Skychat moderation lists",
+                                    "description": ""
+                                }
+                            },
+                            "facets": [
+                                {
+                                    "index": {
+                                        "byteEnd": 290,
+                                        "byteStart": 242
+                                    },
+                                    "features": [
+                                        {
+                                            "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                                            "$type": "app.bsky.richtext.facet#link"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "createdAt": "2023-12-03T17:01:57.701Z"
+                        },
+                        "embed": {
+                            "$type": "app.bsky.embed.external#view",
+                            "external": {
+                                "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                                "title": "Skychat moderation lists",
+                                "description": "",
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreidxaejyellpqpttfs7xcezczdp4l4pxuiawfna5zp2fwxdkfynew4@jpeg"
+                            }
+                        },
+                        "replyCount": 1,
+                        "repostCount": 2,
+                        "likeCount": 3,
+                        "indexedAt": "2023-12-03T17:01:56.371Z",
+                        "viewer": {},
+                        "labels": []
+                    },
+                    "parent": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnruqzfwt26",
+                        "cid": "bafyreiefrkjvnqn7dgegthtaibajexrmfasusvzkptyckxy43fnytrap3m",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "And added moderation list management to my little BlueSky client.\n\nLast missing list feature is adding a profile to any list from anywhere in the UI. This one is a bit foobar, due to kissing server APIs.\n\nThen only one base feature is left!\n\nhttps://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt\n",
+                            "$type": "app.bsky.feed.post",
+                            "embed": {
+                                "$type": "app.bsky.embed.external",
+                                "external": {
+                                    "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                                    "image": "https://cardyb.bsky.app/v1/image?url=https%3A%2F%2Fi.ytimg.com%2Fvi%2FvZKptZzzlmg%2Fmaxres2.jpg%3Fsqp%3D-oaymwEoCIAKENAF8quKqQMcGADwAQH4Ad4GgAKAD4oCDAgAEAEYZSBlKGUwDw%3D%3D%26rs%3DAOn4CLAohjp57SAnAyUC5Q5rrwrdRDODRw",
+                                    "thumb": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreidxaejyellpqpttfs7xcezczdp4l4pxuiawfna5zp2fwxdkfynew4"
+                                        },
+                                        "mimeType": "image/jpeg",
+                                        "size": 46101
+                                    },
+                                    "title": "Skychat moderation lists",
+                                    "description": ""
+                                }
+                            },
+                            "facets": [
+                                {
+                                    "index": {
+                                        "byteEnd": 290,
+                                        "byteStart": 242
+                                    },
+                                    "features": [
+                                        {
+                                            "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                                            "$type": "app.bsky.richtext.facet#link"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "createdAt": "2023-12-03T17:01:57.701Z"
+                        },
+                        "embed": {
+                            "$type": "app.bsky.embed.external#view",
+                            "external": {
+                                "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                                "title": "Skychat moderation lists",
+                                "description": "",
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreidxaejyellpqpttfs7xcezczdp4l4pxuiawfna5zp2fwxdkfynew4@jpeg"
+                            }
+                        },
+                        "replyCount": 1,
+                        "repostCount": 2,
+                        "likeCount": 3,
+                        "indexedAt": "2023-12-03T17:01:56.371Z",
+                        "viewer": {},
+                        "labels": []
+                    }
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnruqzfwt26",
+                    "cid": "bafyreiefrkjvnqn7dgegthtaibajexrmfasusvzkptyckxy43fnytrap3m",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "And added moderation list management to my little BlueSky client.\n\nLast missing list feature is adding a profile to any list from anywhere in the UI. This one is a bit foobar, due to kissing server APIs.\n\nThen only one base feature is left!\n\nhttps://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt\n",
+                        "$type": "app.bsky.feed.post",
+                        "embed": {
+                            "$type": "app.bsky.embed.external",
+                            "external": {
+                                "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                                "image": "https://cardyb.bsky.app/v1/image?url=https%3A%2F%2Fi.ytimg.com%2Fvi%2FvZKptZzzlmg%2Fmaxres2.jpg%3Fsqp%3D-oaymwEoCIAKENAF8quKqQMcGADwAQH4Ad4GgAKAD4oCDAgAEAEYZSBlKGUwDw%3D%3D%26rs%3DAOn4CLAohjp57SAnAyUC5Q5rrwrdRDODRw",
+                                "thumb": {
+                                    "$type": "blob",
+                                    "ref": {
+                                        "$link": "bafkreidxaejyellpqpttfs7xcezczdp4l4pxuiawfna5zp2fwxdkfynew4"
+                                    },
+                                    "mimeType": "image/jpeg",
+                                    "size": 46101
+                                },
+                                "title": "Skychat moderation lists",
+                                "description": ""
+                            }
+                        },
+                        "facets": [
+                            {
+                                "index": {
+                                    "byteEnd": 290,
+                                    "byteStart": 242
+                                },
+                                "features": [
+                                    {
+                                        "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                                        "$type": "app.bsky.richtext.facet#link"
+                                    }
+                                ]
+                            }
+                        ],
+                        "createdAt": "2023-12-03T17:01:57.701Z"
+                    },
+                    "embed": {
+                        "$type": "app.bsky.embed.external#view",
+                        "external": {
+                            "uri": "https://youtu.be/vZKptZzzlmg?si=dNxILwLxQdppfiVt",
+                            "title": "Skychat moderation lists",
+                            "description": "",
+                            "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreidxaejyellpqpttfs7xcezczdp4l4pxuiawfna5zp2fwxdkfynew4@jpeg"
+                        }
+                    },
+                    "replyCount": 1,
+                    "repostCount": 2,
+                    "likeCount": 3,
+                    "indexedAt": "2023-12-03T17:01:56.371Z",
+                    "viewer": {},
+                    "labels": []
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnraiewsd2j",
+                    "cid": "bafyreibe66hkj2m2bmd24i3gjx4k6cj3focmmyrnmhf3nih46nraja4oki",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "beim eurotom is das denk ich genetisch und nicht click bait.\n",
+                        "$type": "app.bsky.feed.post",
+                        "reply": {
+                            "root": {
+                                "cid": "bafyreih4x3vdxz6na7boxen4gh7mao4mdk7aemsnobblroplhtdchzmifa",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfmzhebexd2g"
+                            },
+                            "parent": {
+                                "cid": "bafyreihzouvs5iguve27vx2gy3xhmqhe2i5azggk4cyb654jisuyveic6a",
+                                "uri": "at://did:plc:qcc6yece4wbrvd3dca5n4w4g/app.bsky.feed.post/3kfnneralfl22"
+                            }
+                        },
+                        "createdAt": "2023-12-03T16:50:37.145Z"
+                    },
+                    "replyCount": 2,
+                    "repostCount": 0,
+                    "likeCount": 2,
+                    "indexedAt": "2023-12-03T16:50:35.679Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reply": {
+                    "root": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfmzhebexd2g",
+                        "cid": "bafyreih4x3vdxz6na7boxen4gh7mao4mdk7aemsnobblroplhtdchzmifa",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Ich habe ja schon seit längerem die Vermutung, dass Frau Salomon gar keine dumme Nuss ist, sondern einfach maximal triggernd schreibt, damot wir alle brav klicken, Paywall ins Gsicht kriegen, und die ads trotzdem geladen werden.\n\nAnders kann ich mir diese Art Artikel nicht erklären.\n",
+                            "$type": "app.bsky.feed.post",
+                            "embed": {
+                                "$type": "app.bsky.embed.record",
+                                "record": {
+                                    "cid": "bafyreid7nyksrsd6rpja4yqvt6yopmkjrrfo2tfsdpvpt347dhmsk4y3aa",
+                                    "uri": "at://did:plc:s2adykvjtfulxrj2zsly427s/app.bsky.feed.post/3kfmz4pls2u2g"
+                                }
+                            },
+                            "createdAt": "2023-12-03T09:44:58.311Z"
+                        },
+                        "embed": {
+                            "$type": "app.bsky.embed.record#view",
+                            "record": {
+                                "$type": "app.bsky.embed.record#viewRecord",
+                                "uri": "at://did:plc:s2adykvjtfulxrj2zsly427s/app.bsky.feed.post/3kfmz4pls2u2g",
+                                "cid": "bafyreid7nyksrsd6rpja4yqvt6yopmkjrrfo2tfsdpvpt347dhmsk4y3aa",
+                                "author": {
+                                    "did": "did:plc:s2adykvjtfulxrj2zsly427s",
+                                    "handle": "peterreichel.bsky.social",
+                                    "displayName": "Peter Reichel",
+                                    "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:s2adykvjtfulxrj2zsly427s/bafkreid2mctantw47tx46z7usvwm2qprkedxo2amah7h5t3b6fmrsihpyu@jpeg",
+                                    "viewer": {
+                                        "muted": false,
+                                        "blockedBy": false
+                                    },
+                                    "labels": []
+                                },
+                                "value": {
+                                    "text": "War irgendwie zu erwarten, dass die Frau Salomon für diese Truppe ausreitet \n😂😂",
+                                    "$type": "app.bsky.feed.post",
+                                    "embed": {
+                                        "$type": "app.bsky.embed.external",
+                                        "external": {
+                                            "uri": "https://kurier.at/meinung/haeme-ueber-benko-ist-deplatziert/402693559",
+                                            "thumb": {
+                                                "$type": "blob",
+                                                "ref": {
+                                                    "$link": "bafkreicrubnvc6bqlbd6qhwhpgchp4c7flkc6cus7yomkc6gms3vhkyeae"
+                                                },
+                                                "mimeType": "image/jpeg",
+                                                "size": 907157
+                                            },
+                                            "title": "Häme über Benko ist deplatziert",
+                                            "description": "Gedanken zum Crash des Signa-Konzerns, über Fehler, die passiert sind und welche Schlüsse man daraus ziehen könnte"
+                                        }
+                                    },
+                                    "langs": [
+                                        "de"
+                                    ],
+                                    "createdAt": "2023-12-03T09:38:59.025Z"
+                                },
+                                "labels": [],
+                                "indexedAt": "2023-12-03T09:38:59.025Z",
+                                "embeds": [
+                                    {
+                                        "$type": "app.bsky.embed.external#view",
+                                        "external": {
+                                            "uri": "https://kurier.at/meinung/haeme-ueber-benko-ist-deplatziert/402693559",
+                                            "title": "Häme über Benko ist deplatziert",
+                                            "description": "Gedanken zum Crash des Signa-Konzerns, über Fehler, die passiert sind und welche Schlüsse man daraus ziehen könnte",
+                                            "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:s2adykvjtfulxrj2zsly427s/bafkreicrubnvc6bqlbd6qhwhpgchp4c7flkc6cus7yomkc6gms3vhkyeae@jpeg"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        "replyCount": 5,
+                        "repostCount": 4,
+                        "likeCount": 22,
+                        "indexedAt": "2023-12-03T09:44:56.594Z",
+                        "viewer": {},
+                        "labels": []
+                    },
+                    "parent": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:qcc6yece4wbrvd3dca5n4w4g/app.bsky.feed.post/3kfnneralfl22",
+                        "cid": "bafyreihzouvs5iguve27vx2gy3xhmqhe2i5azggk4cyb654jisuyveic6a",
+                        "author": {
+                            "did": "did:plc:qcc6yece4wbrvd3dca5n4w4g",
+                            "handle": "blueskyeria.bsky.social",
+                            "displayName": "kaputte Kaffeemschine",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:qcc6yece4wbrvd3dca5n4w4g/bafkreihbrtycztbsmm7nxhepsmjefyyddvaeceftwz4gkncdokqvvdjbcy@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Vorreiter dieses Ansatzes waren aber Eurotommi und Eric Frey ...\n\nEhre wem Ehre gebührt!",
+                            "$type": "app.bsky.feed.post",
+                            "langs": [
+                                "en"
+                            ],
+                            "reply": {
+                                "root": {
+                                    "cid": "bafyreih4x3vdxz6na7boxen4gh7mao4mdk7aemsnobblroplhtdchzmifa",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfmzhebexd2g"
+                                },
+                                "parent": {
+                                    "cid": "bafyreih4x3vdxz6na7boxen4gh7mao4mdk7aemsnobblroplhtdchzmifa",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfmzhebexd2g"
+                                }
+                            },
+                            "createdAt": "2023-12-03T15:41:23.963Z"
+                        },
+                        "replyCount": 2,
+                        "repostCount": 1,
+                        "likeCount": 3,
+                        "indexedAt": "2023-12-03T15:41:23.963Z",
+                        "viewer": {},
+                        "labels": []
+                    }
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnfgijzj52j",
+                    "cid": "bafyreibckknx5u5j5ouya6q4bc6nzljzu237nyuutu6cy6lnlt7dikqt6u",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "I can relate...\n",
+                        "$type": "app.bsky.feed.post",
+                        "reply": {
+                            "root": {
+                                "cid": "bafyreidenthautzzzoytfb5sthvqr7sifi5rojogqjvpqjaundrkc3azsm",
+                                "uri": "at://did:plc:o6ctzpclyvharjuxzl5pgadr/app.bsky.feed.post/3kfn5rgpkww2s"
+                            },
+                            "parent": {
+                                "cid": "bafyreichfxncem7bgid6bxsphxyqag6wyivyq54jh7wjfwukmxa2h56jqm",
+                                "uri": "at://did:plc:o6ctzpclyvharjuxzl5pgadr/app.bsky.feed.post/3kfnf5a3uhc26"
+                            }
+                        },
+                        "createdAt": "2023-12-03T13:19:14.298Z"
+                    },
+                    "replyCount": 0,
+                    "repostCount": 0,
+                    "likeCount": 1,
+                    "indexedAt": "2023-12-03T13:19:12.255Z",
+                    "viewer": {},
+                    "labels": []
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnf2lvi7b2y",
+                    "cid": "bafyreia4udxdbm5axju5pm7zdoeqxjx3c6pjvihsropdqt4tznyecgd7a4",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "Oh Jösas, am Ende gehts um Videospiele und die Moderatoring hängts voll aus...\n",
+                        "$type": "app.bsky.feed.post",
+                        "reply": {
+                            "root": {
+                                "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h"
+                            },
+                            "parent": {
+                                "cid": "bafyreib7xm766whysxv77thwtqabpmxkrl4ktnjykzy5ngwux4zfkekm7a",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfneewsiod2g"
+                            }
+                        },
+                        "createdAt": "2023-12-03T13:12:35.174Z"
+                    },
+                    "replyCount": 0,
+                    "repostCount": 0,
+                    "likeCount": 2,
+                    "indexedAt": "2023-12-03T13:12:33.175Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reply": {
+                    "root": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h",
+                        "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Falter Podcast hören beim Putzen.\n\nJulia Ebner gibt uns da Einblick in Verschwörungstheorien, ihre Anhänger und wie diese immer mehr Platz in der Mitte finden.\n\nEine Aussage find ich dennoch strange. Frau Ebner hält VTs wie \"Wissenschaft/Pharma böse\" für nicht gefährlich.\n\nIch sag Masern...\n",
+                            "$type": "app.bsky.feed.post",
+                            "embed": {
+                                "$type": "app.bsky.embed.external",
+                                "external": {
+                                    "uri": "https://open.spotify.com/episode/1aq9gZeE7Pf5Je30NOpb8X?si=UAq63owST8GmaZuhJSk47w",
+                                    "image": "https://cardyb.bsky.app/v1/image?url=https%3A%2F%2Fi.scdn.co%2Fimage%2Fab6765630000ba8a37545fe587b3e0899eadb487",
+                                    "thumb": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreigm32nj6egsqlpa45cq3jalogggro3vt43dtyvgcnrgolr26h7nzm"
+                                        },
+                                        "mimeType": "image/jpeg",
+                                        "size": 40346
+                                    },
+                                    "title": "Verschwörungstheoretiker unter uns - #1044",
+                                    "description": "Listen to this episode from FALTER Radio on Spotify. Extremismusexpertin Julia Ebner diagnostiziert eine Radikalisierung der Mitte in den USA und Europa. Eine FALTER Radio Lecture mit Tessa Szyszkowit..."
+                                }
+                            },
+                            "createdAt": "2023-12-03T12:39:12.538Z"
+                        },
+                        "embed": {
+                            "$type": "app.bsky.embed.external#view",
+                            "external": {
+                                "uri": "https://open.spotify.com/episode/1aq9gZeE7Pf5Je30NOpb8X?si=UAq63owST8GmaZuhJSk47w",
+                                "title": "Verschwörungstheoretiker unter uns - #1044",
+                                "description": "Listen to this episode from FALTER Radio on Spotify. Extremismusexpertin Julia Ebner diagnostiziert eine Radikalisierung der Mitte in den USA und Europa. Eine FALTER Radio Lecture mit Tessa Szyszkowit...",
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreigm32nj6egsqlpa45cq3jalogggro3vt43dtyvgcnrgolr26h7nzm@jpeg"
+                            }
+                        },
+                        "replyCount": 2,
+                        "repostCount": 0,
+                        "likeCount": 7,
+                        "indexedAt": "2023-12-03T12:39:11.092Z",
+                        "viewer": {},
+                        "labels": []
+                    },
+                    "parent": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfneewsiod2g",
+                        "cid": "bafyreib7xm766whysxv77thwtqabpmxkrl4ktnjykzy5ngwux4zfkekm7a",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Aber allgemein supi Diskussion. Frau Ebner hat ordentlich Mut sich in all diese Gruppen undercover einzuschleußen.\n",
+                            "$type": "app.bsky.feed.post",
+                            "reply": {
+                                "root": {
+                                    "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h"
+                                },
+                                "parent": {
+                                    "cid": "bafyreiac3bdvzj2za6urtcglf7wxhhzmz6dii2nuzcwuofr7xvbnbz7msm",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfndngxedd2g"
+                                }
+                            },
+                            "createdAt": "2023-12-03T13:00:28.405Z"
+                        },
+                        "replyCount": 1,
+                        "repostCount": 0,
+                        "likeCount": 2,
+                        "indexedAt": "2023-12-03T13:00:26.495Z",
+                        "viewer": {},
+                        "labels": []
+                    }
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfneewsiod2g",
+                    "cid": "bafyreib7xm766whysxv77thwtqabpmxkrl4ktnjykzy5ngwux4zfkekm7a",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "Aber allgemein supi Diskussion. Frau Ebner hat ordentlich Mut sich in all diese Gruppen undercover einzuschleußen.\n",
+                        "$type": "app.bsky.feed.post",
+                        "reply": {
+                            "root": {
+                                "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h"
+                            },
+                            "parent": {
+                                "cid": "bafyreiac3bdvzj2za6urtcglf7wxhhzmz6dii2nuzcwuofr7xvbnbz7msm",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfndngxedd2g"
+                            }
+                        },
+                        "createdAt": "2023-12-03T13:00:28.405Z"
+                    },
+                    "replyCount": 1,
+                    "repostCount": 0,
+                    "likeCount": 2,
+                    "indexedAt": "2023-12-03T13:00:26.495Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reply": {
+                    "root": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h",
+                        "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Falter Podcast hören beim Putzen.\n\nJulia Ebner gibt uns da Einblick in Verschwörungstheorien, ihre Anhänger und wie diese immer mehr Platz in der Mitte finden.\n\nEine Aussage find ich dennoch strange. Frau Ebner hält VTs wie \"Wissenschaft/Pharma böse\" für nicht gefährlich.\n\nIch sag Masern...\n",
+                            "$type": "app.bsky.feed.post",
+                            "embed": {
+                                "$type": "app.bsky.embed.external",
+                                "external": {
+                                    "uri": "https://open.spotify.com/episode/1aq9gZeE7Pf5Je30NOpb8X?si=UAq63owST8GmaZuhJSk47w",
+                                    "image": "https://cardyb.bsky.app/v1/image?url=https%3A%2F%2Fi.scdn.co%2Fimage%2Fab6765630000ba8a37545fe587b3e0899eadb487",
+                                    "thumb": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreigm32nj6egsqlpa45cq3jalogggro3vt43dtyvgcnrgolr26h7nzm"
+                                        },
+                                        "mimeType": "image/jpeg",
+                                        "size": 40346
+                                    },
+                                    "title": "Verschwörungstheoretiker unter uns - #1044",
+                                    "description": "Listen to this episode from FALTER Radio on Spotify. Extremismusexpertin Julia Ebner diagnostiziert eine Radikalisierung der Mitte in den USA und Europa. Eine FALTER Radio Lecture mit Tessa Szyszkowit..."
+                                }
+                            },
+                            "createdAt": "2023-12-03T12:39:12.538Z"
+                        },
+                        "embed": {
+                            "$type": "app.bsky.embed.external#view",
+                            "external": {
+                                "uri": "https://open.spotify.com/episode/1aq9gZeE7Pf5Je30NOpb8X?si=UAq63owST8GmaZuhJSk47w",
+                                "title": "Verschwörungstheoretiker unter uns - #1044",
+                                "description": "Listen to this episode from FALTER Radio on Spotify. Extremismusexpertin Julia Ebner diagnostiziert eine Radikalisierung der Mitte in den USA und Europa. Eine FALTER Radio Lecture mit Tessa Szyszkowit...",
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreigm32nj6egsqlpa45cq3jalogggro3vt43dtyvgcnrgolr26h7nzm@jpeg"
+                            }
+                        },
+                        "replyCount": 2,
+                        "repostCount": 0,
+                        "likeCount": 7,
+                        "indexedAt": "2023-12-03T12:39:11.092Z",
+                        "viewer": {},
+                        "labels": []
+                    },
+                    "parent": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfndngxedd2g",
+                        "cid": "bafyreiac3bdvzj2za6urtcglf7wxhhzmz6dii2nuzcwuofr7xvbnbz7msm",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Empfehle ExtremismusforscherInnen einmal einen Vormittag in einer Kinderspielgruppe.\n",
+                            "$type": "app.bsky.feed.post",
+                            "reply": {
+                                "root": {
+                                    "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h"
+                                },
+                                "parent": {
+                                    "cid": "bafyreif6dukgmkpfz5ukzslqx6yfylrdgocmj33ovmfo244glmf7swj6gu",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfndioyyi62c"
+                                }
+                            },
+                            "createdAt": "2023-12-03T12:47:20.029Z"
+                        },
+                        "replyCount": 1,
+                        "repostCount": 0,
+                        "likeCount": 5,
+                        "indexedAt": "2023-12-03T12:47:18.005Z",
+                        "viewer": {},
+                        "labels": []
+                    }
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfndngxedd2g",
+                    "cid": "bafyreiac3bdvzj2za6urtcglf7wxhhzmz6dii2nuzcwuofr7xvbnbz7msm",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "Empfehle ExtremismusforscherInnen einmal einen Vormittag in einer Kinderspielgruppe.\n",
+                        "$type": "app.bsky.feed.post",
+                        "reply": {
+                            "root": {
+                                "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h"
+                            },
+                            "parent": {
+                                "cid": "bafyreif6dukgmkpfz5ukzslqx6yfylrdgocmj33ovmfo244glmf7swj6gu",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfndioyyi62c"
+                            }
+                        },
+                        "createdAt": "2023-12-03T12:47:20.029Z"
+                    },
+                    "replyCount": 1,
+                    "repostCount": 0,
+                    "likeCount": 5,
+                    "indexedAt": "2023-12-03T12:47:18.005Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reply": {
+                    "root": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h",
+                        "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Falter Podcast hören beim Putzen.\n\nJulia Ebner gibt uns da Einblick in Verschwörungstheorien, ihre Anhänger und wie diese immer mehr Platz in der Mitte finden.\n\nEine Aussage find ich dennoch strange. Frau Ebner hält VTs wie \"Wissenschaft/Pharma böse\" für nicht gefährlich.\n\nIch sag Masern...\n",
+                            "$type": "app.bsky.feed.post",
+                            "embed": {
+                                "$type": "app.bsky.embed.external",
+                                "external": {
+                                    "uri": "https://open.spotify.com/episode/1aq9gZeE7Pf5Je30NOpb8X?si=UAq63owST8GmaZuhJSk47w",
+                                    "image": "https://cardyb.bsky.app/v1/image?url=https%3A%2F%2Fi.scdn.co%2Fimage%2Fab6765630000ba8a37545fe587b3e0899eadb487",
+                                    "thumb": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreigm32nj6egsqlpa45cq3jalogggro3vt43dtyvgcnrgolr26h7nzm"
+                                        },
+                                        "mimeType": "image/jpeg",
+                                        "size": 40346
+                                    },
+                                    "title": "Verschwörungstheoretiker unter uns - #1044",
+                                    "description": "Listen to this episode from FALTER Radio on Spotify. Extremismusexpertin Julia Ebner diagnostiziert eine Radikalisierung der Mitte in den USA und Europa. Eine FALTER Radio Lecture mit Tessa Szyszkowit..."
+                                }
+                            },
+                            "createdAt": "2023-12-03T12:39:12.538Z"
+                        },
+                        "embed": {
+                            "$type": "app.bsky.embed.external#view",
+                            "external": {
+                                "uri": "https://open.spotify.com/episode/1aq9gZeE7Pf5Je30NOpb8X?si=UAq63owST8GmaZuhJSk47w",
+                                "title": "Verschwörungstheoretiker unter uns - #1044",
+                                "description": "Listen to this episode from FALTER Radio on Spotify. Extremismusexpertin Julia Ebner diagnostiziert eine Radikalisierung der Mitte in den USA und Europa. Eine FALTER Radio Lecture mit Tessa Szyszkowit...",
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreigm32nj6egsqlpa45cq3jalogggro3vt43dtyvgcnrgolr26h7nzm@jpeg"
+                            }
+                        },
+                        "replyCount": 2,
+                        "repostCount": 0,
+                        "likeCount": 7,
+                        "indexedAt": "2023-12-03T12:39:11.092Z",
+                        "viewer": {},
+                        "labels": []
+                    },
+                    "parent": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfndioyyi62c",
+                        "cid": "bafyreif6dukgmkpfz5ukzslqx6yfylrdgocmj33ovmfo244glmf7swj6gu",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Allgemein halte ich diese gesellschaftliche Angst bzgl. und Fokus auf Terroranschläge speziell seit 9/11 ggü. für verstörend, wenn gleichzeitig zivilisatorische Errungenschaften wie Impfprogramme, die literally Millionen Tote verhindern, wegen VTs zerbröseln.\n\nPriorities, I suppose...\n",
+                            "$type": "app.bsky.feed.post",
+                            "reply": {
+                                "root": {
+                                    "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h"
+                                },
+                                "parent": {
+                                    "cid": "bafyreibwcgmgkamewppovuewdmfytctfypq43hvkv57h2zkn6qjkejb3sm",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfndczo6x22l"
+                                }
+                            },
+                            "createdAt": "2023-12-03T12:44:40.693Z"
+                        },
+                        "replyCount": 1,
+                        "repostCount": 0,
+                        "likeCount": 5,
+                        "indexedAt": "2023-12-03T12:44:38.876Z",
+                        "viewer": {},
+                        "labels": []
+                    }
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfndioyyi62c",
+                    "cid": "bafyreif6dukgmkpfz5ukzslqx6yfylrdgocmj33ovmfo244glmf7swj6gu",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "Allgemein halte ich diese gesellschaftliche Angst bzgl. und Fokus auf Terroranschläge speziell seit 9/11 ggü. für verstörend, wenn gleichzeitig zivilisatorische Errungenschaften wie Impfprogramme, die literally Millionen Tote verhindern, wegen VTs zerbröseln.\n\nPriorities, I suppose...\n",
+                        "$type": "app.bsky.feed.post",
+                        "reply": {
+                            "root": {
+                                "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h"
+                            },
+                            "parent": {
+                                "cid": "bafyreibwcgmgkamewppovuewdmfytctfypq43hvkv57h2zkn6qjkejb3sm",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfndczo6x22l"
+                            }
+                        },
+                        "createdAt": "2023-12-03T12:44:40.693Z"
+                    },
+                    "replyCount": 1,
+                    "repostCount": 0,
+                    "likeCount": 5,
+                    "indexedAt": "2023-12-03T12:44:38.876Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reply": {
+                    "root": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h",
+                        "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Falter Podcast hören beim Putzen.\n\nJulia Ebner gibt uns da Einblick in Verschwörungstheorien, ihre Anhänger und wie diese immer mehr Platz in der Mitte finden.\n\nEine Aussage find ich dennoch strange. Frau Ebner hält VTs wie \"Wissenschaft/Pharma böse\" für nicht gefährlich.\n\nIch sag Masern...\n",
+                            "$type": "app.bsky.feed.post",
+                            "embed": {
+                                "$type": "app.bsky.embed.external",
+                                "external": {
+                                    "uri": "https://open.spotify.com/episode/1aq9gZeE7Pf5Je30NOpb8X?si=UAq63owST8GmaZuhJSk47w",
+                                    "image": "https://cardyb.bsky.app/v1/image?url=https%3A%2F%2Fi.scdn.co%2Fimage%2Fab6765630000ba8a37545fe587b3e0899eadb487",
+                                    "thumb": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreigm32nj6egsqlpa45cq3jalogggro3vt43dtyvgcnrgolr26h7nzm"
+                                        },
+                                        "mimeType": "image/jpeg",
+                                        "size": 40346
+                                    },
+                                    "title": "Verschwörungstheoretiker unter uns - #1044",
+                                    "description": "Listen to this episode from FALTER Radio on Spotify. Extremismusexpertin Julia Ebner diagnostiziert eine Radikalisierung der Mitte in den USA und Europa. Eine FALTER Radio Lecture mit Tessa Szyszkowit..."
+                                }
+                            },
+                            "createdAt": "2023-12-03T12:39:12.538Z"
+                        },
+                        "embed": {
+                            "$type": "app.bsky.embed.external#view",
+                            "external": {
+                                "uri": "https://open.spotify.com/episode/1aq9gZeE7Pf5Je30NOpb8X?si=UAq63owST8GmaZuhJSk47w",
+                                "title": "Verschwörungstheoretiker unter uns - #1044",
+                                "description": "Listen to this episode from FALTER Radio on Spotify. Extremismusexpertin Julia Ebner diagnostiziert eine Radikalisierung der Mitte in den USA und Europa. Eine FALTER Radio Lecture mit Tessa Szyszkowit...",
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreigm32nj6egsqlpa45cq3jalogggro3vt43dtyvgcnrgolr26h7nzm@jpeg"
+                            }
+                        },
+                        "replyCount": 2,
+                        "repostCount": 0,
+                        "likeCount": 7,
+                        "indexedAt": "2023-12-03T12:39:11.092Z",
+                        "viewer": {},
+                        "labels": []
+                    },
+                    "parent": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfndczo6x22l",
+                        "cid": "bafyreibwcgmgkamewppovuewdmfytctfypq43hvkv57h2zkn6qjkejb3sm",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Keuchhusten macht grad ein Revival, weil Eltern ihre Gschroppn nimma impfen lassen.\n\nUnd das ist jetzt in der Mitte der Gesellschaft. Ich halte das für brandgefährlich im Vergleich zu der Gefahr die von \"Vollextremisten\" ausgeht.\n\nIch halt das tatsächlich auch für eine Form der Gewalt.\n",
+                            "$type": "app.bsky.feed.post",
+                            "reply": {
+                                "root": {
+                                    "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h"
+                                },
+                                "parent": {
+                                    "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h"
+                                }
+                            },
+                            "createdAt": "2023-12-03T12:41:30.546Z"
+                        },
+                        "replyCount": 2,
+                        "repostCount": 0,
+                        "likeCount": 5,
+                        "indexedAt": "2023-12-03T12:41:28.538Z",
+                        "viewer": {},
+                        "labels": []
+                    }
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfndczo6x22l",
+                    "cid": "bafyreibwcgmgkamewppovuewdmfytctfypq43hvkv57h2zkn6qjkejb3sm",
+                    "author": {
+                        "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                        "handle": "badlogic.bsky.social",
+                        "displayName": "Mario Zechner",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false,
+                            "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "Keuchhusten macht grad ein Revival, weil Eltern ihre Gschroppn nimma impfen lassen.\n\nUnd das ist jetzt in der Mitte der Gesellschaft. Ich halte das für brandgefährlich im Vergleich zu der Gefahr die von \"Vollextremisten\" ausgeht.\n\nIch halt das tatsächlich auch für eine Form der Gewalt.\n",
+                        "$type": "app.bsky.feed.post",
+                        "reply": {
+                            "root": {
+                                "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h"
+                            },
+                            "parent": {
+                                "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                                "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h"
+                            }
+                        },
+                        "createdAt": "2023-12-03T12:41:30.546Z"
+                    },
+                    "replyCount": 2,
+                    "repostCount": 0,
+                    "likeCount": 5,
+                    "indexedAt": "2023-12-03T12:41:28.538Z",
+                    "viewer": {},
+                    "labels": []
+                },
+                "reply": {
+                    "root": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h",
+                        "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Falter Podcast hören beim Putzen.\n\nJulia Ebner gibt uns da Einblick in Verschwörungstheorien, ihre Anhänger und wie diese immer mehr Platz in der Mitte finden.\n\nEine Aussage find ich dennoch strange. Frau Ebner hält VTs wie \"Wissenschaft/Pharma böse\" für nicht gefährlich.\n\nIch sag Masern...\n",
+                            "$type": "app.bsky.feed.post",
+                            "embed": {
+                                "$type": "app.bsky.embed.external",
+                                "external": {
+                                    "uri": "https://open.spotify.com/episode/1aq9gZeE7Pf5Je30NOpb8X?si=UAq63owST8GmaZuhJSk47w",
+                                    "image": "https://cardyb.bsky.app/v1/image?url=https%3A%2F%2Fi.scdn.co%2Fimage%2Fab6765630000ba8a37545fe587b3e0899eadb487",
+                                    "thumb": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreigm32nj6egsqlpa45cq3jalogggro3vt43dtyvgcnrgolr26h7nzm"
+                                        },
+                                        "mimeType": "image/jpeg",
+                                        "size": 40346
+                                    },
+                                    "title": "Verschwörungstheoretiker unter uns - #1044",
+                                    "description": "Listen to this episode from FALTER Radio on Spotify. Extremismusexpertin Julia Ebner diagnostiziert eine Radikalisierung der Mitte in den USA und Europa. Eine FALTER Radio Lecture mit Tessa Szyszkowit..."
+                                }
+                            },
+                            "createdAt": "2023-12-03T12:39:12.538Z"
+                        },
+                        "embed": {
+                            "$type": "app.bsky.embed.external#view",
+                            "external": {
+                                "uri": "https://open.spotify.com/episode/1aq9gZeE7Pf5Je30NOpb8X?si=UAq63owST8GmaZuhJSk47w",
+                                "title": "Verschwörungstheoretiker unter uns - #1044",
+                                "description": "Listen to this episode from FALTER Radio on Spotify. Extremismusexpertin Julia Ebner diagnostiziert eine Radikalisierung der Mitte in den USA und Europa. Eine FALTER Radio Lecture mit Tessa Szyszkowit...",
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreigm32nj6egsqlpa45cq3jalogggro3vt43dtyvgcnrgolr26h7nzm@jpeg"
+                            }
+                        },
+                        "replyCount": 2,
+                        "repostCount": 0,
+                        "likeCount": 7,
+                        "indexedAt": "2023-12-03T12:39:11.092Z",
+                        "viewer": {},
+                        "labels": []
+                    },
+                    "parent": {
+                        "$type": "app.bsky.feed.defs#postView",
+                        "uri": "at://did:plc:7syfakzcriq44mwbdbc7jwvn/app.bsky.feed.post/3kfnd6w2p3w2h",
+                        "cid": "bafyreie42atthcfvqbg32ck76h5reswkpos3k6sj6566h7rxip3jzkr32u",
+                        "author": {
+                            "did": "did:plc:7syfakzcriq44mwbdbc7jwvn",
+                            "handle": "badlogic.bsky.social",
+                            "displayName": "Mario Zechner",
+                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreihkqisgkcd2it6o2honvecmiypbq5bgmuvzfzvbzddqoqwqsxmnli@jpeg",
+                            "viewer": {
+                                "muted": false,
+                                "blockedBy": false,
+                                "following": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.graph.follow/3kfnk226m6i2d"
+                            },
+                            "labels": []
+                        },
+                        "record": {
+                            "text": "Falter Podcast hören beim Putzen.\n\nJulia Ebner gibt uns da Einblick in Verschwörungstheorien, ihre Anhänger und wie diese immer mehr Platz in der Mitte finden.\n\nEine Aussage find ich dennoch strange. Frau Ebner hält VTs wie \"Wissenschaft/Pharma böse\" für nicht gefährlich.\n\nIch sag Masern...\n",
+                            "$type": "app.bsky.feed.post",
+                            "embed": {
+                                "$type": "app.bsky.embed.external",
+                                "external": {
+                                    "uri": "https://open.spotify.com/episode/1aq9gZeE7Pf5Je30NOpb8X?si=UAq63owST8GmaZuhJSk47w",
+                                    "image": "https://cardyb.bsky.app/v1/image?url=https%3A%2F%2Fi.scdn.co%2Fimage%2Fab6765630000ba8a37545fe587b3e0899eadb487",
+                                    "thumb": {
+                                        "$type": "blob",
+                                        "ref": {
+                                            "$link": "bafkreigm32nj6egsqlpa45cq3jalogggro3vt43dtyvgcnrgolr26h7nzm"
+                                        },
+                                        "mimeType": "image/jpeg",
+                                        "size": 40346
+                                    },
+                                    "title": "Verschwörungstheoretiker unter uns - #1044",
+                                    "description": "Listen to this episode from FALTER Radio on Spotify. Extremismusexpertin Julia Ebner diagnostiziert eine Radikalisierung der Mitte in den USA und Europa. Eine FALTER Radio Lecture mit Tessa Szyszkowit..."
+                                }
+                            },
+                            "createdAt": "2023-12-03T12:39:12.538Z"
+                        },
+                        "embed": {
+                            "$type": "app.bsky.embed.external#view",
+                            "external": {
+                                "uri": "https://open.spotify.com/episode/1aq9gZeE7Pf5Je30NOpb8X?si=UAq63owST8GmaZuhJSk47w",
+                                "title": "Verschwörungstheoretiker unter uns - #1044",
+                                "description": "Listen to this episode from FALTER Radio on Spotify. Extremismusexpertin Julia Ebner diagnostiziert eine Radikalisierung der Mitte in den USA und Europa. Eine FALTER Radio Lecture mit Tessa Szyszkowit...",
+                                "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:7syfakzcriq44mwbdbc7jwvn/bafkreigm32nj6egsqlpa45cq3jalogggro3vt43dtyvgcnrgolr26h7nzm@jpeg"
+                            }
+                        },
+                        "replyCount": 2,
+                        "repostCount": 0,
+                        "likeCount": 7,
+                        "indexedAt": "2023-12-03T12:39:11.092Z",
+                        "viewer": {},
+                        "labels": []
+                    }
+                }
+            }
+        ]
+    }
+]

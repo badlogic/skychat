@@ -33,6 +33,7 @@ import { renderEmbed, renderRichText } from "./posts";
 import { ProfileViewElement, renderProfile } from "./profiles";
 import { ListViewElementAction } from "./lists";
 import { ListItemView, ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
+import { LitVirtualizer } from "@lit-labs/virtualizer";
 
 (window as any).emitLitDebugLogEvents = true;
 
@@ -54,9 +55,6 @@ export abstract class StreamView<T> extends LitElement {
 
     @query("#spinner")
     spinner?: HTMLElement;
-
-    @query("#items")
-    itemsDom?: HTMLElement;
 
     loadingPaused = false;
 
@@ -80,7 +78,7 @@ export abstract class StreamView<T> extends LitElement {
                     return;
                 }
 
-                const itemsDom = this.itemsDom;
+                /*const itemsDom = this.itemsDom;
                 if (itemsDom) {
                     const fragment = dom(html`<div></div>`)[0];
                     for (const item of newerItems) {
@@ -102,7 +100,7 @@ export abstract class StreamView<T> extends LitElement {
                     } else {
                         itemsDom.insertBefore(fragment, itemsDom.childNodes[0]);
                     }
-                }
+                }*/
             });
         }
         this.load();
@@ -132,9 +130,9 @@ export abstract class StreamView<T> extends LitElement {
             }
 
             const { items } = page;
-            const itemsDom = this.itemsDom;
+            const listVirtualizer = this.querySelector("#listVirtualizer") as LitVirtualizer;
             const spinner = this.spinner;
-            if (!itemsDom || !spinner) {
+            if (!listVirtualizer || !spinner) {
                 this.error = i18n("Sorry, an unknown error occured");
                 return;
             }
@@ -146,7 +144,13 @@ export abstract class StreamView<T> extends LitElement {
                 return;
             }
 
-            const itemDoms: HTMLElement[] = [];
+            const allItems: T[] = [];
+            for (const page of this.stream.pages) {
+                allItems.push(...page.items);
+            }
+            listVirtualizer.items = allItems;
+
+            /*const itemDoms: HTMLElement[] = [];
             const fragment = dom(html`<div></div>`)[0];
             for (const item of items) {
                 const itemDom = this.wrapItem ? dom(StreamView.renderWrapped(this.renderItem(item)))[0] : dom(this.renderItem(item))[0];
@@ -155,7 +159,7 @@ export abstract class StreamView<T> extends LitElement {
             }
             itemsDom.insertBefore(fragment, spinner);
             onVisibleOnce(itemDoms[Math.max(0, itemDoms.length - 1 - 5)], () => this.load());
-            onVisibleOnce(spinner, () => this.load());
+            onVisibleOnce(spinner, () => this.load());*/
         } catch (e) {
             this.error = i18n("Sorry, an unknown error occured");
         } finally {
@@ -163,11 +167,21 @@ export abstract class StreamView<T> extends LitElement {
         }
     }
 
+    renderItemInternal(item: T) {
+        const itemDom = this.wrapItem ? dom(StreamView.renderWrapped(this.renderItem(item)))[0] : dom(this.renderItem(item))[0];
+        return itemDom;
+    }
+
     render() {
         if (this.error) return renderError(this.error);
 
         return html`<div class="relative">
             <div id="items" class="flex flex-col">
+                <lit-virtualizer
+                    id="listVirtualizer"
+                    class="w-full h-full"
+                    .renderItem=${(item: T) => this.renderItemInternal(item)}
+                ></lit-virtualizer>
                 <loading-spinner class="w-full" id="spinner"></loading-spinner>
             </div>
             ${Store.getDevMode()
