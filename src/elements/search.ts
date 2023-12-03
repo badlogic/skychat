@@ -84,7 +84,7 @@ export class SearchOverlay extends HashNavOverlay {
                           }}
                           class="self-center mt-4"
                           .values=${this.showTypes}
-                          .selected=${this.showTypes.includes(i18n("Feeds")) ? i18n("Feeds") : this.showTypes[0]}
+                          .selected=${this.showTypes.includes(i18n("Users")) ? i18n("Users") : this.showTypes[0]}
                       ></button-group>`
                     : nothing}
                 ${this.selectedType == i18n("Posts") && Store.getUser()
