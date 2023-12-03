@@ -46,7 +46,10 @@ export class QuillEditor extends LitElement {
         });
 
         this.editor.on("text-change", () => this.highlightText());
-        if (this.initialText) this.editor.setText(this.initialText);
+        if (this.initialText) {
+            this.editor.setText(this.initialText);
+            this.editor.setSelection(this.initialText.length, 0, "silent");
+        }
         this.editor.focus();
     }
 

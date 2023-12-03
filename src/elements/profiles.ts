@@ -27,7 +27,6 @@ import { toast } from "./toast";
 import { IconToggle } from "./icontoggle";
 import { getSkychatProfileUrl } from "../bsky.js";
 
-// FIXME add open-edito-button that will prefill the shown profiles handle
 @customElement("profile-overlay")
 export class ProfileOverlay extends HashNavOverlay {
     @property()

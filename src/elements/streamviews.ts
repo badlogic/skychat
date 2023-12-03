@@ -91,18 +91,14 @@ export abstract class StreamView<T> extends LitElement {
                     const scrollParent = getScrollParent(this.children[0] as HTMLElement)!;
                     const upButton = scrollParent.querySelector("up-button") as UpButton;
                     if (upButton) {
-                        if (isSafariBrowser()) {
-                            upButton.classList.remove("hidden");
-                            upButton.highlight = true;
-                            upButton.renderOnClick.push(() => {
-                                itemsDom.insertBefore(fragment, itemsDom.childNodes[0]);
-                                scrollParent.scrollTo({ top: 0, behavior: "smooth" });
-                            });
-                        } else {
+                        // FIXME replace with what we got from the Mastodon user maybe.
+                        //       or make lit-virtualizer work for prepending.
+                        upButton.classList.remove("hidden");
+                        upButton.highlight = true;
+                        upButton.renderOnClick.push(() => {
                             itemsDom.insertBefore(fragment, itemsDom.childNodes[0]);
-                            upButton.classList.remove("hidden");
-                            upButton.highlight = true;
-                        }
+                            scrollParent.scrollTo({ top: 0, behavior: "smooth" });
+                        });
                     } else {
                         itemsDom.insertBefore(fragment, itemsDom.childNodes[0]);
                     }

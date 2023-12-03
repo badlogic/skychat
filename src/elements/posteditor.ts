@@ -226,7 +226,7 @@ export class PostEditor extends LitElement {
                     class="${this.fullscreen ? "flex-grow overflow-auto" : "min-h-[64px]"} max-w-[100vw]"
                     .onInput=${(text: string, start: number, end: number, insert: (text: string) => void) => this.input(text, start, end, insert)}
                     .fullscreen=${this.fullscreen}
-                    .text=${this.text}
+                    .initialText=${this.text}
                 ></quill-text-editor>
                 ${!this.embed && this.imagesToUpload.length == 0 && (this.cardSuggestions?.length ?? 0 > 0)
                     ? html`<div class="flex flex-col my-2 mx-2 gap-2">
