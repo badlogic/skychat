@@ -149,6 +149,7 @@ export abstract class StreamView<T> extends LitElement {
                 allItems.push(...page.items);
             }
             listVirtualizer.items = allItems;
+            onVisibleOnce(spinner, () => this.load());
 
             /*const itemDoms: HTMLElement[] = [];
             const fragment = dom(html`<div></div>`)[0];
@@ -159,7 +160,8 @@ export abstract class StreamView<T> extends LitElement {
             }
             itemsDom.insertBefore(fragment, spinner);
             onVisibleOnce(itemDoms[Math.max(0, itemDoms.length - 1 - 5)], () => this.load());
-            onVisibleOnce(spinner, () => this.load());*/
+            onVisibleOnce(spinner, () => this.load());
+            */
         } catch (e) {
             this.error = i18n("Sorry, an unknown error occured");
         } finally {
@@ -202,7 +204,7 @@ export abstract class StreamView<T> extends LitElement {
     abstract renderItem(item: T): TemplateResult;
 
     static renderWrapped(item: TemplateResult | HTMLElement): TemplateResult {
-        return html`<div class="px-4 py-2 border-b border-divider">${item}</div>`;
+        return html`<div class="w-full px-4 py-2 border-b border-divider">${item}</div>`;
     }
 }
 
@@ -214,6 +216,7 @@ export class PostsStreamView extends StreamView<PostView> {
     renderItem(post: PostView): TemplateResult {
         const postDom = dom(html`
             <post-view
+                class="w-full"
                 .post=${post}
                 .quoteCallback=${(post: PostView) => quote(post)}
                 .replyCallback=${(post: PostView) => reply(post)}
@@ -253,7 +256,7 @@ export class FeedStreamView extends StreamView<FeedViewPost> {
     }
 
     renderItem(feedViewPost: FeedViewPost): TemplateResult {
-        return html`<feed-view-post-view .feedViewPost=${feedViewPost}></feed-view-post-view>`;
+        return html`<feed-view-post-view class="w-full" .feedViewPost=${feedViewPost}></feed-view-post-view>`;
     }
 }
 
@@ -445,7 +448,7 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
 
         notificationDom = dom(html`<div
             data-type="${notification.reason}"
-            class="notification cursor-pointer ${this.shouldShowNotification(notification.reason)
+            class="notification cursor-pointer w-full ${this.shouldShowNotification(notification.reason)
                 ? ""
                 : "hidden"} px-4 py-4 border-b border-divider flex flex-col ${notification.isRead ? "" : "bg-[#d8e4ff4a] dark:bg-[#001040]"}"
         >
@@ -576,7 +579,7 @@ export class ProfilesStreamOverlay extends HashNavOverlay {
     }
 
     renderContent(): TemplateResult {
-        return html`<profiles-stream-view .stream=${this.stream}></profiles-stream-view>`;
+        return html`<profiles-stream-view class="w-full" .stream=${this.stream}></profiles-stream-view>`;
     }
 }
 
@@ -589,7 +592,7 @@ export class GeneratorsStreamView extends StreamView<GeneratorView> {
     action = (action: GeneratorViewElementAction, generator: GeneratorView) => {};
 
     renderItem(item: GeneratorView): TemplateResult {
-        return html`<generator-view .minimal=${this.minimal} .generator=${item} .action=${this.action}></generator-view>`;
+        return html`<generator-view class="w-full" .minimal=${this.minimal} .generator=${item} .action=${this.action}></generator-view>`;
     }
 }
 
@@ -602,7 +605,7 @@ export class ListsStreamView extends StreamView<ListView> {
     action = (action: ListViewElementAction, list: ListView) => {};
 
     renderItem(item: ListView): TemplateResult {
-        return html`<list-view .minimal=${this.minimal} .list=${item} .action=${this.action}></list-view>`;
+        return html`<list-view class="w-full" .minimal=${this.minimal} .list=${item} .action=${this.action}></list-view>`;
     }
 }
 
@@ -612,6 +615,6 @@ export class ListItemsStreamView extends StreamView<ListItemView> {
     actionButtons?: (profileElement: ProfileViewElement, profile: ProfileView) => TemplateResult;
 
     renderItem(item: ListItemView): TemplateResult {
-        return html`<list-item-view .listItem=${item} .actionButtons=${this.actionButtons}></list-view>`;
+        return html`<list-item-view class="w-full" .listItem=${item} .actionButtons=${this.actionButtons}></list-view>`;
     }
 }

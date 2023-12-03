@@ -105,7 +105,7 @@ export abstract class FloatingButton extends LitElement {
 @customElement("up-button")
 export class UpButton extends FloatingButton {
     @property()
-    clicked: () => void = () => getScrollParent(this)?.scrollTo({ top: 0, behavior: "smooth" });
+    clicked: () => void = () => getScrollParent(this)?.scrollTo({ top: 0, behavior: "instant" });
 
     @property()
     renderOnClick: (() => void)[] = [];

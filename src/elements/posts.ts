@@ -231,6 +231,7 @@ export function tryEmbedYouTubeVideo(
     cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
     minimal: boolean
 ): TemplateResult | undefined {
+    return;
     const url = cardEmbed.uri;
     const videoRegExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([\w-]+)/;
     let videoID: string | undefined = "";
@@ -748,13 +749,13 @@ export class PostViewElement extends LitElement {
         if (!this.post) return;
         if (!this.post.viewer) this.post.viewer = {};
         if (ev.detail.value) {
-            toggle.innerText = (Number.parseInt(toggle.innerText) + 1).toString();
+            toggle.text = (Number.parseInt(toggle.text) + 1).toString();
             this.requestUpdate();
             const response = await State.bskyClient!.repost(this.post.uri, this.post.cid);
             this.post.viewer.repost = response.uri;
             this.post.repostCount = this.post.repostCount ? this.post.repostCount + 1 : 1;
         } else {
-            toggle.innerText = (Number.parseInt(toggle.innerText) - 1).toString();
+            toggle.text = (Number.parseInt(toggle.text) - 1).toString();
             this.requestUpdate();
             if (this.post.viewer.repost) await State.bskyClient?.deleteRepost(this.post.viewer.repost);
             delete this.post.viewer.repost;
@@ -774,13 +775,13 @@ export class PostViewElement extends LitElement {
         if (!this.post) return;
         if (!this.post.viewer) this.post.viewer = {};
         if (ev.detail.value) {
-            toggle.innerText = (Number.parseInt(toggle.innerText) + 1).toString();
+            toggle.text = (Number.parseInt(toggle.text) + 1).toString();
             this.requestUpdate();
             const response = await State.bskyClient!.like(this.post.uri, this.post.cid);
             this.post.viewer.like = response.uri;
             this.post.likeCount = this.post.likeCount ? this.post.likeCount + 1 : 1;
         } else {
-            toggle.innerText = (Number.parseInt(toggle.innerText) - 1).toString();
+            toggle.text = (Number.parseInt(toggle.text) - 1).toString();
             this.requestUpdate();
             if (this.post.viewer.like) await State.bskyClient?.deleteLike(this.post.viewer.like);
             delete this.post.viewer.like;

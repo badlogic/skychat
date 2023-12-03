@@ -22,6 +22,12 @@ export class IconToggle extends LitElement {
 
     unsubscribe = () => {};
 
+    animateIcon = false;
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
     connectedCallback(): void {
         super.connectedCallback();
         this.unsubscribe = State.subscribe("theme", (action, payload) => this.requestUpdate());
@@ -33,16 +39,12 @@ export class IconToggle extends LitElement {
     }
 
     render() {
-        if (this.value) {
-            console.log();
-        }
+        const animateIcon = this.animateIcon;
         return html` <div class="h-full w-full flex items-center justify-center cursor-pointer" @click=${(ev: MouseEvent) => this.toggle(ev)}>
             ${this.value
-                ? html`<div class="fill-primary animate-jump">${this.iconTrue ?? this.icon}</div>`
+                ? html`<div class="fill-primary ${animateIcon ? "animate-jump" : ""}">${this.iconTrue ?? this.icon}</div>`
                 : html`<div class="fill-muted-fg">${this.icon}</div>`}
-            ${this.text.length > 0
-                ? html`<span class="ml-1 ${this.value ? "text-primary animate-jump" : "text-muted-fg"}">${this.text}</span>`
-                : nothing}
+            ${this.text.length > 0 ? html`<span class="ml-1 ${this.value ? "text-primary" : "text-muted-fg"}">${this.text}</span>` : nothing}
         </div>`;
     }
 
@@ -50,6 +52,8 @@ export class IconToggle extends LitElement {
         ev.stopPropagation();
         ev.stopImmediatePropagation();
         this.value = !this.value;
+        const icon = this.querySelector(".icon");
+        this.animateIcon = true;
         this.dispatchEvent(
             new CustomEvent("change", {
                 detail: {
