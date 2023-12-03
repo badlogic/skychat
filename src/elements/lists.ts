@@ -597,7 +597,9 @@ export class ListPicker extends HashNavOverlay {
                 const muteAndBlockLists = await State.getMuteAndBlockLists();
                 if (muteAndBlockLists instanceof Error) throw muteAndBlockLists;
 
-                this.lists = [...muteAndBlockLists.muteLists, ...muteAndBlockLists.blockLists];
+                this.lists = [...muteAndBlockLists.muteLists, ...muteAndBlockLists.blockLists].filter(
+                    (list) => list?.creator.did != user?.profile.did
+                ) as ListView[];
 
                 if (user) {
                     (async () => {
