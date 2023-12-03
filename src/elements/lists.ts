@@ -147,24 +147,6 @@ export class ListViewElement extends LitElement {
         const defaultEditCheck = () =>
             !(prefs.saved?.includes(list.uri) || prefs.pinned?.includes(list.uri) || list.creator.did == Store.getUser()?.profile.did);
 
-        const ownListEditButton = html`
-            ${this.list.creator.did == Store.getUser()?.profile.did
-                ? html`<div class="flex items-center">
-                      <button class="flex items-center justify-center w-8 h-8" @click=${() => this.editList()}>
-                          <i class="icon !w-5 !h-5 fill-muted-fg">${editIcon}</i>
-                      </button>
-                      ${this.list.purpose == "app.bsky.graph.defs#modlist"
-                          ? html`<icon-toggle
-                                @change=${(ev: CustomEvent) => (!ev.detail.value ? this.addList() : this.removeList())}
-                                .icon=${html`<i class="icon !w-5 !h-5">${minusIcon}</i>`}
-                                .iconTrue=${html`<i class="icon !w-5 !h-5">${plusIcon}</i>`}
-                                .value=${this.editCheck ? this.editCheck(list) : defaultEditCheck()}
-                                class="w-8 h-8"
-                            ></icon-toggle>`
-                          : nothing}
-                  </div>`
-                : nothing}
-        `;
         const modListEditButtons = html`<div class="flex items-center">
             <icon-toggle
                 @change=${(ev: CustomEvent) => this.toggleMute(ev)}
@@ -381,6 +363,9 @@ export class ListOverlay extends HashNavOverlay {
     list?: ListView;
 
     @property()
+    action = (action: ListViewElementAction, list: ListView) => {};
+
+    @property()
     isLoading = true;
 
     @property()
@@ -418,7 +403,7 @@ export class ListOverlay extends HashNavOverlay {
     renderHeader(): TemplateResult {
         if (!this.list) return renderTopbar("List", this.closeButton(false));
         const list = this.list;
-        const listName = html`<list-view class="flex-grow" .viewStyle=${"topbar"} .list=${list}></list-view>`;
+        const listName = html`<list-view class="flex-grow" .viewStyle=${"topbar"} .list=${list} .action=${this.action}></list-view>`;
         return renderTopbar(dom(listName)[0], html`<div class="-ml-2">${this.closeButton()}</div>`);
     }
 
@@ -703,9 +688,16 @@ export class ListPicker extends HashNavOverlay {
         }
 
         if (action == "clicked") {
-            // this.close();
-            // await waitForNavigation();
-            document.body.append(dom(html`<list-overlay .listUri=${list.uri}></list-overlay>`)[0]);
+            const overlayDom = dom(
+                html`<list-overlay
+                    .listUri=${list.uri}
+                    .action=${(action: ListViewElementAction, list: ListView) => {
+                        this.listAction(action, list);
+                        overlayDom.close();
+                    }}
+                ></list-overlay>`
+            )[0] as ListOverlay;
+            document.body.append(overlayDom);
         }
     }
 }

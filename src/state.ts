@@ -3,27 +3,25 @@ import {
     AppBskyActorSearchActors,
     AppBskyActorSearchActorsTypeahead,
     AppBskyFeedDefs,
-    AppBskyFeedGetFeedGenerator,
     AppBskyFeedPost,
+    AppBskyGraphGetList,
     AppBskyGraphGetListBlocks,
     AppBskyGraphGetListMutes,
+    AppBskyGraphList,
     AppBskyNotificationListNotifications,
     AtpSessionData,
     AtpSessionEvent,
     BskyAgent,
     BskyPreferences,
     RichText,
-    AppBskyGraphGetList,
-    AppBskyGraphList,
-    AtUri,
 } from "@atproto/api";
-import { Preferences, ProfileView, ProfileViewDetailed, SavedFeedsPref } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { Store, User } from "./store";
-import { AsyncQueue, assertNever, error, fetchApi, getDateString, splitAtUri } from "./utils";
+import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { FeedViewPost, GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { record } from "./bsky";
-import { StreamPage } from "./streams";
 import { ListItemView, ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
+import { record } from "./bsky";
+import { Store, User } from "./store";
+import { StreamPage } from "./streams";
+import { AsyncQueue, assertNever, error, fetchApi, getDateString, splitAtUri } from "./utils";
 
 export interface NumQuote {
     postUri: string;
@@ -45,10 +43,10 @@ export type EventAction = "updated" | "updated_profile_moderation" | "deleted";
 
 export type ActorFeedType = "home" | "posts_with_replies" | "posts_no_replies" | "posts_with_media";
 
+export const FEED_CHECK_INTERVAL = 5000;
 export const NOTIFICATION_CHECK_INTERVAL = 5000;
 export const PREFERENCES_CHECK_INTERVAL = 15000;
 export const MUTE_AND_BLOCK_LIST_CHECK_INTERVAL = 15000;
-export const FEED_CHECK_INTERVAL = 5000;
 
 export class State {
     static DEBUG = false;
@@ -84,25 +82,44 @@ export class State {
     }
 
     static notify<K extends keyof Events>(event: K, action: EventAction, payload: Events[K]) {
-        this.storeObject(event, payload); // We always store, even in case of a delete
-        this.generalListeners[event]?.forEach((listener) => listener(action, payload));
         let id: string | undefined;
-
+        let payloadDate: Date | undefined;
+        let storedDate: Date | undefined;
         switch (event) {
-            case "post":
-                id = (payload as PostView).uri;
+            case "post": {
+                const post = payload as PostView;
+                id = post.uri;
+                payloadDate = new Date(post.indexedAt);
+                const storedPost = this.getObject(event, id) as PostView | undefined;
+                storedDate = storedPost ? new Date(storedPost.indexedAt) : undefined;
                 break;
-            case "profile":
-                id = (payload as ProfileViewDetailed).did;
+            }
+            case "profile": {
+                const profile = payload as ProfileViewDetailed;
+                id = profile.did;
+                payloadDate = profile.indexedAt ? new Date(profile.indexedAt) : new Date();
+                const storedProfile = this.getObject(event, id) as ProfileView | undefined;
+                storedDate = storedProfile?.indexedAt ? new Date(storedProfile.indexedAt) : undefined;
                 break;
+            }
+            case "feed": {
+                const feed = payload as GeneratorView;
+                id = feed.uri;
+                payloadDate = new Date(feed.indexedAt);
+                const storedFeed = this.getObject(event, id) as GeneratorView | undefined;
+                storedDate = storedFeed ? new Date(storedFeed.indexedAt) : undefined;
+                break;
+            }
+            case "list": {
+                const list = payload as ListView;
+                id = list.uri;
+                payloadDate = new Date(list.indexedAt);
+                const storedList = this.getObject(event, id) as ListView | undefined;
+                storedDate = storedList ? new Date(storedList.indexedAt) : undefined;
+                break;
+            }
             case "numQuote":
                 id = (payload as NumQuote).postUri;
-                break;
-            case "feed":
-                id = (payload as GeneratorView).uri;
-                break;
-            case "list":
-                id = (payload as ListView).uri;
                 break;
             case "unreadNotifications":
             case "theme":
@@ -112,6 +129,16 @@ export class State {
             default:
                 assertNever(event);
         }
+
+        // Don't notify if we have a newer version of the object
+        if (storedDate && payloadDate) {
+            if (storedDate.getTime() > payloadDate.getTime()) {
+                return;
+            }
+        }
+
+        this.storeObject(event, payload); // We always store, even in case of a delete
+        this.generalListeners[event]?.forEach((listener) => listener(action, payload));
 
         if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action} ${id}`, payload);
 
@@ -1159,6 +1186,7 @@ export class State {
             if (!this.muteAndBlockLists.blockListUris.has(list.uri)) {
                 this.muteAndBlockLists.blockListUris.add(list.uri);
                 this.muteAndBlockLists.blockLists.push(list);
+                this.notify("list", "updated", list);
             }
         } catch (e) {
             error("Couldn't subscribe to block list " + list.uri, e);
@@ -1173,6 +1201,7 @@ export class State {
             await State.bskyClient.unblockModList(list.uri);
             State.muteAndBlockLists.blockListUris.delete(list.uri);
             State.muteAndBlockLists.blockLists = State.muteAndBlockLists.blockLists.filter((other) => other.uri != list.uri);
+            this.notify("list", "updated", list);
         } catch (e) {
             error("Couldn't subscribe to block list " + list.uri, e);
         }
@@ -1187,6 +1216,7 @@ export class State {
             if (!this.muteAndBlockLists.muteListUris.has(list.uri)) {
                 this.muteAndBlockLists.muteListUris.add(list.uri);
                 this.muteAndBlockLists.muteLists.push(list);
+                this.notify("list", "updated", list);
             }
         } catch (e) {
             error("Couldn't subscribe to mute list " + list.uri, e);
@@ -1201,7 +1231,7 @@ export class State {
             await State.bskyClient.unmuteModList(list.uri);
             State.muteAndBlockLists.muteListUris.delete(list.uri);
             State.muteAndBlockLists.muteLists = State.muteAndBlockLists.muteLists.filter((other) => other.uri != list.uri);
-            // FIXME notify?
+            this.notify("list", "updated", list);
         } catch (e) {
             error("Couldn't subscribe to block list " + list.uri, e);
         }
