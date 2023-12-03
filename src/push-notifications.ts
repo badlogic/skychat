@@ -47,6 +47,7 @@ export async function getBskyClientAndUser(): Promise<{ bskyClient: BskyAgent; u
 }
 
 // FIXME server should batch notifications, less logins/less wake-ups
+// FIXME registered users should send their push prefs per registration token to the server
 export async function processPushNotification(payload: any, showNotification: (title: string, options: any) => void) {
     if (payload.data && payload.data.type && payload.data.fromDid) {
         const notification = payload.data as PushNotification;

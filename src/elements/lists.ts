@@ -312,8 +312,6 @@ export class ListViewElement extends LitElement {
 
     addList() {
         if (!this.list) return;
-        // FIXME what's happening here?
-        const isOwnList = this.list.creator.did == Store.getUser()?.profile.did;
         if (this.defaultActions) State.addSavedList(this.list.uri);
         this.list = { ...this.list };
         State.notify("list", "updated", this.list);

@@ -662,6 +662,18 @@ export class State {
         }
     }
 
+    static async getList(list: string): Promise<Error | ListView> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const response = await State.bskyClient.app.bsky.graph.getList({ list, limit: 1 });
+            if (!response.success) throw new Error();
+            this.notify("list", "updated", response.data.list);
+            return response.data.list;
+        } catch (e) {
+            return error("Couldn't suggest feeds", e);
+        }
+    }
+
     static async getLists(listUris: string[], notify = true): Promise<Error | ListView[]> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
@@ -682,10 +694,38 @@ export class State {
                 }
             }
             const fetchedLists = listUris.map((uri) => listsMap.get(uri)).filter((list) => list != undefined) as ListView[];
-            this.notifyBatch("list", "updated", fetchedLists);
+            if (notify) this.notifyBatch("list", "updated", fetchedLists);
             return fetchedLists;
         } catch (e) {
             return error("Couldn't get lists", e);
+        }
+    }
+
+    static async getListItems(list: string, cursor?: string, limit = 100): Promise<Error | StreamPage<ListItemView>> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const response = await State.bskyClient.app.bsky.graph.getList({ list, cursor, limit });
+            if (!response.success) throw new Error();
+            const profiles = response.data.items.map((item) => item.subject);
+            this.notifyBatch("profile", "updated", profiles);
+            return response.data;
+        } catch (e) {
+            return error("Couldn't suggest feeds", e);
+        }
+    }
+
+    static async getListFeed(listUri: string, cursor?: string, limit = 20, notify = true): Promise<Error | StreamPage<FeedViewPost>> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            let data: StreamPage<FeedViewPost> | undefined;
+
+            const response = await State.bskyClient.app.bsky.feed.getListFeed({ list: listUri, cursor, limit });
+            if (!response.success) throw new Error();
+            data = { cursor: response.data.cursor, items: response.data.feed };
+            if (notify) await State.loadFeedViewPostsDependencies(data.items);
+            return data;
+        } catch (e) {
+            return error("Couldn't load list feed " + listUri, e);
         }
     }
 
@@ -856,46 +896,6 @@ export class State {
             return fetchedFeeds;
         } catch (e) {
             return error("Couldn't suggest feeds", e);
-        }
-    }
-
-    static async getList(list: string): Promise<Error | ListView> {
-        if (!State.bskyClient) return new Error("Not connected");
-        try {
-            const response = await State.bskyClient.app.bsky.graph.getList({ list, limit: 1 });
-            if (!response.success) throw new Error();
-            this.notify("list", "updated", response.data.list);
-            return response.data.list;
-        } catch (e) {
-            return error("Couldn't suggest feeds", e);
-        }
-    }
-
-    static async getListItems(list: string, cursor?: string, limit = 100): Promise<Error | StreamPage<ListItemView>> {
-        if (!State.bskyClient) return new Error("Not connected");
-        try {
-            const response = await State.bskyClient.app.bsky.graph.getList({ list, cursor, limit });
-            if (!response.success) throw new Error();
-            const profiles = response.data.items.map((item) => item.subject);
-            this.notifyBatch("profile", "updated", profiles);
-            return response.data;
-        } catch (e) {
-            return error("Couldn't suggest feeds", e);
-        }
-    }
-
-    static async getListFeed(listUri: string, cursor?: string, limit = 20, notify = true): Promise<Error | StreamPage<FeedViewPost>> {
-        if (!State.bskyClient) return new Error("Not connected");
-        try {
-            let data: StreamPage<FeedViewPost> | undefined;
-
-            const response = await State.bskyClient.app.bsky.feed.getListFeed({ list: listUri, cursor, limit });
-            if (!response.success) throw new Error();
-            data = { cursor: response.data.cursor, items: response.data.feed };
-            if (notify) await State.loadFeedViewPostsDependencies(data.items);
-            return data;
-        } catch (e) {
-            return error("Couldn't load list feed " + listUri, e);
         }
     }
 
@@ -1303,53 +1303,6 @@ export class State {
         setTimeout(() => this.checkPreferences(), PREFERENCES_CHECK_INTERVAL);
     }
 
-    private static async updatePreferences(agent: BskyAgent, cb: (prefs: AppBskyActorDefs.Preferences) => AppBskyActorDefs.Preferences | false) {
-        const res = await agent.app.bsky.actor.getPreferences({});
-        const newPrefs = cb(res.data.preferences);
-        if (newPrefs === false) {
-            return;
-        }
-        await agent.app.bsky.actor.putPreferences({
-            preferences: newPrefs,
-        });
-    }
-
-    private static async updateFeedPreferences(
-        agent: BskyAgent,
-        cb: (saved: string[], pinned: string[]) => { saved: string[]; pinned: string[] }
-    ): Promise<void> {
-        await State.updatePreferences(agent, (prefs: AppBskyActorDefs.Preferences) => {
-            let feedsPref = prefs.findLast(
-                (pref) => AppBskyActorDefs.isSavedFeedsPref(pref) && AppBskyActorDefs.validateSavedFeedsPref(pref).success
-            ) as AppBskyActorDefs.SavedFeedsPref | undefined;
-            if (feedsPref) {
-                const res = cb(feedsPref.saved, feedsPref.pinned);
-                feedsPref.saved = res.saved;
-                feedsPref.pinned = res.pinned;
-            } else {
-                const res = cb([], []);
-                feedsPref = {
-                    $type: "app.bsky.actor.defs#savedFeedsPref",
-                    saved: res.saved,
-                    pinned: res.pinned,
-                };
-            }
-            return prefs.filter((pref) => !AppBskyActorDefs.isSavedFeedsPref(pref)).concat([feedsPref]);
-        });
-    }
-
-    static async setPinnedAndSavedFeeds(pinned: string[], saved: string[]) {
-        if (!State.bskyClient) return;
-        try {
-            await State.updateFeedPreferences(State.bskyClient, () => {
-                return { saved, pinned };
-            });
-            await State.getPreferences();
-        } catch (e) {
-            return error("Couldn't save pinned and saved feeds");
-        }
-    }
-
     static async addSavedFeed(v: string) {
         if (!State.bskyClient) return;
         if (!State.preferences) return;
@@ -1357,7 +1310,8 @@ export class State {
             const feeds = State.preferences.feeds;
             if (!feeds.saved) feeds.saved = [];
             feeds.saved = [...feeds.saved?.filter((o) => o != v), v];
-            State.notify("preferences", "updated", State.preferences); // FIXME notifying before this is stored is kinda not good, but necessary for feedpicker to work
+            // FIXME notifying before this is optimistic, but necessary for feedpicker to work
+            State.notify("preferences", "updated", State.preferences);
             State.preferencesMutationQueue.enqueue(async () => {
                 await State.bskyClient!.addSavedFeed(v);
             });
@@ -1375,50 +1329,13 @@ export class State {
             if (!feeds.pinned) feeds.pinned = [];
             feeds.saved = feeds.saved?.filter((o) => o != v);
             feeds.pinned = feeds.pinned?.filter((o) => o != v);
-            State.notify("preferences", "updated", State.preferences); // FIXME notifying before this is stored is kinda not good, but necessary for feedpicker to work
+            // FIXME notifying before this is optimistic, but necessary for feedpicker to work
+            State.notify("preferences", "updated", State.preferences);
             State.preferencesMutationQueue.enqueue(async () => {
                 await State.bskyClient!.removeSavedFeed(v);
             });
         } catch (e) {
             return error("Couldn't remove saved feed", e);
-        }
-    }
-
-    static async addPinnedFeed(v: string) {
-        if (!State.bskyClient) return;
-        if (!State.preferences) return;
-        try {
-            const feeds = State.preferences.feeds;
-            if (!feeds.pinned) feeds.pinned = [];
-            feeds.pinned = [...feeds.pinned.filter((o) => o != v), v];
-            State.preferencesMutationQueue.enqueue(async () => {
-                await State.updateFeedPreferences(State.bskyClient!, (saved: string[], pinned: string[]) => ({
-                    saved,
-                    pinned: [...pinned.filter((uri) => uri != v), v],
-                }));
-            });
-        } catch (e) {
-            return error("Couldn't add pinned feed", e);
-        }
-    }
-
-    static async removePinnedFeed(v: string) {
-        if (!State.bskyClient) return;
-        if (!State.preferences) return;
-        try {
-            const feeds = State.preferences.feeds;
-            if (!feeds.pinned) feeds.pinned = [];
-            if (!feeds.saved) feeds.saved = [];
-            feeds.pinned = feeds.pinned.filter((o) => o != v);
-            feeds.saved = [v, ...feeds.saved.filter((uri) => uri != v)];
-            State.preferencesMutationQueue.enqueue(async () => {
-                await State.updateFeedPreferences(State.bskyClient!, (saved: string[], pinned: string[]) => ({
-                    saved: [v, ...saved.filter((uri) => uri != v)],
-                    pinned: pinned.filter((uri) => uri != v),
-                }));
-            });
-        } catch (e) {
-            return error("Couldn't add pinned feed", e);
         }
     }
 
@@ -1428,13 +1345,5 @@ export class State {
 
     static async removeSavedList(v: string) {
         return State.removeSavedFeed(v);
-    }
-
-    static async addPinnedList(v: string) {
-        return State.addPinnedFeed(v);
-    }
-
-    static async removePinnedList(v: string) {
-        return State.removePinnedFeed(v);
     }
 }
