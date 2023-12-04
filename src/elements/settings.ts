@@ -160,12 +160,47 @@ export class SettingsOverlay extends HashNavOverlay {
             </div>
             <slide-button
                 class="mt-4 mb-4"
-                .checked=${Store.getDevMode()}
+                .checked=${Store.getDevPrefs()?.enabled}
                 .text=${"Dev mode"}
                 @changed=${(ev: CustomEvent) => {
-                    Store.setDevMode(ev.detail.value);
+                    Store.setDevPrefs({ ...Store.getDevPrefs()!, enabled: ev.detail.value });
+                    this.requestUpdate();
                 }}
             ></slide-button>
+            ${Store.getDevPrefs()?.enabled
+                ? html` <slide-button
+                          class="mt-4 mb-4"
+                          .checked=${Store.getDevPrefs()?.logEmbedRenders}
+                          .text=${"Log embed renders"}
+                          @changed=${(ev: CustomEvent) => {
+                              Store.setDevPrefs({ ...Store.getDevPrefs()!, logEmbedRenders: ev.detail.value });
+                          }}
+                      ></slide-button>
+                      <slide-button
+                          class="mt-4 mb-4"
+                          .checked=${Store.getDevPrefs()?.logPostViewRenders}
+                          .text=${"Log PostView renders"}
+                          @changed=${(ev: CustomEvent) => {
+                              Store.setDevPrefs({ ...Store.getDevPrefs()!, logPostViewRenders: ev.detail.value });
+                          }}
+                      ></slide-button>
+                      <slide-button
+                          class="mt-4 mb-4"
+                          .checked=${Store.getDevPrefs()?.logFeedViewPostRenders}
+                          .text=${"Log FeedViewPost renders"}
+                          @changed=${(ev: CustomEvent) => {
+                              Store.setDevPrefs({ ...Store.getDevPrefs()!, logFeedViewPostRenders: ev.detail.value });
+                          }}
+                      ></slide-button>
+                      <slide-button
+                          class="mt-4 mb-4"
+                          .checked=${Store.getDevPrefs()?.logThreadViewPostRenders}
+                          .text=${"Log ThreadViewPost renders"}
+                          @changed=${(ev: CustomEvent) => {
+                              Store.setDevPrefs({ ...Store.getDevPrefs()!, logThreadViewPostRenders: ev.detail.value });
+                          }}
+                      ></slide-button>`
+                : nothing}
         </div>`;
     }
 

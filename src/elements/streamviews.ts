@@ -71,6 +71,20 @@ export abstract class StreamView<T> extends LitElement {
             return;
         }
 
+        // Setup infinite scroll based on visibility
+        const listVirtualizer = this.querySelector("#listVirtualizer") as LitVirtualizer;
+        if (listVirtualizer) {
+            listVirtualizer.addEventListener("visibilityChanged", (ev) => {
+                // localStorage.setItem("virtualizer", JSON.stringify({ firstVisible: ev.first, lastPage: this.pageIndex }));
+                if (listVirtualizer.items.length < 5) return;
+                if (ev.last == listVirtualizer.items.length - 5) {
+                    const spinner = this.spinner;
+                    spinner?.classList.remove("hidden");
+                    this.load();
+                }
+            });
+        }
+
         // Setup polling
         if (this.stream && this.stream.pollNew) {
             this.stream.addNewItemsListener(async (newerItems) => {
@@ -179,7 +193,7 @@ export abstract class StreamView<T> extends LitElement {
                     .renderItem=${(item: T, index: number) => this.renderItemInternal(item, index)}
                 ></lit-virtualizer>
                 <loading-spinner class="w-full" id="spinner"></loading-spinner>
-                ${Store.getDevMode()
+                ${Store.getDevPrefs()?.enabled
                     ? html`<div class="absolute top-0 right-0 flex items-center bg-white px-2 rounded-md fancy-shadows">
                           <button
                               class="text-primary font-bold"

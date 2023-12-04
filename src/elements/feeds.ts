@@ -147,7 +147,7 @@ export class GeneratorViewElement extends LitElement {
                 >
                     <i class="icon !w-5 !h-5 fill-muted-fg">${linkIcon}</i>
                 </button>
-                ${Store.getDevMode()
+                ${Store.getDevPrefs()?.enabled
                     ? html`<button
                           class="text-primary font-bold"
                           @click=${() => {
@@ -158,7 +158,7 @@ export class GeneratorViewElement extends LitElement {
                           at-uri
                       </button>`
                     : nothing}
-                ${Store.getDevMode()
+                ${Store.getDevPrefs()?.enabled
                     ? html`<button
                           class="text-primary font-bold"
                           @click=${() => {

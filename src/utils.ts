@@ -557,3 +557,9 @@ export function copyTextToClipboard(text: string): void {
 
     document.body.removeChild(tempElement);
 }
+
+let debugLogId = 0;
+export function debugLog(message: string, obj?: any) {
+    console.log(`${(debugLogId++).toString().padStart(10, "0")} -- ${message}`);
+    if (obj) console.log(obj);
+}

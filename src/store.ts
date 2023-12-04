@@ -25,13 +25,21 @@ export type PushPreferences = {
     likes: boolean;
 };
 
+export type DevPreferences = {
+    enabled: boolean;
+    logPostViewRenders: boolean;
+    logFeedViewPostRenders: boolean;
+    logEmbedRenders: boolean;
+    logThreadViewPostRenders: boolean;
+};
+
 export type Theme = "dark" | "light";
 
 export type Settings = {
     theme: Theme;
     pinchZoom: boolean;
     pushPrefs: PushPreferences;
-    devMode: boolean;
+    devPrefs: DevPreferences;
 };
 
 export type StoreKey = "user" | "settings";
@@ -41,15 +49,28 @@ export class Store {
 
     static {
         let settings: Settings | undefined = Store.get<Settings>("settings");
-        if (!settings) {
-            settings = {
-                theme: "dark",
-                pushPrefs: { enabled: true, likes: true, mentions: true, newFollowers: true, quotes: true, replies: true, reposts: true },
-                pinchZoom: true,
-                devMode: false,
-            };
-            Store.set<Settings>("settings", settings);
-        }
+        settings = settings ?? ({} as Settings);
+
+        settings.theme = settings.theme ?? "dark";
+
+        settings.pinchZoom = settings.pinchZoom ?? true;
+
+        settings.pushPrefs ?? ({} as PushPreferences);
+        settings.pushPrefs.enabled = settings.pushPrefs.enabled ?? true;
+        settings.pushPrefs.likes = settings.pushPrefs.likes ?? true;
+        settings.pushPrefs.mentions = settings.pushPrefs.mentions ?? true;
+        settings.pushPrefs.newFollowers = settings.pushPrefs.newFollowers ?? true;
+        settings.pushPrefs.quotes = settings.pushPrefs.quotes ?? true;
+        settings.pushPrefs.replies = settings.pushPrefs.replies ?? true;
+        settings.pushPrefs.reposts = settings.pushPrefs.reposts ?? true;
+
+        settings.devPrefs = settings.devPrefs ?? ({} as DevPreferences);
+        settings.devPrefs.enabled = settings.devPrefs.enabled ?? false;
+        settings.devPrefs.logEmbedRenders = settings.devPrefs.logEmbedRenders ?? false;
+        settings.devPrefs.logFeedViewPostRenders = settings.devPrefs.logFeedViewPostRenders ?? false;
+        settings.devPrefs.logPostViewRenders = settings.devPrefs.logPostViewRenders ?? false;
+
+        Store.set<Settings>("settings", settings);
     }
 
     private static get<T>(key: StoreKey) {
@@ -107,11 +128,11 @@ export class Store {
         Store.set("settings", { ...Store.get<Settings>("settings"), pushPrefs });
     }
 
-    static getDevMode() {
-        return Store.get<Settings>("settings")?.devMode;
+    static getDevPrefs() {
+        return Store.get<Settings>("settings")?.devPrefs;
     }
 
-    static setDevMode(devMode: boolean) {
-        Store.set("settings", { ...Store.get<Settings>("settings"), devMode });
+    static setDevPrefs(devPrefs: DevPreferences) {
+        Store.set("settings", { ...Store.get<Settings>("settings"), devPrefs });
     }
 }

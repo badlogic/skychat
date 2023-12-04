@@ -17,7 +17,8 @@ import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { date, getBskyPostUrl, getSkychatPostUrl } from "../bsky";
+import { repeat } from "lit-html/directives/repeat.js";
+import { author, date, getBskyPostUrl, getSkychatPostUrl, text } from "../bsky";
 import { i18n } from "../i18n";
 import {
     articleIcon,
@@ -40,6 +41,7 @@ import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
 import {
     combineAtUri,
     copyTextToClipboard,
+    debugLog,
     dom,
     enableYoutubeJSApi,
     error,
@@ -100,6 +102,7 @@ export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     return result;
 }
 
+// FIXME no longer works
 export function tryEmbedTwitter(
     cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
     minimal: boolean
@@ -291,16 +294,28 @@ export function tryEmbedYouTubeVideo(
 
 export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External, minimal: boolean) {
     const youTubeEmbed = tryEmbedYouTubeVideo(cardEmbed, minimal);
-    if (youTubeEmbed) return youTubeEmbed;
+    if (youTubeEmbed) {
+        if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- YouTube");
+        return youTubeEmbed;
+    }
     const giphyEmbed = tryEmbedGiphyGif(cardEmbed, minimal);
-    if (giphyEmbed) return giphyEmbed;
+    if (giphyEmbed) {
+        if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- Giphy");
+        return giphyEmbed;
+    }
     const tenorEmbed = tryEmbedTenorGif(cardEmbed, minimal);
-    if (tenorEmbed) return tenorEmbed;
-    const twitterEmbed = tryEmbedTwitter(cardEmbed, minimal);
-    if (twitterEmbed) return twitterEmbed;
+    if (tenorEmbed) {
+        if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- Tenor");
+        return tenorEmbed;
+    }
 
     const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
-    return html`<a class="overflow-x-clip text-black dark:text-white mt-2 border border-divider rounded flex" target="_blank" href="${cardEmbed.uri}">
+    if (Store.getDevPrefs()?.logEmbedRenders) debugLog(`   Embed render -- card ${thumb ? "with thumb" : ""}`);
+    return html`<a
+        class="h-28 overflow-x-clip text-black dark:text-white mt-2 border border-divider rounded flex"
+        target="_blank"
+        href="${cardEmbed.uri}"
+    >
         ${thumb ? html`<img src="${thumb}" class="w-28 h-28 object-cover" />` : nothing}
         <div class="flex flex-col p-2 justify-center">
             <span class="text-muted-fg text-xs">${new URL(cardEmbed.uri).host}</span>
@@ -311,8 +326,9 @@ export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | A
 }
 
 export function renderImagesEmbedSmall(images: AppBskyEmbedImages.ViewImage[]) {
+    if (Store.getDevPrefs()?.logEmbedRenders) debugLog(`   Embed render -- images small`);
     return html`<div class="mt-2 flex mx-2 justify-center">
-        ${map(
+        ${repeat(
             images,
             (image) => html`<div class="w-1/4 relative">
                 <img src="${image.thumb}" class="px-1 w-28 h-28 object-cover" />
@@ -391,6 +407,7 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
         },
     ];
 
+    if (Store.getDevPrefs()?.logEmbedRenders) debugLog(`   Embed render -- ${images.length} images`);
     return html`
         <div class="mt-2 flex items-center justify-center" @click=${(ev: MouseEvent) => openGallery(ev)}>
             ${renderImages[images.length - 1](images)}
@@ -400,14 +417,17 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
 
 export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
     if (AppBskyEmbedRecord.isViewNotFound(recordEmbed.record)) {
+        if (Store.getDevPrefs()?.logEmbedRenders) debugLog(`   Embed render -- deleted post`);
         return itemPlaceholder(i18n("Deleted post"));
     }
 
     if (AppBskyEmbedRecord.isViewBlocked(recordEmbed.record)) {
+        if (Store.getDevPrefs()?.logEmbedRenders) debugLog(`   Embed render -- blocked post`);
         return itemPlaceholder(i18n("You have blocked the author or the author has blocked you."), html`${shieldIcon}`);
     }
 
     if (AppBskyFeedDefs.isGeneratorView(recordEmbed.record)) {
+        if (Store.getDevPrefs()?.logEmbedRenders) debugLog(`   Embed render -- generator`);
         const action = (action: GeneratorViewElementAction, generator: GeneratorView) => {
             if (action == "clicked") document.body.append(dom(html`<feed-overlay .feedUri=${generator.uri}></feed-overlay>`)[0]);
         };
@@ -417,6 +437,7 @@ export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
     }
 
     if (AppBskyGraphDefs.isListView(recordEmbed.record)) {
+        if (Store.getDevPrefs()?.logEmbedRenders) debugLog(`   Embed render -- list`);
         const action = (action: GeneratorViewElementAction, list: ListView) => {
             if (action == "clicked") document.body.append(dom(html`<list-overlay .listUri=${list.uri}></list-overlay>`)[0]);
         };
@@ -430,6 +451,7 @@ export function renderRecordEmbed(recordEmbed: AppBskyEmbedRecord.View) {
     const author = recordEmbed.record.author;
     const embeds = recordEmbed.record.embeds && recordEmbed.record.embeds.length > 0 ? recordEmbed.record.embeds[0] : undefined;
     const sensitive = recordEmbed.record.labels?.some((label) => ["porn", "nudity", "sexual"].includes(label.val)) ?? false;
+    if (Store.getDevPrefs()?.logEmbedRenders) debugLog(`   Embed render -- quote ${embeds ? " with embed" : ""}`);
     return html`<div class="mt-2 border border-divider rounded p-2">${renderRecord(author, rkey, record, embeds, true, sensitive)}</div>`;
 }
 
@@ -439,6 +461,7 @@ export function renderRecordWithMediaEmbed(recordWithMediaEmbed: AppBskyEmbedRec
         AppBskyEmbedExternal.isView(recordWithMediaEmbed.media) || AppBskyEmbedExternal.isMain(recordWithMediaEmbed.media)
             ? recordWithMediaEmbed.media.external
             : undefined;
+    if (Store.getDevPrefs()?.logEmbedRenders) debugLog(`   Embed render -- record with media`);
     return html`<div class="mt-2">
         ${cardEmbed ? renderCardEmbed(cardEmbed, minimal) : nothing} ${imagesEmbed ? renderImagesEmbed(imagesEmbed, sensitive, minimal) : nothing}
         ${!minimal ? renderRecordEmbed(recordWithMediaEmbed.record) : nothing}
@@ -570,6 +593,7 @@ export class PostViewElement extends LitElement {
     timeLeft = false;
 
     contentDom?: HTMLElement;
+    renderCount = 0;
 
     unsubscribePost: () => void = () => {};
     unsubscribeQuote: () => void = () => {};
@@ -628,6 +652,14 @@ export class PostViewElement extends LitElement {
             </div>`;
         }
 
+        if (Store.getDevPrefs()?.logPostViewRenders) this.renderCount++;
+        debugLog(
+            `PostView render -- ${this.renderCount} ` +
+                author(this.post) +
+                ": " +
+                text(this.post)?.replaceAll("\n", " ").replaceAll("\t", " ").substring(0, 30)
+        );
+
         if (this.deleted) {
             return itemPlaceholder(i18n("Deleted post"));
         }
@@ -659,11 +691,11 @@ export class PostViewElement extends LitElement {
         }
 
         const rkey = splitAtUri(this.post.uri)?.rkey;
-        const author = this.post.author;
+        const profile = this.post.author;
         if (!this.contentDom) {
             this.contentDom = dom(
                 html`${renderRecord(
-                    author,
+                    profile,
                     rkey,
                     this.post.record,
                     this.post.embed,
@@ -703,7 +735,7 @@ export class PostViewElement extends LitElement {
                     .text=${"" + (this.post.likeCount ?? 0)}
                 ></icon-toggle>
                 <post-options .post=${this.post} .handleOption=${(option: PostOptions) => this.handleOption(option)}></post-options>
-                ${Store.getDevMode()
+                ${Store.getDevPrefs()?.enabled
                     ? html`<button
                           class="text-primary font-bold"
                           @click=${() => {
@@ -714,7 +746,7 @@ export class PostViewElement extends LitElement {
                           at-uri
                       </button>`
                     : nothing}
-                ${Store.getDevMode()
+                ${Store.getDevPrefs()?.enabled
                     ? html`<button
                           class="text-primary font-bold"
                           @click=${() => {
@@ -1034,6 +1066,8 @@ export class ThreadViewPostElement extends LitElement {
 
     render() {
         const thread = this.thread;
+        // FIXME log rendering as per devPrefs
+
         if (!AppBskyFeedDefs.isThreadViewPost(thread)) {
             // FIXME handle other thread types.
             return dom(html``)[0];
@@ -1336,9 +1370,6 @@ export class ThreadOverlay extends HashNavOverlay {
                 return 0;
             };
             let hasHighlightedPost = thread.post.uri == this.postUri;
-            if (hasHighlightedPost) {
-                console.log();
-            }
             if (thread.replies) {
                 const posts = thread.replies.filter((reply) => AppBskyFeedDefs.isThreadViewPost(reply)) as ThreadViewPost[];
                 const authorPosts = posts.filter((reply) => reply.post.author.did == parentAuthor.did);
@@ -1401,7 +1432,7 @@ export class ThreadOverlay extends HashNavOverlay {
                         : nothing}
                 </div>
                 <div class="-ml-2">${this.closeButton()}</div>
-                ${Store.getDevMode()
+                ${Store.getDevPrefs()?.enabled
                     ? html`<div class="absolute top-[40px] right-0 flex items-center bg-white px-4 py-2 rounded-md fancy-shadows">
                           <button
                               class="text-primary font-bold"
@@ -1453,7 +1484,7 @@ export class ThreadOverlay extends HashNavOverlay {
 }
 
 @customElement("feed-view-post-view")
-export class FeewViewPostElement extends LitElement {
+export class FeedViewPostElement extends LitElement {
     @property()
     feedViewPost?: FeedViewPost;
 
@@ -1463,6 +1494,13 @@ export class FeewViewPostElement extends LitElement {
 
     render() {
         if (!this.feedViewPost) return html`${nothing}`;
+        if (Store.getDevPrefs()?.logFeedViewPostRenders)
+            debugLog(
+                "FeedViewPost render -- " +
+                    author(this.feedViewPost.post) +
+                    ": " +
+                    text(this.feedViewPost.post)?.replaceAll("\n", " ").replaceAll("\t", " ").substring(0, 30)
+            );
         const feedViewPost = this.feedViewPost;
         const repostedByClicked = (ev: Event) => {
             if (!AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)) return;

@@ -230,7 +230,7 @@ export class ProfileOverlay extends HashNavOverlay {
                 ${profile.viewer?.followedBy ? html`<span class="p-1 text-xs rounded bg-muted text-muted-fg">${i18n("Follows you")}</span>` : nothing}
                 <span class="text-muted-fg text-sm">${profile.handle}</span>
             </div>
-            ${Store.getDevMode()
+            ${Store.getDevPrefs()?.enabled
                 ? html`<div class="flex items-center gap-2 px-4">
                       <button
                           class="text-primary font-bold"
@@ -419,7 +419,7 @@ export class ProfileViewElement extends LitElement {
                 </div>
                 <div class="text-sm mt-1">${renderRichText({ text: rt.text, facets: rt.facets, createdAt: "" })}</div>
 
-                ${Store.getDevMode()
+                ${Store.getDevPrefs()?.enabled
                     ? html`<div class="flex items-center gap-2">
                           <button
                               class="text-primary font-bold"

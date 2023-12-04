@@ -15,7 +15,7 @@ import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs.
 export class SearchOverlay extends HashNavOverlay {
     @property()
     showTypes =
-        Store.getDevMode() || location.search.includes("devmode")
+        Store.getDevPrefs()?.enabled || location.search.includes("devmode")
             ? [i18n("Users"), i18n("Posts"), i18n("Feeds"), "at-uris"]
             : [i18n("Users"), i18n("Posts"), i18n("Feeds")];
 

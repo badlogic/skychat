@@ -8,7 +8,7 @@ import { LitVirtualizer } from "@lit-labs/virtualizer";
 import { renderTopbar } from "../elements/overlay.js";
 export { LitVirtualizer } from "@lit-labs/virtualizer";
 
-const feedFile = "data/yt-feed.json";
+const feedFile = "data/jumpy-feed.json";
 
 @customElement("virtualizer-test")
 export class VirtualizerTest extends LitElement {
