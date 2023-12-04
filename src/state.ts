@@ -124,6 +124,7 @@ export class State {
             case "unreadNotifications":
             case "theme":
             case "preferences":
+                this.generalListeners[event]?.forEach((listener) => listener(action, payload));
                 if (State.DEBUG) console.log(`${getDateString(new Date())} - notify - ${event} ${action}`, payload);
                 return;
             default:
