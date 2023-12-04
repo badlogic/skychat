@@ -29,7 +29,7 @@ import {
 } from "../utils";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { deletePost, quote, reply } from "./posteditor";
-import { renderEmbed, renderRichText } from "./posts";
+import { PostViewElement, renderEmbed, renderRichText } from "./posts";
 import { ProfileViewElement, renderProfile } from "./profiles";
 import { ListViewElementAction } from "./lists";
 import { ListItemView, ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
@@ -85,7 +85,7 @@ export abstract class StreamView<T> extends LitElement {
                     //       or make lit-virtualizer work for prepending.
                     upButton.classList.remove("hidden");
                     upButton.highlight = true;
-                    upButton.renderOnClick.push(() => {
+                    upButton.renderOnClick.push(async () => {
                         if (!this.stream) {
                             error("Couldn't load newer items");
                             return;
@@ -97,6 +97,11 @@ export abstract class StreamView<T> extends LitElement {
                                 allItems.push(...page.items);
                             }
                             listVirtualizer.items = allItems;
+                            await listVirtualizer.layoutComplete;
+                            requestAnimationFrame(() => {
+                                const scrollParent = getScrollParent(upButton);
+                                scrollParent?.scrollTo({ top: 0, behavior: "instant" });
+                            });
                         }
                     });
                 }
@@ -156,36 +161,24 @@ export abstract class StreamView<T> extends LitElement {
         }
     }
 
-    renderItemInternal(item: T) {
-        const itemDom = this.wrapItem ? dom(StreamView.renderWrapped(this.renderItem(item)))[0] : dom(this.renderItem(item))[0];
+    renderItemInternal(item: T, index: number) {
+        const itemDom = this.wrapItem ? StreamView.renderWrapped(this.renderItem(item)) : this.renderItem(item);
         return itemDom;
     }
 
     render() {
         if (this.error) return renderError(this.error);
 
-        return html`<div class="relative">
+        return html`
             <div id="items" class="flex flex-col">
                 <lit-virtualizer
                     id="listVirtualizer"
                     class="w-full h-full"
-                    .renderItem=${(item: T) => this.renderItemInternal(item)}
+                    .renderItem=${(item: T, index: number) => this.renderItemInternal(item, index)}
                 ></lit-virtualizer>
                 <loading-spinner class="w-full" id="spinner"></loading-spinner>
             </div>
-            ${Store.getDevMode()
-                ? html`<div class="absolute top-0 right-0 flex items-center bg-white px-2 rounded-md fancy-shadows">
-                      <button
-                          class="text-primary font-bold"
-                          @click=${() => {
-                              console.log(this.stream?.pages);
-                          }}
-                      >
-                          JSON
-                      </button>
-                  </div>`
-                : nothing}
-        </div>`;
+        `;
     }
 
     abstract renderItem(item: T): TemplateResult;
@@ -201,16 +194,15 @@ export class PostsStreamView extends StreamView<PostView> {
         return item.uri;
     }
     renderItem(post: PostView): TemplateResult {
-        const postDom = dom(html`
+        return html`
             <post-view
                 class="w-full"
                 .post=${post}
                 .quoteCallback=${(post: PostView) => quote(post)}
                 .replyCallback=${(post: PostView) => reply(post)}
-                .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
+                .deleteCallback=${(post: PostView) => deletePost(post)}
             ></post-view>
-        `)[0];
-        return html`${postDom}`;
+        `;
     }
 }
 

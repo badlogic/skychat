@@ -315,7 +315,7 @@ export class Chat extends LitElement {
         reconnectHandler();
     }
 
-    async deletePost(post: PostView, postDom: HTMLElement) {
+    async deletePost(post: PostView) {
         if (!State.isConnected()) return;
         const result = await State.deletePost(post.uri);
         if (result instanceof Error) {
@@ -337,7 +337,7 @@ export class Chat extends LitElement {
                         .post=${post}
                         .quoteCallback=${(post: PostView) => this.editor?.setQuote(post)}
                         .replyCallback=${(post: PostView) => this.editor?.setReply(post)}
-                        .deleteCallback=${(post: PostView) => this.deletePost(post, postDom)}
+                        .deleteCallback=${(post: PostView) => this.deletePost(post)}
                     ></post-view>
                 </div>`
             )[0];
@@ -368,7 +368,7 @@ export class Chat extends LitElement {
                     .post=${post}
                     .quoteCallback=${(post: PostView) => this.editor?.setQuote(post)}
                     .replyCallback=${(post: PostView) => this.editor?.setReply(post)}
-                    .deleteCallback=${(post: PostView) => this.deletePost(post, postDom)}
+                    .deleteCallback=${(post: PostView) => this.deletePost(post)}
                     class="border-b border-divider"
                 ></post-view>
             </div>`)[0];

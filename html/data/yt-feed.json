@@ -4,6 +4,102 @@
         "items": [
             {
                 "post": {
+                    "uri": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.post/3kfojl3asvl2n",
+                    "cid": "bafyreifksbevqv65fnsxkk3v43glqqpgj7co5u5qc3szsbtxu6v2lnoeia",
+                    "author": {
+                        "did": "did:plc:tor3vfreawh4m76ytz4krgtr",
+                        "handle": "badlogictest.bsky.social",
+                        "displayName": "Mario Zechner (Test account don't follow!)",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:tor3vfreawh4m76ytz4krgtr/bafkreid7ezveqqgrwsd3mmjc5g45bsz66b3xbgk3benh3bzioymrwreymi@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "tesafae\n",
+                        "$type": "app.bsky.feed.post",
+                        "createdAt": "2023-12-04T00:06:00.552Z"
+                    },
+                    "replyCount": 0,
+                    "repostCount": 0,
+                    "likeCount": 0,
+                    "indexedAt": "2023-12-04T00:06:00.552Z",
+                    "viewer": {},
+                    "labels": []
+                }
+            },
+            {
+                "post": {
+                    "uri": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.post/3kfojkbayoo2d",
+                    "cid": "bafyreibadtsybqaxocbnn3exdlpz7gwtiwph3w7r3huiafn5f5rajlqoyy",
+                    "author": {
+                        "did": "did:plc:tor3vfreawh4m76ytz4krgtr",
+                        "handle": "badlogictest.bsky.social",
+                        "displayName": "Mario Zechner (Test account don't follow!)",
+                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:tor3vfreawh4m76ytz4krgtr/bafkreid7ezveqqgrwsd3mmjc5g45bsz66b3xbgk3benh3bzioymrwreymi@jpeg",
+                        "viewer": {
+                            "muted": false,
+                            "blockedBy": false
+                        },
+                        "labels": []
+                    },
+                    "record": {
+                        "text": "https://youtu.be/cTcwoA9M13s?si=PJyt-REwsEYoEd4u\n",
+                        "$type": "app.bsky.feed.post",
+                        "embed": {
+                            "$type": "app.bsky.embed.external",
+                            "external": {
+                                "uri": "https://youtu.be/cTcwoA9M13s?si=PJyt-REwsEYoEd4u",
+                                "image": "https://cardyb.bsky.app/v1/image?url=https%3A%2F%2Fi.ytimg.com%2Fvi%2FcTcwoA9M13s%2Fmaxres2.jpg%3Fsqp%3D-oaymwEoCIAKENAF8quKqQMcGADwAQH4Ad4GgAKAD4oCDAgAEAEYYyBjKGMwDw%3D%3D%26rs%3DAOn4CLAD06RB7t600GAio86nhTSSONCZtw",
+                                "thumb": {
+                                    "$type": "blob",
+                                    "ref": {
+                                        "$link": "bafkreihdnjkokuhnm6eboa7aaclw6755eonorn5niu2js76abcol2smnwu"
+                                    },
+                                    "mimeType": "image/jpeg",
+                                    "size": 49798
+                                },
+                                "title": "Skychat - Opera Android",
+                                "description": ""
+                            }
+                        },
+                        "facets": [
+                            {
+                                "index": {
+                                    "byteEnd": 48,
+                                    "byteStart": 0
+                                },
+                                "features": [
+                                    {
+                                        "uri": "https://youtu.be/cTcwoA9M13s?si=PJyt-REwsEYoEd4u",
+                                        "$type": "app.bsky.richtext.facet#link"
+                                    }
+                                ]
+                            }
+                        ],
+                        "createdAt": "2023-12-04T00:05:33.298Z"
+                    },
+                    "embed": {
+                        "$type": "app.bsky.embed.external#view",
+                        "external": {
+                            "uri": "https://youtu.be/cTcwoA9M13s?si=PJyt-REwsEYoEd4u",
+                            "title": "Skychat - Opera Android",
+                            "description": "",
+                            "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:tor3vfreawh4m76ytz4krgtr/bafkreihdnjkokuhnm6eboa7aaclw6755eonorn5niu2js76abcol2smnwu@jpeg"
+                        }
+                    },
+                    "replyCount": 0,
+                    "repostCount": 0,
+                    "likeCount": 0,
+                    "indexedAt": "2023-12-04T00:05:33.298Z",
+                    "viewer": {},
+                    "labels": []
+                }
+            },
+            {
+                "post": {
                     "uri": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.post/3kfogzfauqk2g",
                     "cid": "bafyreiatzafdlk3ybzkp5wbvlf4wypv5xvps7wttvylsdpsugyvgc4fgpe",
                     "author": {
@@ -306,34 +402,6 @@
             },
             {
                 "post": {
-                    "uri": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.post/3kfognbrytf2j",
-                    "cid": "bafyreidyca6caoho7dwg45ill5iaovnrugrpp4qa5kg3revqvabr5mmca4",
-                    "author": {
-                        "did": "did:plc:tor3vfreawh4m76ytz4krgtr",
-                        "handle": "badlogictest.bsky.social",
-                        "displayName": "Mario Zechner (Test account don't follow!)",
-                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:tor3vfreawh4m76ytz4krgtr/bafkreid7ezveqqgrwsd3mmjc5g45bsz66b3xbgk3benh3bzioymrwreymi@jpeg",
-                        "viewer": {
-                            "muted": false,
-                            "blockedBy": false
-                        },
-                        "labels": []
-                    },
-                    "record": {
-                        "text": "test\n",
-                        "$type": "app.bsky.feed.post",
-                        "createdAt": "2023-12-03T23:13:33.295Z"
-                    },
-                    "replyCount": 0,
-                    "repostCount": 0,
-                    "likeCount": 0,
-                    "indexedAt": "2023-12-03T23:13:33.295Z",
-                    "viewer": {},
-                    "labels": []
-                }
-            },
-            {
-                "post": {
                     "uri": "at://did:plc:6m56l4ozq34n455anslukp5x/app.bsky.feed.post/3kfogfnobgs2i",
                     "cid": "bafyreifgbpjprandcw3vwvyb75gvuweywzxdjjgxnginr43sulxcgkftci",
                     "author": {
@@ -474,7 +542,7 @@
                     },
                     "replyCount": 0,
                     "repostCount": 0,
-                    "likeCount": 3,
+                    "likeCount": 6,
                     "indexedAt": "2023-12-03T23:09:17.452Z",
                     "viewer": {},
                     "labels": []
@@ -610,9 +678,9 @@
                                 }
                             ]
                         },
-                        "replyCount": 6,
+                        "replyCount": 7,
                         "repostCount": 2,
-                        "likeCount": 51,
+                        "likeCount": 55,
                         "indexedAt": "2023-12-03T11:06:35.241Z",
                         "viewer": {},
                         "labels": []
@@ -759,109 +827,9 @@
                         },
                         "replyCount": 6,
                         "repostCount": 0,
-                        "likeCount": 20,
+                        "likeCount": 24,
                         "indexedAt": "2023-12-03T11:13:53.560Z",
                         "viewer": {},
-                        "labels": []
-                    }
-                }
-            },
-            {
-                "post": {
-                    "uri": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.post/3kfofrsh5pc2g",
-                    "cid": "bafyreibx56k33tffis4twtbmoj7ckoo56s3owhetgsqtkczufm2enntg3i",
-                    "author": {
-                        "did": "did:plc:tor3vfreawh4m76ytz4krgtr",
-                        "handle": "badlogictest.bsky.social",
-                        "displayName": "Mario Zechner (Test account don't follow!)",
-                        "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:tor3vfreawh4m76ytz4krgtr/bafkreid7ezveqqgrwsd3mmjc5g45bsz66b3xbgk3benh3bzioymrwreymi@jpeg",
-                        "viewer": {
-                            "muted": false,
-                            "blockedBy": false
-                        },
-                        "labels": []
-                    },
-                    "record": {
-                        "text": "oh god, it re-renders items fully visible in the viewport...\n",
-                        "$type": "app.bsky.feed.post",
-                        "reply": {
-                            "root": {
-                                "cid": "bafyreif5ayc3gx7qvcoqxa7brifglza5vooq32rzavb72uaft3f5fnhdby",
-                                "uri": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.post/3kfof4a6gqi2d"
-                            },
-                            "parent": {
-                                "cid": "bafyreif5ayc3gx7qvcoqxa7brifglza5vooq32rzavb72uaft3f5fnhdby",
-                                "uri": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.post/3kfof4a6gqi2d"
-                            }
-                        },
-                        "createdAt": "2023-12-03T22:58:11.227Z"
-                    },
-                    "replyCount": 0,
-                    "repostCount": 0,
-                    "likeCount": 1,
-                    "indexedAt": "2023-12-03T22:58:11.227Z",
-                    "viewer": {
-                        "like": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.like/3kfogjtpehc2g"
-                    },
-                    "labels": []
-                },
-                "reply": {
-                    "root": {
-                        "$type": "app.bsky.feed.defs#postView",
-                        "uri": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.post/3kfof4a6gqi2d",
-                        "cid": "bafyreif5ayc3gx7qvcoqxa7brifglza5vooq32rzavb72uaft3f5fnhdby",
-                        "author": {
-                            "did": "did:plc:tor3vfreawh4m76ytz4krgtr",
-                            "handle": "badlogictest.bsky.social",
-                            "displayName": "Mario Zechner (Test account don't follow!)",
-                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:tor3vfreawh4m76ytz4krgtr/bafkreid7ezveqqgrwsd3mmjc5g45bsz66b3xbgk3benh3bzioymrwreymi@jpeg",
-                            "viewer": {
-                                "muted": false,
-                                "blockedBy": false
-                            },
-                            "labels": []
-                        },
-                        "record": {
-                            "text": "OK, integrating lit-virtualizer was way too easy. There must be a catch.\n",
-                            "$type": "app.bsky.feed.post",
-                            "createdAt": "2023-12-03T22:46:07.418Z"
-                        },
-                        "replyCount": 1,
-                        "repostCount": 0,
-                        "likeCount": 1,
-                        "indexedAt": "2023-12-03T22:46:07.418Z",
-                        "viewer": {
-                            "like": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.like/3kfogkhxdpi2d"
-                        },
-                        "labels": []
-                    },
-                    "parent": {
-                        "$type": "app.bsky.feed.defs#postView",
-                        "uri": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.post/3kfof4a6gqi2d",
-                        "cid": "bafyreif5ayc3gx7qvcoqxa7brifglza5vooq32rzavb72uaft3f5fnhdby",
-                        "author": {
-                            "did": "did:plc:tor3vfreawh4m76ytz4krgtr",
-                            "handle": "badlogictest.bsky.social",
-                            "displayName": "Mario Zechner (Test account don't follow!)",
-                            "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:tor3vfreawh4m76ytz4krgtr/bafkreid7ezveqqgrwsd3mmjc5g45bsz66b3xbgk3benh3bzioymrwreymi@jpeg",
-                            "viewer": {
-                                "muted": false,
-                                "blockedBy": false
-                            },
-                            "labels": []
-                        },
-                        "record": {
-                            "text": "OK, integrating lit-virtualizer was way too easy. There must be a catch.\n",
-                            "$type": "app.bsky.feed.post",
-                            "createdAt": "2023-12-03T22:46:07.418Z"
-                        },
-                        "replyCount": 1,
-                        "repostCount": 0,
-                        "likeCount": 1,
-                        "indexedAt": "2023-12-03T22:46:07.418Z",
-                        "viewer": {
-                            "like": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.like/3kfogkhxdpi2d"
-                        },
                         "labels": []
                     }
                 }
@@ -968,8 +936,8 @@
                         }
                     },
                     "replyCount": 0,
-                    "repostCount": 1,
-                    "likeCount": 13,
+                    "repostCount": 2,
+                    "likeCount": 14,
                     "indexedAt": "2023-12-03T22:53:23.485Z",
                     "viewer": {
                         "repost": "at://did:plc:tor3vfreawh4m76ytz4krgtr/app.bsky.feed.repost/3kfofnwiazf2u"
@@ -1025,9 +993,9 @@
                             "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:bje2akwzegitmitiig4nmnrp/bafkreieeldop34aj3nteqtdtlsjjibuuicwex3ftghvaq4li6j3o4hxiqq@jpeg"
                         }
                     },
-                    "replyCount": 6,
-                    "repostCount": 31,
-                    "likeCount": 83,
+                    "replyCount": 7,
+                    "repostCount": 32,
+                    "likeCount": 95,
                     "indexedAt": "2023-12-03T22:03:58.011Z",
                     "viewer": {},
                     "labels": []
@@ -1994,7 +1962,7 @@
                     },
                     "replyCount": 0,
                     "repostCount": 0,
-                    "likeCount": 1,
+                    "likeCount": 2,
                     "indexedAt": "2023-12-03T22:00:25.240Z",
                     "viewer": {},
                     "labels": []
@@ -2590,7 +2558,7 @@
                     },
                     "replyCount": 5,
                     "repostCount": 15,
-                    "likeCount": 96,
+                    "likeCount": 105,
                     "indexedAt": "2023-12-03T20:28:29.050Z",
                     "viewer": {},
                     "labels": []
@@ -2925,7 +2893,7 @@
                     },
                     "replyCount": 1,
                     "repostCount": 0,
-                    "likeCount": 2,
+                    "likeCount": 3,
                     "indexedAt": "2023-12-03T20:12:49.961Z",
                     "viewer": {},
                     "labels": []
@@ -3147,8 +3115,8 @@
                             }
                         },
                         "replyCount": 5,
-                        "repostCount": 28,
-                        "likeCount": 65,
+                        "repostCount": 33,
+                        "likeCount": 72,
                         "indexedAt": "2023-12-03T20:09:45.110Z",
                         "viewer": {},
                         "labels": []
@@ -3228,8 +3196,8 @@
                             }
                         },
                         "replyCount": 5,
-                        "repostCount": 28,
-                        "likeCount": 65,
+                        "repostCount": 33,
+                        "likeCount": 72,
                         "indexedAt": "2023-12-03T20:09:45.110Z",
                         "viewer": {},
                         "labels": []
@@ -3311,8 +3279,8 @@
                         }
                     },
                     "replyCount": 5,
-                    "repostCount": 28,
-                    "likeCount": 65,
+                    "repostCount": 33,
+                    "likeCount": 72,
                     "indexedAt": "2023-12-03T20:09:45.110Z",
                     "viewer": {},
                     "labels": []
@@ -5320,9 +5288,9 @@
                                 }
                             ]
                         },
-                        "replyCount": 6,
-                        "repostCount": 2,
-                        "likeCount": 51,
+                        "replyCount": 7,
+                        "repostCount": 4,
+                        "likeCount": 57,
                         "indexedAt": "2023-12-03T11:06:35.241Z",
                         "viewer": {},
                         "labels": []
@@ -5362,7 +5330,7 @@
                         },
                         "replyCount": 2,
                         "repostCount": 0,
-                        "likeCount": 11,
+                        "likeCount": 12,
                         "indexedAt": "2023-12-03T11:51:28.028Z",
                         "viewer": {},
                         "labels": []
@@ -5541,9 +5509,9 @@
                                 }
                             ]
                         },
-                        "replyCount": 6,
-                        "repostCount": 2,
-                        "likeCount": 51,
+                        "replyCount": 7,
+                        "repostCount": 4,
+                        "likeCount": 57,
                         "indexedAt": "2023-12-03T11:06:35.241Z",
                         "viewer": {},
                         "labels": []
@@ -5583,7 +5551,7 @@
                         },
                         "replyCount": 2,
                         "repostCount": 0,
-                        "likeCount": 11,
+                        "likeCount": 12,
                         "indexedAt": "2023-12-03T11:51:28.028Z",
                         "viewer": {},
                         "labels": []
@@ -5847,7 +5815,7 @@
                     },
                     "replyCount": 6,
                     "repostCount": 0,
-                    "likeCount": 20,
+                    "likeCount": 25,
                     "indexedAt": "2023-12-03T11:13:53.560Z",
                     "viewer": {},
                     "labels": []
@@ -5983,9 +5951,9 @@
                                 }
                             ]
                         },
-                        "replyCount": 6,
-                        "repostCount": 2,
-                        "likeCount": 51,
+                        "replyCount": 7,
+                        "repostCount": 4,
+                        "likeCount": 57,
                         "indexedAt": "2023-12-03T11:06:35.241Z",
                         "viewer": {},
                         "labels": []
@@ -6120,9 +6088,9 @@
                                 }
                             ]
                         },
-                        "replyCount": 6,
-                        "repostCount": 2,
-                        "likeCount": 51,
+                        "replyCount": 7,
+                        "repostCount": 4,
+                        "likeCount": 57,
                         "indexedAt": "2023-12-03T11:06:35.241Z",
                         "viewer": {},
                         "labels": []
@@ -6324,9 +6292,9 @@
                                 }
                             ]
                         },
-                        "replyCount": 6,
-                        "repostCount": 2,
-                        "likeCount": 51,
+                        "replyCount": 7,
+                        "repostCount": 4,
+                        "likeCount": 57,
                         "indexedAt": "2023-12-03T11:06:35.241Z",
                         "viewer": {},
                         "labels": []
@@ -6461,9 +6429,9 @@
                                 }
                             ]
                         },
-                        "replyCount": 6,
-                        "repostCount": 2,
-                        "likeCount": 51,
+                        "replyCount": 7,
+                        "repostCount": 4,
+                        "likeCount": 57,
                         "indexedAt": "2023-12-03T11:06:35.241Z",
                         "viewer": {},
                         "labels": []
@@ -6600,9 +6568,9 @@
                             }
                         ]
                     },
-                    "replyCount": 6,
-                    "repostCount": 2,
-                    "likeCount": 51,
+                    "replyCount": 7,
+                    "repostCount": 4,
+                    "likeCount": 57,
                     "indexedAt": "2023-12-03T11:06:35.241Z",
                     "viewer": {},
                     "labels": []

@@ -10,20 +10,20 @@ import {
     RichText,
 } from "@atproto/api";
 import { ProfileView, ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { ViewImage } from "@atproto/api/dist/client/types/app/bsky/embed/images";
 import { BlockedPost, FeedViewPost, GeneratorView, NotFoundPost, PostView, ThreadViewPost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { date, getBskyPostUrl, getSkychatPostUrl } from "../bsky";
 import { i18n } from "../i18n";
 import {
-    arrowLeftIcon,
-    arrowRightIcon,
     articleIcon,
     blockIcon,
     cloudIcon,
     deleteIcon,
-    downloadIcon,
     heartFilledIcon,
     heartIcon,
     moreIcon,
@@ -38,11 +38,9 @@ import { EventAction, NumQuote, State } from "../state";
 import { Store } from "../store";
 import { PostLikesStream, PostRepostsStream, QuotesStream } from "../streams";
 import {
-    ImageInfo,
     combineAtUri,
     copyTextToClipboard,
     dom,
-    downloadImageAsFile,
     enableYoutubeJSApi,
     error,
     fetchApi,
@@ -53,18 +51,15 @@ import {
     splitAtUri,
     waitForLitElementsToRender,
     waitForScrollHeightUnchanged,
-    youtubePlaYButton,
+    youtubePlayButton,
 } from "../utils";
+import { GeneratorViewElementAction } from "./feeds";
 import { IconToggle } from "./icontoggle";
-import { CloseableElement, HashNavOverlay, Overlay, renderTopbar, waitForOverlayClosed } from "./overlay";
+import { HashNavOverlay, Overlay, renderTopbar, waitForOverlayClosed } from "./overlay";
 import { PopupMenu } from "./popup";
 import { deletePost, quote, reply } from "./posteditor";
 import { getProfileUrl, renderProfile, renderProfileAvatar } from "./profiles";
-import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { ViewImage } from "@atproto/api/dist/client/types/app/bsky/embed/images";
 import { toast } from "./toast";
-import { GeneratorViewElementAction } from "./feeds";
-import { ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 
 export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {
@@ -231,7 +226,6 @@ export function tryEmbedYouTubeVideo(
     cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
     minimal: boolean
 ): TemplateResult | undefined {
-    return;
     const url = cardEmbed.uri;
     const videoRegExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([\w-]+)/;
     let videoID: string | undefined = "";
@@ -244,7 +238,7 @@ export function tryEmbedYouTubeVideo(
     }
 
     if (videoID && videoID.length === 11) {
-        const youtubeDom = dom(html`<div class="mt-2 rounded overflow-x-clip flex justify-center"></div>`)[0];
+        const youtubeDom = dom(html`<div class="mt-2 w-full aspect-[16/9] rounded overflow-x-clip flex justify-center"></div>`)[0];
         fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoID}&format=json`)
             .then(async (data) => {
                 const youtubeInfo = await data.json();
@@ -258,12 +252,13 @@ export function tryEmbedYouTubeVideo(
                     const height = img.clientHeight;
                     requestAnimationFrame(() => {
                         const outerFrame = dom(
-                            html`<div class="flex w-full max-w-[480px]">${unsafeHTML(enableYoutubeJSApi(youtubeInfo.html))}</div>`
+                            html`<div class="flex w-full h-full items-center justify-center">
+                                ${unsafeHTML(enableYoutubeJSApi(youtubeInfo.html))}
+                            </div>`
                         )[0];
                         const iframe = outerFrame.querySelector("iframe")!;
                         iframe.width = width.toString() + "px";
                         iframe.height = height.toString() + "px";
-                        youtubeDom.classList.add("hidedn");
                         imgDom.remove();
                         youtubeDom.append(outerFrame);
                         setTimeout(() => {
@@ -274,12 +269,12 @@ export function tryEmbedYouTubeVideo(
                 };
                 const imgDom = dom(
                     html` <div @click=${(ev: MouseEvent) => showIFrame(ev)} class="relative flex items-center cursor-pointer">
-                        <img src="${youtubeInfo.thumbnail_url}" class="${minimal ? "max-w-[200px]" : "w-full max-w-[480px]"} h-auto mx-auto" />
+                        <img src="${youtubeInfo.thumbnail_url}" class="${minimal ? "max-w-[200px]" : ""} w-full h-auto mx-auto" />
                         <div
                             class="absolute ${minimal ? "w-4 h-4" : "w-16 h-16"} disable-pointer-events"
                             style="top: calc(100% / 2 - ${minimal ? "8px" : "32px"}); left: calc(100% / 2 - ${minimal ? "8px" : "32px"});"
                         >
-                            ${youtubePlaYButton}
+                            ${youtubePlayButton}
                         </div>
                     </div>`
                 )[0];
@@ -390,7 +385,7 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
                 </div>
                 <div class="w-[50%] aspect-square flex flex-col gap-1">
                     <div class="w-full h-[50%]">${renderImage(images[1], 1)}</div>
-                    <div class="w-full h-[50%]">${renderImage(images[3], 2)}</div>
+                    <div class="w-full h-[50%]">${renderImage(images[3], 3)}</div>
                 </div>
             </div>`;
         },
@@ -1093,7 +1088,7 @@ export class ThreadViewPostElement extends LitElement {
                     .post=${thread.post}
                     .quoteCallback=${(post: PostView) => quote(post)}
                     .replyCallback=${(post: PostView) => reply(post, repliesDom)}
-                    .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
+                    .deleteCallback=${(post: PostView) => deletePost(post)}
                     .showReplyTo=${false}
                     .openOnClick=${false}
                     .timeLeft=${true}
@@ -1480,34 +1475,34 @@ export class FeewViewPostElement extends LitElement {
               }</div>`
             : nothing;
 
-        let postDom: HTMLElement;
+        let postDom: TemplateResult;
         if (!feedViewPost.reply || AppBskyFeedDefs.isReasonRepost(feedViewPost.reason)) {
-            postDom = dom(html`<div>
+            postDom = html`<div>
                 ${repostedBy}
                 <post-view
                     .post=${feedViewPost.post}
                     .quoteCallback=${(post: PostView) => quote(post)}
                     .replyCallback=${(post: PostView) => reply(post)}
-                    .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
+                    .deleteCallback=${(post: PostView) => deletePost(post)}
                 ></post-view>
-            </div>`)[0];
+            </div>`;
         } else {
-            const parentDom = dom(html`<post-view
+            const parentDom = html`<post-view
                 .post=${feedViewPost.reply.parent}
                 .quoteCallback=${(post: PostView) => quote(post)}
                 .replyCallback=${(post: PostView) => reply(post)}
-                .deleteCallback=${(post: PostView) => deletePost(post, parentDom)}
-            ></post-view>`)[0];
-            postDom = dom(html`<div class="ml-2 pl-2 mt-2 border-l border-l-primary">
+                .deleteCallback=${(post: PostView) => deletePost(post)}
+            ></post-view>`;
+            postDom = html`<div class="ml-2 pl-2 mt-2 border-l border-l-primary">
                 <post-view
                     .post=${feedViewPost.post}
                     .quoteCallback=${(post: PostView) => quote(post)}
                     .replyCallback=${(post: PostView) => reply(post)}
-                    .deleteCallback=${(post: PostView) => deletePost(post, postDom)}
+                    .deleteCallback=${(post: PostView) => deletePost(post)}
                     .showReplyTo=${false}
                 ></post-view>
-            </div>`)[0];
-            postDom = dom(html`<div class="flex flex-col">${repostedBy}${parentDom}${postDom}</div>`)[0];
+            </div>`;
+            postDom = html`<div class="flex flex-col">${repostedBy}${parentDom}${postDom}</div>`;
         }
         return html`<div class="px-4 py-4 border-b border-divider">${postDom}</div>`;
     }

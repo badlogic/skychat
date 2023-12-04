@@ -855,7 +855,7 @@ export function reply(post: PostView) {
     document.body.append(dom(html`<post-editor-overlay .replyTo=${post} .sent=${(newPost: PostView) => showPost(newPost)}></post-editor-overly>`)[0]);
 }
 
-export async function deletePost(post: PostView, postDom: HTMLElement) {
+export async function deletePost(post: PostView) {
     if (!State.isConnected()) return;
     const result = await State.deletePost(post.uri);
     if (result instanceof Error) {

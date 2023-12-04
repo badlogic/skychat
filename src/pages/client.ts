@@ -428,7 +428,6 @@ class SkychatClient extends LitElement {
             <up-button></up-button>`;
         return html`<div class="w-full h-full flex flex-col">
             <div class="self-center w-full max-w-[640px]">${topbar}</div>
-            <div class="h-[40px]"></div>
             <div class="mx-auto w-full max-w-[640px] min-h-full flex flex-col">${content}</div>
         </div> `;
     }

@@ -5,6 +5,7 @@ import { customElement, state } from "lit/decorators.js";
 import { StreamPage } from "../streams.js";
 import { getDateString, getScrollParent, onVisibleOnce } from "../utils.js";
 import { LitVirtualizer } from "@lit-labs/virtualizer";
+import { renderTopbar } from "../elements/overlay.js";
 export { LitVirtualizer } from "@lit-labs/virtualizer";
 
 const feedFile = "data/yt-feed.json";
@@ -26,18 +27,6 @@ export class VirtualizerTest extends LitElement {
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
         this.load();
-
-        const scrollParent = getScrollParent(this)!;
-        let lastHeight = scrollParent.scrollHeight;
-        let lastTop = scrollParent.scrollTop;
-        const checkHeight = () => {
-            if (lastHeight != scrollParent.scrollHeight) {
-                console.log("Scroll height changed " + lastHeight + " -> " + scrollParent.scrollHeight);
-                lastHeight = scrollParent.scrollHeight;
-            }
-            requestAnimationFrame(checkHeight);
-        };
-        checkHeight();
     }
 
     async load() {
@@ -95,8 +84,6 @@ export class VirtualizerTest extends LitElement {
             console.log("Scrolled");
         });
         const newScrollTop = scrollParent.scrollTop + scrollParent.scrollHeight - oldScrollHeight;
-        // scrollParent.scrollTo(0, newScrollTop);
-        console.log(oldScrollHeight + " ---- " + scrollParent.scrollHeight + ", " + newScrollTop);
         virtualizer.element(page.items.length)?.scrollIntoView({ behavior: "instant" });
     }
 
@@ -148,22 +135,26 @@ export class VirtualizerTest extends LitElement {
             };
         }
 
-        // const renderItem = (item: FeedViewPost) => html`<feed-view-post-view class="w-full" .feedViewPost=${item}></feed-view-post-view>`;
-        const renderItem = (item: FeedViewPost) =>
+        const renderItem = (item: FeedViewPost, index: number) => {
+            console.log("Rendering item " + index);
+            return html`<feed-view-post-view class="w-full" .feedViewPost=${item}></feed-view-post-view>`;
+        };
+        /*const renderItem = (item: FeedViewPost) =>
             html`<div class="w-full h-[200px] border border-divider rounded-md">
                 ${getDateString(new Date(item.post.indexedAt))} ${item.post.author.displayName ?? item.post.author.handle}
-            </div>`;
+            </div>`;*/
         const feed = pin
             ? html`<lit-virtualizer class="w-full h-full" .items=${this.items} .renderItem=${renderItem} .layout=${pin}></lit-virtualizer>`
             : html`<lit-virtualizer class="w-full h-full" .items=${this.items} .renderItem=${renderItem}></lit-virtualizer>`;
-        const content = html`<div class="relative">
-            <div class="flex flex-col">${feed}</div>
-            <loading-spinner class="hidden"></loading-spinner>
-        </div>`;
+        const content = html`
+            <div class="flex flex-col">
+                ${feed}
+                <loading-spinner class="hidden"></loading-spinner>
+            </div>
+        `;
 
         return html`<div class="w-full h-full flex flex-col">
-            <div class="self-center w-full max-w-[640px]">${undefined}</div>
-            <div class="h-[40px]"></div>
+            <div class="self-center w-full max-w-[640px]">${renderTopbar("Explore BlueSky with")}</div>
             <div class="mx-auto w-full max-w-[640px] min-h-full flex flex-col">${content}</div>
             <div class="fixed top-0, right-0 flex flex-col gap-4">
                 <button class="btn" @click=${() => this.prependPage()}>Prepend page</button>
