@@ -3,7 +3,8 @@ import { LitElement, PropertyValueMap, html } from "lit";
 import { repeat } from "lit-html/directives/repeat.js";
 import { customElement, state } from "lit/decorators.js";
 import { StreamPage } from "../streams.js";
-import { onVisibleOnce } from "../utils.js";
+import { getDateString, getScrollParent, onVisibleOnce } from "../utils.js";
+import { LitVirtualizer } from "@lit-labs/virtualizer";
 export { LitVirtualizer } from "@lit-labs/virtualizer";
 
 const feedFile = "data/yt-feed.json";
@@ -25,6 +26,18 @@ export class VirtualizerTest extends LitElement {
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
         this.load();
+
+        const scrollParent = getScrollParent(this)!;
+        let lastHeight = scrollParent.scrollHeight;
+        let lastTop = scrollParent.scrollTop;
+        const checkHeight = () => {
+            if (lastHeight != scrollParent.scrollHeight) {
+                console.log("Scroll height changed " + lastHeight + " -> " + scrollParent.scrollHeight);
+                lastHeight = scrollParent.scrollHeight;
+            }
+            requestAnimationFrame(checkHeight);
+        };
+        checkHeight();
     }
 
     async load() {
@@ -72,8 +85,19 @@ export class VirtualizerTest extends LitElement {
         }
         const page = this.pages[this.pageIndex++];
         this.items = [...page.items, ...this.items];
-        const virtualizer = this.querySelector("lit-virtualizer")!;
+        const virtualizer = this.querySelector("lit-virtualizer")! as LitVirtualizer;
+        const scrollParent = getScrollParent(virtualizer)!;
+        const oldScrollHeight = scrollParent.scrollHeight;
+        const oldScrollTop = scrollParent.scrollTop;
         virtualizer.items = this.items;
+        await virtualizer.layoutComplete;
+        scrollParent.addEventListener("scroll", (ev: Event) => {
+            console.log("Scrolled");
+        });
+        const newScrollTop = scrollParent.scrollTop + scrollParent.scrollHeight - oldScrollHeight;
+        // scrollParent.scrollTo(0, newScrollTop);
+        console.log(oldScrollHeight + " ---- " + scrollParent.scrollHeight + ", " + newScrollTop);
+        virtualizer.element(page.items.length)?.scrollIntoView({ behavior: "instant" });
     }
 
     scrollToTop() {
@@ -103,6 +127,7 @@ export class VirtualizerTest extends LitElement {
         virtualizer.element(restore.firstVisible)?.scrollIntoView({ behavior: "instant", block: "start" });
     }
 
+    idx = 0;
     render() {
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
@@ -123,7 +148,11 @@ export class VirtualizerTest extends LitElement {
             };
         }
 
-        const renderItem = (item: FeedViewPost) => html`<feed-view-post-view class="w-full" .feedViewPost=${item}></feed-view-post-view>`;
+        // const renderItem = (item: FeedViewPost) => html`<feed-view-post-view class="w-full" .feedViewPost=${item}></feed-view-post-view>`;
+        const renderItem = (item: FeedViewPost) =>
+            html`<div class="w-full h-[200px] border border-divider rounded-md">
+                ${getDateString(new Date(item.post.indexedAt))} ${item.post.author.displayName ?? item.post.author.handle}
+            </div>`;
         const feed = pin
             ? html`<lit-virtualizer class="w-full h-full" .items=${this.items} .renderItem=${renderItem} .layout=${pin}></lit-virtualizer>`
             : html`<lit-virtualizer class="w-full h-full" .items=${this.items} .renderItem=${renderItem}></lit-virtualizer>`;
