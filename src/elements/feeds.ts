@@ -8,7 +8,7 @@ import { i18n } from "../i18n";
 import { heartFilledIcon, heartIcon, infoIcon, linkIcon, minusIcon, pinIcon, plusIcon, searchIcon } from "../icons";
 import { FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
-import { FeedPostsStream } from "../streams";
+import { FeedPostsStream, StreamPage } from "../streams";
 import { copyTextToClipboard, defaultFeed, dom, error, getNumber, hasLinkOrButtonParent, renderError, splitAtUri, waitForNavigation } from "../utils";
 import { IconToggle } from "./icontoggle";
 import { renderRichText } from "./posts";
@@ -473,7 +473,7 @@ export class FeedOverlay extends HashNavOverlay {
 
         return html`<feed-stream-view
                 .stream=${new FeedPostsStream(this.feedUri!, true, FEED_CHECK_INTERVAL)}
-                .newItems=${async (newItems: FeedViewPost[] | Error) => {
+                .newItems=${async (newItems: StreamPage<FeedViewPost> | Error) => {
                     if (newItems instanceof Error) {
                         this.error = i18n("Could not load newer items");
                     }

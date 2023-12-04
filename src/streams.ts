@@ -56,14 +56,14 @@ export abstract class Stream<T> {
                 const dependencies = await this.loadDependencies(newItems);
                 if (dependencies instanceof Error) {
                     for (const listener of this.newItemslisteners) {
-                        listener(newItems);
+                        listener(dependencies);
                     }
                     return;
                 }
-                for (const listener of this.newItemslisteners) {
-                    listener(newItems);
-                }
                 const newPage = { cursor, items: newItems };
+                for (const listener of this.newItemslisteners) {
+                    listener(newPage);
+                }
                 this.pages.unshift(newPage);
             }
         } catch (e) {
@@ -80,8 +80,8 @@ export abstract class Stream<T> {
     abstract getItemDate(item: T): Date;
     abstract loadDependencies(newItems: T[]): Promise<Error | void>;
 
-    newItemslisteners: ((newItems: Error | T[]) => void)[] = [];
-    addNewItemsListener(listener: (newItems: Error | T[]) => void): void {
+    newItemslisteners: ((newPage: Error | StreamPage<T>) => void)[] = [];
+    addNewItemsListener(listener: (newPage: Error | StreamPage<T>) => void): void {
         this.newItemslisteners.push(listener);
         if (this.pollNew) {
             this.timeoutId = setTimeout(() => this.poll(), this.pollInterval);

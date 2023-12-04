@@ -8,7 +8,7 @@ import {
 } from "@atproto/api";
 import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { FeedViewPost, GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
+import { LitElement, PropertyValueMap, TemplateResult, html, nothing, render } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { GeneratorViewElementAction, UpButton } from ".";
 import { Messages, i18n } from "../i18n";
@@ -29,6 +29,7 @@ import {
     isSafariBrowser,
     onVisibleOnce,
     renderError,
+    waitForLitElementsToRender,
 } from "../utils";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { deletePost, quote, reply } from "./posteditor";
@@ -46,7 +47,7 @@ export abstract class StreamView<T> extends LitElement {
     stream?: Stream<T>;
 
     @property()
-    newItems?: (newItems: T[] | Error) => Promise<void> = async () => {};
+    newItems?: (newItems: StreamPage<T> | Error) => Promise<void> = async () => {};
 
     @property()
     wrapItem = true;
@@ -76,10 +77,10 @@ export abstract class StreamView<T> extends LitElement {
 
         // Setup polling
         if (this.stream && this.stream.pollNew) {
-            this.stream.addNewItemsListener(async (newerItems) => {
-                if (this.newItems) this.newItems(newerItems);
-                if (newerItems instanceof Error) {
-                    error("Couldn't load newer items", newerItems);
+            this.stream.addNewItemsListener(async (newPage) => {
+                if (this.newItems) this.newItems(newPage);
+                if (newPage instanceof Error) {
+                    error("Couldn't load newer items", newPage);
                     return;
                 }
 
@@ -95,22 +96,25 @@ export abstract class StreamView<T> extends LitElement {
                             error("Couldn't load newer items");
                             return;
                         }
-                        const list = this.querySelector("#list") as LitVirtualizer;
-                        if (list) {
-                            const fragment = dom(html`<div class="w-full h-full flex flex-col">
-                                ${repeat(newerItems, (item, index) => this.renderItemInternal(item, index))}
-                            </div>`)[0];
-                            if (list.children.length > 0) {
-                                list.insertBefore(fragment, list.children[0]);
-                            } else {
-                                list.append(fragment);
-                            }
-                            requestAnimationFrame(() => {
-                                const scrollParent = getScrollParent(upButton);
-                                scrollParent?.scrollTo({ top: 0, behavior: "smooth" });
-                            });
-                        }
+
+                        requestAnimationFrame(() => {
+                            const scrollParent = getScrollParent(upButton);
+                            scrollParent?.scrollTo({ top: 0, behavior: "smooth" });
+                        });
                     });
+                }
+
+                const list = this.querySelector("#list") as LitVirtualizer;
+                if (list) {
+                    const renderedPage = await this.preparePage(newPage, list);
+                    if (list.children.length > 0) {
+                        list.insertBefore(renderedPage.container, list.children[0]);
+                    } else {
+                        list.append(renderedPage.container);
+                    }
+                    if (isSafariBrowser()) {
+                        scrollParent.scrollTop += renderedPage.height;
+                    }
                 }
             });
         }
@@ -155,12 +159,15 @@ export abstract class StreamView<T> extends LitElement {
                 return;
             }
 
-            const fragment = dom(html`<div class="w-full h-full flex flex-col">
-                ${repeat(page.items, (item, index) => this.renderItemInternal(item, index))}
-            </div>`)[0];
-            list.append(fragment);
-            if (Store.getDevPrefs()?.logStreamViewAppended) debugLog(`StreamView appended -- ${items.length} items`);
-            onVisibleOnce(spinner, () => this.load());
+            const renderedPage = await this.preparePage(page, list);
+            list.append(renderedPage.container);
+            requestAnimationFrame(() => {
+                const bounds = renderedPage.container.getBoundingClientRect();
+                console.log(`measured: ${renderedPage.width} ${renderedPage.height}`);
+                console.log(`actual: ${bounds.width} ${bounds.height}`);
+                if (Store.getDevPrefs()?.logStreamViewAppended) debugLog(`StreamView appended -- ${items.length} items`);
+                onVisibleOnce(spinner, () => this.load());
+            });
         } catch (e) {
             this.error = i18n("Sorry, an unknown error occured");
             console.error(e);
@@ -169,7 +176,7 @@ export abstract class StreamView<T> extends LitElement {
         }
     }
 
-    renderItemInternal(item: T, index: number) {
+    renderItemInternal(item: T) {
         const itemDom = this.wrapItem ? StreamView.renderWrapped(this.renderItem(item)) : this.renderItem(item);
         return itemDom;
     }
@@ -203,6 +210,55 @@ export abstract class StreamView<T> extends LitElement {
 
     static renderWrapped(item: TemplateResult | HTMLElement): TemplateResult {
         return html`<div class="w-full px-4 py-2 border-b border-divider">${item}</div>`;
+    }
+
+    async preparePage(page: StreamPage<T>, targetContainer: HTMLElement): Promise<{ container: HTMLElement; width: number; height: number }> {
+        // Create a detached container
+        const container = dom(html`<div class="flex flex-col" style="width: ${targetContainer.clientWidth}px;"></div>`)[0];
+
+        // Make the container invisible and append it to the body for more accurate measurements
+        container.style.visibility = "hidden";
+        container.style.position = "absolute";
+        document.body.appendChild(container);
+
+        // Render the items in the container
+        for (const item of page.items) {
+            container.append(dom(this.renderItemInternal(item))[0]);
+        }
+
+        await waitForLitElementsToRender(container);
+
+        // Wait for all media elements to load
+        const mediaElements = Array.from(container.querySelectorAll<HTMLImageElement>("img"));
+        await Promise.all(
+            [...mediaElements].map((media) => {
+                return new Promise<void>((resolve) => {
+                    if (media.loading == "lazy") {
+                        resolve();
+                        return;
+                    }
+                    if (media.complete) {
+                        resolve();
+                    } else {
+                        media.addEventListener("load", () => resolve(), { once: true });
+                        media.addEventListener("error", () => resolve(), { once: true });
+                    }
+                });
+            })
+        );
+
+        // Measure dimensions
+        const bounds = container.getBoundingClientRect();
+        const width = bounds.width;
+        const height = bounds.height;
+
+        // Remove container from the body
+        document.body.removeChild(container);
+        container.style.width = "";
+        container.style.visibility = "";
+        container.style.position = "";
+
+        return { container, width, height };
     }
 }
 

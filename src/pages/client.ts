@@ -12,7 +12,7 @@ import { i18n } from "../i18n";
 import { searchIcon, settingsIcon } from "../icons";
 import { FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
-import { ActorFeedStream, FeedPostsStream, PostSearchStream } from "../streams";
+import { ActorFeedStream, FeedPostsStream, PostSearchStream, StreamPage } from "../streams";
 import { FeedViewPost, GeneratorView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api";
 
@@ -221,7 +221,7 @@ class SkychatClient extends LitElement {
         const feed = dom(html`<div class="max-w-[480px] mx-auto border-l border-r border-b border-divider rounded-md">
             <feed-stream-view
                 .stream=${new FeedPostsStream(this.selectedFeed, false, FEED_CHECK_INTERVAL)}
-                .newItems=${async (newItems: FeedViewPost[] | Error) => {
+                .newItems=${async (newItems: StreamPage<FeedViewPost> | Error) => {
                     if (newItems instanceof Error) {
                         this.error = i18n("Could not load newer items");
                     }
@@ -414,7 +414,7 @@ class SkychatClient extends LitElement {
         const topbar = renderTopbar("Home", buttons);
 
         const content = html`<feed-stream-view
-                .newItems=${async (newItems: FeedViewPost[]) => {
+                .newItems=${async (newItems: StreamPage<FeedViewPost> | Error) => {
                     if (newItems instanceof Error) {
                         this.error = i18n("Could not load newer items");
                     }

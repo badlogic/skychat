@@ -58,7 +58,7 @@ export class Store {
 
         settings.pinchZoom = settings.pinchZoom ?? true;
 
-        settings.pushPrefs ?? ({} as PushPreferences);
+        settings.pushPrefs = settings.pushPrefs ?? ({} as PushPreferences);
         settings.pushPrefs.enabled = settings.pushPrefs.enabled ?? true;
         settings.pushPrefs.likes = settings.pushPrefs.likes ?? true;
         settings.pushPrefs.mentions = settings.pushPrefs.mentions ?? true;

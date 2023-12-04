@@ -24,7 +24,7 @@ import {
 } from "../icons";
 import { FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
-import { ListFeedPostsStream, ListItemsStream, ProfileViewStream, memoryStreamProvider } from "../streams";
+import { ListFeedPostsStream, ListItemsStream, ProfileViewStream, StreamPage, memoryStreamProvider } from "../streams";
 import {
     ImageInfo,
     copyTextToClipboard,
@@ -413,7 +413,7 @@ export class ListOverlay extends HashNavOverlay {
 
         return html`<feed-stream-view
                 .stream=${new ListFeedPostsStream(this.listUri!, true, FEED_CHECK_INTERVAL)}
-                .newItems=${async (newItems: FeedViewPost[] | Error) => {
+                .newItems=${async (newItems: StreamPage<FeedViewPost> | Error) => {
                     if (newItems instanceof Error) {
                         this.error = i18n("Could not load newer items");
                     }
@@ -483,7 +483,7 @@ export class ListMembersOverlay extends HashNavOverlay {
             .stream=${new ListItemsStream((cursor?: string, limit?: number, notify?: boolean) => {
                 return State.getListItems(this.listUri!, cursor, limit);
             })}
-            .newItems=${async (newItems: ProfileView[] | Error) => {
+            .newItems=${async (newItems: StreamPage<ProfileView> | Error) => {
                 if (newItems instanceof Error) {
                     this.error = i18n("Could not load newer items");
                 }
@@ -854,7 +854,7 @@ export class ListEditor extends HashNavOverlay {
             </div>
             <list-items-stream-view
                 .stream=${new ListItemsStream(memoryStreamProvider(this.members))}
-                .newItems=${async (newItems: ProfileView[] | Error) => {
+                .newItems=${async (newItems: StreamPage<ProfileView> | Error) => {
                     if (newItems instanceof Error) {
                         this.error = i18n("Could not load newer items");
                     }
