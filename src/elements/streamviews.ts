@@ -170,13 +170,25 @@ export abstract class StreamView<T> extends LitElement {
         if (this.error) return renderError(this.error);
 
         return html`
-            <div id="items" class="flex flex-col">
+            <div id="items" class="relative flex flex-col">
                 <lit-virtualizer
                     id="listVirtualizer"
                     class="w-full h-full"
                     .renderItem=${(item: T, index: number) => this.renderItemInternal(item, index)}
                 ></lit-virtualizer>
                 <loading-spinner class="w-full" id="spinner"></loading-spinner>
+                ${Store.getDevMode()
+                    ? html`<div class="absolute top-0 right-0 flex items-center bg-white px-2 rounded-md fancy-shadows">
+                          <button
+                              class="text-primary font-bold"
+                              @click=${() => {
+                                  console.log(this.stream?.pages);
+                              }}
+                          >
+                              JSON
+                          </button>
+                      </div>`
+                    : nothing}
             </div>
         `;
     }
