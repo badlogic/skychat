@@ -18,6 +18,7 @@ import { Store } from "../store";
 import { ActorFeedStream, NotificationsStream, Stream, StreamPage } from "../streams";
 import {
     collectLitElements,
+    copyTextToClipboard,
     dom,
     error,
     getScrollParent,
@@ -34,6 +35,7 @@ import { ProfileViewElement, renderProfile } from "./profiles";
 import { ListViewElementAction } from "./lists";
 import { ListItemView, ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
 import { LitVirtualizer } from "@lit-labs/virtualizer";
+import { toast } from "./toast.js";
 
 (window as any).emitLitDebugLogEvents = true;
 
@@ -182,6 +184,8 @@ export abstract class StreamView<T> extends LitElement {
                           <button
                               class="text-primary font-bold"
                               @click=${() => {
+                                  copyTextToClipboard(JSON.stringify(this.stream?.pages, null, 2));
+                                  toast("Copied JSON to clipboard");
                                   console.log(this.stream?.pages);
                               }}
                           >
