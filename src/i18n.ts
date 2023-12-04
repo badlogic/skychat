@@ -224,6 +224,7 @@ export interface Messages {
     "Couldn't add user to list": string;
     "Couldn't save list": string;
     "Saving list": string;
+    Joined: string;
 }
 
 const english: Messages = {
@@ -464,6 +465,7 @@ const english: Messages = {
     "Couldn't add user to list": "Couldn't add user to list",
     "Couldn't save list": "Couldn't save list",
     "Saving list": "Saving list",
+    Joined: "Joined",
 };
 
 const german: Messages = {
@@ -709,6 +711,7 @@ const german: Messages = {
     "Couldn't add user to list": "Konnte Benutzerin nicht zur Liste hinzufügen",
     "Couldn't save list": "Konnte Liste nicht speichern",
     "Saving list": "Speichere Liste",
+    Joined: "Hier seit",
 };
 
 export type LanguageCode = "en" | "de";

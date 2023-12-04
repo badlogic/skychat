@@ -75,7 +75,7 @@ export function getTimeDifference(utcTimestamp: number): string {
 
     const seconds = Math.floor(timeDifference / 1000);
     if (seconds < 60) {
-        return seconds + "s";
+        return Math.max(seconds, 0) + "s";
     }
 
     const minutes = Math.floor(timeDifference / (1000 * 60));
