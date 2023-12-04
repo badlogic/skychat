@@ -137,8 +137,6 @@ export function tryEmbedGiphyGif(
     if (match) {
         const gifId = match[1];
         const gifURL = `https://media.giphy.com/media/${gifId}/giphy.gif`;
-        // If you want the video format, you can use the following line instead
-        // const videoURL = `https://media.giphy.com/media/${gifId}/giphy.mp4`;
         return html`<div class="flex items-center justify-center mt-2"><img src="${gifURL}" class="max-h-[40svh] rounded" /></div>`;
     }
 
@@ -241,7 +239,11 @@ export function tryEmbedYouTubeVideo(
     }
 
     if (videoID && videoID.length === 11) {
-        const youtubeDom = dom(html`<div class="mt-2 w-full aspect-[16/9] rounded overflow-x-clip flex justify-center"></div>`)[0];
+        const youtubeDom = dom(
+            html` <div class="flex items-center justify-center">
+                <div class="mt-2 self-center w-full aspect-[4/3] rounded overflow-x-clip flex justify-center"></div>
+            </div>`
+        )[0];
         fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoID}&format=json`)
             .then(async (data) => {
                 const youtubeInfo = await data.json();
@@ -263,7 +265,7 @@ export function tryEmbedYouTubeVideo(
                         iframe.width = width.toString() + "px";
                         iframe.height = height.toString() + "px";
                         imgDom.remove();
-                        youtubeDom.append(outerFrame);
+                        youtubeDom.children[0].append(outerFrame);
                         setTimeout(() => {
                             iframe.contentWindow?.postMessage('{"event":"command","func":"' + "playVideo" + '","args":""}', "*");
                             imgDom.remove();
@@ -272,7 +274,7 @@ export function tryEmbedYouTubeVideo(
                 };
                 const imgDom = dom(
                     html` <div @click=${(ev: MouseEvent) => showIFrame(ev)} class="relative flex items-center cursor-pointer">
-                        <img src="${youtubeInfo.thumbnail_url}" class="${minimal ? "max-w-[200px]" : ""} w-full h-auto mx-auto" />
+                        <img src="${youtubeInfo.thumbnail_url}" class="${minimal ? "max-w-[200px]" : ""} h-full w-auto mx-auto" />
                         <div
                             class="absolute ${minimal ? "w-4 h-4" : "w-16 h-16"} disable-pointer-events"
                             style="top: calc(100% / 2 - ${minimal ? "8px" : "32px"}); left: calc(100% / 2 - ${minimal ? "8px" : "32px"});"
@@ -281,7 +283,7 @@ export function tryEmbedYouTubeVideo(
                         </div>
                     </div>`
                 )[0];
-                youtubeDom.append(imgDom);
+                youtubeDom.children[0].append(imgDom);
             })
             .catch(() => {
                 youtubeDom.append(dom(renderCardEmbed(cardEmbed, minimal))[0]);
