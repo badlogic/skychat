@@ -14,7 +14,10 @@ import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs.
 @customElement("search-overlay")
 export class SearchOverlay extends HashNavOverlay {
     @property()
-    showTypes = Store.getDevMode() ? [i18n("Users"), i18n("Posts"), i18n("Feeds"), "at-uris"] : [i18n("Users"), i18n("Posts"), i18n("Feeds")];
+    showTypes =
+        Store.getDevMode() || location.search.includes("devmode")
+            ? [i18n("Users"), i18n("Posts"), i18n("Feeds"), "at-uris"]
+            : [i18n("Users"), i18n("Posts"), i18n("Feeds")];
 
     @query("#search")
     searchElement?: HTMLInputElement;
@@ -55,6 +58,9 @@ export class SearchOverlay extends HashNavOverlay {
     }
 
     renderContent(): TemplateResult {
+        let showType = this.showTypes.includes(i18n("Users")) ? i18n("Users") : this.showTypes[0];
+        if (location.search.includes("devmode")) showType = "at-uris";
+
         return html`<div class="flex flex-col">
             <div class="bg-background top-[40px] w-full px-4 pt-4 pb-2 max-w-[640px] flex flex-col">
                 <div class="search flex items-center gap-2 fancy-shadow">
@@ -84,7 +90,7 @@ export class SearchOverlay extends HashNavOverlay {
                           }}
                           class="self-center mt-4"
                           .values=${this.showTypes}
-                          .selected=${this.showTypes.includes(i18n("Users")) ? i18n("Users") : this.showTypes[0]}
+                          .selected=${showType}
                       ></button-group>`
                     : nothing}
                 ${this.selectedType == i18n("Posts") && Store.getUser()
