@@ -718,6 +718,8 @@ export class PostViewElement extends LitElement {
                     ? html`<button
                           class="text-primary font-bold"
                           @click=${() => {
+                              copyTextToClipboard(JSON.stringify(this.post, null, 2));
+                              toast("Copied JSON to clipboard");
                               console.log(this.post);
                           }}
                       >
@@ -1404,6 +1406,8 @@ export class ThreadOverlay extends HashNavOverlay {
                           <button
                               class="text-primary font-bold"
                               @click=${() => {
+                                  copyTextToClipboard(JSON.stringify(this.thread, null, 2));
+                                  toast("Copied JSON to clipboard");
                                   console.log(this.thread);
                               }}
                           >

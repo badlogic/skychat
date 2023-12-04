@@ -243,6 +243,8 @@ export class ProfileOverlay extends HashNavOverlay {
                       ><button
                           class="text-primary font-bold"
                           @click=${() => {
+                              copyTextToClipboard(JSON.stringify(this.profile, null, 2));
+                              toast("Copied JSON to clipboard");
                               console.log(this.profile);
                           }}
                       >
@@ -430,6 +432,8 @@ export class ProfileViewElement extends LitElement {
                           ><button
                               class="text-primary font-bold"
                               @click=${() => {
+                                  copyTextToClipboard(JSON.stringify(this.profile, null, 2));
+                                  toast("Copied JSON to clipboard");
                                   console.log(this.profile);
                               }}
                           >

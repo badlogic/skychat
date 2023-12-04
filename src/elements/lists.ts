@@ -241,6 +241,8 @@ export class ListViewElement extends LitElement {
                         ? html`<button
                               class="text-primary font-bold ml-2"
                               @click=${() => {
+                                  copyTextToClipboard(JSON.stringify(list, null, 2));
+                                  toast("Copied JSON to clipboard");
                                   console.log(list);
                               }}
                           >

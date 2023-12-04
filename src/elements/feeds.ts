@@ -162,6 +162,8 @@ export class GeneratorViewElement extends LitElement {
                     ? html`<button
                           class="text-primary font-bold"
                           @click=${() => {
+                              copyTextToClipboard(JSON.stringify(generator, null, 2));
+                              toast("Copied JSON to clipboard");
                               console.log(generator);
                           }}
                       >
