@@ -107,7 +107,7 @@ export class UpButton extends FloatingButton {
     @property()
     clicked: () => void = () => {
         const scrollParent = getScrollParent(this);
-        scrollParent?.scrollTo({ top: 0, behavior: "instant" });
+        scrollParent?.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     @property()

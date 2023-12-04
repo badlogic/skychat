@@ -652,13 +652,15 @@ export class PostViewElement extends LitElement {
             </div>`;
         }
 
-        if (Store.getDevPrefs()?.logPostViewRenders) this.renderCount++;
-        debugLog(
-            `PostView render -- ${this.renderCount} ` +
-                author(this.post) +
-                ": " +
-                text(this.post)?.replaceAll("\n", " ").replaceAll("\t", " ").substring(0, 30)
-        );
+        if (Store.getDevPrefs()?.logPostViewRenders) {
+            this.renderCount++;
+            debugLog(
+                `PostView render -- ${this.renderCount} ` +
+                    author(this.post) +
+                    ": " +
+                    text(this.post)?.replaceAll("\n", " ").replaceAll("\t", " ").substring(0, 30)
+            );
+        }
 
         if (this.deleted) {
             return itemPlaceholder(i18n("Deleted post"));

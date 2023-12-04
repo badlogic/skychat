@@ -15,6 +15,7 @@ import { Messages, i18n } from "../i18n";
 import { atIcon, followIcon, heartFilledIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
 import { State } from "../state";
 import { Store } from "../store";
+import { repeat } from "lit-html/directives/repeat.js";
 import { ActorFeedStream, NotificationsStream, Stream, StreamPage } from "../streams";
 import {
     collectLitElements,
@@ -73,18 +74,6 @@ export abstract class StreamView<T> extends LitElement {
             return;
         }
 
-        // Setup infinite scroll based on visibility
-        const listVirtualizer = this.querySelector("#listVirtualizer") as LitVirtualizer;
-        if (listVirtualizer) {
-            listVirtualizer.addEventListener("visibilityChanged", (ev) => {
-                // localStorage.setItem("virtualizer", JSON.stringify({ firstVisible: ev.first, lastPage: this.pageIndex }));
-                if (listVirtualizer.items.length < 5) return;
-                if (ev.last == this.numItems - 5) {
-                    this.load();
-                }
-            });
-        }
-
         // Setup polling
         if (this.stream && this.stream.pollNew) {
             this.stream.addNewItemsListener(async (newerItems) => {
@@ -106,18 +95,19 @@ export abstract class StreamView<T> extends LitElement {
                             error("Couldn't load newer items");
                             return;
                         }
-                        const listVirtualizer = this.querySelector("#listVirtualizer") as LitVirtualizer;
-                        if (listVirtualizer) {
-                            const allItems: T[] = [];
-                            for (const page of this.stream.pages) {
-                                allItems.push(...page.items);
+                        const list = this.querySelector("#list") as LitVirtualizer;
+                        if (list) {
+                            const fragment = dom(html`<div class="w-full h-full flex flex-col">
+                                ${repeat(newerItems, (item, index) => this.renderItemInternal(item, index))}
+                            </div>`)[0];
+                            if (list.children.length > 0) {
+                                list.insertBefore(fragment, list.children[0]);
+                            } else {
+                                list.append(fragment);
                             }
-                            this.numItems = allItems.length;
-                            listVirtualizer.items = allItems;
-                            await listVirtualizer.layoutComplete;
                             requestAnimationFrame(() => {
                                 const scrollParent = getScrollParent(upButton);
-                                scrollParent?.scrollTo({ top: 0, behavior: "instant" });
+                                scrollParent?.scrollTo({ top: 0, behavior: "smooth" });
                             });
                         }
                     });
@@ -151,9 +141,9 @@ export abstract class StreamView<T> extends LitElement {
             }
 
             const { items } = page;
-            const listVirtualizer = this.querySelector("#listVirtualizer") as LitVirtualizer;
+            const list = this.querySelector("#list") as HTMLElement;
             const spinner = this.spinner;
-            if (!listVirtualizer || !spinner) {
+            if (!list || !spinner) {
                 this.error = i18n("Sorry, an unknown error occured");
                 return;
             }
@@ -165,16 +155,15 @@ export abstract class StreamView<T> extends LitElement {
                 return;
             }
 
-            const allItems: T[] = [];
-            for (const page of this.stream.pages) {
-                allItems.push(...page.items);
-            }
-            this.numItems = allItems.length;
-            listVirtualizer.items = allItems;
+            const fragment = dom(html`<div class="w-full h-full flex flex-col">
+                ${repeat(page.items, (item, index) => this.renderItemInternal(item, index))}
+            </div>`)[0];
+            list.append(fragment);
             if (Store.getDevPrefs()?.logStreamViewAppended) debugLog(`StreamView appended -- ${items.length} items`);
-            // onVisibleOnce(spinner, () => this.load());
+            onVisibleOnce(spinner, () => this.load());
         } catch (e) {
             this.error = i18n("Sorry, an unknown error occured");
+            console.error(e);
         } finally {
             this.isLoading = false;
         }
@@ -189,12 +178,8 @@ export abstract class StreamView<T> extends LitElement {
         if (this.error) return renderError(this.error);
 
         return html`
-            <div id="items" class="relative flex flex-col">
-                <lit-virtualizer
-                    id="listVirtualizer"
-                    class="w-full h-full"
-                    .renderItem=${(item: T, index: number) => this.renderItemInternal(item, index)}
-                ></lit-virtualizer>
+            <div class="relative flex flex-col">
+                <div id="list" class="w-full h-full"></div>
                 <loading-spinner class="w-full" id="spinner"></loading-spinner>
                 ${Store.getDevPrefs()?.enabled
                     ? html`<div class="absolute top-0 right-0 flex items-center bg-white px-2 rounded-md fancy-shadows">
