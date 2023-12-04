@@ -78,10 +78,8 @@ export abstract class StreamView<T> extends LitElement {
         if (listVirtualizer) {
             listVirtualizer.addEventListener("visibilityChanged", (ev) => {
                 // localStorage.setItem("virtualizer", JSON.stringify({ firstVisible: ev.first, lastPage: this.pageIndex }));
-                if (listVirtualizer.items.length == 0) return;
-                if (ev.last == this.numItems - 1) {
-                    const spinner = this.spinner;
-                    spinner?.classList.remove("hidden");
+                if (listVirtualizer.items.length < 5) return;
+                if (ev.last == this.numItems - 5) {
                     this.load();
                 }
             });
