@@ -19,6 +19,7 @@ import { ActorFeedStream, NotificationsStream, Stream, StreamPage } from "../str
 import {
     collectLitElements,
     copyTextToClipboard,
+    debugLog,
     dom,
     error,
     getScrollParent,
@@ -59,6 +60,7 @@ export abstract class StreamView<T> extends LitElement {
     spinner?: HTMLElement;
 
     loadingPaused = false;
+    numItems = 0;
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
@@ -76,8 +78,8 @@ export abstract class StreamView<T> extends LitElement {
         if (listVirtualizer) {
             listVirtualizer.addEventListener("visibilityChanged", (ev) => {
                 // localStorage.setItem("virtualizer", JSON.stringify({ firstVisible: ev.first, lastPage: this.pageIndex }));
-                if (listVirtualizer.items.length < 5) return;
-                if (ev.last == listVirtualizer.items.length - 5) {
+                if (listVirtualizer.items.length == 0) return;
+                if (ev.last == this.numItems - 1) {
                     const spinner = this.spinner;
                     spinner?.classList.remove("hidden");
                     this.load();
@@ -112,6 +114,7 @@ export abstract class StreamView<T> extends LitElement {
                             for (const page of this.stream.pages) {
                                 allItems.push(...page.items);
                             }
+                            this.numItems = allItems.length;
                             listVirtualizer.items = allItems;
                             await listVirtualizer.layoutComplete;
                             requestAnimationFrame(() => {
@@ -168,8 +171,10 @@ export abstract class StreamView<T> extends LitElement {
             for (const page of this.stream.pages) {
                 allItems.push(...page.items);
             }
+            this.numItems = allItems.length;
             listVirtualizer.items = allItems;
-            onVisibleOnce(spinner, () => this.load());
+            if (Store.getDevPrefs()?.logStreamViewAppended) debugLog(`StreamView appended -- ${items.length} items`);
+            // onVisibleOnce(spinner, () => this.load());
         } catch (e) {
             this.error = i18n("Sorry, an unknown error occured");
         } finally {

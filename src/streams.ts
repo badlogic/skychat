@@ -60,11 +60,11 @@ export abstract class Stream<T> {
                     }
                     return;
                 }
-                const newPage = { cursor, items: newItems };
-                this.pages.unshift(newPage);
                 for (const listener of this.newItemslisteners) {
                     listener(newItems);
                 }
+                const newPage = { cursor, items: newItems };
+                this.pages.unshift(newPage);
             }
         } catch (e) {
             error("Couldn't poll newer items", e);

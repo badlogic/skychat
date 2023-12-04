@@ -31,6 +31,8 @@ export type DevPreferences = {
     logFeedViewPostRenders: boolean;
     logEmbedRenders: boolean;
     logThreadViewPostRenders: boolean;
+    logStreamViewAppended: boolean;
+    logStreamViewPrepended: boolean;
 };
 
 export type Theme = "dark" | "light";
@@ -46,6 +48,7 @@ export type StoreKey = "user" | "settings";
 
 export class Store {
     static db = new IndexedDBStorage("skychat", 1);
+    static memory = new Map<string, any>();
 
     static {
         let settings: Settings | undefined = Store.get<Settings>("settings");
@@ -69,13 +72,19 @@ export class Store {
         settings.devPrefs.logEmbedRenders = settings.devPrefs.logEmbedRenders ?? false;
         settings.devPrefs.logFeedViewPostRenders = settings.devPrefs.logFeedViewPostRenders ?? false;
         settings.devPrefs.logPostViewRenders = settings.devPrefs.logPostViewRenders ?? false;
+        settings.devPrefs.logStreamViewAppended = settings.devPrefs.logStreamViewAppended ?? false;
+        settings.devPrefs.logStreamViewPrepended = settings.devPrefs.logStreamViewPrepended ?? false;
 
         Store.set<Settings>("settings", settings);
     }
 
     private static get<T>(key: StoreKey) {
         try {
-            return localStorage.getItem(key) ? (JSON.parse(localStorage.getItem(key)!) as T) : undefined;
+            let memResult = this.memory.get(key);
+            if (memResult) return memResult;
+            memResult = localStorage.getItem(key) ? (JSON.parse(localStorage.getItem(key)!) as T) : undefined;
+            this.memory.set(key, memResult);
+            return memResult;
         } catch (e) {
             localStorage.removeItem(key);
             this.db.remove(key);
@@ -87,9 +96,11 @@ export class Store {
         if (value == undefined) {
             localStorage.removeItem(key);
             Store.db.remove(key);
+            this.memory.delete(key);
         } else {
             localStorage.setItem(key, JSON.stringify(value));
             Store.db.set(key, value);
+            this.memory.set(key, value);
         }
         return value;
     }

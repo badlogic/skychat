@@ -37,6 +37,7 @@ export class VirtualizerTest extends LitElement {
         }
         this.pages = (await response.json()) as StreamPage<FeedViewPost>[];
         this.isLoading = false;
+        this.appendPage();
     }
 
     observing = false;
@@ -58,7 +59,6 @@ export class VirtualizerTest extends LitElement {
 
     appendPage() {
         if (this.pageIndex == this.pages.length) {
-            alert("No more pages");
             return;
         }
         const page = this.pages[this.pageIndex++];
@@ -69,7 +69,6 @@ export class VirtualizerTest extends LitElement {
 
     async prependPage() {
         if (this.pageIndex == this.pages.length) {
-            alert("No more pages");
             return;
         }
         const page = this.pages[this.pageIndex++];

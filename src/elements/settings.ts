@@ -168,7 +168,8 @@ export class SettingsOverlay extends HashNavOverlay {
                 }}
             ></slide-button>
             ${Store.getDevPrefs()?.enabled
-                ? html` <slide-button
+                ? html`
+                      <slide-button
                           class="mt-4 mb-4"
                           .checked=${Store.getDevPrefs()?.logEmbedRenders}
                           .text=${"Log embed renders"}
@@ -199,7 +200,24 @@ export class SettingsOverlay extends HashNavOverlay {
                           @changed=${(ev: CustomEvent) => {
                               Store.setDevPrefs({ ...Store.getDevPrefs()!, logThreadViewPostRenders: ev.detail.value });
                           }}
-                      ></slide-button>`
+                      ></slide-button>
+                      <slide-button
+                          class="mt-4 mb-4"
+                          .checked=${Store.getDevPrefs()?.logStreamViewAppended}
+                          .text=${"Log StreamView appends"}
+                          @changed=${(ev: CustomEvent) => {
+                              Store.setDevPrefs({ ...Store.getDevPrefs()!, logStreamViewAppended: ev.detail.value });
+                          }}
+                      ></slide-button>
+                      <slide-button
+                          class="mt-4 mb-4"
+                          .checked=${Store.getDevPrefs()?.logStreamViewPrepended}
+                          .text=${"Log StreamView prepend"}
+                          @changed=${(ev: CustomEvent) => {
+                              Store.setDevPrefs({ ...Store.getDevPrefs()!, logStreamViewPrepended: ev.detail.value });
+                          }}
+                      ></slide-button>
+                  `
                 : nothing}
         </div>`;
     }
