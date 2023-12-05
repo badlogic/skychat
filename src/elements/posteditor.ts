@@ -54,9 +54,6 @@ export class PostEditor extends LitElement {
     @property()
     hashtag?: string;
 
-    @property()
-    fullscreen = false;
-
     @state()
     count = 0;
 
@@ -214,103 +211,101 @@ export class PostEditor extends LitElement {
                 : i18n("What's up?");
         }
 
-        return html` <div class="flex max-w-[640px] ${this.fullscreen ? "h-full max-h-full" : ""}">
-            <div
-                class="flex flex-col flex-grow relative"
-                @drop=${(ev: DragEvent) => this.pasteImage(ev)}
-                @dragover=${(ev: DragEvent) => ev.preventDefault()}
-            >
-                ${this.replyToRendered}
-                <quill-text-editor
-                    id="message"
-                    class="${this.fullscreen ? "flex-grow overflow-auto" : "min-h-[64px]"} max-w-[100vw]"
-                    .onInput=${(text: string, start: number, end: number, insert: (text: string) => void) => this.input(text, start, end, insert)}
-                    .fullscreen=${this.fullscreen}
-                    .initialText=${this.text}
-                ></quill-text-editor>
-                ${!this.embed && this.imagesToUpload.length == 0 && (this.cardSuggestions?.length ?? 0 > 0)
-                    ? html`<div class="flex flex-col my-2 mx-2 gap-2">
-                          ${map(
-                              this.cardSuggestions,
-                              (card) =>
-                                  html`<button
-                                      @click=${() => this.addLinkCard(card.uri)}
-                                      class="border border-divider rounded py-1 px-4 flex items-center gap-2"
-                                      ?disabled=${this.isSending}
-                                  >
-                                      <div class="whitespace-nowrap text-primary">${i18n("Add card")}</div>
-                                      <div class="overflow-auto">${card.uri.length > 25 ? card.uri.substring(0, 25) + "..." : card.uri}</div>
-                                  </button>`
-                          )}
-                      </div>`
-                    : nothing}
-                ${AppBskyEmbedExternal.isMain(this.embed)
-                    ? html`<div class="flex relative px-2 items-center justify-center">
-                          <div class="w-full">${this.embedRendered}</div>
-                          ${this.isLoadingCard
-                              ? html`<div class="absolute h-10 flex items-center">
-                                    <i class="ml-2 icon !w-6 !h-6 fill-primary animate-spin">${spinnerIcon}</i>
-                                </div>`
-                              : nothing}
-                          <button
-                              class="absolute right-4 top-4"
-                              @click=${(ev: Event) => {
-                                  if (!ev.currentTarget) return;
-                                  const target = ev.currentTarget as HTMLElement;
-                                  target.parentElement?.classList.add("animate-jump-out");
+        return html` <div
+            class="flex flex-col max-w-[640px] w-full h-full relative"
+            @drop=${(ev: DragEvent) => this.pasteImage(ev)}
+            @dragover=${(ev: DragEvent) => ev.preventDefault()}
+        >
+            ${this.replyToRendered}
+            <quill-text-editor
+                id="message"
+                class="flex-grow max-w-[100vw] overflow-auto"
+                .onInput=${(text: string, start: number, end: number, insert: (text: string) => void) => this.input(text, start, end, insert)}
+                .initialText=${this.text}
+            ></quill-text-editor>
+            ${!this.embed && this.imagesToUpload.length == 0 && (this.cardSuggestions?.length ?? 0 > 0)
+                ? html`<div class="flex flex-col my-2 mx-2 gap-2">
+                      ${map(
+                          this.cardSuggestions,
+                          (card) =>
+                              html`<button
+                                  @click=${() => this.addLinkCard(card.uri)}
+                                  class="border border-divider rounded py-1 px-4 flex items-center gap-2"
+                                  ?disabled=${this.isSending}
+                              >
+                                  <div class="whitespace-nowrap text-primary">${i18n("Add card")}</div>
+                                  <div class="overflow-auto">${card.uri.length > 25 ? card.uri.substring(0, 25) + "..." : card.uri}</div>
+                              </button>`
+                      )}
+                  </div>`
+                : nothing}
+            ${AppBskyEmbedExternal.isMain(this.embed)
+                ? html`<div class="flex relative px-2 items-center justify-center">
+                      <div class="w-full">${this.embedRendered}</div>
+                      ${this.isLoadingCard
+                          ? html`<div class="absolute h-10 flex items-center">
+                                <i class="ml-2 icon !w-6 !h-6 fill-primary animate-spin">${spinnerIcon}</i>
+                            </div>`
+                          : nothing}
+                      <button
+                          class="absolute right-4 top-4"
+                          @click=${(ev: Event) => {
+                              if (!ev.currentTarget) return;
+                              const target = ev.currentTarget as HTMLElement;
+                              target.parentElement?.classList.add("animate-jump-out");
 
-                                  setTimeout(() => {
-                                      this.embed = undefined;
-                                      this.embedRendered = undefined;
-                                      this.checkCanPost();
-                                  }, 500);
-                              }}
-                              ?disabled=${this.isSending}
-                          >
-                              ${this.isLoadingCard
-                                  ? nothing
-                                  : html`<i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>`}
-                          </button>
-                      </div>`
-                    : nothing}
-                ${this.imagesToUpload.length > 0
-                    ? html`<div class="flex mx-2">
-                          ${map(
-                              this.imagesToUpload,
-                              (image) => html`<div class="w-1/4 relative">
-                                  <img src="${image.dataUri}" class="animate-jump-in px-1 w-full h-[100px] object-cover rounded" /><button
-                                      class="absolute right-2 top-2 bg-background rounded-full p-1"
-                                      @click=${(ev: Event) => {
-                                          if (!ev.currentTarget) return;
-                                          const target = ev.currentTarget as HTMLElement;
-                                          this.imagesToUpload = this.imagesToUpload.filter((other) => image != other);
-                                      }}
-                                      ?disabled=${this.isSending}
-                                  >
-                                      <i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
-                                  </button>
-                                  <button
-                                      class="absolute left-2 top-2 bg-background rounded-full p-1"
-                                      @click=${() => {
-                                          document.body.append(dom(html`<image-editor .image=${image}></image-editor>`)[0]);
-                                      }}
-                                      ?disabled=${this.isSending}
-                                  >
-                                      <i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${editIcon}</i>
-                                  </button>
-                              </div>`
-                          )}
-                      </div>`
-                    : nothing}
-                ${this.quoteRendered}
-                ${this.isSending
-                    ? html`<div class="flex items-center min-h-[48px]">
-                          <div class="mx-auto flex items-center">
-                              <span class="text-center">${i18n("Sending post")}</span>
-                              <i class="ml-2 icon !w-6 !h-6 animate-spin fill-primary">${spinnerIcon}</i>
-                          </div>
-                      </div>`
-                    : html`<div class="pl-2 pr-4 py-1 flex items-center min-h-[48px]">
+                              setTimeout(() => {
+                                  this.embed = undefined;
+                                  this.embedRendered = undefined;
+                                  this.checkCanPost();
+                              }, 500);
+                          }}
+                          ?disabled=${this.isSending}
+                      >
+                          ${this.isLoadingCard
+                              ? nothing
+                              : html`<i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>`}
+                      </button>
+                  </div>`
+                : nothing}
+            ${this.imagesToUpload.length > 0
+                ? html`<div class="flex mx-2">
+                      ${map(
+                          this.imagesToUpload,
+                          (image) => html`<div class="w-1/4 relative">
+                              <img src="${image.dataUri}" class="animate-jump-in px-1 w-full h-[100px] object-cover rounded" /><button
+                                  class="absolute right-2 top-2 bg-background rounded-full p-1"
+                                  @click=${(ev: Event) => {
+                                      if (!ev.currentTarget) return;
+                                      const target = ev.currentTarget as HTMLElement;
+                                      this.imagesToUpload = this.imagesToUpload.filter((other) => image != other);
+                                  }}
+                                  ?disabled=${this.isSending}
+                              >
+                                  <i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${deleteIcon}</i>
+                              </button>
+                              <button
+                                  class="absolute left-2 top-2 bg-background rounded-full p-1"
+                                  @click=${() => {
+                                      document.body.append(dom(html`<image-editor .image=${image}></image-editor>`)[0]);
+                                  }}
+                                  ?disabled=${this.isSending}
+                              >
+                                  <i class="icon !w-4 !h-4 ${this.isSending ? "fill-muted-fg" : "fill-primary"}">${editIcon}</i>
+                              </button>
+                          </div>`
+                      )}
+                  </div>`
+                : nothing}
+            ${this.quoteRendered}
+            ${this.isSending
+                ? html`<div class="flex items-center min-h-[48px]">
+                      <div class="mx-auto flex items-center">
+                          <span class="text-center">${i18n("Sending post")}</span>
+                          <i class="ml-2 icon !w-6 !h-6 animate-spin fill-primary">${spinnerIcon}</i>
+                      </div>
+                  </div>`
+                : html`<div class="pl-2 pr-4 py-1 flex items-center min-h-[48px]">
                     ${
                         !this.embed
                             ? html`<button class="p-2" @click=${this.addImage}>
@@ -361,7 +356,6 @@ export class PostEditor extends LitElement {
                     </button>
                 </div>
             </div>`}
-            </div>
         </div>`;
     }
 
@@ -581,11 +575,11 @@ export class PostEditor extends LitElement {
     input(text: string, cursorStart: number, cursorEnd: number, insert: (text: string) => void) {
         this.count = text.length;
         this.checkCanPost();
-        if (!this.fullscreen) {
+        /*if (!this.fullscreen) {
             // FIXME
             this.editor!.style.height = "auto";
             this.editor!.style.height = Math.min(16 * 15, this.editor!.scrollHeight) + "px";
-        }
+        }*/
         this.message = text;
         if (cursorStart == cursorEnd && this.lastValue != this.message) {
             const charBeforeCursor = text.charAt(cursorStart - 1);
@@ -822,11 +816,11 @@ export class PostEditorOverlay extends CloseableElement {
     protected render() {
         const user = Store.getUser();
         if (!user || !State.isConnected()) return nothing;
-        return html`<div class="fixed top-0 w-full h-[100svh] max-h-full backdrop-blur z-10">
+        return html`<div class="fixed top-0 left-0 w-full h-[100svh] max-h-full backdrop-blur z-10">
             <div
                 class="flex ${isMobileBrowser()
                     ? "h-full"
-                    : "mt-4 border border-divider rounded-md shadow dark:shadow-white/10 overflow-x-clip"} justify-center max-w-[640px] mx-auto bg-background"
+                    : "min-h-[200px] max-h-[80vh] mt-4 border pt-2 border-divider rounded-md shadow dark:shadow-white/10 overflow-x-clip"} justify-center max-w-[640px] mx-auto bg-background"
             >
                 <post-editor
                     class="animate-fade animate-duration-[250ms] w-[640px]"
@@ -840,6 +834,69 @@ export class PostEditorOverlay extends CloseableElement {
                 ></post-editor>
             </div>
         </div>`;
+    }
+}
+
+@customElement("test-editor")
+export class TextEditor extends LitElement {
+    constructor() {
+        super();
+        // Bind the handlers to keep 'this' reference
+        this.handleViewportResize = this.handleViewportResize.bind(this);
+    }
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        document.body.classList.add("overflow-hidden");
+        if (window.visualViewport) {
+            // If Visual Viewport API is supported, listen for its resize events
+            window.visualViewport.addEventListener("resize", this.handleViewportResize);
+        } else {
+            // Fallback: Listen for window resize events and focus events on the input
+            window.addEventListener("resize", this.handleFallbackResize);
+        }
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        document.body.classList.remove("overflow-hidden");
+        if (window.visualViewport) {
+            window.visualViewport.removeEventListener("resize", this.handleViewportResize);
+        } else {
+            window.removeEventListener("resize", this.handleFallbackResize);
+        }
+    }
+
+    render() {
+        return html`
+            <div class="absolute top-0 left-0 w-full h-full backdrop-blur z-10 flex flex-col" id="overlay">
+                <post-editor class="flex-grow h-full"></post-editor>
+            </div>
+        `;
+    }
+
+    handleViewportResize() {
+        // Adjust the overlay size based on the visual viewport
+        const overlay = this.querySelector("#overlay") as HTMLElement;
+        overlay.style.height = `${window.visualViewport!.height}px`;
+        document.body.style.height = `${window.visualViewport!.height}px`;
+        document.documentElement.style.height = `${window.visualViewport!.height}px`;
+    }
+
+    handleFallbackResize() {
+        // Fallback resize handler for browsers without Visual Viewport API
+        const overlay = this.querySelector("#overlay") as HTMLElement;
+        overlay.style.height = "100vh"; // Full viewport height
+        document.body.style.height = "";
+        document.documentElement.style.height = "";
+    }
+
+    private _onSubmit() {
+        // Handle the submit action
     }
 }
 

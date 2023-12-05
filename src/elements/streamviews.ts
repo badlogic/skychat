@@ -126,6 +126,7 @@ export abstract class StreamView<T> extends LitElement {
         this.stream?.close();
     }
 
+    // FIXME replace pages outside of view with empty divs, page them back in once they get into view
     isLoading = false;
     protected async load() {
         if (!State.isConnected()) return;
