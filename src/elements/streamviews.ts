@@ -40,7 +40,7 @@ import { ListItemView, ListView } from "@atproto/api/dist/client/types/app/bsky/
 import { LitVirtualizer } from "@lit-labs/virtualizer";
 import { toast } from "./toast.js";
 
-(window as any).emitLitDebugLogEvents = true;
+type RenderedPage = { container: HTMLElement; width: number; height: number; placeholder?: HTMLElement };
 
 export abstract class StreamView<T> extends LitElement {
     @property()
@@ -63,6 +63,8 @@ export abstract class StreamView<T> extends LitElement {
 
     loadingPaused = false;
     numItems = 0;
+    intersectionObserver?: IntersectionObserver;
+    renderedPages: RenderedPage[] = [];
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
@@ -75,6 +77,21 @@ export abstract class StreamView<T> extends LitElement {
             return;
         }
 
+        this.intersectionObserver = new IntersectionObserver((entries, observer) => this.handleIntersection(entries, observer));
+        this.poll();
+        this.load();
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        this.stream?.close();
+        for (const page of this.renderedPages) {
+            this.intersectionObserver?.unobserve(page.container);
+            if (page.placeholder) this.intersectionObserver?.unobserve(page.placeholder);
+        }
+    }
+
+    poll() {
         // Setup polling
         if (this.stream && this.stream.pollNew) {
             this.stream.addNewItemsListener(async (newPage) => {
@@ -86,22 +103,9 @@ export abstract class StreamView<T> extends LitElement {
 
                 const scrollParent = getScrollParent(this.children[0] as HTMLElement)!;
                 const upButton = scrollParent.querySelector("up-button") as UpButton;
-                if (upButton) {
-                    // FIXME replace with what we got from the Mastodon user maybe.
-                    //       or make lit-virtualizer work for prepending.
+                if (upButton && scrollParent.scrollTop > 80) {
                     upButton.classList.remove("hidden");
                     upButton.highlight = true;
-                    upButton.renderOnClick.push(async () => {
-                        if (!this.stream) {
-                            error("Couldn't load newer items");
-                            return;
-                        }
-
-                        requestAnimationFrame(() => {
-                            const scrollParent = getScrollParent(upButton);
-                            scrollParent?.scrollTo({ top: 0, behavior: "smooth" });
-                        });
-                    });
                 }
 
                 const list = this.querySelector("#list") as LitVirtualizer;
@@ -112,18 +116,13 @@ export abstract class StreamView<T> extends LitElement {
                     } else {
                         list.append(renderedPage.container);
                     }
+                    this.intersectionObserver?.observe(renderedPage.container);
                     if (isSafariBrowser()) {
                         scrollParent.scrollTop += renderedPage.height;
                     }
                 }
             });
         }
-        this.load();
-    }
-
-    disconnectedCallback(): void {
-        super.disconnectedCallback();
-        this.stream?.close();
     }
 
     // FIXME replace pages outside of view with empty divs, page them back in once they get into view
@@ -162,10 +161,9 @@ export abstract class StreamView<T> extends LitElement {
 
             const renderedPage = await this.preparePage(page, list);
             list.append(renderedPage.container);
+            this.intersectionObserver?.observe(renderedPage.container);
             requestAnimationFrame(() => {
                 const bounds = renderedPage.container.getBoundingClientRect();
-                console.log(`measured: ${renderedPage.width} ${renderedPage.height}`);
-                console.log(`actual: ${bounds.width} ${bounds.height}`);
                 if (Store.getDevPrefs()?.logStreamViewAppended) debugLog(`StreamView appended -- ${items.length} items`);
                 onVisibleOnce(spinner, () => this.load());
             });
@@ -213,7 +211,44 @@ export abstract class StreamView<T> extends LitElement {
         return html`<div class="w-full px-4 py-2 border-b border-divider">${item}</div>`;
     }
 
-    async preparePage(page: StreamPage<T>, targetContainer: HTMLElement): Promise<{ container: HTMLElement; width: number; height: number }> {
+    handleIntersection(entries: IntersectionObserverEntry[], observer: IntersectionObserver) {
+        for (const entry of entries) {
+            const renderedPage = this.renderedPages.find((page) => page.container == entry.target || page.placeholder == entry.target);
+            const index = this.renderedPages.findIndex((page) => page == renderedPage);
+            if (!renderedPage) {
+                console.error("Couldn't find rendered page for interesection entry");
+                return;
+            }
+            if (entry.isIntersecting) {
+                if (!renderedPage.placeholder) {
+                    // first time, nothing to do, setup placeholder
+                    renderedPage.placeholder = dom(html`<div></div>`)[0];
+                } else {
+                    if (entry.target == renderedPage.placeholder) {
+                        this.intersectionObserver?.unobserve(renderedPage.placeholder);
+                        const list = this.querySelector("#list") as HTMLElement;
+                        list.insertBefore(renderedPage.container, renderedPage.placeholder);
+                        renderedPage.placeholder.remove();
+                        // console.log(`Page ${index} became visible, swapping placeholder`);
+                    }
+                }
+            } else {
+                if (renderedPage.placeholder) {
+                    if (entry.target == renderedPage.container) {
+                        const list = this.querySelector("#list") as HTMLElement;
+                        renderedPage.placeholder.style.width = renderedPage.container.offsetWidth + "px";
+                        renderedPage.placeholder.style.height = renderedPage.container.offsetHeight + "px";
+                        list.insertBefore(renderedPage.placeholder, renderedPage.container);
+                        renderedPage.container.remove();
+                        // console.log(`Page ${index} became invisible, swapping container`);
+                        this.intersectionObserver?.observe(renderedPage.placeholder);
+                    }
+                }
+            }
+        }
+    }
+
+    async preparePage(page: StreamPage<T>, targetContainer: HTMLElement): Promise<RenderedPage> {
         // Create a detached container
         const container = dom(html`<div class="flex flex-col" style="width: ${targetContainer.clientWidth}px;"></div>`)[0];
 
@@ -259,7 +294,10 @@ export abstract class StreamView<T> extends LitElement {
         container.style.visibility = "";
         container.style.position = "";
 
-        return { container, width, height };
+        const renderedPage = { container, width, height };
+        this.renderedPages.push(renderedPage);
+        this.intersectionObserver?.observe(renderedPage.container);
+        return renderedPage;
     }
 }
 

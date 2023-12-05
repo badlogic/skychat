@@ -102,6 +102,7 @@ export abstract class FloatingButton extends LitElement {
     abstract getOffset(): string;
 }
 
+// FIXME hide once scrollTop < 10px, need to think about how to handle renderToClick
 @customElement("up-button")
 export class UpButton extends FloatingButton {
     @property()
@@ -109,9 +110,6 @@ export class UpButton extends FloatingButton {
         const scrollParent = getScrollParent(this);
         scrollParent?.scrollTo({ top: 0, behavior: "smooth" });
     };
-
-    @property()
-    renderOnClick: (() => void)[] = [];
 
     constructor() {
         super();
@@ -122,15 +120,6 @@ export class UpButton extends FloatingButton {
     }
 
     handleClick(): void {
-        if (this.renderOnClick.length > 0) {
-            for (const listener of this.renderOnClick) {
-                listener();
-            }
-            this.renderOnClick.length = 0;
-            this.highlight = false;
-            this.hide = true;
-            return;
-        }
         this.highlight = false;
         this.clicked();
     }
@@ -145,7 +134,7 @@ export class UpButton extends FloatingButton {
 
     handleScroll() {
         if (this.highlight) {
-            if (getScrollParent(this.parentElement)!.scrollTop < 10 && this.renderOnClick.length == 0) {
+            if (getScrollParent(this.parentElement)!.scrollTop < 80) {
                 this.hide = true;
                 this.highlight = false;
             }
