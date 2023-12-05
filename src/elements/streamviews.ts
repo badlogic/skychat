@@ -40,7 +40,7 @@ import { ListItemView, ListView } from "@atproto/api/dist/client/types/app/bsky/
 import { LitVirtualizer } from "@lit-labs/virtualizer";
 import { toast } from "./toast.js";
 
-type RenderedPage = { container: HTMLElement; width: number; height: number; placeholder?: HTMLElement };
+type RenderedPage<T> = { container: HTMLElement; items: HTMLElement[]; width: number; height: number; placeholder?: HTMLElement };
 
 export abstract class StreamView<T> extends LitElement {
     @property()
@@ -64,7 +64,7 @@ export abstract class StreamView<T> extends LitElement {
     loadingPaused = false;
     numItems = 0;
     intersectionObserver?: IntersectionObserver;
-    renderedPages: RenderedPage[] = [];
+    renderedPages: RenderedPage<T>[] = [];
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
@@ -118,7 +118,7 @@ export abstract class StreamView<T> extends LitElement {
                     }
                     this.intersectionObserver?.observe(renderedPage.container);
                     if (isSafariBrowser()) {
-                        scrollParent.scrollTop += renderedPage.height;
+                        scrollParent.scrollTop += renderedPage.container.offsetHeight;
                     }
                 }
             });
@@ -163,8 +163,10 @@ export abstract class StreamView<T> extends LitElement {
             list.append(renderedPage.container);
             this.intersectionObserver?.observe(renderedPage.container);
             requestAnimationFrame(() => {
-                const bounds = renderedPage.container.getBoundingClientRect();
                 if (Store.getDevPrefs()?.logStreamViewAppended) debugLog(`StreamView appended -- ${items.length} items`);
+                if (renderedPage.items.length > 5) {
+                    onVisibleOnce(renderedPage.items[renderedPage.items.length - 4], () => this.load());
+                }
                 onVisibleOnce(spinner, () => this.load());
             });
         } catch (e) {
@@ -248,7 +250,7 @@ export abstract class StreamView<T> extends LitElement {
         }
     }
 
-    async preparePage(page: StreamPage<T>, targetContainer: HTMLElement): Promise<RenderedPage> {
+    async preparePage(page: StreamPage<T>, targetContainer: HTMLElement): Promise<RenderedPage<T>> {
         // Create a detached container
         const container = dom(html`<div class="flex flex-col" style="width: ${targetContainer.clientWidth}px;"></div>`)[0];
 
@@ -258,8 +260,11 @@ export abstract class StreamView<T> extends LitElement {
         document.body.appendChild(container);
 
         // Render the items in the container
+        const items: HTMLElement[] = [];
         for (const item of page.items) {
-            container.append(dom(this.renderItemInternal(item))[0]);
+            const renderedItem = dom(this.renderItemInternal(item))[0];
+            items.push(renderedItem);
+            container.append(renderedItem);
         }
 
         await waitForLitElementsToRender(container);
@@ -294,7 +299,7 @@ export abstract class StreamView<T> extends LitElement {
         container.style.visibility = "";
         container.style.position = "";
 
-        const renderedPage = { container, width, height };
+        const renderedPage = { container, items, width, height };
         this.renderedPages.push(renderedPage);
         this.intersectionObserver?.observe(renderedPage.container);
         return renderedPage;
