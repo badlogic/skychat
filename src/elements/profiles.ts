@@ -6,7 +6,18 @@ import { Messages, i18n } from "../i18n";
 import { blockIcon, linkIcon, moreIcon, muteIcon, shieldIcon, spinnerIcon } from "../icons";
 import { ActorFeedType, EventAction, State } from "../state";
 import { Store } from "../store";
-import { copyTextToClipboard, defaultAvatar, dom, error, getNumber, getScrollParent, hasLinkOrButtonParent, itemPlaceholder } from "../utils";
+import {
+    copyTextToClipboard,
+    defaultAvatar,
+    dom,
+    error,
+    getDateString,
+    getNumber,
+    getScrollParent,
+    getYearMonthDayString,
+    hasLinkOrButtonParent,
+    itemPlaceholder,
+} from "../utils";
 import { HashNavOverlay, renderTopbar } from "./overlay";
 import { PopupMenu } from "./popup";
 import { renderRichText } from "./posts";
@@ -18,6 +29,7 @@ import {
     FollowersStream,
     FollowingStream,
     LoggedInActorLikesStream,
+    StreamPage,
 } from "../streams";
 import { GeneratorViewElementAction } from "./feeds";
 import { GeneratorView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
@@ -46,6 +58,7 @@ export class ProfileOverlay extends HashNavOverlay {
 
     hasGenerators = false;
     hasLists = false;
+    creationDate?: Date;
 
     async load() {
         const errorMessage = "Couldn't load profile of " + this.did;
@@ -55,10 +68,15 @@ export class ProfileOverlay extends HashNavOverlay {
             const profiles = await State.getProfiles([this.did]);
             if (profiles instanceof Error) throw profiles;
             this.profile = profiles[0];
-            const promises = [State.getActorGenerators(this.profile.did, undefined, 1), State.getActorLists(this.profile.did, undefined, 1)];
+            const promises = [
+                State.getActorGenerators(this.profile.did, undefined, 1),
+                State.getActorLists(this.profile.did, undefined, 1),
+                State.getProfileCreationDate(this.profile.did),
+            ];
             const results = await Promise.all(promises);
-            this.hasGenerators = !(results[0] instanceof Error) && results[0].items.length > 0;
-            this.hasLists = !(results[1] instanceof Error) && results[1].items.length > 0;
+            this.hasGenerators = !(results[0] instanceof Error) && (results[0] as StreamPage<GeneratorView>).items.length > 0;
+            this.hasLists = !(results[1] instanceof Error) && (results[1] as StreamPage<ListView>).items.length > 0;
+            this.creationDate = results[2] instanceof Error ? undefined : (results[2] as Date);
             State.subscribe(
                 "profile",
                 (action: EventAction, profile: ProfileView) => {
@@ -230,6 +248,9 @@ export class ProfileOverlay extends HashNavOverlay {
                 ${profile.viewer?.followedBy ? html`<span class="p-1 text-xs rounded bg-muted text-muted-fg">${i18n("Follows you")}</span>` : nothing}
                 <span class="text-muted-fg text-sm">${profile.handle}</span>
             </div>
+            ${this.creationDate
+                ? html`<span class="text-muted-fg text-xs px-4">${i18n("Joined") + " " + getYearMonthDayString(this.creationDate)}</span>`
+                : nothing}
             ${Store.getDevPrefs()?.enabled
                 ? html`<div class="flex items-center gap-2 px-4">
                       <button

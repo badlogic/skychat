@@ -54,6 +54,13 @@ export function getDateString(inputDateTime: Date, forceYear = false): string {
     return paddedHours + ":" + paddedMinutes + ":" + paddedSeconds + (printYear ? ` ${year}-${month}-${day}` : "");
 }
 
+export function getYearMonthDayString(date: Date): string {
+    const year = date.getFullYear();
+    const month = new String(date.getMonth() + 1).padStart(2, "0");
+    const day = new String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
 export function dom(template: TemplateResult, container?: HTMLElement | DocumentFragment): HTMLElement[] {
     if (container) {
         render(template, container);

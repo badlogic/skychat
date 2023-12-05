@@ -305,6 +305,18 @@ export class State {
         }
     }
 
+    static async getProfileCreationDate(did: string): Promise<Error | Date> {
+        if (!State.bskyClient) return new Error("Not connected");
+        try {
+            const result = await fetch(`https://plc.directory/${did}/log/audit`);
+            if (!result.ok) throw new Error();
+            const log = ((await result.json()) as { createdAt?: string }[])[0];
+            return new Date(log.createdAt ?? new Date().toISOString());
+        } catch (e) {
+            return error("Couldn't load profile creation date", e);
+        }
+    }
+
     static async getProfiles(dids: string[]): Promise<Error | ProfileViewDetailed[]> {
         if (!State.bskyClient) return new Error("Not connected");
         try {
