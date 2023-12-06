@@ -8,17 +8,17 @@ import {
 } from "@atproto/api";
 import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { FeedViewPost, GeneratorView, PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { LitElement, PropertyValueMap, TemplateResult, html, nothing, render } from "lit";
+import { ListItemView, ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
+import { LitVirtualizer } from "@lit-labs/virtualizer";
+import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { GeneratorViewElementAction, UpButton } from ".";
 import { Messages, i18n } from "../i18n";
-import { atIcon, followIcon, heartFilledIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
+import { atIcon, followIcon, heartIcon, quoteIcon, reblogIcon, replyIcon } from "../icons";
 import { State } from "../state";
 import { Store } from "../store";
-import { repeat } from "lit-html/directives/repeat.js";
 import { ActorFeedStream, NotificationsStream, Stream, StreamPage } from "../streams";
 import {
-    collectLitElements,
     copyTextToClipboard,
     debugLog,
     dom,
@@ -31,13 +31,11 @@ import {
     renderError,
     waitForLitElementsToRender,
 } from "../utils";
+import { ListViewElementAction } from "./lists";
 import { HashNavOverlay, Overlay, renderTopbar } from "./overlay";
 import { deletePost, quote, reply } from "./posteditor";
-import { PostViewElement, renderEmbed, renderRichText } from "./posts";
+import { renderEmbed, renderRichText } from "./posts";
 import { ProfileViewElement, renderProfile } from "./profiles";
-import { ListViewElementAction } from "./lists";
-import { ListItemView, ListView } from "@atproto/api/dist/client/types/app/bsky/graph/defs";
-import { LitVirtualizer } from "@lit-labs/virtualizer";
 import { toast } from "./toast.js";
 
 type RenderedPage<T> = { container: HTMLElement; items: HTMLElement[]; width: number; height: number; placeholder?: HTMLElement };
@@ -117,7 +115,7 @@ export abstract class StreamView<T> extends LitElement {
                         list.append(renderedPage.container);
                     }
                     this.intersectionObserver?.observe(renderedPage.container);
-                    if (isSafariBrowser()) {
+                    if (isSafariBrowser() || scrollParent.scrollTop < 200) {
                         scrollParent.scrollTop += renderedPage.container.offsetHeight;
                     }
                 }
