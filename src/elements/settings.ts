@@ -293,7 +293,7 @@ export class ContentFilteringOverlay extends HashNavOverlay {
     }
 
     renderContent() {
-        if (State.isConnected()) return renderError("Not connected");
+        if (!State.isConnected()) return renderError("Not connected");
         const prefs = State.preferences;
         if (!prefs) return renderError("Not connected");
 

@@ -110,7 +110,7 @@ export abstract class StreamView<T> extends LitElement {
 
                 const list = this.querySelector("#list") as LitVirtualizer;
                 if (list) {
-                    const renderedPage = await this.preparePage(newPage, list);
+                    const renderedPage = await this.preparePage(newPage, list, true);
                     if (list.children.length > 0) {
                         list.insertBefore(renderedPage.container, list.children[0]);
                     } else {
@@ -177,8 +177,8 @@ export abstract class StreamView<T> extends LitElement {
         }
     }
 
-    renderItemInternal(item: T) {
-        const itemDom = this.wrapItem ? StreamView.renderWrapped(this.renderItem(item)) : this.renderItem(item);
+    renderItemInternal(item: T, polledItems: boolean) {
+        const itemDom = this.wrapItem ? StreamView.renderWrapped(this.renderItem(item, polledItems)) : this.renderItem(item, polledItems);
         return itemDom;
     }
 
@@ -207,7 +207,7 @@ export abstract class StreamView<T> extends LitElement {
         `;
     }
 
-    abstract renderItem(item: T): TemplateResult;
+    abstract renderItem(item: T, polledItems: boolean): TemplateResult;
 
     static renderWrapped(item: TemplateResult | HTMLElement): TemplateResult {
         return html`<div class="w-full px-4 py-2 border-b border-divider">${item}</div>`;
@@ -250,7 +250,7 @@ export abstract class StreamView<T> extends LitElement {
         }
     }
 
-    async preparePage(page: StreamPage<T>, targetContainer: HTMLElement): Promise<RenderedPage<T>> {
+    async preparePage(page: StreamPage<T>, targetContainer: HTMLElement, polledItems = false): Promise<RenderedPage<T>> {
         // Create a detached container
         const container = dom(html`<div class="flex flex-col" style="width: ${targetContainer.clientWidth}px;"></div>`)[0];
 
@@ -262,7 +262,7 @@ export abstract class StreamView<T> extends LitElement {
         // Render the items in the container
         const items: HTMLElement[] = [];
         for (const item of page.items) {
-            const renderedItem = dom(this.renderItemInternal(item))[0];
+            const renderedItem = dom(this.renderItemInternal(item, polledItems))[0];
             items.push(renderedItem);
             container.append(renderedItem);
         }
@@ -460,7 +460,7 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
         return notification.uri;
     }
 
-    renderItem(notification: AppBskyNotificationListNotifications.Notification): TemplateResult {
+    renderItem(notification: AppBskyNotificationListNotifications.Notification, polledItems: boolean): TemplateResult {
         const icons: Record<NotificationType, TemplateResult> = {
             follow: html`${followIcon}`,
             mention: html`${atIcon}`,
@@ -547,7 +547,9 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
             data-type="${notification.reason}"
             class="notification cursor-pointer w-full ${this.shouldShowNotification(notification.reason)
                 ? ""
-                : "hidden"} px-4 py-4 border-b border-divider flex flex-col ${notification.isRead ? "" : "bg-[#d8e4ff4a] dark:bg-[#001040]"}"
+                : "hidden"} px-4 py-4 border-b border-divider flex flex-col ${notification.isRead || polledItems
+                ? ""
+                : "bg-[#d8e4ff4a] dark:bg-[#001040]"}"
         >
             <div class="flex items-center gap-2">
                 <i class="icon !w-5 !h-5 fill-primary">${icons[notification.reason] ?? ""}</i>

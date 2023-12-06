@@ -344,6 +344,13 @@ export function tryEmbedYouTubeVideo(
                         setTimeout(() => {
                             iframe.contentWindow?.postMessage('{"event":"command","func":"' + "playVideo" + '","args":""}', "*");
                             imgDom.remove();
+                            onVisibilityChange(
+                                iframe,
+                                () => {},
+                                () => {
+                                    iframe.contentWindow?.postMessage('{"event":"command","func":"' + "pauseVideo" + '","args":""}', "*");
+                                }
+                            );
                         }, 1000);
                     });
                 };
