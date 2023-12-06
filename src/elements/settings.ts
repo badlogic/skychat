@@ -4,7 +4,7 @@ import { HashNavOverlay, renderProfile, renderTopbar } from ".";
 import { i18n } from "../i18n";
 import { Store, Theme } from "../store";
 import { State } from "../state";
-import { dom, error } from "../utils";
+import { dom, error, renderError, renderUnderConstruction } from "../utils";
 import { arrowRightIcon, bellIcon, brushIcon, shieldIcon } from "../icons";
 import { BlockedUsersStream, MutedUsersStream } from "../streams";
 
@@ -67,8 +67,13 @@ export class SettingsOverlay extends HashNavOverlay {
             <div class="mt-4 border-t border-divider"></div>
             <div class="h-12 flex items-center font-semibold gap-2"><i class="icon !w-5 !h-5">${shieldIcon}</i>${i18n("Moderation")}</div>
             <div class="flex flex-col gap-2">
-                <button class="border border-muted rounded-md pl-4 py-2 flex items-center fancy-shadow">
-                    <span>Muted words</span><i class="icon !w-8 !h-8 fill-primary ml-auto">${arrowRightIcon}</i>
+                <button
+                    class="border border-muted rounded-md pl-4 py-2 flex items-center fancy-shadow"
+                    @click=${() => {
+                        document.body.append(dom(html`<muted-words-overlay></muted-words-overlay>`)[0]);
+                    }}
+                >
+                    <span>${i18n("Muted words")}</span><i class="icon !w-8 !h-8 fill-primary ml-auto">${arrowRightIcon}</i>
                 </button>
                 <button
                     class="border border-muted rounded-md pl-4 py-2 flex items-center fancy-shadow"
@@ -76,7 +81,15 @@ export class SettingsOverlay extends HashNavOverlay {
                         document.body.append(dom(html`<muted-users-overlay></muted-users-overlay>`)[0]);
                     }}
                 >
-                    <span>Muted users</span><i class="icon !w-8 !h-8 fill-primary ml-auto">${arrowRightIcon}</i>
+                    <span>${i18n("Muted users")}</span><i class="icon !w-8 !h-8 fill-primary ml-auto">${arrowRightIcon}</i>
+                </button>
+                <button
+                    class="border border-muted rounded-md pl-4 py-2 flex items-center fancy-shadow"
+                    @click=${() => {
+                        document.body.append(dom(html`<muted-threads-overlay .purpose=${"moderation"}></muted-threads-overlay>`)[0]);
+                    }}
+                >
+                    <span>${i18n("Muted threads")}</span><i class="icon !w-8 !h-8 fill-primary ml-auto">${arrowRightIcon}</i>
                 </button>
                 <button
                     class="border border-muted rounded-md pl-4 py-2 flex items-center fancy-shadow"
@@ -84,7 +97,7 @@ export class SettingsOverlay extends HashNavOverlay {
                         document.body.append(dom(html`<blocked-users-overlay></blocked-users-overlay>`)[0]);
                     }}
                 >
-                    <span>Blocked users</span><i class="icon !w-8 !h-8 fill-primary ml-auto">${arrowRightIcon}</i>
+                    <span>${i18n("Blocked users")}</span><i class="icon !w-8 !h-8 fill-primary ml-auto">${arrowRightIcon}</i>
                 </button>
                 <button
                     class="border border-muted rounded-md pl-4 py-2 flex items-center fancy-shadow"
@@ -92,7 +105,15 @@ export class SettingsOverlay extends HashNavOverlay {
                         document.body.append(dom(html`<list-picker .purpose=${"moderation"}></list-picker>`)[0]);
                     }}
                 >
-                    <span>Moderation lists</span><i class="icon !w-8 !h-8 fill-primary ml-auto">${arrowRightIcon}</i>
+                    <span>${i18n("Moderation lists")}</span><i class="icon !w-8 !h-8 fill-primary ml-auto">${arrowRightIcon}</i>
+                </button>
+                <button
+                    class="border border-muted rounded-md pl-4 py-2 flex items-center fancy-shadow"
+                    @click=${() => {
+                        document.body.append(dom(html`<content-filtering-overlay></content-filtering-overlay>`)[0]);
+                    }}
+                >
+                    <span>${i18n("Content filtering")}</span><i class="icon !w-8 !h-8 fill-primary ml-auto">${arrowRightIcon}</i>
                 </button>
             </div>
             <div class="mt-4 border-t border-divider"></div>
@@ -258,6 +279,67 @@ export class BlockedUsersOverlay extends HashNavOverlay {
     }
     renderContent(): TemplateResult {
         return html`<profiles-stream-view .stream=${new BlockedUsersStream()}></profiles-stream-view>`;
+    }
+}
+
+@customElement("content-filtering-overlay")
+export class ContentFilteringOverlay extends HashNavOverlay {
+    getHash(): string {
+        return "contentfilters";
+    }
+
+    renderHeader(): TemplateResult {
+        return renderTopbar("Content filtering", this.closeButton());
+    }
+
+    renderContent() {
+        if (State.isConnected()) return renderError("Not connected");
+        const prefs = State.preferences;
+        if (!prefs) return renderError("Not connected");
+
+        return html`<div class="px-4 flex flex-col w-full">
+            <slide-button
+                class="mt-4"
+                .checked=${pinchZoom}
+                .text=${i18n("I'm an adult")}
+                @changed=${(ev: CustomEvent) => {
+                    Store.setPinchZoom(ev.detail.value);
+                    togglePinchZoom(ev.detail.value);
+                }}
+            ></slide-button>
+        </div>`;
+    }
+}
+
+// FIXME
+@customElement("muted-words-overlay")
+export class MutedWordsOverlay extends HashNavOverlay {
+    getHash(): string {
+        return "mutedwords";
+    }
+
+    renderHeader(): TemplateResult {
+        return renderTopbar("Muted Words", this.closeButton());
+    }
+
+    renderContent() {
+        return renderUnderConstruction();
+    }
+}
+
+// FIXME
+@customElement("muted-threads-overlay")
+export class MutedThreadsOverlay extends HashNavOverlay {
+    getHash(): string {
+        return "mutedthreads";
+    }
+
+    renderHeader(): TemplateResult {
+        return renderTopbar("Muted Threads", this.closeButton());
+    }
+
+    renderContent() {
+        return renderUnderConstruction();
     }
 }
 

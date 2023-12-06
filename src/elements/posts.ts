@@ -8,6 +8,7 @@ import {
     AppBskyFeedPost,
     AppBskyGraphDefs,
     RichText,
+    moderatePost,
 } from "@atproto/api";
 import { ProfileView, ProfileViewBasic, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { ViewImage } from "@atproto/api/dist/client/types/app/bsky/embed/images";
@@ -102,30 +103,6 @@ export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     return result;
 }
 
-// FIXME no longer works
-export function tryEmbedTwitter(
-    cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
-    minimal: boolean
-): TemplateResult | undefined {
-    const link = cardEmbed.uri.split("?")[0];
-    const twitterPostRegex = /^https?:\/\/(twitter\.com|x\.com)\/(\w+)\/status\/(\d+)(\?\S*)?$/;
-    const match = link.match(twitterPostRegex);
-
-    if (match && match[3]) {
-        const tweetId = match[3];
-        return html`<iframe
-            src="https://platform.twitter.com/embed/index.html?dnt=false&embedId=twitter-widget-0&frame=false&hideCard=false&hideThread=false&id=${tweetId}&lang=en&origin=${encodeURIComponent(
-                window.location.href
-            )}&theme=light&widgetsVersion=ed20a2b%3A1601588405575&width=550px"
-            class="w-full h-[40vh] mt-2"
-            title="Twitter Tweet"
-            style="border: 0; overflow: hidden;"
-        ></iframe>`;
-    } else {
-        return undefined;
-    }
-}
-
 export function tryEmbedGiphyGif(
     cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
     minimal: boolean
@@ -211,16 +188,114 @@ export function tryEmbedTenorGif(
                         )[0]
                     );
                 } else {
-                    tenorDom.append(dom(renderCardEmbed(cardEmbed, minimal))[0]);
+                    tenorDom.append(dom(renderCardEmbed(cardEmbed, minimal, false))[0]);
                 }
             } else {
-                tenorDom.append(dom(renderCardEmbed(cardEmbed, minimal))[0]);
+                tenorDom.append(dom(renderCardEmbed(cardEmbed, minimal, false))[0]);
             }
         })
         .catch(() => {
-            tenorDom.append(dom(renderCardEmbed(cardEmbed, minimal))[0]);
+            tenorDom.append(dom(renderCardEmbed(cardEmbed, minimal, false))[0]);
         });
     return html`${tenorDom}`;
+}
+
+export function tryEmbedImgur(
+    cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
+    minimal: boolean
+): TemplateResult | undefined {
+    const url = cardEmbed.uri;
+    if (!url.includes("imgur.com")) return;
+
+    const extractMediaInfo = (rawHtml: string) => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(rawHtml, "text/html");
+        const imageUrl = doc.querySelector('meta[name="twitter:image"]')?.getAttribute("content");
+        const videoUrl = doc.querySelector('meta[property="og:video:secure_url"]')?.getAttribute("content");
+        const videoWidth = parseInt(doc.querySelector('meta[property="og:video:width"]')?.getAttribute("content") ?? "0");
+        const videoHeight = parseInt(doc.querySelector('meta[property="og:video:height"]')?.getAttribute("content") ?? "0");
+
+        if (imageUrl || videoUrl) {
+            return {
+                imageUrl,
+                videoUrl,
+                videoWidth,
+                videoHeight,
+            };
+        }
+
+        return undefined;
+    };
+
+    const imgurDom = dom(html`<div class="mt-2 rounded overflow-x-clip"></div>`)[0];
+    fetchApi("html?url=" + decodeURIComponent(url))
+        .then(async (data) => {
+            const rawHtml = await data.text();
+            const media = extractMediaInfo(rawHtml);
+            if (media) {
+                if (media.videoUrl && media.videoWidth > 0 && media.videoHeight > 0) {
+                    const videoDom = dom(
+                        html`<div
+                            class="flex justify-center items-center"
+                            @click=${(ev: Event) => {
+                                ev.preventDefault();
+                                ev.stopPropagation();
+                                ev.stopImmediatePropagation();
+                                document.body.append(dom(html`<video-image-overlay .videoUrl=${media.videoUrl}></div>`)[0]);
+                            }}
+                        >
+                            <video
+                                src="${media.videoUrl}"
+                                class="w-full cursor-pointer rounded max-h-[40vh]"
+                                style="aspect-ratio: ${media.videoWidth}/${media.videoHeight};"
+                                muted
+                                loop
+                                playsinline
+                                disableRemotePlayback
+                            ></video>
+                        </div>`
+                    )[0];
+                    imgurDom.append(videoDom);
+                    onVisibilityChange(
+                        videoDom,
+                        () => {
+                            const video = videoDom.querySelector("video") as HTMLVideoElement;
+                            video.play();
+                            console.log("Playing video");
+                        },
+                        () => {
+                            const video = videoDom.querySelector("video") as HTMLVideoElement;
+                            video.pause();
+                            console.log("Pausing video");
+                        }
+                    );
+                } else if (media.imageUrl) {
+                    imgurDom.append(
+                        dom(
+                            html`<div
+                                class="flex justify-center items-center"
+                                @click=${(ev: Event) => {
+                                    ev.preventDefault();
+                                    ev.stopPropagation();
+                                    ev.stopImmediatePropagation();
+                                    document.body.append(dom(html`<video-image-overlay .imageUrl=${media.imageUrl}></div>`)[0]);
+                                }}
+                            >
+                                <img src="${media.imageUrl}" class="rounded max-h-[40vh] max-w-full" />
+                            </div>`
+                        )[0]
+                    );
+                } else {
+                    imgurDom.append(dom(renderCardEmbed(cardEmbed, minimal, false))[0]);
+                }
+            } else {
+                imgurDom.append(dom(renderCardEmbed(cardEmbed, minimal, false))[0]);
+            }
+        })
+        .catch(() => {
+            imgurDom.append(dom(renderCardEmbed(cardEmbed, minimal, false))[0]);
+        });
+    return html`${imgurDom}`;
 }
 
 export function tryEmbedYouTubeVideo(
@@ -286,7 +361,7 @@ export function tryEmbedYouTubeVideo(
                 youtubeDom.children[0].append(imgDom);
             })
             .catch(() => {
-                youtubeDom.append(dom(renderCardEmbed(cardEmbed, minimal))[0]);
+                youtubeDom.append(dom(renderCardEmbed(cardEmbed, minimal, false))[0]);
             });
         return html`${youtubeDom}`;
     }
@@ -294,21 +369,29 @@ export function tryEmbedYouTubeVideo(
     return undefined;
 }
 
-export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External, minimal: boolean) {
-    const youTubeEmbed = tryEmbedYouTubeVideo(cardEmbed, minimal);
-    if (youTubeEmbed) {
-        if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- YouTube");
-        return youTubeEmbed;
-    }
-    const giphyEmbed = tryEmbedGiphyGif(cardEmbed, minimal);
-    if (giphyEmbed) {
-        if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- Giphy");
-        return giphyEmbed;
-    }
-    const tenorEmbed = tryEmbedTenorGif(cardEmbed, minimal);
-    if (tenorEmbed) {
-        if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- Tenor");
-        return tenorEmbed;
+export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External, minimal: boolean, tryEmbeds = true) {
+    if (tryEmbeds) {
+        const youTubeEmbed = tryEmbedYouTubeVideo(cardEmbed, minimal);
+        if (youTubeEmbed) {
+            if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- YouTube");
+            return youTubeEmbed;
+        }
+        const giphyEmbed = tryEmbedGiphyGif(cardEmbed, minimal);
+        if (giphyEmbed) {
+            if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- Giphy");
+            return giphyEmbed;
+        }
+        const tenorEmbed = tryEmbedTenorGif(cardEmbed, minimal);
+        if (tenorEmbed) {
+            if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- Tenor");
+            return tenorEmbed;
+        }
+
+        const imgurEmbed = tryEmbedImgur(cardEmbed, minimal);
+        if (imgurEmbed) {
+            if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- Imgur");
+            return imgurEmbed;
+        }
     }
 
     const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
@@ -648,6 +731,7 @@ export class PostViewElement extends LitElement {
     }
 
     render() {
+        // FIXME moderatePost()
         if (!this.post || !AppBskyFeedPost.isRecord(this.post.record)) {
             return html`<div class="px-4 py-2">
                 <loading-spinner></loading-spinner>

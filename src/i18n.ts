@@ -165,8 +165,13 @@ export interface Messages {
     "Post author has blocked you": string;
     "You have blocked the post author": string;
     "User Interface": string;
+    "Muted words": string;
+    "Muted Words": string;
     "Muted users": string;
+    "Muted threads": string;
+    "Muted Threads": string;
     "Blocked users": string;
+    "Moderation lists": string;
     "Allow pinch-zoom": string;
     "is following you": (handle: string) => string;
     "liked your post": (handle: string) => string;
@@ -225,6 +230,8 @@ export interface Messages {
     "Couldn't save list": string;
     "Saving list": string;
     Joined: string;
+    "Content filtering": string;
+    "I'm an adult": string;
 }
 
 const english: Messages = {
@@ -466,6 +473,13 @@ const english: Messages = {
     "Couldn't save list": "Couldn't save list",
     "Saving list": "Saving list",
     Joined: "Joined",
+    "Content filtering": "Content filtering",
+    "Muted words": "Muted words",
+    "Muted Words": "Muted Words",
+    "Muted threads": "Muted threads",
+    "Muted Threads": "Muted Threads",
+    "Moderation lists": "Moderation lists",
+    "I'm an adult": "I'm an adult",
 };
 
 const german: Messages = {
@@ -712,6 +726,13 @@ const german: Messages = {
     "Couldn't save list": "Konnte Liste nicht speichern",
     "Saving list": "Speichere Liste",
     Joined: "Hier seit",
+    "Content filtering": "Content Filter",
+    "Muted words": "Stummgeschaltete Wörter",
+    "Muted Words": "Stummgeschaltete Wörter",
+    "Muted threads": "Stummgeschaltete Threads",
+    "Muted Threads": "Stummgeschaltete Threads",
+    "Moderation lists": "Stummgeschaltete Listen",
+    "I'm an adult": "I'm an adult",
 };
 
 export type LanguageCode = "en" | "de";

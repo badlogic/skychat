@@ -2,7 +2,7 @@ import { customElement, property } from "lit/decorators.js";
 import { CloseableElement } from "./overlay";
 import { PropertyValueMap, html, nothing } from "lit";
 import { arrowLeftIcon, arrowRightIcon, downloadIcon } from "../icons";
-import { dom, downloadImageAsFile } from "../utils";
+import { dom, downloadImageAsFile, onVisibilityChange } from "../utils";
 import { togglePinchZoom } from "./settings";
 import { Store } from "../store";
 
@@ -137,5 +137,51 @@ export class ImageGalleryOverlay extends CloseableElement {
         ev.stopPropagation();
         ev.stopImmediatePropagation();
         downloadImageAsFile(image.url, "image.jpeg");
+    }
+}
+
+@customElement("video-image-overlay")
+export class VideoImageOverlay extends CloseableElement {
+    @property()
+    videoUrl?: string;
+
+    @property()
+    imageUrl?: string;
+
+    @property()
+    autoPlay = true;
+
+    protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        const videoDom = this.querySelector("video") as HTMLVideoElement;
+        if (videoDom) {
+            onVisibilityChange(
+                videoDom,
+                () => {
+                    videoDom.play();
+                },
+                () => {
+                    videoDom.pause();
+                }
+            );
+        }
+    }
+
+    render() {
+        return html`<div
+            class="fixed top-0 left-0 w-full h-full flex justify-center overflow-hidden backdrop-blur z-10 fill-primary"
+            @click=${() => this.close()}
+        >
+            ${this.videoUrl
+                ? html`<video
+                      src="${this.videoUrl}"
+                      class="max-w-full max-h-full w-auto h-auto"
+                      muted
+                      loop
+                      playsinline
+                      disableRemotePlayback
+                  ></video>`
+                : nothing}
+            ${this.imageUrl ? html`<img src="${this.imageUrl}" class="max-w-full max-h-full w-auto h-auto" />` : nothing}
+        </div>`;
     }
 }

@@ -24,6 +24,10 @@ export function renderError(error: string) {
     </div>`;
 }
 
+export function renderUnderConstruction() {
+    return html`<div class="w-full bg-muted text-muted-fg rounded p-4">Under construction</div>`;
+}
+
 export function getNumber(num: number | undefined): string {
     if (num == undefined) return "0";
     if (num < 1000) return num.toString();

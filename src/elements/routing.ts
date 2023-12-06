@@ -154,16 +154,42 @@ export async function routeHash(hash: string) {
                 document.body.append(dom(html`<settings-overlay .pushState=${false}></settings-overlay>`)[0]);
             }
 
+            if (tokens[0] == "mutedwords") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "MUTED-WORDS-OVERLAY") return;
+                document.body.append(dom(html`<muted-words-overlay .pushState=${false}></muted-words-overlay>`)[0]);
+            }
+
             if (tokens[0] == "muted") {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "MUTED-USERS-OVERLAY") return;
                 document.body.append(dom(html`<muted-users-overlay .pushState=${false}></muted-users-overlay>`)[0]);
             }
 
-            if (tokens[0] == "blocks") {
+            if (tokens[0] == "mutedthreads") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "MUTED-THREADS-OVERLAY") return;
+                document.body.append(dom(html`<muted-threads-overlay .pushState=${false}></muted-threads-overlay>`)[0]);
+            }
+
+            if (tokens[0] == "blocked") {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "BLOCKED-USERS-OVERLAY") return;
                 document.body.append(dom(html`<blocked-users-overlay .pushState=${false}></blocked-users-overlay>`)[0]);
+            }
+
+            if (tokens[0] == "modlists") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "LIST-PICKER" && (child as ListPicker).purpose == "moderation") return;
+                document.body.append(dom(html`<list-picker .purpose=${"moderation"} .pushState=${false}></list-picker>`)[0]);
+                return;
+            }
+
+            if (tokens[0] == "contentfilters") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "CONTENT-FILTERING-OVERLAY") return;
+                document.body.append(dom(html`<content-filtering-overlay .pushState=${false}></content-filtering-overlay>`)[0]);
+                return;
             }
 
             if (tokens[0] == "search") {
@@ -189,13 +215,6 @@ export async function routeHash(hash: string) {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "LIST-PICKER" && (child as ListPicker).purpose == "curation") return;
                 document.body.append(dom(html`<list-picker .pushState=${false}></list-picker>`)[0]);
-                return;
-            }
-
-            if (tokens[0] == "modlists") {
-                const child = document.body.children[document.body.children.length - 1];
-                if (child.tagName == "LIST-PICKER" && (child as ListPicker).purpose == "moderation") return;
-                document.body.append(dom(html`<list-picker .purpose=${"moderation"} .pushState=${false}></list-picker>`)[0]);
                 return;
             }
 

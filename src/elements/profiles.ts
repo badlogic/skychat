@@ -1,4 +1,4 @@
-import { RichText } from "@atproto/api";
+import { RichText, moderateProfile } from "@atproto/api";
 import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -61,6 +61,7 @@ export class ProfileOverlay extends HashNavOverlay {
     creationDate?: Date;
 
     async load() {
+        // FIXME moderateProfile()
         const errorMessage = "Couldn't load profile of " + this.did;
         try {
             if (!State.isConnected()) throw Error();
