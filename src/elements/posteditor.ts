@@ -625,7 +625,8 @@ export class PostEditor extends LitElement {
             this.isSending = true;
             this.canPost = false;
             this.requestUpdate();
-            const richText = new RichText({ text: this.message + (this.hashtag ? ` ${this.hashtag}` : "") });
+            const text = (this.message + (this.hashtag ? ` ${this.hashtag}` : "")).trimEnd();
+            const richText = new RichText({ text });
             await State.detectFacets(richText!);
 
             const imagesEmbed: AppBskyEmbedImages.Main = {
