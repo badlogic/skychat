@@ -95,6 +95,96 @@ class SkychatClient extends LitElement {
 
     renderLogin() {
         const user = Store.getUser();
+
+        const explainer = html` <div class="max-w-[480px] flex flex-col">
+            <div class="flex flex-col justify-center items-center mt-16">
+                <h1 class="text-3xl text-center">Well, hello there</h1>
+            </div>
+            <p class="mt-6">
+                It appears a
+                <a href="#thread/did:plc:oky5czdrnfjpqslsw2a5iclo/3kfvqvteu532v">prominent BlueSky/atproto related person</a>
+                has given you a link to this place.
+            </p>
+            <p class="mt-4"><a href="#profile/badlogic.bsky.social">I'm</a> glad you're here!</p>
+            <p class="mt-4">
+                To explore BlueSky without an account, click the "Explore BlueSky without an account" button above (duh). You can look at
+                <b>people's profiles</b>, <b>search posts</b>, or <b>explore feeds</b>.
+            </p>
+            <p class="mt-4">
+                You can also use Skychat as a full-blown replacement for the official BlueSky app. Just sign-in above with an
+                <a href="https://bsky.app/settings/app-passwords">app password</a>.
+            </p>
+            <div class="flex flex-col justify-center items-center mt-16">
+                <h1 class="text-3xl text-center">Why would I use Skychat instead of the official app?</h1>
+            </div>
+            <p class="mt-6">
+                Glad you asked! The BlueSky team isn't just working on the official app, but a gazillion things. They also have quality standards (no,
+                really). As such, they can not move as fast as a single person in their bed room.
+            </p>
+            <p class="mt-4">Here's what Skychat can do, which the official app can not do (yet);</p>
+            <div class="flex flex-col">
+                <a class="text-primary mt-4" target="_blank"  href="https://skychat.social/#thread/did:plc:z72i7hdynmk6r22z27h6tvur/3kftdjdm3hd23"
+                    >Show how many people quoted a post and the quoting posts themselves<br><span class="text-xs text-muted-fg"
+                        >(Click the three dots, then "Quotes")</span
+                    ></a
+                >
+                <a class="text-primary mt-4" target="_blank"  href="https://skychat.social/#profile/did:plc:y4zs4cabaezzwx3bz2e5nnj2"
+                    >Show you a person's likes <br /><span class="text-xs text-muted-fg"
+                        >(just click the "Likes" tab to view Mr. Takei's likes)</span
+                    >
+                </a>
+                <a class="text-primary mt-4"  target="_blank" href="https://skychat.social/#thread/did:plc:7syfakzcriq44mwbdbc7jwvn/3kfuv2thxnt2j"
+                    >Show GIFs/videos from Giphy, Tenor, and Imgur inline <br /><span class="text-xs text-muted-fg"
+                        >(Either click the GIF icon when composing a post, or paste a link into your post, then click "Add card")</span
+                    ></a
+                >
+                <a class="text-primary mt-4" target="_blank"  href="https://skychat.social/#thread/did:plc:zbhgvr7v4egikpn3xtzrcm7z/3kfvj6lotsu2s"
+                    >Show YouTube videos inline <br /><span class="text-xs text-muted-fg"
+                        >(Paste a link into your post, then click "Add card")</span
+                    ></a
+                >
+                <div class="mt-4"
+                    >Drag & drop, or copy images from your clipboard directly into the post editor</span
+                    ></div
+                >
+                <a class="text-primary mt-4" target="_blank" href="https://www.youtube.com/shorts/u2znw3Gcv7w"
+                    >Threaded by default, including a thread reader mode</a
+                >
+                <a class="text-primary mt-4" target="_blank" href="https://www.youtube.com/shorts/3Yn4v44qplg"
+                    >Collapse/expand replies in a thread via a simple tap/click</a
+                >
+                <a class="text-primary mt-4" target="_blank" href="https://www.youtube.com/shorts/yfNiRPSOwHg"
+                    >(Push-)notification filters</a
+                >
+                <a class="text-primary mt-4" target="_blank" href="https://www.youtube.com/shorts/Tugudta2Tts"
+                    >Easily search your own posts (or those of a specific person)</a
+                >
+                <a class="text-primary mt-4" target="_blank" href="https://www.youtube.com/watch?v=t9-egFJtNQ4">
+                    All the little numbers (likes or reply counts) update across the entire UI in real-time
+                </a>
+                <a class="text-primary mt-4" target="_blank" href="https://www.youtube.com/watch?v=wGhO1gv5pQQ"
+                    >Dev mode, get any at-uri and response JSON directly from within the UI</a
+                >
+                <div class="text-primary mt-4">
+                    Install it as an app on <a href="https://www.youtube.com/shorts/Aj0B6fu0ai4">Android</a>, <a href="https://www.youtube.com/shorts/QMsncxVM48c">iOS (16+)</a>, or your PC and Mac
+                </div>
+            </div>
+            <p class="mt-4">I'm currently working on implementing the last few features to have feature parity with the official client. Then I'll add the following features. Some of them will be paid features, as they require me to pay money for hosting or third party services.</p>
+            <div class="text-primary mt-4">Muted words and threads</div>
+            <div class="text-primary mt-4">End-to-end encrypted private messages</div>
+            <div class="text-primary mt-4">Private bookmarks ($$$)</div>
+            <div class="text-primary mt-4">Private curation lists ($$$)</div>
+            <div class="text-primary mt-4">Analytics ($$$)</div>
+            <div class="text-primary mt-4">Post scheduling ($$$)</div>
+            <div class="text-primary mt-4">Image alt-text generation ($$$)</div>
+            <p class="mt-4">
+                Skychat is only a few weeks in the making, I haven't even officially released it yet!
+            </p>
+            <p class="mt-4">
+             It gets updated daily with new features and bug fixes. And new bugs. If you find any, <a href="https://skychat.social/#profile/badlogic.bsky.social" target="_blank">hit me up on BlueSky</a> and tell me what you found.</a>
+            </p>
+        </div>`;
+
         const content = html`<p class="text-center mx-auto w-[280px]">${i18n("The better BlueSky app")}</p>
             <p class="text-center text-xs text-muted-fg mx-auto w-[280px]">${i18n("(Possibly, once it's done, work-in-progress :D)")}</p>
             <div class="mx-auto flex flex-col gap-4 mt-4 w-[280px]">
@@ -119,9 +209,10 @@ class SkychatClient extends LitElement {
                 >
                     ${i18n("Explore without an Account")}
                 </button>
-            </div>`;
+            </div>
+            ${explainer}`;
 
-        return html` <main class="flex flex-col m-auto max-w-[640px] px-4 h-full">
+        return html` <main class="flex flex-col m-auto max-w-[640px] px-4 h-full items-center">
             <a class="text-2xl flex align-center justify-center text-primary font-semibold text-center my-8" href="/"
                 ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skychat</span></a
             >

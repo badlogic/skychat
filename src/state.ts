@@ -12,7 +12,10 @@ import {
     AtpSessionData,
     AtpSessionEvent,
     BskyAgent,
+    BskyFeedViewPreference,
+    BskyLabelPreference,
     BskyPreferences,
+    BskyThreadViewPreference,
     RichText,
 } from "@atproto/api";
 import { ProfileView, ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
@@ -1301,6 +1304,54 @@ export class State {
             return State.preferences;
         } catch (e) {
             return error("Couldn't fetch preferences", e);
+        }
+    }
+
+    static async setAdultContentEnabled(v: boolean): Promise<Error | void> {
+        if (!State.bskyClient) return error("Not connected");
+        if (!State.preferences) return error("Not connected");
+        try {
+            State.preferences.adultContentEnabled = v;
+            this.notify("preferences", "updated", State.preferences);
+            await State.bskyClient.setAdultContentEnabled(v);
+        } catch (e) {
+            return error("Couldn't set adult content flag", e);
+        }
+    }
+
+    static async setContentLabelPref(key: string, value: BskyLabelPreference): Promise<Error | void> {
+        if (!State.bskyClient) return error("Not connected");
+        if (!State.preferences) return error("Not connected");
+        try {
+            State.preferences.contentLabels[key] = value;
+            this.notify("preferences", "updated", State.preferences);
+            await State.bskyClient.setContentLabelPref(key, value);
+        } catch (e) {
+            return error("Couldn't set content label preference", e);
+        }
+    }
+
+    static async setFeedViewPrefs(feed: string, pref: Partial<BskyFeedViewPreference>): Promise<Error | void> {
+        if (!State.bskyClient) return error("Not connected");
+        if (!State.preferences) return error("Not connected");
+        try {
+            State.preferences.feedViewPrefs[feed] = { ...State.preferences.feedViewPrefs[feed], pref };
+            this.notify("preferences", "updated", State.preferences);
+            await State.bskyClient.setFeedViewPrefs(feed, pref);
+        } catch (e) {
+            return error("Couldn't set feed view preference", e);
+        }
+    }
+
+    static async setThreadViewPrefs(pref: Partial<BskyThreadViewPreference>): Promise<Error | void> {
+        if (!State.bskyClient) return error("Not connected");
+        if (!State.preferences) return error("Not connected");
+        try {
+            State.preferences.threadViewPrefs = { ...State.preferences.threadViewPrefs, pref };
+            this.notify("preferences", "updated", State.preferences);
+            await State.bskyClient.setThreadViewPrefs(pref);
+        } catch (e) {
+            return error("Couldn't set thread view preference", e);
         }
     }
 

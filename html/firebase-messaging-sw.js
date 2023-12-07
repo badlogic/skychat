@@ -33987,7 +33987,7 @@ if (cid) {
     "Trending hashtags": "Trending hashtags",
     footer: `<a href="https://skychat.social" target="_blank">Skychat</a>
         is lovingly made by
-        <a href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
+        <a href="https://skychat.social/#profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
         <a href="https://github.com/badlogic/skychat" target="_blank">Source code</a>`,
     "Please specify a hashtag": "Please specify a hashtag",
     "Please specify an app password for your account. You can get one in your BlueSky app's settings.": "Please specify an app password for your account. You can get one in your BlueSky app's settings.",
@@ -34003,7 +34003,7 @@ if (cid) {
     "No older posts": "No older posts",
     "Failed to download image": "Failed to download image",
     "trend description": "Below you'll see hashtags sorted by the number of posts they are contained in since you opened this page. Updates in real-time. The longer you leave this page open, the more representative the statistics get.",
-    "The better BlueSky app": "The better BlueSky app",
+    "The better BlueSky app": "A pretty good BlueSky app",
     "(Possibly, once it's done, work-in-progress :D)": "(Possibly, once it's done, work-in-progress :D)",
     "Sign in": "Sign in",
     "Sign up": "Sign up",
@@ -34148,7 +34148,24 @@ if (cid) {
     "Muted threads": "Muted threads",
     "Muted Threads": "Muted Threads",
     "Moderation lists": "Moderation lists",
-    "I'm an adult": "I'm an adult"
+    "I'm an adult": "I'm an adult",
+    "Explicit sexual images": "Explicit sexual images",
+    "i.e. pornography": "i.e. pornography",
+    "Other Nudity": "Other Nudity",
+    "Including non-sexual and artistic": "Including non-sexual and artistic",
+    "Sexually suggestive": "Sexually suggestive",
+    "Does not include nudity": "Does not include nudity",
+    "Violent / Bloody": "Violent / Bloody",
+    "Gore, self-harm, torture": "Gore, self-harm, torture",
+    "Hate group iconography": "Hate group iconography",
+    "Images of terror groups, articles covering events, etc.": "Images of terror groups, articles covering events, etc.",
+    Spam: "Spam",
+    "Excessive unwanted interactions": "Excessive unwanted interactions",
+    Impersonation: "Impersonation",
+    "Accounts falsely claiming to be people or orgs": "Accounts falsely claiming to be people or orgs",
+    Hide: "Hide",
+    Warn: "Warn",
+    Show: "Show"
   };
   var german = {
     "Not connected": "Nicht verbunden",
@@ -34229,7 +34246,7 @@ if (cid) {
     "Trending hashtags": "Hashtag Trends",
     footer: `<a href="https://skychat.social" target="_blank">Skychat</a>
         wird liebevoll von
-        <a href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a> gebaut<br />
+        <a href="https://skychat.social/#profile/badlogic.bsky.social" target="_blank">Mario Zechner</a> gebaut<br />
         Es werden keine Daten von dir gespeichert, nicht einmal deine IP Adresse<br />
         <a href="https://github.com/badlogic/skychat" target="_blank">Source Code</a>`,
     "Please specify a hashtag": "Bitte gib ein Hashtag ein",
@@ -34393,7 +34410,24 @@ if (cid) {
     "Muted threads": "Stummgeschaltete Threads",
     "Muted Threads": "Stummgeschaltete Threads",
     "Moderation lists": "Stummgeschaltete Listen",
-    "I'm an adult": "I'm an adult"
+    "I'm an adult": "I'm an adult",
+    "Explicit sexual images": "Explizite sexuelle Bilder",
+    "i.e. pornography": "z.B. Pornografie",
+    "Other Nudity": "Andere Nacktheit",
+    "Including non-sexual and artistic": "Einschlie\xDFlich nicht-sexueller und k\xFCnstlerischer",
+    "Sexually suggestive": "Sexuell anst\xF6\xDFig",
+    "Does not include nudity": "Beinhaltet keine Nacktheit",
+    "Violent / Bloody": "Gewaltt\xE4tig / Blutig",
+    "Gore, self-harm, torture": "Blutvergie\xDFen, Selbstverletzung, Folter",
+    "Hate group iconography": "Symbolik von Hassgruppen",
+    "Images of terror groups, articles covering events, etc.": "Bilder von Terrorgruppen, Berichte \xFCber Ereignisse usw.",
+    Spam: "Spam",
+    "Excessive unwanted interactions": "\xDCberm\xE4\xDFige unerw\xFCnschte Interaktionen",
+    Impersonation: "Identit\xE4tsdiebstahl",
+    "Accounts falsely claiming to be people or orgs": "Konten, die f\xE4lschlicherweise behaupten, Personen oder Organisationen zu sein",
+    Hide: "Verstecken",
+    Warn: "Warnen",
+    Show: "Zeigen"
   };
   var translations = {
     en: english,

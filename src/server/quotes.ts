@@ -12,7 +12,7 @@ const uncompressAtUri = (v: string, isKey: boolean) => {
     return "at://" + v;
 };
 
-const quotes = new CachingIdToStringsStore(new CompressingIdToStringsStore(new FileIdToStringsStore(quotesFile), compressAtUri, uncompressAtUri));
+const quotes = new CompressingIdToStringsStore(new CachingIdToStringsStore(new FileIdToStringsStore(quotesFile)), compressAtUri, uncompressAtUri);
 
 export async function initializeQuotes(firehose: Firehose) {
     await quotes.initialize();

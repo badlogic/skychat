@@ -40,7 +40,7 @@ let numHtmlRequests = 0;
             }
             console.log("Registration: " + token + ", " + did);
             pushNotifications.registrations.add(did, token);
-            console.log(`${did}: ${pushNotifications.registrations.get(did)?.length} tokens`);
+            console.log(`${did}: ${(await pushNotifications.registrations.get(did))?.length} tokens`);
             res.send();
         } catch (e) {
             res.status(400).json(e);
@@ -65,18 +65,18 @@ let numHtmlRequests = 0;
                 return;
             }
             pushNotifications.registrations.remove(did, token);
-            console.log(`Removed token for ${did}: ${pushNotifications.registrations.get(did)?.length} tokens`);
+            console.log(`Removed token for ${did}: ${(await pushNotifications.registrations.get(did))?.length} tokens`);
             res.send();
         } catch (e) {
             res.status(400).json(e);
         }
     });
 
-    app.get("/api/status", (req, res) => {
+    app.get("/api/status", async (req, res) => {
         try {
             const regs: Record<string, number> = {};
-            for (const did of pushNotifications.registrations.keys()) {
-                regs[did] = pushNotifications.registrations.get(did)?.length || 0;
+            for (const did of await pushNotifications.registrations.keys()) {
+                regs[did] = (await pushNotifications.registrations.get(did))?.length || 0;
             }
 
             const uptime = getTimeDifference(serverStart.getTime());
@@ -102,16 +102,16 @@ let numHtmlRequests = 0;
         }
     });
 
-    app.get("/api/numquotes", (req, res) => {
+    app.get("/api/numquotes", async (req, res) => {
         try {
             const uris: string[] | string = req.query.uri as string[] | string;
             const quotesPerUri: Record<string, number> = {};
             if (Array.isArray(uris)) {
-                uris.forEach((uri) => {
-                    quotesPerUri[uri] = quotes.store.get(uri)?.length ?? 0;
-                });
+                for (const uri of uris) {
+                    quotesPerUri[uri] = (await quotes.store.get(uri))?.length ?? 0;
+                }
             } else if (uris) {
-                quotesPerUri[uris] = quotes.store.get(uris)?.length ?? 0;
+                quotesPerUri[uris] = (await quotes.store.get(uris))?.length ?? 0;
             }
             res.json(quotesPerUri);
         } catch (e) {
@@ -119,9 +119,9 @@ let numHtmlRequests = 0;
         }
     });
 
-    app.get("/api/quotes", (req, res) => {
+    app.get("/api/quotes", async (req, res) => {
         try {
-            res.json(quotes.store.get(req.query.uri as string) ?? []);
+            res.json((await quotes.store.get(req.query.uri as string)) ?? []);
         } catch (e) {
             res.status(400).json(e);
         }

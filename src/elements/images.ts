@@ -174,14 +174,14 @@ export class VideoImageOverlay extends CloseableElement {
             ${this.videoUrl
                 ? html`<video
                       src="${this.videoUrl}"
-                      class="max-w-full max-h-full w-auto h-auto"
+                      class="rounded max-w-full max-h-full w-auto h-auto"
                       muted
                       loop
                       playsinline
                       disableRemotePlayback
                   ></video>`
                 : nothing}
-            ${this.imageUrl ? html`<img src="${this.imageUrl}" class="max-w-full max-h-full w-auto h-auto" />` : nothing}
+            ${this.imageUrl ? html`<img src="${this.imageUrl}" class="rounded max-w-full max-h-full w-auto h-auto" />` : nothing}
         </div>`;
     }
 }

@@ -250,12 +250,13 @@ export class PostgresIdToStringsStore implements IdToStringsStore {
     }
 }
 
-export class CachingIdToStringsStore {
+export class CachingIdToStringsStore implements IdToStringsStore {
     private memory = new Map<string, Set<string>>();
 
     constructor(readonly store: IdToStringsStore) {}
 
     async initialize() {
+        //
         await this.store.initialize();
         const result = await this.store.getAll();
         for (const key of result.keys()) {
@@ -287,21 +288,25 @@ export class CachingIdToStringsStore {
         if (this.removeFromMemory(key, value)) this.store.remove(key, value);
     }
 
-    keys() {
+    async keys() {
         return [...this.memory.keys()];
     }
 
-    has(key: string) {
+    async has(key: string) {
         return this.memory.has(key);
     }
 
-    numEntries(key: string) {
+    async numEntries(key: string) {
         if (!this.memory.has(key)) return 0;
         return this.memory.get(key)!.size;
     }
 
-    get(key: string) {
+    async get(key: string) {
         const values = Array.from(this.memory.get(key) || []);
         return values.length > 0 ? values : undefined;
+    }
+
+    async getAll() {
+        return this.memory;
     }
 }

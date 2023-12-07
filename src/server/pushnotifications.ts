@@ -19,11 +19,11 @@ export async function initializePushNotifications(firehose: Firehose) {
 
     console.log("Initialized push notifications");
 
-    firehose.listeners.push((event: FirehoseEvent) => {
+    firehose.listeners.push(async (event: FirehoseEvent) => {
         if (event.fromDid == event.toDid) return;
-        const tokens = registrations.get(event.toDid);
+        const tokens = await registrations.get(event.toDid);
         if (!tokens) return;
-        queue.push({ ...event, tokens });
+        queue.push({ ...event, tokens: tokens as string[] });
     });
 
     // Push messaging queue

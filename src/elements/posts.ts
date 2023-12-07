@@ -204,14 +204,21 @@ export function tryEmbedImgur(
     cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
     minimal: boolean
 ): TemplateResult | undefined {
-    const url = cardEmbed.uri;
+    const url = cardEmbed.uri.replaceAll(".mp4", "");
     if (!url.includes("imgur.com")) return;
 
     const extractMediaInfo = (rawHtml: string) => {
         const parser = new DOMParser();
         const doc = parser.parseFromString(rawHtml, "text/html");
         const imageUrl = doc.querySelector('meta[name="twitter:image"]')?.getAttribute("content");
-        const videoUrl = doc.querySelector('meta[property="og:video:secure_url"]')?.getAttribute("content");
+        const metaTags = doc.querySelectorAll("meta");
+        let videoUrl = null;
+
+        metaTags.forEach((tag) => {
+            if (tag.getAttribute("property") === "og:video") {
+                videoUrl = tag.getAttribute("content");
+            }
+        });
         const videoWidth = parseInt(doc.querySelector('meta[property="og:video:width"]')?.getAttribute("content") ?? "0");
         const videoHeight = parseInt(doc.querySelector('meta[property="og:video:height"]')?.getAttribute("content") ?? "0");
 

@@ -232,6 +232,23 @@ export interface Messages {
     Joined: string;
     "Content filtering": string;
     "I'm an adult": string;
+    "Explicit sexual images": string;
+    "i.e. pornography": string;
+    "Other Nudity": string;
+    "Including non-sexual and artistic": string;
+    "Sexually suggestive": string;
+    "Does not include nudity": string;
+    "Violent / Bloody": string;
+    "Gore, self-harm, torture": string;
+    "Hate group iconography": string;
+    "Images of terror groups, articles covering events, etc.": string;
+    Spam: string;
+    "Excessive unwanted interactions": string;
+    Impersonation: string;
+    "Accounts falsely claiming to be people or orgs": string;
+    Hide: string;
+    Warn: string;
+    Show: string;
 }
 
 const english: Messages = {
@@ -312,7 +329,7 @@ const english: Messages = {
     "Trending hashtags": "Trending hashtags",
     footer: `<a href="https://skychat.social" target="_blank">Skychat</a>
         is lovingly made by
-        <a href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
+        <a href="https://skychat.social/#profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
         <a href="https://github.com/badlogic/skychat" target="_blank">Source code</a>`,
     "Please specify a hashtag": "Please specify a hashtag",
     "Please specify an app password for your account. You can get one in your BlueSky app's settings.":
@@ -331,7 +348,7 @@ const english: Messages = {
     "Failed to download image": "Failed to download image",
     "trend description":
         "Below you'll see hashtags sorted by the number of posts they are contained in since you opened this page. Updates in real-time. The longer you leave this page open, the more representative the statistics get.",
-    "The better BlueSky app": "The better BlueSky app",
+    "The better BlueSky app": "A pretty good BlueSky app",
     "(Possibly, once it's done, work-in-progress :D)": "(Possibly, once it's done, work-in-progress :D)",
     "Sign in": "Sign in",
     "Sign up": "Sign up",
@@ -480,6 +497,23 @@ const english: Messages = {
     "Muted Threads": "Muted Threads",
     "Moderation lists": "Moderation lists",
     "I'm an adult": "I'm an adult",
+    "Explicit sexual images": "Explicit sexual images",
+    "i.e. pornography": "i.e. pornography",
+    "Other Nudity": "Other Nudity",
+    "Including non-sexual and artistic": "Including non-sexual and artistic",
+    "Sexually suggestive": "Sexually suggestive",
+    "Does not include nudity": "Does not include nudity",
+    "Violent / Bloody": "Violent / Bloody",
+    "Gore, self-harm, torture": "Gore, self-harm, torture",
+    "Hate group iconography": "Hate group iconography",
+    "Images of terror groups, articles covering events, etc.": "Images of terror groups, articles covering events, etc.",
+    Spam: "Spam",
+    "Excessive unwanted interactions": "Excessive unwanted interactions",
+    Impersonation: "Impersonation",
+    "Accounts falsely claiming to be people or orgs": "Accounts falsely claiming to be people or orgs",
+    Hide: "Hide",
+    Warn: "Warn",
+    Show: "Show",
 };
 
 const german: Messages = {
@@ -561,7 +595,7 @@ const german: Messages = {
     "Trending hashtags": "Hashtag Trends",
     footer: `<a href="https://skychat.social" target="_blank">Skychat</a>
         wird liebevoll von
-        <a href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a> gebaut<br />
+        <a href="https://skychat.social/#profile/badlogic.bsky.social" target="_blank">Mario Zechner</a> gebaut<br />
         Es werden keine Daten von dir gespeichert, nicht einmal deine IP Adresse<br />
         <a href="https://github.com/badlogic/skychat" target="_blank">Source Code</a>`,
     "Please specify a hashtag": "Bitte gib ein Hashtag ein",
@@ -733,6 +767,23 @@ const german: Messages = {
     "Muted Threads": "Stummgeschaltete Threads",
     "Moderation lists": "Stummgeschaltete Listen",
     "I'm an adult": "I'm an adult",
+    "Explicit sexual images": "Explizite sexuelle Bilder",
+    "i.e. pornography": "z.B. Pornografie",
+    "Other Nudity": "Andere Nacktheit",
+    "Including non-sexual and artistic": "Einschließlich nicht-sexueller und künstlerischer",
+    "Sexually suggestive": "Sexuell anstößig",
+    "Does not include nudity": "Beinhaltet keine Nacktheit",
+    "Violent / Bloody": "Gewalttätig / Blutig",
+    "Gore, self-harm, torture": "Blutvergießen, Selbstverletzung, Folter",
+    "Hate group iconography": "Symbolik von Hassgruppen",
+    "Images of terror groups, articles covering events, etc.": "Bilder von Terrorgruppen, Berichte über Ereignisse usw.",
+    Spam: "Spam",
+    "Excessive unwanted interactions": "Übermäßige unerwünschte Interaktionen",
+    Impersonation: "Identitätsdiebstahl",
+    "Accounts falsely claiming to be people or orgs": "Konten, die fälschlicherweise behaupten, Personen oder Organisationen zu sein",
+    Hide: "Verstecken",
+    Warn: "Warnen",
+    Show: "Zeigen",
 };
 
 export type LanguageCode = "en" | "de";

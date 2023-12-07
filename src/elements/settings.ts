@@ -1,12 +1,14 @@
 import { PropertyValueMap, TemplateResult, html, nothing } from "lit";
+import { repeat } from "lit-html/directives/repeat.js";
 import { customElement, property } from "lit/decorators.js";
 import { HashNavOverlay, renderProfile, renderTopbar } from ".";
 import { i18n } from "../i18n";
-import { Store, Theme } from "../store";
-import { State } from "../state";
-import { dom, error, renderError, renderUnderConstruction } from "../utils";
 import { arrowRightIcon, bellIcon, brushIcon, shieldIcon } from "../icons";
+import { State } from "../state";
+import { Store, Theme } from "../store";
 import { BlockedUsersStream, MutedUsersStream } from "../streams";
+import { dom, error, renderError, renderUnderConstruction } from "../utils";
+import { LabelPreference } from "@atproto/api";
 
 type Version = { date: string; commit: string };
 
@@ -284,6 +286,16 @@ export class BlockedUsersOverlay extends HashNavOverlay {
 
 @customElement("content-filtering-overlay")
 export class ContentFilteringOverlay extends HashNavOverlay {
+    unsubscribe = () => {};
+    protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        super.firstUpdated(_changedProperties);
+        this.unsubscribe = State.subscribe("preferences", (action, payload) => {
+            if (action == "updated") {
+                this.requestUpdate();
+            }
+        });
+    }
+
     getHash(): string {
         return "contentfilters";
     }
@@ -297,16 +309,122 @@ export class ContentFilteringOverlay extends HashNavOverlay {
         const prefs = State.preferences;
         if (!prefs) return renderError("Not connected");
 
-        return html`<div class="px-4 flex flex-col w-full">
+        const renderLabelFilter = (title: string, subText: string, options: string[], selected: string, valueChanged = (option: number) => {}) => {
+            return html`<div class="flex flex-col gap-2">
+                <div class="flex flex-col">
+                    <span>${title}</span>
+                    <span class="text-sm text-muted-fg">${subText}</span>
+                </div>
+                ${options.length == 1
+                    ? html`<span class="text-muted-fg h-8">${options[0]}</span>`
+                    : html`<button-group
+                          class="self-start"
+                          .values=${options}
+                          .selected=${selected}
+                          @change=${(ev: CustomEvent) => {
+                              valueChanged(ev.detail.index);
+                          }}
+                      ></button-group>`}
+            </div>`;
+        };
+
+        const toOption = (option: LabelPreference | "show" | undefined) => {
+            switch (option) {
+                case "warn":
+                    return i18n("Warn");
+                case "hide":
+                    return i18n("Hide");
+                case "show":
+                case "ignore":
+                    return i18n("Show");
+                default:
+                    return i18n("Hide");
+            }
+        };
+        const fromOption = (option: number) => {
+            switch (option) {
+                case 0:
+                    return "hide";
+                case 1:
+                    return "warn";
+                case 2:
+                    return "ignore";
+                default:
+                    return "hide";
+            }
+        };
+        const allOptions = [i18n("Hide"), i18n("Warn"), i18n("Show")];
+        const hideOption = [i18n("Hide")];
+        const filters = [
+            renderLabelFilter(
+                i18n("Explicit sexual images"),
+                i18n("i.e. pornography"),
+                prefs.adultContentEnabled ? allOptions : hideOption,
+                toOption(prefs.contentLabels["nsfw"]),
+                (option) => {
+                    State.setContentLabelPref("nsfw", fromOption(option));
+                }
+            ),
+            renderLabelFilter(
+                i18n("Other Nudity"),
+                i18n("Including non-sexual and artistic"),
+                prefs.adultContentEnabled ? allOptions : hideOption,
+                toOption(prefs.contentLabels["nudity"]),
+                (option) => {
+                    State.setContentLabelPref("nudity", fromOption(option));
+                }
+            ),
+            renderLabelFilter(
+                i18n("Sexually suggestive"),
+                i18n("Does not include nudity"),
+                prefs.adultContentEnabled ? allOptions : hideOption,
+                toOption(prefs.contentLabels["suggestive"]),
+                (option) => {
+                    State.setContentLabelPref("suggestive", fromOption(option));
+                }
+            ),
+            renderLabelFilter(
+                i18n("Violent / Bloody"),
+                i18n("Gore, self-harm, torture"),
+                allOptions,
+                toOption(prefs.contentLabels["gore"]),
+                (option) => {
+                    State.setContentLabelPref("gore", fromOption(option));
+                }
+            ),
+            renderLabelFilter(
+                i18n("Hate group iconography"),
+                i18n("Images of terror groups, articles covering events, etc."),
+                allOptions,
+                toOption(prefs.contentLabels["hate"]),
+                (option) => {
+                    State.setContentLabelPref("hate", fromOption(option));
+                }
+            ),
+            renderLabelFilter(i18n("Spam"), i18n("Excessive unwanted interactions"), allOptions, toOption(prefs.contentLabels["spam"]), (option) => {
+                State.setContentLabelPref("spam", fromOption(option));
+            }),
+            renderLabelFilter(
+                i18n("Impersonation"),
+                i18n("Accounts falsely claiming to be people or orgs"),
+                allOptions,
+                toOption(prefs.contentLabels["impersonation"]),
+                (option) => {
+                    State.setContentLabelPref("impersonation", fromOption(option));
+                }
+            ),
+        ];
+
+        return html`<div class="px-4 flex flex-col w-full gap-4">
             <slide-button
                 class="mt-4"
-                .checked=${pinchZoom}
+                .checked=${prefs.adultContentEnabled}
                 .text=${i18n("I'm an adult")}
                 @changed=${(ev: CustomEvent) => {
-                    Store.setPinchZoom(ev.detail.value);
-                    togglePinchZoom(ev.detail.value);
+                    State.setAdultContentEnabled(ev.detail.value);
                 }}
             ></slide-button>
+            ${repeat(filters, (filter) => filter)}
         </div>`;
     }
 }
