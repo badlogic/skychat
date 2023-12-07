@@ -482,7 +482,7 @@ class SkychatClient extends LitElement {
         const buttons = html`<div class="ml-auto flex -mr-1">
             <theme-toggle class="!w-10 !h-10"></theme-toggle>
             <button
-                class="flex items-center justify-center w-10 h-10"
+                class="flex md:hidden items-center justify-center w-10 h-10"
                 @click=${() => document.body.append(dom(html`<profile-overlay .did=${user?.profile.did}></profile-overlay>`)[0])}
             >
                 ${user?.profile.avatar

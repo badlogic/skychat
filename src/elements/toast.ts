@@ -20,7 +20,6 @@ export class Toast extends LitElement {
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
         setTimeout(() => {
-            // FIXME fade-out
             this.remove();
         }, this.timeout);
     }

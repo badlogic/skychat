@@ -146,8 +146,6 @@ export class ProfileOverlay extends HashNavOverlay {
         };
 
         let feed: HTMLElement;
-
-        // FIXME render "open-post-editor-button" with user name prefill?
         if (this.profile.viewer?.blockedBy || this.profile.viewer?.blocking || this.profile.viewer?.blockingByList) {
             feed = dom(html`<div class="p-4 text-center">${i18n("Nothing to show")}</div>`)[0];
         } else {

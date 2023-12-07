@@ -1316,7 +1316,6 @@ export class ThreadViewPostElement extends LitElement {
     }
 }
 
-// FIXME detect if reader mode actually makes sense, and hide the reader mode button if not.
 @customElement("thread-overlay")
 export class ThreadOverlay extends HashNavOverlay {
     @property()

@@ -47,11 +47,8 @@ async function fromBlueSkyLink(hash: string) {
 
 export async function routeHash(hash: string) {
     hash = hash.replace("#", "");
-
     hash = await fromBlueSkyLink(hash);
 
-    // FIXME if the route can't be deciphered, set to / and reload
-    // FIXME some of the "early aborts" seem wrong
     if (hash && hash.length > 0) {
         const tokens = hash.split("/");
         if (tokens.length > 0) {
@@ -146,36 +143,42 @@ export async function routeHash(hash: string) {
                         ></profiles-stream-overlay>`
                     )[0]
                 );
+                return;
             }
 
             if (tokens[0] == "settings") {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "SETTINGS-OVERLAY") return;
                 document.body.append(dom(html`<settings-overlay .pushState=${false}></settings-overlay>`)[0]);
+                return;
             }
 
             if (tokens[0] == "mutedwords") {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "MUTED-WORDS-OVERLAY") return;
                 document.body.append(dom(html`<muted-words-overlay .pushState=${false}></muted-words-overlay>`)[0]);
+                return;
             }
 
             if (tokens[0] == "muted") {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "MUTED-USERS-OVERLAY") return;
                 document.body.append(dom(html`<muted-users-overlay .pushState=${false}></muted-users-overlay>`)[0]);
+                return;
             }
 
             if (tokens[0] == "mutedthreads") {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "MUTED-THREADS-OVERLAY") return;
                 document.body.append(dom(html`<muted-threads-overlay .pushState=${false}></muted-threads-overlay>`)[0]);
+                return;
             }
 
             if (tokens[0] == "blocked") {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "BLOCKED-USERS-OVERLAY") return;
                 document.body.append(dom(html`<blocked-users-overlay .pushState=${false}></blocked-users-overlay>`)[0]);
+                return;
             }
 
             if (tokens[0] == "modlists") {
@@ -196,12 +199,14 @@ export async function routeHash(hash: string) {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "SEARCH-OVERLAY") return;
                 document.body.append(dom(html`<search-overlay .pushState=${false}></search-overlay>`)[0]);
+                return;
             }
 
             if (tokens[0] == "feeds") {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "FEED-PICKER") return;
                 document.body.append(dom(html`<feed-picker .pushState=${false}></feed-picker>`)[0]);
+                return;
             }
 
             if (tokens[0] == "feed" && tokens[1] && tokens[2]) {
@@ -209,6 +214,7 @@ export async function routeHash(hash: string) {
                 const atUri = combineAtUri(tokens[1], tokens[2], "app.bsky.feed.generator");
                 if (child.tagName == "FEED-OVERLAY" && (child as FeedOverlay).feedUri == atUri) return;
                 document.body.append(dom(html`<feed-overlay .feedUri=${atUri} .pushState=${false}></feed-overlay>`)[0]);
+                return;
             }
 
             if (tokens[0] == "lists") {
@@ -252,6 +258,9 @@ export async function routeHash(hash: string) {
             }
         }
     }
+    // FIXME this doesn't work and leads to reloads
+    // open notifications, close -> reload
+    // location.href = "/";
 }
 
 let setup = false;

@@ -412,16 +412,13 @@ export class ListOverlay extends HashNavOverlay {
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
         return html`<feed-stream-view
-                .stream=${new ListFeedPostsStream(this.listUri!, true, FEED_CHECK_INTERVAL)}
-                .newItems=${async (newItems: StreamPage<FeedViewPost> | Error) => {
-                    if (newItems instanceof Error) {
-                        this.error = i18n("Could not load newer items");
-                    }
-                }}
-            ></feed-stream-view
-            >${Store.getUser()
-                ? html`<open-post-editor-button id="post"></open-post-editor-button> <notifications-button id="notifications"></notifications-button>`
-                : nothing}`;
+            .stream=${new ListFeedPostsStream(this.listUri!, true, FEED_CHECK_INTERVAL)}
+            .newItems=${async (newItems: StreamPage<FeedViewPost> | Error) => {
+                if (newItems instanceof Error) {
+                    this.error = i18n("Could not load newer items");
+                }
+            }}
+        ></feed-stream-view>`;
     }
 }
 
@@ -812,7 +809,6 @@ export class ListEditor extends HashNavOverlay {
         if (this.error) return html`<div id="error" class="align-top p-4">${this.error}</div>`;
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
-        // FIXME profiles should only have a remove button
         return html`<div class="flex flex-col w-full h-full overflow-auto gap-2 mx-auto mt-4">
             ${this.editError ? renderError(this.editError) : nothing}
             <div class="flex gap-2 items-center px-4 ">

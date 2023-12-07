@@ -3,7 +3,7 @@ import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { arrowUpDoubleIcon, bellIcon, cloudIcon, editIcon, listIcon, searchIcon, settingsIcon, spinnerIcon } from "../icons";
-import { dom, getScrollParent } from "../utils";
+import { defaultAvatar, dom, getScrollParent } from "../utils";
 import { setupPushNotifications } from "./notifications";
 import { State } from "../state";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
@@ -63,7 +63,6 @@ export abstract class FloatingButton extends LitElement {
     abstract getIcon(): TemplateResult;
 }
 
-// FIXME hide once scrollTop < 10px, need to think about how to handle renderToClick
 @customElement("up-button")
 export class UpButton extends FloatingButton {
     @property()
@@ -418,6 +417,7 @@ export class SlideButton extends LitElement {
 
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
+import { Store } from "../store.js";
 
 @customElement("nav-buttons")
 export class NavButtons extends LitElement {
@@ -461,26 +461,33 @@ export class NavButtons extends LitElement {
         const baseStyle = `${animationStyle} fixed bg-background z-10 px-4 border-t border-divider/50 dark:border-divider`;
         const mobileStyle = `w-full bottom-0 max-w-[640px]`;
         const desktopStyle = `md:pl-4 md:pr-0 md:-ml-16 md:w-auto md:border-none md:top-0`;
+        const user = Store.getUser();
 
         return html`<div class="${baseStyle} ${mobileStyle} ${desktopStyle}">
-            ${!this.minimal ? html`<up-button class="absolute" inContainer=${true}></up-button>` : nothing}
+            <up-button class="absolute" inContainer=${true}></up-button>
             <div class="flex justify-between md:flex-col md:justify-start md:align-center md:gap-2">
-                ${!this.minimal
-                    ? html`<button
-                              class="flex items-center justify-center w-12 h-12"
-                              @click=${() => document.body.append(dom(html`<settings-overlay></settings-overlay>`)[0])}
-                          >
-                              <i class="icon !w-6 !h-6">${settingsIcon}</i>
-                          </button>
-                          <lists-button></lists-button>
-                          <feeds-button></feeds-button>
-                          <button
-                              class="flex items-center justify-center w-12 h-12"
-                              @click=${() => document.body.append(dom(html`<search-overlay></search-overlay>`)[0])}
-                          >
-                              <i class="icon !w-6 !h-6">${searchIcon}</i>
-                          </button>`
-                    : nothing}
+                <button
+                    class="hidden md:flex items-center justify-center w-12 h-12"
+                    @click=${() => document.body.append(dom(html`<profile-overlay .did=${user?.profile.did}></profile-overlay>`)[0])}
+                >
+                    ${user?.profile.avatar
+                        ? html`<img class="w-8 max-w-[none] h-8 rounded-full fancy-shadow" src="${user.profile.avatar}" />`
+                        : html`<i class="icon !w-8 !h-8">${defaultAvatar}</i>`}
+                </button>
+                <button
+                    class="flex items-center justify-center w-12 h-12"
+                    @click=${() => document.body.append(dom(html`<settings-overlay></settings-overlay>`)[0])}
+                >
+                    <i class="icon !w-6 !h-6">${settingsIcon}</i>
+                </button>
+                <lists-button></lists-button>
+                <feeds-button></feeds-button>
+                <button
+                    class="flex items-center justify-center w-12 h-12"
+                    @click=${() => document.body.append(dom(html`<search-overlay></search-overlay>`)[0])}
+                >
+                    <i class="icon !w-6 !h-6">${searchIcon}</i>
+                </button>
                 <notifications-button></notifications-button>
                 <open-post-editor-button></open-post-editor-button>
             </div>

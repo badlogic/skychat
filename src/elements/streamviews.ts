@@ -123,7 +123,6 @@ export abstract class StreamView<T> extends LitElement {
         }
     }
 
-    // FIXME replace pages outside of view with empty divs, page them back in once they get into view
     isLoading = false;
     protected async load() {
         if (!State.isConnected()) return;
@@ -560,7 +559,6 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
     }
 }
 
-// FIXME topbar buttons are foobar on <= 350px screens like Nexus 4
 @customElement("notifications-stream-overlay")
 export class NotificationsStreamOverlay extends HashNavOverlay {
     @query("#notifications")

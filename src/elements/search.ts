@@ -40,7 +40,11 @@ export class SearchOverlay extends HashNavOverlay {
     @property()
     selectedType?: string;
 
+    @property()
+    self = false;
+
     getHash(): string {
+        if (location.hash.startsWith("#search")) return location.hash;
         return "search";
     }
 
@@ -53,6 +57,31 @@ export class SearchOverlay extends HashNavOverlay {
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
+        if (location.hash.startsWith("#search/?")) {
+            const params = location.hash.replace("#search/?", "");
+            const url = new URL("https://" + location.host + "/?" + params);
+            const query = url.searchParams.get("q");
+            const type = url.searchParams.get("t");
+            const self = url.searchParams.get("s");
+            if (query != undefined && type != undefined && self != undefined) {
+                try {
+                    const typeName = this.showTypes[Number.parseInt(type)];
+                    this.searchElement!.value = query;
+                    this.typeElement!.selected = this.selectedType = typeName;
+                    if (this.selfElement) {
+                        this.selfElement!.checked = this.self = self == "true";
+                    } else {
+                        this.self = self == "true";
+                    }
+                    this.search(query, typeName, self == "true");
+                    this.searchElement?.focus();
+                    return;
+                } catch (e) {
+                    // no-op
+                    console.error(e);
+                }
+            }
+        }
         this.search("", this.showTypes.length == 1 ? this.showTypes[0] : this.typeElement!.selected);
         this.searchElement?.focus();
     }
@@ -98,6 +127,7 @@ export class SearchOverlay extends HashNavOverlay {
                           id="self"
                           class="self-center mt-4"
                           .text=${i18n("Search my posts")}
+                          .checked=${this.self}
                           @change=${() => this.handleSearch()}
                       ></slide-button>`
                     : nothing}
@@ -129,6 +159,8 @@ export class SearchOverlay extends HashNavOverlay {
         query = query.trim();
         if (!type) type = i18n("Posts");
         if (!self) self = false;
+        history.replaceState(null, "", `#search/?q=${encodeURIComponent(query)}&t=${this.showTypes.indexOf(type)}&s=${self}`);
+
         if (type == i18n("Users")) {
             if (query.length == 0)
                 this.resultsElement!.append(
