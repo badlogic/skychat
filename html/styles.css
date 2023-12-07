@@ -43,7 +43,7 @@
 @layer base {
     html,
     body {
-        @apply h-full w-full leading-normal;
+        @apply w-full leading-normal;
     }
 
     .hidden {
@@ -173,5 +173,13 @@
     .scrollbar-hide {
         -ms-overflow-style: none; /* IE and Edge */
         scrollbar-width: none; /* Firefox */
+    }
+
+    .bg-topbar {
+        background-color: rgba(255, 255, 255, 0.7);
+    }
+
+    .bg-topbar-dark {
+        background-color: rgba(17, 17, 17, 0.7);
     }
 }

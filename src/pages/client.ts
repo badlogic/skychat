@@ -480,18 +480,6 @@ class SkychatClient extends LitElement {
         }
         const user = Store.getUser();
         const buttons = html`<div class="ml-auto flex -mr-1">
-            <button
-                class="flex items-center justify-center w-10 h-10"
-                @click=${() => document.body.append(dom(html`<search-overlay></search-overlay>`)[0])}
-            >
-                <i class="icon !w-5 !h-5">${searchIcon}</i>
-            </button>
-            <button
-                class="flex items-center justify-center w-10 h-10"
-                @click=${() => document.body.append(dom(html`<settings-overlay></settings-overlay>`)[0])}
-            >
-                <i class="icon !w-5 !h-5">${settingsIcon}</i>
-            </button>
             <theme-toggle class="!w-10 !h-10"></theme-toggle>
             <button
                 class="flex items-center justify-center w-10 h-10"
@@ -512,14 +500,10 @@ class SkychatClient extends LitElement {
                 }}
                 .stream=${new ActorFeedStream("home", undefined, true, FEED_CHECK_INTERVAL)}
             ></feed-stream-view>
-            <open-post-editor-button></open-post-editor-button>
-            <notifications-button></notifications-button>
-            <feeds-button></feeds-button>
-            <lists-button></lists-button>
-            <up-button></up-button>`;
-        return html`<div class="w-full h-full flex flex-col">
+            <nav-buttons></nav-buttons>`;
+        return html`<div class="w-full flex flex-col">
             <div class="self-center w-full max-w-[640px]">${topbar}</div>
-            <div class="mx-auto w-full max-w-[640px] min-h-full flex flex-col">${content}</div>
+            <div class="mx-auto w-full max-w-[640px] flex flex-col">${content}</div>
         </div> `;
     }
 

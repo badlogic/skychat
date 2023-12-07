@@ -472,15 +472,12 @@ export class FeedOverlay extends HashNavOverlay {
         if (this.isLoading) return html`<loading-spinner></loading-spinner>`;
 
         return html`<feed-stream-view
-                .stream=${new FeedPostsStream(this.feedUri!, true, FEED_CHECK_INTERVAL)}
-                .newItems=${async (newItems: StreamPage<FeedViewPost> | Error) => {
-                    if (newItems instanceof Error) {
-                        this.error = i18n("Could not load newer items");
-                    }
-                }}
-            ></feed-stream-view
-            >${Store.getUser()
-                ? html`<open-post-editor-button id="post"></open-post-editor-button> <notifications-button id="notifications"></notifications-button>`
-                : nothing}`;
+            .stream=${new FeedPostsStream(this.feedUri!, true, FEED_CHECK_INTERVAL)}
+            .newItems=${async (newItems: StreamPage<FeedViewPost> | Error) => {
+                if (newItems instanceof Error) {
+                    this.error = i18n("Could not load newer items");
+                }
+            }}
+        ></feed-stream-view>`;
     }
 }

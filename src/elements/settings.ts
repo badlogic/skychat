@@ -41,24 +41,24 @@ export class SettingsOverlay extends HashNavOverlay {
         const user = Store.getUser();
         const pushPrefs = Store.getPushPreferences();
         const pinchZoom = Store.getPinchZoom();
-        return html`<div class="px-4 flex flex-col">
+        return html`<div class="flex flex-col">
             ${user
-                ? html`<div class="h-12 flex items-center font-semibold">${i18n("Logged in as")}</div>
-                      <div class="flex gap-4">
+                ? html`<div class="px-4 h-12 flex items-center font-semibold">${i18n("Logged in as")}</div>
+                      <div class="px-4 flex gap-4">
                           ${renderProfile(user.profile)}
                           <button class="btn ml-auto" @click=${this.logout}>${i18n("Log out")}</button>
                       </div>`
                 : nothing}
             <div class="mt-4 border-t border-divider"></div>
-            <div class="h-12 flex items-center font-semibold gap-2"><i class="icon !w-5 !h-5">${brushIcon}</i>${i18n("User Interface")}</div>
+            <div class="px-4 h-12 flex items-center font-semibold gap-2"><i class="icon !w-5 !h-5">${brushIcon}</i>${i18n("User Interface")}</div>
             <button-group
                 @change=${(ev: CustomEvent) => this.setTheme(ev.detail.value)}
                 .values=${[i18n("Dark"), i18n("Light")]}
                 .selected=${Store.getTheme() == "dark" ? "Dark" : "Light"}
-                class="self-start"
+                class="px-4 self-start"
             ></button-group>
             <slide-button
-                class="mt-4"
+                class="px-4 mt-6"
                 .checked=${pinchZoom}
                 .text=${i18n("Allow pinch-zoom")}
                 @changed=${(ev: CustomEvent) => {
@@ -67,8 +67,8 @@ export class SettingsOverlay extends HashNavOverlay {
                 }}
             ></slide-button>
             <div class="mt-4 border-t border-divider"></div>
-            <div class="h-12 flex items-center font-semibold gap-2"><i class="icon !w-5 !h-5">${shieldIcon}</i>${i18n("Moderation")}</div>
-            <div class="flex flex-col gap-2">
+            <div class="px-4 h-12 flex items-center font-semibold gap-2"><i class="icon !w-5 !h-5">${shieldIcon}</i>${i18n("Moderation")}</div>
+            <div class="px-4 flex flex-col gap-2">
                 <button
                     class="border border-muted rounded-md pl-4 py-2 flex items-center fancy-shadow"
                     @click=${() => {
@@ -119,9 +119,9 @@ export class SettingsOverlay extends HashNavOverlay {
                 </button>
             </div>
             <div class="mt-4 border-t border-divider"></div>
-            <div class="h-12 flex items-center font-semibold gap-2"><i class="icon !w-5 !h-5">${bellIcon}</i>${i18n("Push notifications")}</div>
+            <div class="px-4 h-12 flex items-center font-semibold gap-2"><i class="icon !w-5 !h-5">${bellIcon}</i>${i18n("Push notifications")}</div>
             <slide-button
-                class="mt-2"
+                class="px-4 mt-2"
                 .checked=${pushPrefs?.enabled}
                 .text=${i18n("Enabled")}
                 @changed=${(ev: CustomEvent) => {
@@ -129,7 +129,7 @@ export class SettingsOverlay extends HashNavOverlay {
                 }}
             ></slide-button>
             <slide-button
-                class="mt-4"
+                class="px-4 mt-4"
                 .checked=${pushPrefs?.newFollowers}
                 .text=${i18n("New follower")}
                 @changed=${(ev: CustomEvent) => {
@@ -137,7 +137,7 @@ export class SettingsOverlay extends HashNavOverlay {
                 }}
             ></slide-button>
             <slide-button
-                class="mt-4"
+                class="px-4 mt-4"
                 .checked=${pushPrefs?.replies}
                 .text=${i18n("Replies")}
                 @changed=${(ev: CustomEvent) => {
@@ -145,7 +145,7 @@ export class SettingsOverlay extends HashNavOverlay {
                 }}
             ></slide-button>
             <slide-button
-                class="mt-4"
+                class="px-4 mt-4"
                 .checked=${pushPrefs?.quotes}
                 .text=${i18n("Quotes")}
                 @changed=${(ev: CustomEvent) => {
@@ -153,7 +153,7 @@ export class SettingsOverlay extends HashNavOverlay {
                 }}
             ></slide-button>
             <slide-button
-                class="mt-4"
+                class="px-4 mt-4"
                 .checked=${pushPrefs?.reposts}
                 .text=${i18n("Reposts")}
                 @changed=${(ev: CustomEvent) => {
@@ -161,7 +161,7 @@ export class SettingsOverlay extends HashNavOverlay {
                 }}
             ></slide-button>
             <slide-button
-                class="mt-4"
+                class="px-4 mt-4"
                 .checked=${pushPrefs?.mentions}
                 .text=${i18n("Mentions")}
                 @changed=${(ev: CustomEvent) => {
@@ -169,7 +169,7 @@ export class SettingsOverlay extends HashNavOverlay {
                 }}
             ></slide-button>
             <slide-button
-                class="mt-4"
+                class="px-4 mt-4"
                 .checked=${pushPrefs?.likes}
                 .text=${i18n("Likes")}
                 @changed=${(ev: CustomEvent) => {
@@ -177,12 +177,12 @@ export class SettingsOverlay extends HashNavOverlay {
                 }}
             ></slide-button>
             <div class="mt-4 border-t border-divider"></div>
-            <div class="mt-4 text-xs">
+            <div class="px-4 mt-4 text-xs">
                 Build: ${this.version?.date}<br />
                 <a href="https://github.com/badlogic/skychat/commit/">${this.version?.commit}</a>
             </div>
             <slide-button
-                class="mt-4 mb-4"
+                class="px-4 mt-4 mb-4"
                 .checked=${Store.getDevPrefs()?.enabled}
                 .text=${"Dev mode"}
                 @changed=${(ev: CustomEvent) => {
@@ -193,7 +193,7 @@ export class SettingsOverlay extends HashNavOverlay {
             ${Store.getDevPrefs()?.enabled
                 ? html`
                       <slide-button
-                          class="mt-4 mb-4"
+                          class="px-4 mt-4 mb-4"
                           .checked=${Store.getDevPrefs()?.logEmbedRenders}
                           .text=${"Log embed renders"}
                           @changed=${(ev: CustomEvent) => {
@@ -201,7 +201,7 @@ export class SettingsOverlay extends HashNavOverlay {
                           }}
                       ></slide-button>
                       <slide-button
-                          class="mt-4 mb-4"
+                          class="px-4 mt-4 mb-4"
                           .checked=${Store.getDevPrefs()?.logPostViewRenders}
                           .text=${"Log PostView renders"}
                           @changed=${(ev: CustomEvent) => {
@@ -209,7 +209,7 @@ export class SettingsOverlay extends HashNavOverlay {
                           }}
                       ></slide-button>
                       <slide-button
-                          class="mt-4 mb-4"
+                          class="px-4 mt-4 mb-4"
                           .checked=${Store.getDevPrefs()?.logFeedViewPostRenders}
                           .text=${"Log FeedViewPost renders"}
                           @changed=${(ev: CustomEvent) => {
@@ -217,7 +217,7 @@ export class SettingsOverlay extends HashNavOverlay {
                           }}
                       ></slide-button>
                       <slide-button
-                          class="mt-4 mb-4"
+                          class="px-4 mt-4 mb-4"
                           .checked=${Store.getDevPrefs()?.logThreadViewPostRenders}
                           .text=${"Log ThreadViewPost renders"}
                           @changed=${(ev: CustomEvent) => {
@@ -225,7 +225,7 @@ export class SettingsOverlay extends HashNavOverlay {
                           }}
                       ></slide-button>
                       <slide-button
-                          class="mt-4 mb-4"
+                          class="px-4 mt-4 mb-4"
                           .checked=${Store.getDevPrefs()?.logStreamViewAppended}
                           .text=${"Log StreamView appends"}
                           @changed=${(ev: CustomEvent) => {
@@ -233,7 +233,7 @@ export class SettingsOverlay extends HashNavOverlay {
                           }}
                       ></slide-button>
                       <slide-button
-                          class="mt-4 mb-4"
+                          class="px-4 mt-4 mb-4"
                           .checked=${Store.getDevPrefs()?.logStreamViewPrepended}
                           .text=${"Log StreamView prepend"}
                           @changed=${(ev: CustomEvent) => {
@@ -310,21 +310,23 @@ export class ContentFilteringOverlay extends HashNavOverlay {
         if (!prefs) return renderError("Not connected");
 
         const renderLabelFilter = (title: string, subText: string, options: string[], selected: string, valueChanged = (option: number) => {}) => {
-            return html`<div class="flex flex-col gap-2">
+            return html`<div class="flex items-center gap-2 px-4 pb-4 border-b border-divider">
                 <div class="flex flex-col">
                     <span>${title}</span>
-                    <span class="text-sm text-muted-fg">${subText}</span>
+                    <span class="text-xs text-muted-fg">${subText}</span>
                 </div>
                 ${options.length == 1
-                    ? html`<span class="text-muted-fg h-8">${options[0]}</span>`
-                    : html`<button-group
-                          class="self-start"
-                          .values=${options}
-                          .selected=${selected}
-                          @change=${(ev: CustomEvent) => {
-                              valueChanged(ev.detail.index);
-                          }}
-                      ></button-group>`}
+                    ? html`<span class="grow text-right text-muted-fg h-8">${options[0]}</span>`
+                    : html`<div class="grow flex">
+                          <button-group
+                              class="ml-auto"
+                              .values=${options}
+                              .selected=${selected}
+                              @change=${(ev: CustomEvent) => {
+                                  valueChanged(ev.detail.index);
+                              }}
+                          ></button-group>
+                      </div>`}
             </div>`;
         };
 
@@ -415,9 +417,9 @@ export class ContentFilteringOverlay extends HashNavOverlay {
             ),
         ];
 
-        return html`<div class="px-4 flex flex-col w-full gap-4">
+        return html`<div class="flex flex-col w-full gap-4">
             <slide-button
-                class="mt-4"
+                class="mt-6 px-4 pb-4 border-b border-divider"
                 .checked=${prefs.adultContentEnabled}
                 .text=${i18n("I'm an adult")}
                 @changed=${(ev: CustomEvent) => {

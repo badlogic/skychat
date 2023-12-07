@@ -1,14 +1,12 @@
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { LitElement, PropertyValueMap, TemplateResult, html } from "lit";
+import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { arrowUpDoubleIcon, bellIcon, cloudIcon, editIcon, listIcon, spinnerIcon } from "../icons";
+import { arrowUpDoubleIcon, bellIcon, cloudIcon, editIcon, listIcon, searchIcon, settingsIcon, spinnerIcon } from "../icons";
 import { dom, getScrollParent } from "../utils";
 import { setupPushNotifications } from "./notifications";
 import { State } from "../state";
-
-let normalStyle = "w-12 h-12 flex justify-center items-center bg-background dark:bg-divider border border-divider rounded-full fancy-shadow";
-let highlightStyle = "w-12 h-12 flex justify-center items-center bg-primary rounded-full fancy-shadow";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
 
 function resetAnimation(el: HTMLElement) {
     el.style.animation = "none";
@@ -32,24 +30,56 @@ export abstract class FloatingButton extends LitElement {
     @property()
     value?: string;
 
-    translateX = (offset: string) => "translate(calc(min(100vw,640px) " + offset + "))";
-
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
 
-    lastScrollTop = 0;
-    scrollHandler = () => this.handleScroll();
-    handleScroll() {
-        if (this.highlight) {
-            this.lastScrollTop = getScrollParent(this.parentElement)!.scrollTop;
-            return;
-        }
-        const dir = this.lastScrollTop - getScrollParent(this.parentElement)!.scrollTop;
-        if (dir != 0) {
-            this.hide = dir < 0;
-        }
-        this.lastScrollTop = getScrollParent(this.parentElement)!.scrollTop;
+    protected updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        const root = this.renderRoot.children[0] as HTMLElement;
+        resetAnimation(root);
+    }
+
+    render() {
+        return html`<div class="relative">
+            <button
+                class=" ${this.highlight
+                    ? this.highlightAnimation + " animate-infinite animate-ease-in-out"
+                    : ""} w-12 h-12 flex justify-center items-center"
+                @click=${() => this.handleClick()}
+            >
+                <i class="icon !w-6 !h-6 ${this.highlight ? `${this.highlightAnimationIcon} fill-primary` : ""}">${this.getIcon()}</i>
+            </button>
+            <div
+                class="${this.highlight && this.value
+                    ? ""
+                    : "hidden"} absolute left-[60%] bottom-[55%] rounded-full bg-primary text-primary-fg text-xs px-1 text-center"
+            >
+                ${this.value}
+            </div>
+        </div>`;
+    }
+
+    abstract handleClick(): void;
+    abstract getIcon(): TemplateResult;
+}
+
+// FIXME hide once scrollTop < 10px, need to think about how to handle renderToClick
+@customElement("up-button")
+export class UpButton extends FloatingButton {
+    @property()
+    inContainer = false;
+
+    @property()
+    clicked: () => void = () => {
+        const scrollParent = getScrollParent(this);
+        scrollParent?.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    constructor() {
+        super();
+        this.hide = true;
+        this.highlightAnimation = "";
+        this.highlightAnimationIcon = "animate-pulse";
     }
 
     connectedCallback(): void {
@@ -67,17 +97,24 @@ export abstract class FloatingButton extends LitElement {
         getScrollParent(this)!.removeEventListener("scroll", this.scrollHandler);
     }
 
-    protected updated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
-        const root = this.renderRoot.children[0] as HTMLElement;
-        resetAnimation(root);
+    handleClick(): void {
+        this.highlight = false;
+        this.clicked();
+    }
+
+    getIcon(): TemplateResult {
+        return html`${arrowUpDoubleIcon}`;
     }
 
     render() {
+        const normalStyle =
+            "w-12 h-12 flex justify-center items-center bg-background dark:bg-divider border border-divider rounded-full fancy-shadow";
+        const highlightStyle = "w-12 h-12 flex justify-center items-center bg-primary rounded-full fancy-shadow";
+
         return html`<div
-            class="fixed z-10 bottom-4 ${this.hide && !this.highlight
+            class="${this.inContainer ? "absolute bottom-4 md:fixed" : "fixed z-10 bottom-4 ml-4 md:-ml-12"} ${this.hide && !this.highlight
                 ? "animate-fade animate-reverse disable-pointer-events"
                 : "animate-fade enable-pointer-events"} animate-duration-300"
-            style="transform: ${this.translateX(this.getOffset())};"
         >
             <button
                 class="${this.highlight ? highlightStyle + " " + this.highlightAnimation + " animate-infinite animate-ease-in-out " : normalStyle}"
@@ -97,41 +134,8 @@ export abstract class FloatingButton extends LitElement {
         </div>`;
     }
 
-    abstract handleClick(): void;
-    abstract getIcon(): TemplateResult;
-    abstract getOffset(): string;
-}
-
-// FIXME hide once scrollTop < 10px, need to think about how to handle renderToClick
-@customElement("up-button")
-export class UpButton extends FloatingButton {
-    @property()
-    clicked: () => void = () => {
-        const scrollParent = getScrollParent(this);
-        scrollParent?.scrollTo({ top: 0, behavior: "smooth" });
-    };
-
-    constructor() {
-        super();
-        this.hide = true;
-        this.highlightAnimation = "";
-        this.highlightAnimationIcon = "animate-pulse";
-        this.translateX = () => "translate(1em)";
-    }
-
-    handleClick(): void {
-        this.highlight = false;
-        this.clicked();
-    }
-
-    getIcon(): TemplateResult {
-        return html`${arrowUpDoubleIcon}`;
-    }
-
-    getOffset(): string {
-        return "+ 4em";
-    }
-
+    lastScrollTop = 0;
+    scrollHandler = () => this.handleScroll();
     handleScroll() {
         if (this.highlight) {
             if (getScrollParent(this.parentElement)!.scrollTop < 80) {
@@ -165,9 +169,6 @@ export class FeedsButton extends FloatingButton {
     getIcon(): TemplateResult {
         return html`${cloudIcon}`;
     }
-    getOffset(): string {
-        return "- 12em";
-    }
 }
 
 @customElement("lists-button")
@@ -177,9 +178,6 @@ export class ListsButton extends FloatingButton {
     }
     getIcon(): TemplateResult {
         return html`${listIcon}`;
-    }
-    getOffset(): string {
-        return "- 16em";
     }
 }
 
@@ -195,9 +193,6 @@ export class OpenPostEditorButton extends FloatingButton {
     }
     getIcon(): TemplateResult {
         return html`${editIcon}`;
-    }
-    getOffset(): string {
-        return "- 8em";
     }
 
     sentPost(post: PostView) {
@@ -217,10 +212,6 @@ export class NotificationsButton extends FloatingButton {
         if (response == "granted") {
             setupPushNotifications();
         }
-    }
-
-    getOffset() {
-        return "- 4em";
     }
 
     getIcon(): TemplateResult {
@@ -422,5 +413,77 @@ export class SlideButton extends LitElement {
                 },
             })
         );
+    }
+}
+
+// @ts-ignore
+import logoSvg from "../../html/logo.svg";
+
+@customElement("nav-buttons")
+export class NavButtons extends LitElement {
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    @property()
+    hide = false;
+
+    @property()
+    minimal = false;
+
+    lastScrollTop = 0;
+    scrollHandler = () => this.handleScroll();
+    handleScroll() {
+        const dir = this.lastScrollTop - getScrollParent(this.parentElement)!.scrollTop;
+        if (dir != 0) {
+            this.hide = dir < 0;
+        }
+        this.lastScrollTop = getScrollParent(this.parentElement)!.scrollTop;
+    }
+
+    connectedCallback(): void {
+        super.connectedCallback();
+        const scrollParent = getScrollParent(this);
+        if (scrollParent == document.documentElement) {
+            window.addEventListener("scroll", this.scrollHandler);
+        } else {
+            getScrollParent(this)!.addEventListener("scroll", this.scrollHandler);
+        }
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        getScrollParent(this)!.removeEventListener("scroll", this.scrollHandler);
+    }
+
+    render() {
+        const animationStyle = `transition-transform  ${this.hide ? "translate-y-full md:translate-y-0" : "translate-y-0"}`;
+        const baseStyle = `${animationStyle} fixed bg-background z-10 px-4 border-t border-divider/50 dark:border-divider`;
+        const mobileStyle = `w-full bottom-0 max-w-[640px]`;
+        const desktopStyle = `md:pl-4 md:pr-0 md:-ml-16 md:w-auto md:border-none md:top-0`;
+
+        return html`<div class="${baseStyle} ${mobileStyle} ${desktopStyle}">
+            ${!this.minimal ? html`<up-button class="absolute" inContainer=${true}></up-button>` : nothing}
+            <div class="flex justify-between md:flex-col md:justify-start md:align-center md:gap-2">
+                ${!this.minimal
+                    ? html`<button
+                              class="flex items-center justify-center w-12 h-12"
+                              @click=${() => document.body.append(dom(html`<settings-overlay></settings-overlay>`)[0])}
+                          >
+                              <i class="icon !w-6 !h-6">${settingsIcon}</i>
+                          </button>
+                          <lists-button></lists-button>
+                          <feeds-button></feeds-button>
+                          <button
+                              class="flex items-center justify-center w-12 h-12"
+                              @click=${() => document.body.append(dom(html`<search-overlay></search-overlay>`)[0])}
+                          >
+                              <i class="icon !w-6 !h-6">${searchIcon}</i>
+                          </button>`
+                    : nothing}
+                <notifications-button></notifications-button>
+                <open-post-editor-button></open-post-editor-button>
+            </div>
+        </div>`;
     }
 }

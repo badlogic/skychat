@@ -153,6 +153,7 @@ export class SearchOverlay extends HashNavOverlay {
                 return;
             }
             if (self) query = "from:" + Store.getUser()?.profile.handle + " " + query;
+            if (query.startsWith("From:")) query = query.replace("From:", "from:");
             this.resultsElement!.append(dom(html`<posts-stream-view .stream=${new PostSearchStream(query, false)}></posts-streams-view>`)[0]);
         } else if (type == i18n("Feeds")) {
             if (query.length == 0)

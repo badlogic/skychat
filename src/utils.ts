@@ -574,3 +574,27 @@ export function debugLog(message: string, obj?: any) {
     console.log(`${(debugLogId++).toString().padStart(10, "0")} -- ${message}`);
     if (obj) console.log(obj);
 }
+
+export async function getVideoDimensions(url: string): Promise<{ width: number; height: number } | Error> {
+    try {
+        return await new Promise((resolve, reject) => {
+            const video = document.createElement("video");
+
+            video.addEventListener("loadedmetadata", function () {
+                const result = { width: video.videoWidth, height: video.videoHeight };
+                video.pause();
+                video.src = "";
+                video.load();
+                resolve(result);
+            });
+
+            video.addEventListener("error", function () {
+                reject("Error loading video");
+            });
+
+            video.src = url;
+        });
+    } catch (e) {
+        return error("Couldn't load video", e);
+    }
+}

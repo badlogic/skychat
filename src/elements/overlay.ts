@@ -1,6 +1,5 @@
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { pushHash } from "./routing";
 
 class BaseGuard<T> {
@@ -158,7 +157,7 @@ export abstract class Overlay extends LitElement {
 
     closeButton(grow = true): TemplateResult {
         return html`<button @click=${() => this.close()} class="${grow ? "ml-auto" : ""} -mr-4 flex items-center justify-center w-10 h-10">
-            <i class="icon !w-5 !h-5 fill-muted-fg">${closeIcon}</i>
+            <i class="icon !w-6 !h-6 fill-muted-fg">${closeIcon}</i>
         </button>`;
     }
 
@@ -185,10 +184,8 @@ export abstract class HashNavOverlay extends Overlay {
 }
 
 // @ts-ignore
-import logoSvg from "../../html/logo.svg";
 import { Messages, i18n } from "../i18n";
 import { closeIcon } from "../icons";
-import { dom, getScrollParent } from "../utils";
 
 export function renderTopbar(title: keyof Messages | HTMLElement, buttons?: TemplateResult | HTMLElement) {
     return html`<top-bar .heading=${title instanceof HTMLElement ? title : i18n(title)} .buttons=${buttons}> </top-bar>`;
@@ -209,11 +206,11 @@ export class Topbar extends LitElement {
     render() {
         return html`
             <div
-                class="fixed top-0 z-10 w-[640px] max-w-[100%] h-10 px-4 flex items-center bg-background border-divider fancy-shadow sm:rounded-b-lg"
+                class="fixed top-0 z-10 w-[640px] max-w-[100%] h-12 px-4 flex items-center bg-topbar dark:bg-topbar-dark border-b border-divider backdrop-blur-[8px]"
             >
                 ${this.heading instanceof HTMLElement ? this.heading : html`<span class="font-semibold">${this.heading}</span>`} ${this.buttons}
             </div>
-            <div class="w-full h-10"></div>
+            <div class="w-full h-12"></div>
         `;
     }
 }

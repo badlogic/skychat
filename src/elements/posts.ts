@@ -48,6 +48,7 @@ import {
     error,
     fetchApi,
     getTimeDifference,
+    getVideoDimensions,
     hasLinkOrButtonParent,
     itemPlaceholder,
     onVisibilityChange,
@@ -383,8 +384,67 @@ export function tryEmbedYouTubeVideo(
     return undefined;
 }
 
+export function tryEmebedMP4(
+    cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
+    minimal: boolean
+): TemplateResult | undefined {
+    const url = cardEmbed.uri;
+    if (!url.endsWith(".mp4")) return;
+
+    const outerDom = dom(html`<div class="mt-2"></div>`)[0];
+    getVideoDimensions(url).then((dimensions) => {
+        if (dimensions instanceof Error) {
+            renderCardEmbed(cardEmbed, minimal, false);
+            return;
+        }
+
+        const videoDom = dom(
+            html`<div
+                class="flex justify-center items-center"
+                @click=${(ev: Event) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    ev.stopImmediatePropagation();
+                    document.body.append(dom(html`<video-image-overlay .videoUrl=${url}></div>`)[0]);
+                }}
+            >
+                <video
+                    src="${url}"
+                    class="w-full cursor-pointer max-h-[40vh]"
+                    style="aspect-ratio: ${dimensions.width}/${dimensions.height};"
+                    muted
+                    loop
+                    playsinline
+                    disableRemotePlayback
+                ></video>
+            </div>`
+        )[0];
+        outerDom.append(videoDom);
+        onVisibilityChange(
+            videoDom,
+            () => {
+                const video = videoDom.querySelector("video") as HTMLVideoElement;
+                video.play();
+                console.log("Playing video");
+            },
+            () => {
+                const video = videoDom.querySelector("video") as HTMLVideoElement;
+                video.pause();
+                console.log("Pausing video");
+            }
+        );
+    });
+    return html`${outerDom}`;
+}
+
 export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External, minimal: boolean, tryEmbeds = true) {
     if (tryEmbeds) {
+        const mp4Embed = tryEmebedMP4(cardEmbed, minimal);
+        if (mp4Embed) {
+            if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- MP4");
+            return mp4Embed;
+        }
+
         const youTubeEmbed = tryEmbedYouTubeVideo(cardEmbed, minimal);
         if (youTubeEmbed) {
             if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- YouTube");
