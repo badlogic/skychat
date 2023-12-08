@@ -1,5 +1,5 @@
 import { html } from "lit";
-import { FeedOverlay, ListEditor, ListMembersOverlay, ListOverlay, ListPicker, ProfileOverlay, ThreadOverlay } from ".";
+import { FeedOverlay, HashtagOverlay, ListEditor, ListMembersOverlay, ListOverlay, ListPicker, ProfileOverlay, ThreadOverlay } from ".";
 import { dom, splitAtUri, combineAtUri } from "../utils";
 import { i18n } from "../i18n";
 import { FollowersStream, FollowingStream, PostLikesStream, PostRepostsStream } from "../streams";
@@ -213,6 +213,13 @@ export async function routeHash(hash: string) {
                 const child = document.body.children[document.body.children.length - 1];
                 if (child.tagName == "HASHTAG-PICKER") return;
                 document.body.append(dom(html`<hashtag-picker .pushState=${false}></hashtag-picker>`)[0]);
+                return;
+            }
+
+            if (tokens[0] == "hashtag" && tokens[1]) {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "HASHTAG-OVERLAY" && (child as HashtagOverlay).hash == tokens[1]) return;
+                document.body.append(dom(html`<hashtag-overlay .hash=${tokens[1].replaceAll("#", "")} .pushState=${false}></hashtag-overlay>`)[0]);
                 return;
             }
 

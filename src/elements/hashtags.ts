@@ -55,7 +55,7 @@ export class HashtagsStreamView extends StreamView<TrendingHashtag> {
 }
 
 @customElement("hashtag-overlay")
-export class HashOverlay extends HashNavOverlay {
+export class HashtagOverlay extends HashNavOverlay {
     @property()
     hash?: string;
 

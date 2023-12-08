@@ -96,13 +96,12 @@ export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
             segments.push(html`<a href="${segment.link?.uri}" target="_blank" class="break-all">${segment.text}</a>`);
         } else if (segment.isTag()) {
             segments.push(html`<a
-                href="https://skychat.social/#search/?q=${encodeURIComponent(segment.text)}&t=1&s=false"
+                href="https://skychat.social/#hashtag/${encodeURIComponent(segment.text)}"
                 target="_blank"
                 @click=${(ev: Event) => {
                     ev.preventDefault();
                     ev.stopPropagation();
-                    const startHash = `#search/?q=${encodeURIComponent(segment.text)}&t=1&s=false`;
-                    document.body.append(dom(html`<search-overlay .startHash=${startHash}></search-overlay>`)[0]);
+                    document.body.append(dom(html`<hashtag-overlay .hash=${segment.text.replaceAll("#", "")}></hashtag-overlay>`)[0]);
                 }}
                 >${segment.text}</a
             >`);
