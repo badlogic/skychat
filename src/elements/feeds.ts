@@ -91,21 +91,22 @@ export class GeneratorViewElement extends LitElement {
             >
         </div>`;
 
-        const buttons = html`<div class="flex gap-2 ml-auto">
+        const buttons = html`<div class="flex ml-auto">
             ${this.viewStyle != "full"
                 ? html`<icon-toggle
                       @change=${(ev: CustomEvent) => (this.expandDetails = !this.expandDetails)}
                       .icon=${html`<i class="icon !w-6 !h-6">${infoIcon}</i>`}
                       .value=${this.expandDetails}
+                      class="w-8 h-8"
                   ></icon-toggle>`
                 : nothing}
             ${this.editable && Store.getUser()
                 ? html` ${splitAtUri(generator.uri).repo != Store.getUser()?.profile.did
                       ? html`${prefs.saved?.includes(generator.uri) || prefs.pinned?.includes(generator.uri)
-                            ? html`<button @click=${() => this.removeFeed()}>
+                            ? html`<button @click=${() => this.removeFeed()} class="flex items-center justify-center w-8 h-8">
                                   <i class="icon !w-6 !h-6 fill-muted-fg">${minusIcon}</i>
                               </button>`
-                            : html`<button @click=${() => this.addFeed()}>
+                            : html`<button @click=${() => this.addFeed()} class="flex items-center justify-center w-8 h-8">
                                   <i class="icon !w-6 !h-6 fill-primary">${plusIcon}</i>
                               </button>`}`
                       : nothing}`

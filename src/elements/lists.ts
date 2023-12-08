@@ -150,24 +150,24 @@ export class ListViewElement extends LitElement {
         const modListEditButtons = html`<div class="flex items-center">
             <icon-toggle
                 @change=${(ev: CustomEvent) => this.toggleMute(ev)}
-                .icon=${html`<i class="icon !w-5 !h-5">${muteIcon}</i>`}
+                .icon=${html`<i class="icon !w-6 !h-6">${muteIcon}</i>`}
                 .value=${muteAndBlockLists.muteListUris.has(this.list.uri)}
                 class="w-8 h-8"
             ></icon-toggle>
             <icon-toggle
                 @change=${(ev: CustomEvent) => this.toggleBlock(ev)}
-                .icon=${html`<i class="icon !w-5 !h-5">${blockIcon}</i>`}
+                .icon=${html`<i class="icon !w-6 !h-6">${blockIcon}</i>`}
                 .value=${muteAndBlockLists.blockListUris.has(this.list.uri)}
                 class="w-8 h-8"
             ></icon-toggle>
             ${this.list.creator.did == Store.getUser()?.profile.did
                 ? html`<div class="flex items-center">
                       <button class="flex items-center justify-center w-8 h-8" @click=${() => this.editList()}>
-                          <i class="icon !w-5 !h-5 fill-muted-fg">${editIcon}</i></button
+                          <i class="icon !w-6 !h-6 fill-muted-fg">${editIcon}</i></button
                       ><icon-toggle
                           @change=${(ev: CustomEvent) => (!ev.detail.value ? this.addList() : this.removeList())}
-                          .icon=${html`<i class="icon !w-5 !h-5">${minusIcon}</i>`}
-                          .iconTrue=${html`<i class="icon !w-5 !h-5">${plusIcon}</i>`}
+                          .icon=${html`<i class="icon !w-6 !h-6">${minusIcon}</i>`}
+                          .iconTrue=${html`<i class="icon !w-6 !h-6">${plusIcon}</i>`}
                           .value=${this.editCheck ? this.editCheck(list) : defaultEditCheck()}
                           class="w-8 h-8"
                       ></icon-toggle>
@@ -178,13 +178,13 @@ export class ListViewElement extends LitElement {
         const listEditButtons = html`<div class="flex items-center">
             ${this.list.creator.did == Store.getUser()?.profile.did
                 ? html`<button class="flex items-center justify-center w-8 h-8" @click=${() => this.editList()}>
-                      <i class="icon !w-5 !h-5 fill-muted-fg">${editIcon}</i>
+                      <i class="icon !w-6 !h-6 fill-muted-fg">${editIcon}</i>
                   </button>`
                 : nothing}
             <icon-toggle
                 @change=${(ev: CustomEvent) => (!ev.detail.value ? this.addList() : this.removeList())}
-                .icon=${html`<i class="icon !w-5 !h-5">${minusIcon}</i>`}
-                .iconTrue=${html`<i class="icon !w-5 !h-5">${plusIcon}</i>`}
+                .icon=${html`<i class="icon !w-6 !h-6">${minusIcon}</i>`}
+                .iconTrue=${html`<i class="icon !w-6 !h-6">${plusIcon}</i>`}
                 .value=${this.editCheck ? this.editCheck(list) : defaultEditCheck()}
                 class="w-8 h-8"
             ></icon-toggle>

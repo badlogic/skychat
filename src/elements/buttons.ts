@@ -19,16 +19,18 @@ export abstract class FloatingButton extends LitElement {
     highlight = false;
 
     @property()
-    highlightAnimation = "animate-wiggle-more";
-
-    @property()
-    highlightAnimationIcon = "";
+    highlightAnimation = "animate-pulse";
 
     @property()
     hide = false;
 
     @property()
     value?: string;
+
+    @property()
+    inContainer = true;
+
+    abstract getOffset(): string;
 
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
@@ -40,19 +42,27 @@ export abstract class FloatingButton extends LitElement {
     }
 
     render() {
-        return html`<div class="relative">
+        const normalStyle =
+            "w-12 h-12 flex justify-center items-center bg-background dark:bg-divider border border-divider rounded-full fancy-shadow";
+        const highlightStyle = "w-12 h-12 flex justify-center items-center bg-primary rounded-full fancy-shadow";
+
+        return html`<div
+            class="fixed z-10 ${this.getOffset()} ${this.hide && !this.highlight
+                ? "animate-fade animate-reverse disable-pointer-events"
+                : "animate-fade enable-pointer-events"} animate-duration-300"
+        >
             <button
-                class=" ${this.highlight
-                    ? this.highlightAnimation + " animate-infinite animate-ease-in-out"
-                    : ""} w-12 h-12 flex justify-center items-center"
+                class="${this.highlight ? highlightStyle + " animate-infinite animate-ease-in-out " : normalStyle}"
                 @click=${() => this.handleClick()}
             >
-                <i class="icon !w-6 !h-6 ${this.highlight ? `${this.highlightAnimationIcon} fill-primary` : ""}">${this.getIcon()}</i>
+                <i class="icon !w-5 !h-5 ${this.highlight ? `${this.highlightAnimation} animate-infinite animate-ease-in-out fill-[#fff]` : ""}"
+                    >${this.getIcon()}</i
+                >
             </button>
             <div
                 class="${this.highlight && this.value
                     ? ""
-                    : "hidden"} pointer-events-none absolute cursor-pointer left-[60%] bottom-[55%] rounded-full bg-primary text-primary-fg text-xs px-1 text-center"
+                    : "hidden"} pointer-events-none absolute cursor-pointer left-[70%] bottom-[70%] rounded-full border border-white bg-primary text-primary-fg text-xs px-1 text-center"
             >
                 ${this.value}
             </div>
@@ -66,9 +76,6 @@ export abstract class FloatingButton extends LitElement {
 @customElement("up-button")
 export class UpButton extends FloatingButton {
     @property()
-    inContainer = false;
-
-    @property()
     clicked: () => void = () => {
         const scrollParent = getScrollParent(this);
         scrollParent?.scrollTo({ top: 0, behavior: "smooth" });
@@ -77,8 +84,6 @@ export class UpButton extends FloatingButton {
     constructor() {
         super();
         this.hide = true;
-        this.highlightAnimation = "";
-        this.highlightAnimationIcon = "animate-pulse";
     }
 
     connectedCallback(): void {
@@ -105,32 +110,8 @@ export class UpButton extends FloatingButton {
         return html`${arrowUpDoubleIcon}`;
     }
 
-    render() {
-        const normalStyle =
-            "w-12 h-12 flex justify-center items-center bg-background dark:bg-divider border border-divider rounded-full fancy-shadow";
-        const highlightStyle = "w-12 h-12 flex justify-center items-center bg-primary rounded-full fancy-shadow";
-
-        return html`<div
-            class="${this.inContainer ? "absolute bottom-4 md:fixed" : "fixed z-10 bottom-4 ml-4 md:-ml-12"} ${this.hide && !this.highlight
-                ? "animate-fade animate-reverse disable-pointer-events"
-                : "animate-fade enable-pointer-events"} animate-duration-300"
-        >
-            <button
-                class="${this.highlight ? highlightStyle + " " + this.highlightAnimation + " animate-infinite animate-ease-in-out " : normalStyle}"
-                @click=${() => this.handleClick()}
-            >
-                <i class="icon !w-5 !h-5 ${this.highlight ? `${this.highlightAnimationIcon} animate-infinite animate-ease-in-out fill-[#fff]` : ""}"
-                    >${this.getIcon()}</i
-                >
-            </button>
-            <div
-                class="${this.highlight && this.value
-                    ? ""
-                    : "hidden"} pointer-events-none absolute cursor-pointer left-[70%] bottom-[70%] rounded-full border border-white bg-primary text-primary-fg text-xs px-1 text-center"
-            >
-                ${this.value}
-            </div>
-        </div>`;
+    getOffset() {
+        return `${this.inContainer ? "bottom-16" : "bottom-4"} ml-4 md:bottom-4 ${this.inContainer ? "md:ml-0" : "md:-ml-12"}`;
     }
 
     lastScrollTop = 0;
@@ -160,8 +141,65 @@ export class UpButton extends FloatingButton {
     }
 }
 
+@customElement("post-editor-button")
+export class PostEditorButton extends FloatingButton {
+    @property()
+    text = "";
+
+    @property()
+    anchor: "none" | "bar-right" | "right" = "right";
+
+    @property()
+    initialText = "";
+
+    constructor() {
+        super();
+        this.highlight = true;
+        this.highlightAnimation = "";
+    }
+
+    handleClick(): void {
+        document.body.append(
+            dom(html`<post-editor-overlay .text=${this.initialText} .sent=${(post: PostView) => this.sentPost(post)}></post-editor-overly>`)[0]
+        );
+    }
+    getIcon(): TemplateResult {
+        return html`${editIcon}`;
+    }
+
+    getOffset() {
+        switch (this.anchor) {
+            case "none":
+                return "mt-8";
+            case "bar-right":
+                return "bottom-16 transform translate-x-[calc(min(100vw,640px)-64px)]";
+            case "right":
+                return "bottom-4 transform translate-x-[calc(min(100vw,640px)-64px)]";
+        }
+    }
+
+    sentPost(post: PostView) {
+        document.body.append(dom(html`<thread-overlay .postUri=${post.uri}></post-editor-overly>`)[0]);
+    }
+}
+
+export abstract class BarButton extends LitElement {
+    abstract getIcon(): TemplateResult;
+    abstract handleClick(): void;
+
+    protected createRenderRoot(): Element | ShadowRoot {
+        return this;
+    }
+
+    render() {
+        return html`<button class="flex items-center justify-center w-12 h-12" @click=${() => this.handleClick()}>
+            <i class="icon !w-6 !h-6">${this.getIcon()}</i>
+        </button>`;
+    }
+}
+
 @customElement("feeds-button")
-export class FeedsButton extends FloatingButton {
+export class FeedsButton extends BarButton {
     handleClick(): void {
         document.body.append(dom(html`<feed-picker></feed-picker>`)[0]);
     }
@@ -171,7 +209,7 @@ export class FeedsButton extends FloatingButton {
 }
 
 @customElement("lists-button")
-export class ListsButton extends FloatingButton {
+export class ListsButton extends BarButton {
     handleClick(): void {
         document.body.append(dom(html`<list-picker></list-picker>`)[0]);
     }
@@ -181,7 +219,7 @@ export class ListsButton extends FloatingButton {
 }
 
 @customElement("hash-button")
-export class HashButton extends FloatingButton {
+export class HashButton extends BarButton {
     handleClick(): void {
         document.body.append(dom(html`<hashtag-picker></hashtag-picker>`)[0]);
     }
@@ -190,32 +228,29 @@ export class HashButton extends FloatingButton {
     }
 }
 
-@customElement("open-post-editor-button")
-export class OpenPostEditorButton extends FloatingButton {
-    @property()
-    text = "";
+@customElement("settings-button")
+export class SettingsButton extends BarButton {
+    getIcon(): TemplateResult {
+        return html`${settingsIcon}`;
+    }
 
     handleClick(): void {
-        document.body.append(
-            dom(html`<post-editor-overlay .text=${this.text} .sent=${(post: PostView) => this.sentPost(post)}></post-editor-overly>`)[0]
-        );
-    }
-    getIcon(): TemplateResult {
-        return html`${editIcon}`;
-    }
-
-    sentPost(post: PostView) {
-        document.body.append(dom(html`<thread-overlay .postUri=${post.uri}></post-editor-overly>`)[0]);
+        document.body.append(dom(html`<settings-overlay></settings-overlay>`)[0]);
     }
 }
 
 @customElement("notifications-button")
-export class NotificationsButton extends FloatingButton {
+export class NotificationsButton extends BarButton {
+    @property()
+    highlight = false;
+
+    @property()
+    value?: string;
+
     unsub: () => void = () => {};
 
     async handleClick() {
         document.body.append(dom(html`<notifications-stream-overlay></notifications-stream-overlay>`)[0]);
-        this.highlight = false;
         // FIXME tell the user that they can have push notifications
         let response = await Notification.requestPermission();
         if (response == "granted") {
@@ -243,6 +278,26 @@ export class NotificationsButton extends FloatingButton {
     disconnectedCallback(): void {
         super.disconnectedCallback();
         this.unsub();
+    }
+
+    render() {
+        return html`<div class="relative">
+            <button
+                class=" ${this.highlight
+                    ? "animate-wiggle-more animate-infinite animate-ease-in-out"
+                    : ""} w-12 h-12 flex justify-center items-center"
+                @click=${() => this.handleClick()}
+            >
+                <i class="icon !w-6 !h-6 ${this.highlight ? `fill-primary` : ""}">${this.getIcon()}</i>
+            </button>
+            <div
+                class="${this.highlight && this.value
+                    ? ""
+                    : "hidden"} pointer-events-none absolute cursor-pointer left-[60%] bottom-[55%] rounded-full bg-primary text-primary-fg text-xs px-1 text-center"
+            >
+                ${this.value}
+            </div>
+        </div>`;
     }
 }
 
@@ -288,91 +343,8 @@ export class ButtonGroup extends LitElement {
     }
 }
 
-@customElement("pull-to-refresh")
-export class PullToRefresh extends LitElement {
-    private startY: number = 0;
-    private isPulling: boolean = false;
-    private threshold = 100;
-
-    @property()
-    onRefresh: () => void = () => {};
-
-    @property()
-    distance = 0;
-
-    protected createRenderRoot(): Element | ShadowRoot {
-        return this;
-    }
-
-    connectedCallback() {
-        super.connectedCallback();
-        const scrollContainer = this.getScrollContainer();
-        if (scrollContainer) {
-            scrollContainer.addEventListener("scroll", this.handleScroll, { passive: false });
-            scrollContainer.addEventListener("touchstart", this.handleTouchStart, { passive: false });
-            scrollContainer.addEventListener("touchmove", this.handleTouchMove, { passive: false });
-            scrollContainer.addEventListener("touchend", this.handleTouchEnd, { passive: true });
-            this.isPulling = scrollContainer.scrollTop == 0;
-        }
-    }
-
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        const scrollContainer = this.getScrollContainer();
-        if (scrollContainer) {
-            scrollContainer.removeEventListener("scroll", this.handleScroll);
-            scrollContainer.removeEventListener("touchstart", this.handleTouchStart);
-            scrollContainer.removeEventListener("touchmove", this.handleTouchMove);
-            scrollContainer.removeEventListener("touchend", this.handleTouchEnd);
-        }
-    }
-
-    private getScrollContainer(): HTMLElement | null {
-        return this.parentElement;
-    }
-
-    private handleScroll = (event: Event) => {
-        const target = event.target as HTMLElement;
-        this.isPulling = target.scrollTop < 10;
-    };
-
-    private handleTouchStart = (event: TouchEvent) => {
-        if (this.isPulling) {
-            this.startY = event.touches[0].clientY;
-        }
-    };
-
-    private handleTouchMove = (event: TouchEvent) => {
-        if (!this.isPulling) return;
-
-        const touchY = event.touches[0].clientY;
-        let rawDistance = touchY - this.startY;
-        rawDistance = rawDistance / 4;
-        rawDistance = Math.max(0, Math.min(rawDistance, 300));
-        this.style.top = rawDistance + "px";
-    };
-
-    private handleTouchEnd = (event: TouchEvent) => {
-        if (!this.isPulling) return;
-
-        const currentDistance = event.changedTouches[0].clientY - this.startY;
-        if (currentDistance > this.threshold) {
-            this.onRefresh();
-        }
-
-        this.isPulling = this.getScrollContainer()?.scrollTop == 0;
-        this.style.top = 0 + "px";
-    };
-
-    render() {
-        return html`<div class="w-10 h-10 bg-primary text-primary-fg rounded-full flex items-center justify-center">
-            <i class="icon !w-8 !h-8 animate-spin fill-[#fff]">${spinnerIcon}</i>
-        </div>`;
-    }
-}
-
 @customElement("loading-spinner")
-export class AnimatedSpinner extends LitElement {
+export class LoadingSpinner extends LitElement {
     protected createRenderRoot(): Element | ShadowRoot {
         return this;
     }
@@ -470,12 +442,13 @@ export class NavButtons extends LitElement {
         const animationStyle = `transition-transform  ${this.hide ? "translate-y-full md:translate-y-0" : "translate-y-0"}`;
         const baseStyle = `${animationStyle} fixed bg-topbar dark:bg-topbar-dark border-t border-divider backdrop-blur-[8px]`;
         const mobileStyle = `w-full bottom-0 max-w-[640px]`;
-        const desktopStyle = `md:pl-4 md:pr-0 md:-ml-16 md:w-auto md:border-none md:top-0`;
+        const desktopStyle = `md:pl-4 md:pr-0 md:-ml-20 md:w-auto md:border-none md:top-0`;
         const user = Store.getUser();
 
         return html`<div class="${baseStyle} ${mobileStyle} ${desktopStyle}">
-            <up-button class="absolute" inContainer=${true}></up-button>
-            <div class="flex justify-between md:flex-col md:justify-start md:align-center md:gap-2">
+            <up-button class="absolute"></up-button>
+            <post-editor-button class="absolute md:hidden" .anchor=${"bar-right"}></post-editor-button>
+            <div class="flex px-4 md:px-0 justify-between md:flex-col md:justify-start md:align-center md:gap-2">
                 <button
                     class="hidden md:flex items-center justify-center w-12 h-12"
                     @click=${() => document.body.append(dom(html`<profile-overlay .did=${user?.profile.did}></profile-overlay>`)[0])}
@@ -484,12 +457,7 @@ export class NavButtons extends LitElement {
                         ? html`<img class="w-8 max-w-[none] h-8 rounded-full fancy-shadow" src="${user.profile.avatar}" />`
                         : html`<i class="icon !w-8 !h-8">${defaultAvatar}</i>`}
                 </button>
-                <button
-                    class="flex items-center justify-center w-12 h-12"
-                    @click=${() => document.body.append(dom(html`<settings-overlay></settings-overlay>`)[0])}
-                >
-                    <i class="icon !w-6 !h-6">${settingsIcon}</i>
-                </button>
+                <settings-button class="hidden md:block"></settings-button>
                 <hash-button></hash-button>
                 <lists-button></lists-button>
                 <feeds-button></feeds-button>
@@ -500,7 +468,7 @@ export class NavButtons extends LitElement {
                     <i class="icon !w-6 !h-6">${searchIcon}</i>
                 </button>
                 <notifications-button></notifications-button>
-                <open-post-editor-button></open-post-editor-button>
+                <post-editor-button class="hidden md:block" .anchor=${"none"}></post-editor-button>
             </div>
         </div>`;
     }

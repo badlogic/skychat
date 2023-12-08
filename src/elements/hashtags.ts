@@ -79,7 +79,12 @@ export class HashtagOverlay extends HashNavOverlay {
         if (this.error) return html`<div id="error" class="align-top p-4">${this.error}</div>`;
         if (!this.hash) return html`<div id="error" class="align-top p-4">${i18n("No hashtag given")}</div>`;
 
-        return html`<posts-stream-view .stream=${new PostSearchStream(this.hash, false, true, FEED_CHECK_INTERVAL)}></posts-streams-view>`;
+        return html`<posts-stream-view .stream=${new PostSearchStream(
+            this.hash,
+            false,
+            true,
+            FEED_CHECK_INTERVAL
+        )}></posts-streams-view><post-editor-button .initialText=${"#" + this.hash + " "}></post-editor-button>`;
     }
 }
 
@@ -162,8 +167,8 @@ export class HashtagPicker extends HashNavOverlay {
             return html`
                 <icon-toggle
                     @change=${(ev: CustomEvent) => (!ev.detail.value ? this.addHashtag() : this.removeHashtag())}
-                    .icon=${html`<i class="icon !w-5 !h-5">${minusIcon}</i>`}
-                    .iconTrue=${html`<i class="icon !w-5 !h-5">${plusIcon}</i>`}
+                    .icon=${html`<i class="icon !w-6 !h-6">${minusIcon}</i>`}
+                    .iconTrue=${html`<i class="icon !w-6 !h-6">${plusIcon}</i>`}
                     .value=${true}
                     class="w-8 h-8"
                 ></icon-toggle>

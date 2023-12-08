@@ -352,6 +352,7 @@ export class ProfileOverlay extends HashNavOverlay {
                     : nothing}
             </div>
             <div class="min-h-screen">${feed}</div>
+            <post-editor-button .initialText=${"@" + this.profile.handle + " "}></post-editor-button>
         </div>`;
     }
 

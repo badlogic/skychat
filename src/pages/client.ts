@@ -1,20 +1,19 @@
-import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { LitElement, PropertyValueMap, html, nothing } from "lit";
+import { customElement, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { defaultAvatar, dom, getScrollParent, renderError } from "../utils";
+import { defaultAvatar, dom, renderError } from "../utils";
+import { AppBskyFeedPost } from "@atproto/api";
+import { FeedViewPost, GeneratorView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 // @ts-ignore
 import logoSvg from "../../html/logo.svg";
-import { ButtonGroup, FeedsButton, GeneratorViewElementAction, NotificationsButton, OpenPostEditorButton, UpButton } from "../elements";
+import { GeneratorViewElementAction } from "../elements";
 import { setupPushNotifications } from "../elements/notifications";
-import { Overlay, renderTopbar } from "../elements/overlay";
+import { renderTopbar } from "../elements/overlay";
 import { routeHash } from "../elements/routing";
 import { i18n } from "../i18n";
-import { searchIcon, settingsIcon } from "../icons";
 import { FEED_CHECK_INTERVAL, State } from "../state";
 import { Store } from "../store";
 import { ActorFeedStream, FeedPostsStream, PostSearchStream, StreamPage } from "../streams";
-import { FeedViewPost, GeneratorView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api";
 
 const feedUris = [
     "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot",
@@ -35,21 +34,6 @@ class SkychatClient extends LitElement {
 
     @query("#password")
     passwordElement?: HTMLInputElement;
-
-    @query("#notifications")
-    notifications?: HTMLElement;
-
-    @query("#up")
-    upButton?: UpButton;
-
-    @query("#feeds")
-    feedsButton?: FeedsButton;
-
-    @query("#notifications")
-    notificationsButton?: NotificationsButton;
-
-    @query("#post")
-    postButton?: OpenPostEditorButton;
 
     @state()
     selectedFeed = feedUris[0];
@@ -323,7 +307,9 @@ class SkychatClient extends LitElement {
             ></feed-stream-view>
         </div>`)[0];
 
-        const buttons = html`<div class="flex items-center ml-auto"><theme-toggle></theme-toggle></div>`;
+        const buttons = html`<div class="flex items-center ml-auto">
+            <theme-toggle></theme-toggle>
+        </div>`;
         const topbar = renderTopbar(
             dom(
                 html`<div class="flex items-center gap-2 ml-auto font-semibold">
@@ -483,6 +469,7 @@ class SkychatClient extends LitElement {
         }
         const user = Store.getUser();
         const buttons = html`<div class="ml-auto flex -mr-1">
+            <settings-button class="md:hidden !w-10 !h-10 -mt-1"></settings-button>
             <theme-toggle class="!w-10 !h-10"></theme-toggle>
             <button
                 class="flex md:hidden items-center justify-center w-10 h-10"

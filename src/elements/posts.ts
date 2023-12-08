@@ -479,11 +479,7 @@ export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | A
 
     const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
     if (Store.getDevPrefs()?.logEmbedRenders) debugLog(`   Embed render -- card ${thumb ? "with thumb" : ""}`);
-    return html`<a
-        class="h-28 overflow-x-clip text-black dark:text-white mt-2 border border-divider rounded flex"
-        target="_blank"
-        href="${cardEmbed.uri}"
-    >
+    return html`<a class="overflow-x-clip text-black dark:text-white mt-2 border border-divider rounded flex" target="_blank" href="${cardEmbed.uri}">
         ${thumb ? html`<img src="${thumb}" class="w-28 h-28 object-cover" />` : nothing}
         <div class="flex flex-col p-2 justify-center">
             <span class="text-muted-fg text-xs">${new URL(cardEmbed.uri).host}</span>
