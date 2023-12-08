@@ -380,6 +380,11 @@ export function tryEmbedYouTubeVideo(
                         >
                             ${youtubePlayButton}
                         </div>
+                        ${!minimal
+                            ? html`<span class="w-full absolute px-4 py-4 text-white font-semibold top-0 line-clamp-1 bg-[#111]/90">
+                                  ${youtubeInfo.title}
+                              </span>`
+                            : nothing}
                     </div>`
                 )[0];
                 youtubeDom.children[0].append(imgDom);
@@ -479,7 +484,11 @@ export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | A
 
     const thumb = typeof cardEmbed.thumb == "string" ? cardEmbed.thumb : cardEmbed.image;
     if (Store.getDevPrefs()?.logEmbedRenders) debugLog(`   Embed render -- card ${thumb ? "with thumb" : ""}`);
-    return html`<a class="overflow-x-clip text-black dark:text-white mt-2 border border-divider rounded flex" target="_blank" href="${cardEmbed.uri}">
+    return html`<a
+        class="boverflow-x-clip text-black dark:text-white mt-2 border border-divider rounded flex"
+        target="_blank"
+        href="${cardEmbed.uri}"
+    >
         ${thumb ? html`<img src="${thumb}" class="w-28 h-28 object-cover" />` : nothing}
         <div class="flex flex-col p-2 justify-center">
             <span class="text-muted-fg text-xs">${new URL(cardEmbed.uri).host}</span>
