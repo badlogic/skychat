@@ -529,7 +529,17 @@ export function renderImagesEmbed(images: AppBskyEmbedImages.ViewImage[], sensit
 
     const renderAlt = (image: ViewImage) => {
         return image.alt && image.alt.length > 0
-            ? html`<div class="absolute bottom-2 left-2 rounded bg-black text-white p-1 text-xs">ALT</div>`
+            ? html`<div
+                  class="absolute bottom-2 left-2 rounded bg-black text-white p-1 text-xs"
+                  @click=${(ev: MouseEvent) => {
+                      ev.preventDefault();
+                      ev.stopPropagation();
+                      ev.stopImmediatePropagation();
+                      document.body.append(dom(html`<alt-text .alt=${image.alt}></alt-text>`)[0]);
+                  }}
+              >
+                  ALT
+              </div>`
             : html`${nothing}`;
     };
 
@@ -996,11 +1006,11 @@ export class AltText extends Overlay {
     alt: string = "";
 
     renderHeader(): TemplateResult {
-        return html`${renderTopbar("Alt Text", this.closeButton())}`;
+        return html`${nothing}`;
     }
 
     renderContent(): TemplateResult {
-        return html`<div class="overflow-auto flex-1 whitespace-pre-wrap px-4 mt-4">${this.alt}</div>`;
+        return html`<div class="overflow-auto flex-1 whitespace-pre-wrap px-4 mt-4" @click=${() => this.close()}>${this.alt}</div>`;
     }
 }
 
