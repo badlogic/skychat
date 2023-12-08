@@ -22,6 +22,12 @@ export abstract class FloatingButton extends LitElement {
     highlightAnimation = "animate-pulse";
 
     @property()
+    highlightStyle = "w-12 h-12 flex justify-center items-center bg-primary rounded-full fancy-shadow";
+
+    @property()
+    highlightIconStyle = "fill-[#fff]";
+
+    @property()
     hide = false;
 
     @property()
@@ -44,7 +50,6 @@ export abstract class FloatingButton extends LitElement {
     render() {
         const normalStyle =
             "w-12 h-12 flex justify-center items-center bg-background dark:bg-divider border border-divider rounded-full fancy-shadow";
-        const highlightStyle = "w-12 h-12 flex justify-center items-center bg-primary rounded-full fancy-shadow";
 
         return html`<div
             class="fixed z-10 ${this.getOffset()} ${this.hide && !this.highlight
@@ -52,10 +57,13 @@ export abstract class FloatingButton extends LitElement {
                 : "animate-fade enable-pointer-events"} animate-duration-300"
         >
             <button
-                class="${this.highlight ? highlightStyle + " animate-infinite animate-ease-in-out " : normalStyle}"
+                class="${this.highlight ? this.highlightStyle + " animate-infinite animate-ease-in-out " : normalStyle}"
                 @click=${() => this.handleClick()}
             >
-                <i class="icon !w-5 !h-5 ${this.highlight ? `${this.highlightAnimation} animate-infinite animate-ease-in-out fill-[#fff]` : ""}"
+                <i
+                    class="icon !w-5 !h-5 ${this.highlight
+                        ? `${this.highlightAnimation} animate-infinite animate-ease-in-out ${this.highlightIconStyle}`
+                        : ""}"
                     >${this.getIcon()}</i
                 >
             </button>
@@ -84,6 +92,9 @@ export class UpButton extends FloatingButton {
     constructor() {
         super();
         this.hide = true;
+        this.highlightStyle =
+            "w-12 h-12 bg-background dark:bg-divider flex justify-center items-center border border-primary rounded-full fancy-shadow";
+        this.highlightIconStyle = "fill-primary";
     }
 
     connectedCallback(): void {

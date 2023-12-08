@@ -381,7 +381,7 @@ export function tryEmbedYouTubeVideo(
                             ${youtubePlayButton}
                         </div>
                         ${!minimal
-                            ? html`<span class="w-full absolute px-4 py-4 text-white font-semibold top-0 line-clamp-1 bg-[#111]/90">
+                            ? html`<span class="w-full absolute px-4 pt-4 text-white font-semibold top-0 line-clamp-1 bg-[#111]/90">
                                   ${youtubeInfo.title}
                               </span>`
                             : nothing}
