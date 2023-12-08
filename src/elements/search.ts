@@ -43,6 +43,9 @@ export class SearchOverlay extends HashNavOverlay {
     @property()
     self = false;
 
+    @property()
+    startHash?: string;
+
     getHash(): string {
         if (location.hash.startsWith("#search")) return location.hash;
         return "search";
@@ -57,10 +60,11 @@ export class SearchOverlay extends HashNavOverlay {
 
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
-        if (location.hash.startsWith("#search/?")) {
-            const params = location.hash.replace("#search/?", "");
+        const hash = this.startHash ?? (location.hash.startsWith("#search/?") ? location.hash : undefined);
+        if (hash) {
+            const params = hash.replace("#search/?", "");
             const url = new URL("https://" + location.host + "/?" + params);
-            const query = url.searchParams.get("q");
+            const query = url.searchParams.get("q")?.replaceAll("#", "");
             const type = url.searchParams.get("t");
             const self = url.searchParams.get("s");
             if (query != undefined && type != undefined && self != undefined) {
@@ -159,7 +163,8 @@ export class SearchOverlay extends HashNavOverlay {
         query = query.trim();
         if (!type) type = i18n("Posts");
         if (!self) self = false;
-        history.replaceState(null, "", `#search/?q=${encodeURIComponent(query)}&t=${this.showTypes.indexOf(type)}&s=${self}`);
+        const allTypes = [i18n("Users"), i18n("Posts"), i18n("Feeds"), "at-uris"];
+        history.replaceState(null, "", `#search/?q=${encodeURIComponent(query)}&t=${allTypes.indexOf(type)}&s=${self}`);
 
         if (type == i18n("Users")) {
             if (query.length == 0)

@@ -95,7 +95,18 @@ export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
         } else if (segment.isLink()) {
             segments.push(html`<a href="${segment.link?.uri}" target="_blank" class="break-all">${segment.text}</a>`);
         } else if (segment.isTag()) {
-            segments.push(html`<span class="text-blue-500">${segment.text}</span>`);
+            segments.push(html`<a
+                class="text-primary"
+                href="https://skychat.social/#search/?q=${encodeURIComponent(segment.text)}&t=1&s=false"
+                target="_blank"
+                @click=${(ev: Event) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    const startHash = `#search/?q=${encodeURIComponent(segment.text)}&t=1&s=false`;
+                    document.body.append(dom(html`<search-overlay .startHash=${startHash}></search-overlay>`)[0]);
+                }}
+                >${segment.text}</a
+            >`);
         } else {
             segments.push(html`<span>${segment.text}</span>`);
         }
@@ -805,7 +816,6 @@ export class PostViewElement extends LitElement {
     }
 
     render() {
-        // FIXME moderatePost()
         if (!this.post || !AppBskyFeedPost.isRecord(this.post.record)) {
             return html`<div class="px-4 py-2">
                 <loading-spinner></loading-spinner>
