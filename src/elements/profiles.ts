@@ -474,7 +474,7 @@ export function renderProfileNameAndHandle(profile: ProfileView, smallAvatar = f
         <span class="${smallAvatar ? "text-sm" : ""} font-semibold line-clamp-1 text-black dark:text-white hover:underline"
             >${profile.displayName ?? profile.handle}</span
         >
-        ${profile.displayName && !smallAvatar ? html`<span class="text-xs text-muted-fg">${profile.handle}</span>` : nothing}
+        ${profile.displayName && !smallAvatar ? html`<span class="text-xs text-muted-fg hover:underline">${profile.handle}</span>` : nothing}
     </div>`;
 }
 
@@ -485,7 +485,12 @@ export function renderProfile(profile: ProfileView, smallAvatar = false) {
         document.body.append(dom(html`<profile-overlay .did=${profile.did}></profile-overlay>`)[0]);
     };
 
-    return html`<a class="flex items-center gap-2" href="${getProfileUrl(profile.handle ?? profile.did)}" target="_blank" @click=${avatarClicked}>
+    return html`<a
+        class="flex items-center gap-2 hover:no-underline"
+        href="${getProfileUrl(profile.handle ?? profile.did)}"
+        target="_blank"
+        @click=${avatarClicked}
+    >
         ${renderProfileAvatar(profile, smallAvatar)} ${renderProfileNameAndHandle(profile, smallAvatar)}
     </a>`;
 }

@@ -168,6 +168,9 @@ class SkychatClient extends LitElement {
                 <div class="text-primary mt-4">
                     Install it as an app on <a href="https://www.youtube.com/shorts/Aj0B6fu0ai4">Android</a>, <a href="https://www.youtube.com/shorts/QMsncxVM48c">iOS (16+)</a>, or your PC and Mac
                 </div>
+                <div class="text-primary mt-4">
+                    View all posts for a <a href="https://www.youtube.com/shorts/LFFus_vESzk">hashtag</a> by just clicking it
+                </div>
             </div>
             <p class="mt-4">I'm currently working on implementing the last few features to have feature parity with the official client. Then I'll add the following features. Some of them will be paid features, as they require me to pay money for hosting or third party services.</p>
             <div class="text-primary mt-4">Muted words and threads</div>

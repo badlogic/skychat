@@ -623,7 +623,7 @@ export class ListPicker extends HashNavOverlay {
 
         return html`<div class="flex flex-col">
             <div class="flex items-center justify-center py-4">
-                <button @click=${() => this.newList()} class="btn rounded-full flex gap-2 items-center">${i18n("Create a new list")}</button>
+                <button @click=${() => this.newList()} class="btn rounded-full flex gap-2 items-center">${i18n("New List")}</button>
             </div>
             <div class="px-4 flex items-center text-muted-fg text-muted-fg">${i18n("Saved Lists")}</div>
             <div class="mb-2">

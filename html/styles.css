@@ -63,7 +63,7 @@
     }
 
     a {
-        @apply text-blue-500 break-words;
+        @apply text-blue-500 break-words hover:underline;
     }
 
     iframe {

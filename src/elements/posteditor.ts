@@ -241,9 +241,9 @@ export class PostEditor extends LitElement {
                 : nothing}
             ${AppBskyEmbedExternal.isMain(this.embed)
                 ? html`<div class="flex relative px-2 items-center justify-center">
-                      <div class="w-full">${this.embedRendered}</div>
+                      ${!this.isLoadingCard ? html`<div class="w-full">${this.embedRendered}</div>` : nothing}
                       ${this.isLoadingCard
-                          ? html`<div class="absolute h-10 flex items-center">
+                          ? html`<div class="w-full py-2 flex items-center justify-center">
                                 <i class="ml-2 icon !w-6 !h-6 fill-primary animate-spin">${spinnerIcon}</i>
                             </div>`
                           : nothing}
@@ -527,7 +527,7 @@ export class PostEditor extends LitElement {
         this.isLoadingCard = true;
         try {
             const linkCard = await extractLinkCard(url);
-            if (linkCard instanceof Error) return;
+            if (linkCard instanceof Error) throw linkCard;
             let imageBlob: BlobRef | undefined;
             if (linkCard.image && linkCard.image.length > 0) {
                 const originalImageData = await downloadImage(linkCard.image);
@@ -566,6 +566,7 @@ export class PostEditor extends LitElement {
             this.canPost = true;
         } catch (e) {
             console.log("Couldn't load card", e);
+            this.embed = undefined;
         } finally {
             this.isLoadingCard = false;
         }

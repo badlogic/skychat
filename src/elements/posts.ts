@@ -96,7 +96,6 @@ export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
             segments.push(html`<a href="${segment.link?.uri}" target="_blank" class="break-all">${segment.text}</a>`);
         } else if (segment.isTag()) {
             segments.push(html`<a
-                class="text-primary"
                 href="https://skychat.social/#search/?q=${encodeURIComponent(segment.text)}&t=1&s=false"
                 target="_blank"
                 @click=${(ev: Event) => {

@@ -209,6 +209,13 @@ export async function routeHash(hash: string) {
                 return;
             }
 
+            if (tokens[0] == "hashtags") {
+                const child = document.body.children[document.body.children.length - 1];
+                if (child.tagName == "HASHTAG-PICKER") return;
+                document.body.append(dom(html`<hashtag-picker .pushState=${false}></hashtag-picker>`)[0]);
+                return;
+            }
+
             if (tokens[0] == "feed" && tokens[1] && tokens[2]) {
                 const child = document.body.children[document.body.children.length - 1];
                 const atUri = combineAtUri(tokens[1], tokens[2], "app.bsky.feed.generator");

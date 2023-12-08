@@ -209,7 +209,7 @@ export abstract class PostViewStream extends Stream<PostView> {
 }
 
 export class PostSearchStream extends PostViewStream {
-    constructor(readonly query: string, readonly reversStream = true) {
+    constructor(readonly query: string, readonly reversStream = true, readonly pollNew = false, readonly pollInterval = 0) {
         const provider: StreamProvider<PostView> = async (cursor?: string, limit?: number, notify?: boolean) => {
             try {
                 const response = await State.bskyClient!.app.bsky.feed.searchPosts({ q: this.query, cursor, limit });
@@ -227,7 +227,7 @@ export class PostSearchStream extends PostViewStream {
                 return error(`Couldn't load posts for query ${this.query}, offset ${cursor}`, e);
             }
         };
-        super(provider);
+        super(provider, pollNew, pollInterval);
     }
 }
 
@@ -416,6 +416,35 @@ export class ActorListsStream extends ListViewStream {
         super((cursor?: string, limit?: number, notify?: boolean) => {
             return State.getActorLists(did, cursor, limit, notify);
         });
+    }
+}
+
+export type TrendingHashtag = { tag: string; name: string; count: number };
+
+export class TrendingHashtagsStream extends Stream<TrendingHashtag> {
+    constructor(minutes = 600) {
+        super(async (cursor?: string, limit?: number, notify?: boolean) => {
+            if (cursor == "end") return { items: [] };
+            try {
+                const response = await fetch(`https://skyfeed-trending-tags.b-cdn.net/xrpc/app.skyfeed.feed.getTrendingTags?minutes=${minutes}`);
+                if (!response.ok) throw new Error();
+                return { items: (await response.json()).tags as TrendingHashtag[], cursor: "end" };
+            } catch (e) {
+                return error("Couldn't load trending hashtags");
+            }
+        });
+    }
+
+    getItemKey(item: TrendingHashtag): string {
+        return item.tag;
+    }
+
+    getItemDate(item: TrendingHashtag): Date {
+        return new Date();
+    }
+
+    async loadDependencies(newItems: TrendingHashtag[]): Promise<void | Error> {
+        // no-op
     }
 }
 

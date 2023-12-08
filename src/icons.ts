@@ -11,6 +11,8 @@ import commentIconSvg from "remixicon/icons/Communication/chat-4-line.svg";
 // @ts-ignore
 import quoteIconSvg from "remixicon/icons/Communication/chat-quote-line.svg";
 // @ts-ignore
+import speechBubbleIconSvg from "remixicon/icons/Communication/chat-4-line.svg";
+// @ts-ignore
 import replyIconSvg from "remixicon/icons/Business/reply-line.svg";
 // @ts-ignore
 import starIconSvg from "remixicon/icons/System/star-line.svg";
@@ -94,6 +96,8 @@ import errorIconSvg from "remixicon/icons/System/error-warning-line.svg";
 import cameraIconSvg from "remixicon/icons/Media/camera-line.svg";
 // @ts-ignore
 import peopleIconSvg from "remixicon/icons/User & Faces/team-line.svg";
+// @ts-ignore
+import hashIconSvg from "remixicon/icons/Editor/hashtag.svg";
 
 import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 
@@ -145,3 +149,5 @@ export const brushIcon = unsafeHTML(brushIconSvg);
 export const errorIcon = unsafeHTML(errorIconSvg);
 export const cameraIcon = unsafeHTML(cameraIconSvg);
 export const peopleIcon = unsafeHTML(peopleIconSvg);
+export const hashIcon = unsafeHTML(hashIconSvg);
+export const speechBubbleIcon = unsafeHTML(speechBubbleIconSvg);

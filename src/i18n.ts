@@ -249,6 +249,15 @@ export interface Messages {
     Hide: string;
     Warn: string;
     Show: string;
+    "Hashtag Feed": string;
+    "Hashtag Feeds": string;
+    "Couldn't load your hashtag feeds": string;
+    "New Hashtag Feed": string;
+    "in the last": string;
+    "10 minutes": string;
+    Hour: string;
+    Day: string;
+    Week: string;
 }
 
 const english: Messages = {
@@ -405,7 +414,7 @@ const english: Messages = {
     Edit: "Edit",
     Save: "Save",
     "Search my posts": "Search my posts",
-    "Open in Bluesky": "Open in Bluesky app",
+    "Open in Bluesky": "Open in BlueSky app",
     "Push notifications": "Push notifications",
     Enabled: "Enabled",
     "New follower": "New followers",
@@ -514,6 +523,15 @@ const english: Messages = {
     Hide: "Hide",
     Warn: "Warn",
     Show: "Show",
+    "Hashtag Feed": "Hashtag Feed",
+    "Hashtag Feeds": "Hashtag Feeds",
+    "Couldn't load your hashtag feeds": "Couldn't load your hashtag feeds",
+    "New Hashtag Feed": "New Hashtag Feed",
+    "in the last": "in the last",
+    "10 minutes": "10 minutes",
+    Hour: "Hour",
+    Day: "Day",
+    Week: "Week",
 };
 
 const german: Messages = {
@@ -784,6 +802,15 @@ const german: Messages = {
     Hide: "Verstecken",
     Warn: "Warnen",
     Show: "Zeigen",
+    "Hashtag Feed": "Hashtag Feed",
+    "Hashtag Feeds": "Hashtag Feeds",
+    "Couldn't load your hashtag feeds": "Konnte deine Hashtag Feeds nicht laden",
+    "New Hashtag Feed": "Neuer Hashtag Feed",
+    "in the last": "in den letzten",
+    "10 minutes": "10 Minuten",
+    Hour: "Stunde",
+    Day: "Tag",
+    Week: "Woche",
 };
 
 export type LanguageCode = "en" | "de";

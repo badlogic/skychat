@@ -2,7 +2,7 @@ import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { LitElement, PropertyValueMap, TemplateResult, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { arrowUpDoubleIcon, bellIcon, cloudIcon, editIcon, listIcon, searchIcon, settingsIcon, spinnerIcon } from "../icons";
+import { arrowUpDoubleIcon, bellIcon, cloudIcon, editIcon, hashIcon, listIcon, searchIcon, settingsIcon, spinnerIcon } from "../icons";
 import { defaultAvatar, dom, getScrollParent } from "../utils";
 import { setupPushNotifications } from "./notifications";
 import { State } from "../state";
@@ -52,7 +52,7 @@ export abstract class FloatingButton extends LitElement {
             <div
                 class="${this.highlight && this.value
                     ? ""
-                    : "hidden"} absolute left-[60%] bottom-[55%] rounded-full bg-primary text-primary-fg text-xs px-1 text-center"
+                    : "hidden"} pointer-events-none absolute cursor-pointer left-[60%] bottom-[55%] rounded-full bg-primary text-primary-fg text-xs px-1 text-center"
             >
                 ${this.value}
             </div>
@@ -126,7 +126,7 @@ export class UpButton extends FloatingButton {
             <div
                 class="${this.highlight && this.value
                     ? ""
-                    : "hidden"} absolute left-[70%] bottom-[70%] rounded-full border border-white bg-primary text-primary-fg text-xs px-1 text-center"
+                    : "hidden"} pointer-events-none absolute cursor-pointer left-[70%] bottom-[70%] rounded-full border border-white bg-primary text-primary-fg text-xs px-1 text-center"
             >
                 ${this.value}
             </div>
@@ -177,6 +177,16 @@ export class ListsButton extends FloatingButton {
     }
     getIcon(): TemplateResult {
         return html`${listIcon}`;
+    }
+}
+
+@customElement("hash-button")
+export class HashButton extends FloatingButton {
+    handleClick(): void {
+        document.body.append(dom(html`<hashtag-picker></hashtag-picker>`)[0]);
+    }
+    getIcon(): TemplateResult {
+        return html`${hashIcon}`;
     }
 }
 
@@ -458,7 +468,7 @@ export class NavButtons extends LitElement {
 
     render() {
         const animationStyle = `transition-transform  ${this.hide ? "translate-y-full md:translate-y-0" : "translate-y-0"}`;
-        const baseStyle = `${animationStyle} fixed bg-background z-10 px-4 border-t border-divider/50 dark:border-divider`;
+        const baseStyle = `${animationStyle} fixed bg-topbar dark:bg-topbar-dark border-t border-divider backdrop-blur-[8px]`;
         const mobileStyle = `w-full bottom-0 max-w-[640px]`;
         const desktopStyle = `md:pl-4 md:pr-0 md:-ml-16 md:w-auto md:border-none md:top-0`;
         const user = Store.getUser();
@@ -480,6 +490,7 @@ export class NavButtons extends LitElement {
                 >
                     <i class="icon !w-6 !h-6">${settingsIcon}</i>
                 </button>
+                <hash-button></hash-button>
                 <lists-button></lists-button>
                 <feeds-button></feeds-button>
                 <button

@@ -264,26 +264,28 @@ export abstract class StreamView<T> extends LitElement {
             container.append(renderedItem);
         }
 
-        await waitForLitElementsToRender(container);
+        if (polledItems) {
+            await waitForLitElementsToRender(container);
 
-        // Wait for all media elements to load
-        const mediaElements = Array.from(container.querySelectorAll<HTMLImageElement>("img"));
-        await Promise.all(
-            [...mediaElements].map((media) => {
-                return new Promise<void>((resolve) => {
-                    if (media.loading == "lazy") {
-                        resolve();
-                        return;
-                    }
-                    if (media.complete) {
-                        resolve();
-                    } else {
-                        media.addEventListener("load", () => resolve(), { once: true });
-                        media.addEventListener("error", () => resolve(), { once: true });
-                    }
-                });
-            })
-        );
+            // Wait for all media elements to load
+            const mediaElements = Array.from(container.querySelectorAll<HTMLImageElement>("img"));
+            await Promise.all(
+                [...mediaElements].map((media) => {
+                    return new Promise<void>((resolve) => {
+                        if (media.loading == "lazy") {
+                            resolve();
+                            return;
+                        }
+                        if (media.complete) {
+                            resolve();
+                        } else {
+                            media.addEventListener("load", () => resolve(), { once: true });
+                            media.addEventListener("error", () => resolve(), { once: true });
+                        }
+                    });
+                })
+            );
+        }
 
         // Measure dimensions
         const bounds = container.getBoundingClientRect();
