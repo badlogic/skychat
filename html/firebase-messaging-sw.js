@@ -34174,7 +34174,8 @@ if (cid) {
     "10 minutes": "10 minutes",
     Hour: "Hour",
     Day: "Day",
-    Week: "Week"
+    Week: "Week",
+    "Share result": "Share result"
   };
   var german = {
     "Not connected": "Nicht verbunden",
@@ -34445,7 +34446,8 @@ if (cid) {
     "10 minutes": "10 Minuten",
     Hour: "Stunde",
     Day: "Tag",
-    Week: "Woche"
+    Week: "Woche",
+    "Share result": "Result teilen"
   };
   var translations = {
     en: english,

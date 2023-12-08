@@ -3,13 +3,14 @@ import { ButtonGroup, GeneratorViewElementAction, HashNavOverlay, Overlay, rende
 import { customElement, property, query, state } from "lit/decorators.js";
 import { atIcon, closeIcon, searchIcon, spinnerIcon } from "../icons";
 import { i18n } from "../i18n";
-import { defaultAvatar, dom, renderError, splitAtUri } from "../utils";
+import { copyTextToClipboard, defaultAvatar, dom, renderError, splitAtUri } from "../utils";
 import { FeedSearchStream, FeedSuggestionStream, PostSearchStream, UserSearchStream as UserSearchStream, UserSuggestionStream } from "../streams";
 import { GeneratorView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { Store } from "../store";
 import { State } from "../state";
 import { map } from "lit/directives/map.js";
 import { ProfileView } from "@atproto/api/dist/client/types/app/bsky/actor/defs.js";
+import { toast } from "./toast.js";
 
 @customElement("search-overlay")
 export class SearchOverlay extends HashNavOverlay {
@@ -42,6 +43,9 @@ export class SearchOverlay extends HashNavOverlay {
 
     @property()
     self = false;
+
+    @property()
+    canShare = false;
 
     @property()
     startHash?: string;
@@ -126,6 +130,16 @@ export class SearchOverlay extends HashNavOverlay {
                           .selected=${showType}
                       ></button-group>`
                     : nothing}
+                ${this.canShare
+                    ? html`<a
+                          class="text-primary font-semibold mt-4 text-center"
+                          @click=${() => {
+                              copyTextToClipboard(location.href);
+                              toast(i18n("Copied link to clipboard"));
+                          }}
+                          >${i18n("Share result")}</a
+                      >`
+                    : nothing}
                 ${this.selectedType == i18n("Posts") && Store.getUser()
                     ? html`<slide-button
                           id="self"
@@ -165,6 +179,9 @@ export class SearchOverlay extends HashNavOverlay {
         if (!self) self = false;
         const allTypes = [i18n("Users"), i18n("Posts"), i18n("Feeds"), "at-uris"];
         history.replaceState(null, "", `#search/?q=${encodeURIComponent(query)}&t=${allTypes.indexOf(type)}&s=${self}`);
+
+        this.canShare = query.length > 0;
+        console.log(this.canShare);
 
         if (type == i18n("Users")) {
             if (query.length == 0)

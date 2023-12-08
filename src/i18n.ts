@@ -258,6 +258,7 @@ export interface Messages {
     Hour: string;
     Day: string;
     Week: string;
+    "Share result": string;
 }
 
 const english: Messages = {
@@ -532,6 +533,7 @@ const english: Messages = {
     Hour: "Hour",
     Day: "Day",
     Week: "Week",
+    "Share result": "Share result",
 };
 
 const german: Messages = {
@@ -811,6 +813,7 @@ const german: Messages = {
     Hour: "Stunde",
     Day: "Tag",
     Week: "Woche",
+    "Share result": "Result teilen",
 };
 
 export type LanguageCode = "en" | "de";
