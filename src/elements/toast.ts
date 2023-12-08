@@ -25,10 +25,10 @@ export class Toast extends LitElement {
     }
 
     render() {
-        return html`<div class="fixed w-full ${this.bottom ? "bottom-20" : "top-0"} left-0 flex items-center justify-center z-30">
+        return html`<div class="fixed w-full ${this.bottom ? "top-12" : "top-0"} left-0 flex items-center justify-center z-30">
             <div
                 id="box"
-                class="animate-fade animate-duration-[500ms] w-full max-w-[300px] px-4 py-2 flex justify-center items-center bg-black text-white fill-white rounded-md fancy-shadow"
+                class="animate-fade animate-duration-[500ms] w-full max-w-[300px] px-4 py-2 flex justify-center items-center bg-background rounded-md fancy-shadow border border-primary"
             >
                 ${this.content}
             </div>

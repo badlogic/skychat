@@ -111,7 +111,7 @@ export class UpButton extends FloatingButton {
     }
 
     getOffset() {
-        return `${this.inContainer ? "bottom-16" : "bottom-4"} ml-4 md:bottom-4 ${this.inContainer ? "md:ml-0" : "md:-ml-12"}`;
+        return `${this.inContainer ? "bottom-16" : "bottom-4"} ml-4 md:bottom-4 ${this.inContainer ? "md:ml-0" : "md:-ml-16"}`;
     }
 
     lastScrollTop = 0;
