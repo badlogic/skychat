@@ -333,7 +333,7 @@ export function tryEmbedYouTubeVideo(
     if (videoID && videoID.length === 11) {
         const youtubeDom = dom(
             html` <div class="flex items-center justify-center">
-                <div class="mt-2 self-center ${!minimal ? "w-full" : ""} aspect-[4/3] rounded overflow-x-clip flex justify-center"></div>
+                <div class="mt-2 self-center ${!minimal ? "w-full" : ""} rounded overflow-x-clip flex justify-center"></div>
             </div>`
         )[0];
         fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoID}&format=json`)
@@ -373,7 +373,7 @@ export function tryEmbedYouTubeVideo(
                 };
                 const imgDom = dom(
                     html` <div @click=${(ev: MouseEvent) => showIFrame(ev)} class="relative flex items-center cursor-pointer">
-                        <img src="${youtubeInfo.thumbnail_url}" class="${minimal ? "max-w-[200px]" : "h-full"} w-auto mx-auto" />
+                        <img src="${youtubeInfo.thumbnail_url}" class="${minimal ? "max-w-[200px]" : ""} mx-auto" />
                         <div
                             class="absolute ${minimal ? "w-4 h-4" : "w-16 h-16"} disable-pointer-events"
                             style="top: calc(100% / 2 - ${minimal ? "8px" : "32px"}); left: calc(100% / 2 - ${minimal ? "8px" : "32px"});"
