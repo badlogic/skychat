@@ -381,9 +381,9 @@ export function tryEmbedYouTubeVideo(
                             ${youtubePlayButton}
                         </div>
                         ${!minimal
-                            ? html`<span class="w-full absolute px-4 pt-4 text-white font-semibold top-0 line-clamp-1 bg-[#111]/90">
-                                  ${youtubeInfo.title}
-                              </span>`
+                            ? html`<div class="flex items-center w-full absolute px-4 top-0 h-12 bg-[#111]/80 backdrop-blur">
+                                  <span class="text-white font-semibold line-clamp-1 bg-[#111]/90"> ${youtubeInfo.title} </span>
+                              </div>`
                             : nothing}
                     </div>`
                 )[0];
@@ -451,6 +451,84 @@ export function tryEmebedMP4(
     return html`${outerDom}`;
 }
 
+export function tryEmbedSpotify(
+    cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
+    minimal: boolean
+): TemplateResult | undefined {
+    try {
+        const url = new URL(cardEmbed.uri);
+        if (!url.hostname.includes("open.spotify.com")) return;
+        let iframeUrl = "https://open.spotify.com/embed";
+        const pathTokens = url.pathname.split("/");
+        if (pathTokens.length != 3) return;
+        iframeUrl += url.pathname;
+        return html`<iframe
+            src="${iframeUrl}"
+            frameborder="0"
+            allowtransparency="true"
+            allow="encrypted-media"
+            class="mx-auto mt-2 w-full h-[80px]"
+        ></iframe>`;
+    } catch (e) {
+        error("Couldn't embed Spotify link");
+        return;
+    }
+}
+
+export function tryEmbedTwitch(
+    cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
+    minimal: boolean
+): TemplateResult | undefined {
+    try {
+        const url = new URL(cardEmbed.uri);
+        if (!url.hostname.includes("twitch.tv")) return;
+        const thisUrl = new URL(location.href);
+        let iframeUrl = `https://player.twitch.tv/?parent=${thisUrl.hostname}&`;
+        const pathTokens = url.pathname.split("/");
+        if (pathTokens.length == 2) {
+            iframeUrl += "channel=" + pathTokens[1];
+        } else if (pathTokens.length == 3) {
+            iframeUrl += "video=" + pathTokens[2];
+        } else {
+            return;
+        }
+        return html`${dom(html`<iframe
+            src="${iframeUrl}"
+            frameborder="0"
+            allowtransparency="true"
+            allow="encrypted-media"
+            allowfullscreen="true"
+            class="mx-auto mt-2 w-full aspect-[16/9] max-h-[30%]"
+        ></iframe>`)[0]}`;
+    } catch (e) {
+        error("Couldn't embed Spotify link");
+        return;
+    }
+}
+
+export function tryEmbedTwitter(
+    cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External,
+    minimal: boolean
+): TemplateResult | undefined {
+    const link = cardEmbed.uri.split("?")[0];
+    const twitterPostRegex = /^https?:\/\/(twitter\.com|x\.com)\/(\w+)\/status\/(\d+)(\?\S*)?$/;
+    const match = link.match(twitterPostRegex);
+
+    if (match && match[3]) {
+        const tweetId = match[3];
+        return html`<iframe
+            src="https://platform.twitter.com/embed/index.html?dnt=false&embedId=twitter-widget-0&frame=false&hideCard=false&hideThread=false&id=${tweetId}&lang=en&origin=${encodeURIComponent(
+                window.location.href
+            )}&theme=light&widgetsVersion=ed20a2b%3A1601588405575&width=550px"
+            class="w-full h-[40vh] mt-2"
+            title="Twitter Tweet"
+            style="border: 0; overflow: hidden;"
+        ></iframe>`;
+    } else {
+        return undefined;
+    }
+}
+
 export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | AppBskyEmbedExternal.External, minimal: boolean, tryEmbeds = true) {
     if (tryEmbeds) {
         const mp4Embed = tryEmebedMP4(cardEmbed, minimal);
@@ -479,6 +557,24 @@ export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | A
         if (imgurEmbed) {
             if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- Imgur");
             return imgurEmbed;
+        }
+
+        const spotifyEmbed = tryEmbedSpotify(cardEmbed, minimal);
+        if (spotifyEmbed) {
+            if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- Spotify");
+            return spotifyEmbed;
+        }
+
+        const twitchEmbed = tryEmbedTwitch(cardEmbed, minimal);
+        if (twitchEmbed) {
+            if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- Twitch");
+            return twitchEmbed;
+        }
+
+        const twitterEmbed = tryEmbedTwitter(cardEmbed, minimal);
+        if (twitterEmbed) {
+            if (Store.getDevPrefs()?.logEmbedRenders) debugLog("   Embed render  -- Twitter");
+            return twitterEmbed;
         }
     }
 
@@ -852,7 +948,11 @@ export class PostViewElement extends LitElement {
         if (this.post.author.viewer?.blocking || this.post.author.viewer?.blockingByList) {
             return itemPlaceholder(
                 html`<div class="flex items-center gap-2">
-                    <span>${i18n("Post by blocked user")}</span><span class="text-xs">(${i18n("Click to view")})</span>
+                    <span
+                        >${this.post.author.viewer?.blockingByList
+                            ? i18n("User blocked by moderation list ")(this.post.author.viewer.blockingByList.name)
+                            : i18n("Post by blocked user")}</span
+                    ><span class="text-xs">(${i18n("Click to view")})</span>
                 </div>`,
                 html`${shieldIcon}`,
                 (ev: MouseEvent) => {
@@ -865,7 +965,9 @@ export class PostViewElement extends LitElement {
 
         if ((this.post.author.viewer?.muted || this.post.author.viewer?.mutedByList) && !this.unmuted) {
             return itemPlaceholder(
-                html`${i18n("Post by muted user")}<span class="ml-2 text-xs"> (${i18n("Click to view")})</span>`,
+                html`${this.post.author.viewer?.mutedByList
+                        ? i18n("User muted by moderation list ")(this.post.author.viewer.mutedByList.name)
+                        : i18n("Post by muted user")}<span class="ml-2 text-xs"> (${i18n("Click to view")})</span>`,
                 html`${shieldIcon}`,
                 (ev: MouseEvent) => {
                     ev.preventDefault();
@@ -1129,11 +1231,7 @@ export class PostOptionsElement extends PopupMenu {
                 option: "mute_user",
                 text: i18n("Mute User"),
                 icon: html`${muteIcon}`,
-                enabled:
-                    Store.getUser() != undefined &&
-                    did != this.post.author.did &&
-                    !this.post.author.viewer?.muted &&
-                    !this.post.author.viewer?.mutedByList,
+                enabled: Store.getUser() != undefined && did != this.post.author.did && !this.post.author.viewer?.muted,
                 click: () => {
                     State.muteActor(this.post!.author.did);
                     this.close();
@@ -1143,10 +1241,7 @@ export class PostOptionsElement extends PopupMenu {
                 option: "unmute_user",
                 text: i18n("Unmute User"),
                 icon: html`${muteIcon}`,
-                enabled:
-                    Store.getUser() != undefined &&
-                    did != this.post.author.did &&
-                    (this.post.author.viewer?.muted || this.post.author.viewer?.mutedByList != undefined),
+                enabled: Store.getUser() != undefined && did != this.post.author.did && !this.post.author.viewer?.muted != undefined,
                 click: () => {
                     State.unmuteActor(this.post!.author.did);
                     this.close();
@@ -1156,11 +1251,7 @@ export class PostOptionsElement extends PopupMenu {
                 option: "block_user",
                 text: i18n("Block User"),
                 icon: html`${blockIcon}`,
-                enabled:
-                    Store.getUser() != undefined &&
-                    did != this.post.author.did &&
-                    !this.post.author.viewer?.blocking &&
-                    !this.post.author.viewer?.blockingByList,
+                enabled: Store.getUser() != undefined && did != this.post.author.did && !this.post.author.viewer?.blocking,
                 click: () => {
                     State.blockActor(this.post!.author.did);
                     this.close();
@@ -1170,10 +1261,7 @@ export class PostOptionsElement extends PopupMenu {
                 option: "unblock_user",
                 text: i18n("Unblock User"),
                 icon: html`${blockIcon}`,
-                enabled:
-                    Store.getUser() != undefined &&
-                    did != this.post.author.did &&
-                    (this.post.author.viewer?.blocking != undefined || this.post.author.viewer?.blockingByList != undefined),
+                enabled: Store.getUser() != undefined && did != this.post.author.did && this.post.author.viewer?.blocking != undefined,
                 click: () => {
                     State.unblockActor(this.post!.author.did);
                     this.close();

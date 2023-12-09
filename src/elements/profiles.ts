@@ -292,13 +292,14 @@ export class ProfileOverlay extends HashNavOverlay {
                             createdAt: "",
                         })}</div>`
                     : nothing}
-                ${this.profile.viewer?.muted || this.profile.viewer?.mutedByList
-                    ? itemPlaceholder(i18n("You are muting the user."), html`${shieldIcon}`)
+                ${this.profile.viewer?.muted ? itemPlaceholder(i18n("You are muting the user."), html`${shieldIcon}`) : nothing}
+                ${this.profile.viewer?.mutedByList
+                    ? itemPlaceholder(i18n("User muted by moderation list ")(this.profile.viewer.mutedByList.name), html`${shieldIcon}`)
                     : nothing}
-                ${this.profile.viewer?.m ? itemPlaceholder(i18n("You are blocked by the user."), html`${shieldIcon}`) : nothing}
                 ${this.profile.viewer?.blockedBy ? itemPlaceholder(i18n("You are blocked by the user."), html`${shieldIcon}`) : nothing}
-                ${this.profile.viewer?.blocking || this.profile.viewer?.blockingByList
-                    ? itemPlaceholder(i18n("You are blocking the user."), html`${shieldIcon}`)
+                ${this.profile.viewer?.blocking ? itemPlaceholder(i18n("You are blocking the user."), html`${shieldIcon}`) : nothing}
+                ${this.profile.viewer?.blockingByList
+                    ? itemPlaceholder(i18n("User blocked by moderation list ")(this.profile.viewer.blockingByList.name), html`${shieldIcon}`)
                     : nothing}
             </div>
             <div class="overflow-x-auto flex flex-nowrap border-b border-divider">

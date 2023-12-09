@@ -259,6 +259,8 @@ export interface Messages {
     Day: string;
     Week: string;
     "Share result": string;
+    "User muted by moderation list ": (listName: string) => string;
+    "User blocked by moderation list ": (listName: string) => string;
 }
 
 const english: Messages = {
@@ -534,6 +536,8 @@ const english: Messages = {
     Day: "Day",
     Week: "Week",
     "Share result": "Share result",
+    "User muted by moderation list ": (listName: string) => `User muted by moderation list ${listName}`,
+    "User blocked by moderation list ": (listName: string) => `User blocked by moderation list ${listName}`,
 };
 
 const german: Messages = {
@@ -814,6 +818,8 @@ const german: Messages = {
     Day: "Tag",
     Week: "Woche",
     "Share result": "Result teilen",
+    "User muted by moderation list ": (listName: string) => `Benutzerin durch Moderations Liste ${listName} stummgeschaltet`,
+    "User blocked by moderation list ": (listName: string) => `Benutzerin durch Moderations Liste ${listName} blockiert`,
 };
 
 export type LanguageCode = "en" | "de";
