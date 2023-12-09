@@ -92,9 +92,6 @@ export class UpButton extends FloatingButton {
     constructor() {
         super();
         this.hide = true;
-        this.highlightStyle =
-            "w-12 h-12 bg-background dark:bg-divider flex justify-center items-center border border-primary rounded-full fancy-shadow";
-        this.highlightIconStyle = "fill-primary";
     }
 
     connectedCallback(): void {
