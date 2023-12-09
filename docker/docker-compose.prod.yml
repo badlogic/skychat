@@ -11,6 +11,8 @@ services:
         user: 1000:1000
         ports:
             - 5432:5432
+    server:
+        container_name: skychat_server
 networks:
     reverse_proxy:
         external:

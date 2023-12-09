@@ -123,7 +123,7 @@ class SkychatClient extends LitElement {
                     ></a
                 >
                 <a class="text-primary mt-4" target="_blank"  href="https://skychat.social/#thread/did:plc:zbhgvr7v4egikpn3xtzrcm7z/3kfvj6lotsu2s"
-                    >Show YouTube videos inline <br /><span class="text-xs text-muted-fg"
+                    >Show YouTube/Spotify/Twitch/.mp4 videos/songs/albums inline <br /><span class="text-xs text-muted-fg"
                         >(Paste a link into your post, then click "Add card")</span
                     ></a
                 >

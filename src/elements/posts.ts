@@ -596,10 +596,10 @@ export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | A
 
 export function renderImagesEmbedSmall(images: AppBskyEmbedImages.ViewImage[]) {
     if (Store.getDevPrefs()?.logEmbedRenders) debugLog(`   Embed render -- images small`);
-    return html`<div class="mt-2 flex mx-2 justify-center">
+    return html`<div class="mt-2 flex mx-2 items-center justify-center">
         ${repeat(
             images,
-            (image) => html`<div class="w-1/4 relative">
+            (image) => html`<div class="relative">
                 <img src="${image.thumb}" class="px-1 w-28 h-28 object-cover" />
             </div>`
         )}
