@@ -563,3 +563,8 @@ class SkychatClient extends LitElement {
         location.reload();
     }
 }
+
+import { setupLiveReload } from "../live-reload.js";
+if (location.hostname.includes("localhost")) {
+    setupLiveReload();
+}

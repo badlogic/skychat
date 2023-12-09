@@ -13,6 +13,7 @@ const config = {
     bundle: true,
     sourcemap: true,
     platform: "node",
+    external: ["fsevents"],
     outdir: "build/",
     logLevel: "info",
     minify: false,

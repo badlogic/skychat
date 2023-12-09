@@ -6,6 +6,8 @@ import { getTimeDifference } from "../utils";
 import { Firehose } from "./firehose";
 import { initializePushNotifications } from "./pushnotifications";
 import { initializeQuotes } from "./quotes";
+import WebSocket, { WebSocketServer } from "ws";
+import * as chokidar from "chokidar";
 
 const port = process.env.PORT ?? 3333;
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
@@ -180,7 +182,38 @@ let numHtmlRequests = 0;
         }
     });
 
-    http.createServer(app).listen(port, () => {
+    const server = http.createServer(app);
+    server.listen(port, () => {
         console.log(`App listening on port ${port}`);
     });
+
+    setupLiveReload(server);
+
+    function setupLiveReload(server: http.Server) {
+        // Set up WebSocket server
+        const wss = new WebSocketServer({ server });
+
+        // Store all connected clients
+        const clients: Set<WebSocket> = new Set();
+
+        // Handle new WebSocket connections
+        wss.on("connection", (ws: WebSocket) => {
+            clients.add(ws);
+            ws.on("close", () => {
+                clients.delete(ws);
+            });
+        });
+
+        // Watch the 'html/' directory for changes
+        chokidar.watch("html/", { ignored: /(^|[\/\\])\../, ignoreInitial: true }).on("all", (event, path) => {
+            // Inform all connected WebSocket clients
+            clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(`File changed: ${path}`);
+                }
+            });
+        });
+
+        console.log("Initialized live-reload");
+    }
 })();
