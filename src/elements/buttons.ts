@@ -181,7 +181,7 @@ export class PostEditorButton extends FloatingButton {
     getOffset() {
         switch (this.anchor) {
             case "none":
-                return "mt-8";
+                return "mt-2";
             case "bar-right":
                 return "bottom-16 transform translate-x-[calc(min(100vw,640px)-64px)]";
             case "right":
