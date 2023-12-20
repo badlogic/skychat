@@ -28,24 +28,24 @@ services:
             POSTGRES_DB: skychat_db
             POSTGRES_USER: skychat
             POSTGRES_PASSWORD: ${SKYCHAT_DB_PASSWORD}
-        links:
-            - database
+        #links:
+        #    - database
         networks:
             - skychat_network
 
-    database:
-        image: postgres:16-alpine
-        container_name: skychat_postgres
-        restart: always
-        environment:
-            POSTGRES_DB: skychat_db
-            POSTGRES_USER: skychat
-            POSTGRES_PASSWORD: ${SKYCHAT_DB_PASSWORD}
-        volumes:
-            - ./data/postgres:/var/lib/postgresql/data
-            - ./data/backup:/backup
-        networks:
-            - skychat_network
+    #database:
+    #    image: postgres:16-alpine
+    #    container_name: skychat_postgres
+    #    restart: always
+    #    environment:
+    #        POSTGRES_DB: skychat_db
+    #        POSTGRES_USER: skychat
+    #        POSTGRES_PASSWORD: ${SKYCHAT_DB_PASSWORD}
+    #    volumes:
+    #        - ./data/postgres:/var/lib/postgresql/data
+    #        - ./data/backup:/backup
+    #    networks:
+    #        - skychat_network
 
 networks:
     skychat_network:

@@ -9,6 +9,6 @@ services:
             - 3333:3333
         environment:
             - DEV=true
-    database:
-        ports:
-            - 5432:5432
+    #database:
+    #    ports:
+    #        - 5432:5432

@@ -7,10 +7,10 @@ services:
             LETSENCRYPT_EMAIL: "badlogicgames@gmail.com"
         networks:
             - reverse_proxy
-    database:
-        user: 1000:1000
-        ports:
-            - 5432:5432
+    #database:
+    #    user: 1000:1000
+    #    ports:
+    #        - 5432:5432
     server:
         container_name: skychat_server
 networks:
