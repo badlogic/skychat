@@ -67,7 +67,7 @@ import { toast } from "./toast";
 
 export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
     if (!record.facets) {
-        return html`<div class="whitespace-pre-wrap break-words">${record.text}</div>`;
+        return html`<div class="whitespace-pre-wrap break-any">${record.text}</div>`;
     }
 
     const rt = new RichText({
@@ -109,7 +109,7 @@ export function renderRichText(record: AppBskyFeedPost.Record | RichText) {
             segments.push(html`<span>${segment.text}</span>`);
         }
     }
-    const result = html`<div class="whitespace-pre-wrap break-words">${map(segments, (segment) => segment)}</div>`;
+    const result = html`<div class="whitespace-pre-wrap break-any">${map(segments, (segment) => segment)}</div>`;
     return result;
 }
 
@@ -588,8 +588,8 @@ export function renderCardEmbed(cardEmbed: AppBskyEmbedExternal.ViewExternal | A
         ${thumb ? html`<img src="${thumb}" class="w-28 h-28 object-cover" />` : nothing}
         <div class="flex flex-col p-2 justify-center">
             <span class="text-muted-fg text-xs">${new URL(cardEmbed.uri).host}</span>
-            <span class="font-semibold text-sm line-clamp-2 break-normal">${cardEmbed.title}</span>
-            <div class="text-sm line-clamp-2 break-normal">${cardEmbed.description}</div>
+            <span class="font-semibold text-sm line-clamp-2 break-any">${cardEmbed.title}</span>
+            <div class="text-sm line-clamp-2 break-any">${cardEmbed.description}</div>
         </div>
     </a>`;
 }
@@ -825,7 +825,7 @@ export function renderRecord(
                   >
               </div>`
             : nothing}
-        <div class="mt-1 break-words whitespace-pre-wrap">${renderRichText(record)}</div>
+        <div class="mt-1 break-any whitespace-pre-wrap">${renderRichText(record)}</div>
         ${embed ? renderEmbed(embed, sensitive) : nothing}
     </div>`;
 }

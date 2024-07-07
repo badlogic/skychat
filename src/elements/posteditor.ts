@@ -771,7 +771,7 @@ export class ImageEditor extends Overlay {
                         this.image.alt = (ev.target as HTMLInputElement)!.value;
                     }
                 }}
-                class="flex-1 break-words max-h-[11.5em] resize-none outline-none bg-transparent px-2 pt-2"
+                class="flex-1 break-any max-h-[11.5em] resize-none outline-none bg-transparent px-2 pt-2"
                 placeholder="${i18n("Add alt text to your image")}"
             >
 ${alt}</textarea

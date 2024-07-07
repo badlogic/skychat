@@ -497,7 +497,7 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
                             document.body.append(dom(html`<thread-overlay .postUri=${post?.uri}></thread-overlay>`)[0]);
                         }}
                     >
-                        <div class="break-words dark:text-white/50 text-black/50">${renderRichText(post.record)}</div>
+                        <div class="break-any dark:text-white/50 text-black/50">${renderRichText(post.record)}</div>
                         ${post.embed ? renderEmbed(post.embed, false, true) : nothing}
                     </div>`;
                     break;
@@ -513,7 +513,7 @@ export class NotificationsStreamView extends StreamView<AppBskyNotificationListN
                                   }}
                               >
                                   <div class="dark:text-white/50 text-black/50">${renderProfile(parent.author, true)}</div>
-                                  <div class="mt-1 mb-1 break-words text-muted-fg">${renderRichText(parent.record)}</div>
+                                  <div class="mt-1 mb-1 break-any text-muted-fg">${renderRichText(parent.record)}</div>
                                   ${parent.embed ? renderEmbed(parent.embed, false, true) : nothing}
                               </div>`
                             : nothing}<post-view

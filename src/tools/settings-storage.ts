@@ -53,7 +53,8 @@ const login = async () => {
 
 (async () => {
     const client = await login();
-    const response = await client.com.atproto.repo.listRecords({ collection: "app.bsky.actor.profile", repo: user });
+
+    /*const response = await client.com.atproto.repo.listRecords({ collection: "app.bsky.actor.profile", repo: user });
     if (!response.success) {
         console.error("Couldn't get records", response);
     }
@@ -86,6 +87,23 @@ const login = async () => {
     });
     if (!putResponse.success) {
         console.error("Coudln't put record", putResponse);
-    }
-    console.log("success");
+    }*/
+
+    const generateRandomString = (length: number): string => {
+        let result = "";
+        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        for (let i = 0; i < length; i++) {
+            result += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        return result;
+    };
+
+    const prefs = await client.app.bsky.actor.getPreferences();
+    prefs.data.preferences = prefs.data.preferences.filter((pref) => pref.$type != "app.bsky.skychat.settings");
+    prefs.data.preferences.push({
+        $type: "app.bsky.skychat.settings",
+        test: generateRandomString(100000),
+    });
+    console.log(await client.app.bsky.actor.putPreferences({ preferences: prefs.data.preferences }));
+    console.log((await client.app.bsky.actor.getPreferences()).data.preferences);
 })();
