@@ -10,4 +10,4 @@ repos.json
 session.json
 html/version.json
 docker/data
-docker/data
+docker/.env

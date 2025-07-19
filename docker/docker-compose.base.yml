@@ -19,6 +19,7 @@ services:
             dockerfile: Dockerfile
         container_name: skychat_server
         stop_grace_period: 0s
+        env_file: .env
         volumes:
             - ~/firebase-service-credentials.json:/firebase-service-credentials.json
             - ./data:/data
